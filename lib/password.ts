@@ -1,18 +1,50 @@
-import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import bcrypt from "bcryptjs";
 
-const KEY_LENGTH = 64;
+const SALT_ROUNDS = 10;
 
+/**
+ * Hashes a plaintext password using bcryptjs.
+ *
+ * @param password - Plaintext password.
+ * @returns Hashed password string.
+ */
 export function hashPassword(password: string): string {
-  const salt = randomBytes(16).toString("hex");
-  const derivedKey = scryptSync(password, salt, KEY_LENGTH);
-  return `${salt}:${derivedKey.toString("hex")}`; // store salt next to the hash
+  return bcrypt.hashSync(password, SALT_ROUNDS);
 }
 
-export function verifyPassword(password: string, stored: string): boolean {
-  const [salt, key] = stored.split(":");
-  if (!salt || !key) return false;
-  const keyBuffer = Buffer.from(key, "hex");
-  const derivedKey = scryptSync(password, salt, KEY_LENGTH);
-  // timingSafeEqual avoids revealing info based on how fast the comparison finishes
-  return keyBuffer.length === derivedKey.length && timingSafeEqual(keyBuffer, derivedKey);
+/**
+ * Asynchronously hashes a plaintext password using bcryptjs.
+ *
+ * @param password - Plaintext password.
+ * @returns Promise resolving to hashed password string.
+ */
+export async function hashPasswordAsync(password: string): Promise<string> {
+  return await bcrypt.hash(password, SALT_ROUNDS);
+}
+
+/**
+ * Verifies a plaintext password against a stored bcrypt hash.
+ *
+ * @param password - Plaintext password.
+ * @param storedHash - Bcrypt hash from database.
+ * @returns True if password matches, false otherwise.
+ */
+export function verifyPassword(password: string, storedHash: string): boolean {
+  if (!password || !storedHash) return false;
+  return bcrypt.compareSync(password, storedHash);
+}
+
+/**
+ * Asynchronously verifies a plaintext password against a stored bcrypt hash.
+ *
+ * @param password - Plaintext password.
+ * @param storedHash - Bcrypt hash from database.
+ * @returns Promise resolving to boolean.
+ */
+export async function verifyPasswordAsync(
+  password: string,
+  storedHash: string
+): Promise<boolean> {
+  if (!password || !storedHash) return false;
+  return await bcrypt.compare(password, storedHash);
 }
