@@ -2,9 +2,12 @@
 
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import {
   createKitchen,
   addKitchenMember,
+  cancelInvite,
+  removeKitchenMember,
   getKitchenById,
   getKitchenMembersWithUsers,
   isUserKitchenAdmin,
@@ -77,7 +80,43 @@ export async function addMemberAction(
     throw new Error("You must be logged in.");
   }
 
-  return await addKitchenMember(kitchenId, memberDisplayName, session.user.id);
+  const result = await addKitchenMember(kitchenId, memberDisplayName, session.user.id);
+  revalidatePath(`/kitchen/${kitchenId}/admin`);
+  return result;
+}
+
+/**
+ * Server Action for an admin to cancel and revoke a pending invite.
+ */
+export async function cancelInviteAction(
+  kitchenId: string,
+  memberId: string
+) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in.");
+  }
+
+  const result = await cancelInvite(kitchenId, memberId, session.user.id);
+  revalidatePath(`/kitchen/${kitchenId}/admin`);
+  return result;
+}
+
+/**
+ * Server Action for an admin to remove/kick an active member from the kitchen.
+ */
+export async function removeKitchenMemberAction(
+  kitchenId: string,
+  memberId: string
+) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in.");
+  }
+
+  const result = await removeKitchenMember(kitchenId, memberId, session.user.id);
+  revalidatePath(`/kitchen/${kitchenId}/admin`);
+  return result;
 }
 
 /**

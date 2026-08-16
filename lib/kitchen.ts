@@ -191,6 +191,79 @@ export async function addKitchenMember(
 }
 
 /**
+ * Cancels and revokes a pending member invite.
+ *
+ * @param kitchenId - UUID of the kitchen.
+ * @param memberId - UUID of the kitchen_members placeholder record.
+ * @param adminUserId - UUID of the requesting admin user.
+ * @returns True if invite was deleted.
+ */
+export async function cancelInvite(
+  kitchenId: string,
+  memberId: string,
+  adminUserId: string
+): Promise<boolean> {
+  const isAdmin = await isUserKitchenAdmin(kitchenId, adminUserId);
+  if (!isAdmin) {
+    throw new Error("Unauthorized: Only kitchen admins can cancel invites.");
+  }
+
+  const sql = `
+    DELETE FROM kitchen_members
+    WHERE id = $1 AND kitchen_id = $2 AND user_id IS NULL
+  `;
+  const result = await pool.query(sql, [memberId, kitchenId]);
+  return (result.rowCount ?? 0) > 0;
+}
+
+/**
+ * Removes / kicks an active member from the kitchen.
+ * Prevents admins from kicking themselves to avoid orphan kitchens.
+ *
+ * @param kitchenId - UUID of the kitchen.
+ * @param memberId - UUID of the kitchen_members record.
+ * @param adminUserId - UUID of the requesting admin user.
+ * @returns True if member was removed.
+ */
+export async function removeKitchenMember(
+  kitchenId: string,
+  memberId: string,
+  adminUserId: string
+): Promise<boolean> {
+  const isAdmin = await isUserKitchenAdmin(kitchenId, adminUserId);
+  if (!isAdmin) {
+    throw new Error("Unauthorized: Only kitchen admins can remove members.");
+  }
+
+  // Check target member
+  const memberCheckSql = `
+    SELECT id, user_id, role, kitchen_display_name
+    FROM kitchen_members
+    WHERE id = $1 AND kitchen_id = $2
+  `;
+  const { rows } = await pool.query<KitchenMember>(memberCheckSql, [memberId, kitchenId]);
+  if (rows.length === 0) {
+    throw new Error("Member not found in this kitchen.");
+  }
+
+  const targetMember = rows[0];
+  if (targetMember.user_id === adminUserId) {
+    throw new Error("Admins cannot remove themselves from the kitchen.");
+  }
+
+  if (targetMember.role === "ADMIN") {
+    throw new Error("Cannot remove another admin directly.");
+  }
+
+  const deleteSql = `
+    DELETE FROM kitchen_members
+    WHERE id = $1 AND kitchen_id = $2
+  `;
+  const result = await pool.query(deleteSql, [memberId, kitchenId]);
+  return (result.rowCount ?? 0) > 0;
+}
+
+/**
  * Fetches a kitchen by its ID.
  *
  * @param kitchenId - UUID of the kitchen.

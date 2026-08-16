@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getInviteByToken, claimInvite } from "@/lib/invite";
 import { InviteAuthTabs } from "@/components/InviteAuthTabs";
+import { AlertCircle, MailCheck, ArrowLeft } from "lucide-react";
 
 export default async function InvitePage({
   params,
@@ -15,20 +16,22 @@ export default async function InvitePage({
   // 1. If invite token is not found or already claimed
   if (!invite || invite.is_claimed) {
     return (
-      <div className="max-w-md mx-auto my-12 bg-white border border-slate-200 rounded-3xl p-8 text-center shadow-sm space-y-6">
-        <div className="text-5xl">⚠️</div>
+      <div className="max-w-md mx-auto my-12 bg-zinc-900 border border-zinc-800 rounded-3xl p-8 sm:p-10 text-center shadow-xl space-y-6">
+        <div className="w-14 h-14 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 mx-auto">
+          <AlertCircle className="w-7 h-7" />
+        </div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-extrabold text-slate-900">
+          <h1 className="text-xl font-bold text-white tracking-tight">
             Invalid or Expired Invite Link
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-xs text-zinc-400 leading-relaxed">
             This invite link does not exist, has expired, or has already been claimed by another member.
           </p>
         </div>
-        <div className="pt-4 border-t border-slate-100">
+        <div className="pt-4 border-t border-zinc-800">
           <Link
             href="/"
-            className="inline-block px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition text-sm shadow-sm"
+            className="inline-block px-5 py-2.5 rounded-xl bg-white text-black font-semibold hover:bg-zinc-200 transition text-xs shadow-sm"
           >
             Go to Homepage
           </Link>
@@ -47,20 +50,21 @@ export default async function InvitePage({
       redirect(`/kitchen/${claimResult.kitchenId || invite.kitchen_id}`);
     }
 
-    // Handle unexpected claim error for authenticated user
     return (
-      <div className="max-w-md mx-auto my-12 bg-white border border-slate-200 rounded-3xl p-8 text-center shadow-sm space-y-6">
-        <div className="text-5xl">⚠️</div>
+      <div className="max-w-md mx-auto my-12 bg-zinc-900 border border-zinc-800 rounded-3xl p-8 sm:p-10 text-center shadow-xl space-y-6">
+        <div className="w-14 h-14 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 mx-auto">
+          <AlertCircle className="w-7 h-7" />
+        </div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-extrabold text-slate-900">
+          <h1 className="text-xl font-bold text-white tracking-tight">
             Could Not Accept Invite
           </h1>
-          <p className="text-sm text-slate-500">{claimResult.message}</p>
+          <p className="text-xs text-zinc-400 leading-relaxed">{claimResult.message}</p>
         </div>
-        <div className="pt-4 border-t border-slate-100">
+        <div className="pt-4 border-t border-zinc-800">
           <Link
             href="/"
-            className="inline-block px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-bold transition text-sm shadow-sm"
+            className="inline-block px-5 py-2.5 rounded-xl bg-white text-black font-semibold hover:bg-zinc-200 transition text-xs shadow-sm"
           >
             Go to Homepage
           </Link>
@@ -69,37 +73,48 @@ export default async function InvitePage({
     );
   }
 
-  // 3. User is NOT logged in: Present welcome card + inline auth tabs
+  // 3. User is NOT logged in: Present polished welcome card + inline auth tabs
   return (
-    <div className="max-w-md mx-auto my-8 bg-white border border-slate-200 rounded-3xl p-8 shadow-sm text-center space-y-6">
-      <div className="inline-flex p-3.5 bg-emerald-50 rounded-2xl text-3xl">
-        🍳
-      </div>
+    <div className="max-w-md mx-auto my-8 space-y-4">
+      <Link
+        href="/"
+        className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white transition px-1"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" />
+        <span>Back to Home</span>
+      </Link>
 
-      <div className="space-y-2">
-        <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
-          You&apos;ve Been Invited!
-        </span>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-          Join {invite.kitchen_name}
-        </h1>
-        <p className="text-sm text-slate-600">
-          You are invited to join as{" "}
-          <strong className="text-slate-900 font-bold underline decoration-emerald-500 underline-offset-4">
-            &ldquo;{invite.kitchen_display_name}&rdquo;
-          </strong>
-          .
-        </p>
-      </div>
+      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 sm:p-10 shadow-xl text-center space-y-6">
+        <div className="w-14 h-14 rounded-2xl bg-zinc-800/80 border border-zinc-700 flex items-center justify-center text-zinc-200 mx-auto">
+          <MailCheck className="w-7 h-7" />
+        </div>
 
-      <div className="p-4 bg-slate-50 rounded-2xl text-xs text-slate-500 text-left">
-        Log in or choose a username and password below to immediately join this kitchen. No email address required!
-      </div>
+        <div className="space-y-3">
+          <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-zinc-800 border border-zinc-700 text-zinc-300 uppercase tracking-wider">
+            You&apos;ve Been Invited
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            Join {invite.kitchen_name}
+          </h1>
+          <p className="text-sm text-zinc-400 leading-relaxed">
+            You are invited to join as{" "}
+            <strong className="text-white underline decoration-zinc-500 underline-offset-4 font-semibold">
+              &ldquo;{invite.kitchen_display_name}&rdquo;
+            </strong>
+          </p>
+        </div>
 
-      <InviteAuthTabs
-        inviteToken={token}
-        suggestedName={invite.kitchen_display_name}
-      />
+        <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-2xl text-xs text-zinc-400 text-left leading-relaxed">
+          Log in or create a username and password below to immediately accept this invite and access the shared grocery list.
+        </div>
+
+        <div className="pt-2">
+          <InviteAuthTabs
+            inviteToken={token}
+            suggestedName={invite.kitchen_display_name}
+          />
+        </div>
+      </div>
     </div>
   );
 }

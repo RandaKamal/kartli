@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Check, Copy } from "lucide-react";
 
 export function CopyButton({
   text,
@@ -17,7 +18,6 @@ export function CopyButton({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback if clipboard API fails
       setCopied(false);
     }
   };
@@ -26,13 +26,23 @@ export function CopyButton({
     <button
       type="button"
       onClick={handleCopy}
-      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${
         copied
-          ? "bg-emerald-100 border-emerald-300 text-emerald-800"
-          : "bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200"
+          ? "bg-zinc-100 border-white text-black font-bold"
+          : "bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white"
       }`}
     >
-      {copied ? "✓ Copied!" : label}
+      {copied ? (
+        <>
+          <Check className="w-3.5 h-3.5 text-black" />
+          <span>Copied!</span>
+        </>
+      ) : (
+        <>
+          <Copy className="w-3.5 h-3.5" />
+          <span>{label}</span>
+        </>
+      )}
     </button>
   );
 }

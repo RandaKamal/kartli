@@ -34,17 +34,13 @@ export async function registerUserAction(
     return { error: "Password must be at least 6 characters long." };
   }
 
-  // Save pending invite token to cookie if provided
   const cookieStore = await cookies();
+
+  // If an explicit invite token is submitted with the registration form
   if (inviteToken) {
     cookieStore.set(PENDING_INVITE_COOKIE_NAME, inviteToken, PENDING_INVITE_COOKIE_OPTIONS);
     if (!callbackUrl) {
       callbackUrl = `/invite/${encodeURIComponent(inviteToken)}`;
-    }
-  } else if (!callbackUrl) {
-    const pendingToken = cookieStore.get(PENDING_INVITE_COOKIE_NAME)?.value;
-    if (pendingToken) {
-      callbackUrl = `/invite/${encodeURIComponent(pendingToken)}`;
     }
   }
 
@@ -88,15 +84,12 @@ export async function loginUserAction(
   }
 
   const cookieStore = await cookies();
+
+  // If an explicit invite token is submitted with the login form
   if (inviteToken) {
     cookieStore.set(PENDING_INVITE_COOKIE_NAME, inviteToken, PENDING_INVITE_COOKIE_OPTIONS);
     if (!callbackUrl) {
       callbackUrl = `/invite/${encodeURIComponent(inviteToken)}`;
-    }
-  } else if (!callbackUrl) {
-    const pendingToken = cookieStore.get(PENDING_INVITE_COOKIE_NAME)?.value;
-    if (pendingToken) {
-      callbackUrl = `/invite/${encodeURIComponent(pendingToken)}`;
     }
   }
 
@@ -121,8 +114,10 @@ export async function loginUserAction(
 }
 
 /**
- * Server Action to sign out the current user.
+ * Server Action to sign out the current user and clear any pending invite cookies.
  */
 export async function logoutAction() {
+  const cookieStore = await cookies();
+  cookieStore.delete(PENDING_INVITE_COOKIE_NAME);
   await signOut({ redirectTo: "/" });
 }
