@@ -7,9 +7,7 @@ import { verifyUserCredentials } from "@/lib/auth-service";
  */
 export const authConfig: NextAuthConfig = {
   secret:
-    process.env.AUTH_SECRET ||
-    process.env.NEXTAUTH_SECRET ||
-    "4f7b6b19a0a55227d825c814b7e98a3b53f631165ea9b02bc36c701726a79ee8",
+    process.env.AUTH_SECRET,
   trustHost: true,
   session: {
     strategy: "jwt",
