@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getKitchenByPublicToken } from "@/lib/kitchen";
+import { auth } from "@/auth";
+import { getKitchenByPublicToken, getUserMembership } from "@/lib/kitchen";
 import { ShoppingBag, Users, ArrowRight } from "lucide-react";
 
 export default async function PublicKitchenViewPage({
@@ -14,6 +15,10 @@ export default async function PublicKitchenViewPage({
   if (!kitchen) {
     notFound();
   }
+
+  const session = await auth();
+  const userId = session?.user?.id;
+  const membership = userId ? await getUserMembership(kitchen.id, userId) : null;
 
   const activeMembers = kitchen.members.filter((m) => m.is_active);
 
@@ -76,14 +81,42 @@ export default async function PublicKitchenViewPage({
         </div>
 
         <div className="pt-6 border-t border-zinc-800 flex items-center justify-between text-xs text-zinc-400">
-          <span>Are you a member of this kitchen?</span>
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-1 font-semibold text-white hover:underline"
-          >
-            <span>Sign in to manage</span>
-            <ArrowRight className="w-3 h-3" />
-          </Link>
+          {session?.user ? (
+            membership ? (
+              <>
+                <span>You are a member ({membership.kitchen_display_name})</span>
+                <Link
+                  href={`/kitchen/${kitchen.id}`}
+                  className="inline-flex items-center gap-1 font-semibold text-white hover:underline"
+                >
+                  <span>Go to kitchen space</span>
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              </>
+            ) : (
+              <>
+                <span>Signed in as <strong className="text-zinc-200">{session.user.username}</strong></span>
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-1 font-semibold text-white hover:underline"
+                >
+                  <span>My Kitchens</span>
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              </>
+            )
+          ) : (
+            <>
+              <span>Are you a member of this kitchen?</span>
+              <Link
+                href={`/login?callbackUrl=${encodeURIComponent(`/kitchen/${kitchen.id}`)}`}
+                className="inline-flex items-center gap-1 font-semibold text-white hover:underline"
+              >
+                <span>Sign in to manage</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </div>
