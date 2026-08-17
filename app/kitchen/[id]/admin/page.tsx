@@ -13,6 +13,12 @@ import { AdminActiveMembersList } from "@/components/AdminActiveMembersList";
 import { AdminPendingInvitesList } from "@/components/AdminPendingInvitesList";
 import { headers } from "next/headers";
 import { ExternalLink, Users, Mail, UserPlus, ArrowLeft } from "lucide-react";
+import { getPantryItems, getShoppingListItems } from "@/lib/pantry";
+import { PantrySection } from "@/components/PantrySection";
+import { ShoppingListSection } from "@/components/ShoppingListSection";
+import { getUserCheckouts } from "@/lib/pantry";
+import { ShoppingCart } from "@/components/ShoppingCart";
+import { MyPurchasesSection } from "@/components/MyPurchasesSection";
 
 export default async function KitchenAdminPage({
   params,
@@ -39,6 +45,10 @@ export default async function KitchenAdminPage({
   const members = await getKitchenMembersWithUsers(id);
   const activeMembers = members.filter((m) => m.joined_at !== null);
   const pendingInvites = members.filter((m) => m.joined_at === null && m.invite_token !== null);
+  
+  const pantryItems = await getPantryItems(id);
+  const shoppingListItems = await getShoppingListItems(id);
+  const myCheckouts = await getUserCheckouts(id, session.user.id);
 
   const headerList = await headers();
   const host = headerList.get("host") || "localhost:3000";
@@ -90,6 +100,13 @@ export default async function KitchenAdminPage({
           </div>
 
           <div className="flex items-center gap-3">
+            <ShoppingCart kitchenId={id} items={shoppingListItems} currentUserId={session.user.id} />
+            <Link
+              href={`/kitchen/${id}/admin/purchases`}
+              className="px-4 py-2 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-200 hover:text-white hover:bg-zinc-700 text-sm font-medium transition"
+            >
+              Purchases
+            </Link>
             <Link
               href={`/kitchen/${id}/member`}
               className="px-4 py-2 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-200 hover:text-white hover:bg-zinc-700 text-sm font-medium transition"
@@ -97,6 +114,7 @@ export default async function KitchenAdminPage({
               Member View
             </Link>
           </div>
+
         </div>
       </div>
 
@@ -130,6 +148,12 @@ export default async function KitchenAdminPage({
             <ExternalLink className="w-3 h-3" />
           </Link>
         </div>
+      </div>
+
+      {/* Pantry & Shopping List */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <PantrySection kitchenId={id} items={pantryItems} />
+        <ShoppingListSection kitchenId={id} items={shoppingListItems} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { getKitchenByPublicToken, getUserMembership } from "@/lib/kitchen";
 import { ShoppingBag, Users, ArrowRight } from "lucide-react";
+import { getShoppingListItems } from "@/lib/pantry";
+
 
 export default async function PublicKitchenViewPage({
   params,
@@ -21,6 +23,10 @@ export default async function PublicKitchenViewPage({
   const membership = userId ? await getUserMembership(kitchen.id, userId) : null;
 
   const activeMembers = kitchen.members.filter((m) => m.is_active);
+
+  const shoppingListItems = await getShoppingListItems(kitchen.id);
+  const pendingItems = shoppingListItems.filter((item) => !item.is_purchased);
+
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -42,6 +48,33 @@ export default async function PublicKitchenViewPage({
           </p>
         </div>
       </div>
+
+      {/* Shopping List */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-4">
+        <h2 className="text-base font-semibold text-white flex items-center gap-2">
+          <ShoppingBag className="w-4 h-4 text-zinc-400" />
+          <span>Shopping List</span>
+          <span className="text-xs bg-zinc-800 border border-zinc-700 text-zinc-300 px-2 py-0.5 rounded-full font-medium">
+            {pendingItems.length}
+          </span>
+        </h2>
+
+        {pendingItems.length === 0 ? (
+          <p className="text-xs text-zinc-500 py-2">Nothing needed right now.</p>
+        ) : (
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {pendingItems.map((item) => (
+              <li
+                key={item.id}
+                className="px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-sm text-zinc-200 font-medium"
+              >
+                {item.name}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      
 
       <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
         <div>

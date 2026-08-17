@@ -128,6 +128,48 @@ export interface PublicKitchenContext {
     is_active: boolean;
   }>;
 }
+/**
+ * Represents an inventory item within a kitchen.
+ */
+export interface PantryItem {
+  id: string;
+  kitchen_id: string;
+  name: string;
+  is_out_of_stock: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+/**
+ * Represents an item on a kitchen's shopping list.
+ * Always generated from a pantry item going out of stock.
+ */
+export interface ShoppingListItem {
+  id: string;
+  kitchen_id: string;
+  pantry_item_id: string;
+  name: string;
+  is_purchased: boolean;
+  purchased_by: string | null;
+  checkout_id: string | null;
+  created_at: Date;
+}
+
+export interface Checkout {
+  id: string;
+  kitchen_id: string;
+  user_id: string;
+  receipt_filename: string;
+  is_refunded: boolean;
+  created_at: Date;
+  refunded_at: Date | null;
+}
+
+export interface CheckoutWithDetails extends Checkout {
+  username: string | null;
+  items: ShoppingListItem[];
+}
+
 
 /**
  * Module augmentation for NextAuth v5 session, user, and JWT types.

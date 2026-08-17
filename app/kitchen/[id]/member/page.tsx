@@ -9,6 +9,13 @@ import {
 import { CopyButton } from "@/components/CopyButton";
 import { headers } from "next/headers";
 import { ExternalLink, Users, ArrowLeft } from "lucide-react";
+import { getPantryItems, getShoppingListItems } from "@/lib/pantry";
+import { PantrySection } from "@/components/PantrySection";
+import { ShoppingListSection } from "@/components/ShoppingListSection";
+import { getUserCheckouts } from "@/lib/pantry";
+import { ShoppingCart } from "@/components/ShoppingCart";
+import { MyPurchasesSection } from "@/components/MyPurchasesSection";
+
 
 export default async function KitchenMemberPage({
   params,
@@ -34,6 +41,10 @@ export default async function KitchenMemberPage({
 
   const members = await getKitchenMembersWithUsers(id);
   const activeMembers = members.filter((m) => m.joined_at !== null);
+
+  const pantryItems = await getPantryItems(id);
+  const shoppingListItems = await getShoppingListItems(id);
+  const myCheckouts = await getUserCheckouts(id, session.user.id);
 
   const headerList = await headers();
   const host = headerList.get("host") || "localhost:3000";
@@ -70,15 +81,17 @@ export default async function KitchenMemberPage({
               Your display name: <strong className="text-white">{membership.kitchen_display_name}</strong>
             </p>
           </div>
-
-          {membership.role === "ADMIN" && (
-            <Link
-              href={`/kitchen/${id}/admin`}
-              className="px-4 py-2 rounded-xl bg-white text-black font-semibold hover:bg-zinc-200 text-sm transition"
-            >
-              Open Admin Dashboard
-            </Link>
-          )}
+          <div className="flex items-center gap-3">
+            <ShoppingCart kitchenId={id} items={shoppingListItems} currentUserId={session.user.id} />
+            {membership.role === "ADMIN" && (
+              <Link
+                href={`/kitchen/${id}/admin`}
+                className="px-4 py-2 rounded-xl bg-white text-black font-semibold hover:bg-zinc-200 text-sm transition"
+              >
+                Open Admin Dashboard
+              </Link>
+            )}
+          </div>
         </div>
       </div>
 
@@ -106,6 +119,14 @@ export default async function KitchenMemberPage({
           </Link>
         </div>
       </div>
+
+      {/* Pantry & Shopping List */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <PantrySection kitchenId={id} items={pantryItems} />
+        <ShoppingListSection kitchenId={id} items={shoppingListItems} />
+      </div>
+
+      <MyPurchasesSection checkouts={myCheckouts} />
 
       {/* Active Members Roster */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
