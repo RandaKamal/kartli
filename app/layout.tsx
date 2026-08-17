@@ -6,7 +6,7 @@ import { User, Plus } from "lucide-react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "WGrocery - Shared Kitchens",
+  title: "kartli - Shared Kitchens",
   description: "Lean, email-free shared kitchen management and grocery lists.",
 };
 
@@ -27,9 +27,9 @@ export default async function RootLayout({
               className="flex items-center gap-2 font-bold text-lg text-white tracking-tight hover:opacity-90 transition"
             >
               <span className="w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xs font-black">
-                W
+                k
               </span>
-              <span>WGrocery</span>
+              <span>kartli</span>
             </Link>
 
             <nav className="flex items-center gap-3 text-sm">
@@ -88,7 +88,7 @@ export default async function RootLayout({
         </main>
 
         <footer className="bg-zinc-950 border-t border-zinc-900 py-6 text-center text-xs text-zinc-600">
-          <p>© {new Date().getFullYear()} WGrocery. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} kartli. All rights reserved.</p>
         </footer>
       </body>
     </html>

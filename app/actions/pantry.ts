@@ -11,6 +11,7 @@ import {
   getShoppingListItems,
   togglePurchased,
   removeShoppingListItem,
+  clearBoughtShoppingListItems,
 } from "@/lib/pantry";
 import type { PantryItem, ShoppingListItem } from "@/types";
 
@@ -77,10 +78,16 @@ export async function togglePurchasedAction(
   return item;
 }
 
-
 export async function removeShoppingListItemAction(kitchenId: string, itemId: string) {
   await requireMembership(kitchenId);
   const result = await removeShoppingListItem(kitchenId, itemId);
   revalidateKitchen(kitchenId);
   return result;
+}
+
+export async function clearBoughtShoppingListItemsAction(kitchenId: string) {
+  await requireMembership(kitchenId);
+  const count = await clearBoughtShoppingListItems(kitchenId);
+  revalidateKitchen(kitchenId);
+  return count;
 }

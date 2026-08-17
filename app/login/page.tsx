@@ -11,7 +11,7 @@ export default async function LoginPage({
   return (
     <div className="max-w-md mx-auto my-8 bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-xl">
       <div className="text-center space-y-2 mb-6">
-        <h1 className="text-2xl font-bold text-white tracking-tight">Sign in to WGrocery</h1>
+        <h1 className="text-2xl font-bold text-white tracking-tight">Sign in to kartli</h1>
         <p className="text-sm text-zinc-400">
           Enter your username and password to access your kitchens.
         </p>

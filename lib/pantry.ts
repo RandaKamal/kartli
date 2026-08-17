@@ -95,14 +95,39 @@ export async function setPantryItemStock(
 }
 
 /**
- * Deletes a pantry item.
+ * Deletes a pantry item and removes any unpurchased shopping list entries linked to it.
  */
 export async function deletePantryItem(kitchenId: string, itemId: string): Promise<boolean> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(
+      `DELETE FROM shopping_list_items WHERE pantry_item_id = $1 AND kitchen_id = $2 AND is_purchased = FALSE`,
+      [itemId, kitchenId]
+    );
+    const result = await client.query(
+      `DELETE FROM pantry_items WHERE id = $1 AND kitchen_id = $2`,
+      [itemId, kitchenId]
+    );
+    await client.query("COMMIT");
+    return (result.rowCount ?? 0) > 0;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Clears and removes all bought items from the shopping list for a kitchen.
+ */
+export async function clearBoughtShoppingListItems(kitchenId: string): Promise<number> {
   const result = await pool.query(
-    `DELETE FROM pantry_items WHERE id = $1 AND kitchen_id = $2`,
-    [itemId, kitchenId]
+    `DELETE FROM shopping_list_items WHERE kitchen_id = $1 AND is_purchased = TRUE`,
+    [kitchenId]
   );
-  return (result.rowCount ?? 0) > 0;
+  return result.rowCount ?? 0;
 }
 
 /**
