@@ -8,6 +8,21 @@ import {
 } from "@/app/actions/pantry";
 import type { PantryItem } from "@/types";
 import { Package, Trash2, Plus, AlertTriangle, Check, Loader2 } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 export function PantrySection({
   kitchenId,
@@ -20,41 +35,29 @@ export function PantrySection({
   const [newItemName, setNewItemName] = useState("");
   const [itemToDelete, setItemToDelete] = useState<PantryItem | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     setPantryItems(items);
   }, [items]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && itemToDelete) {
-        setItemToDelete(null);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [itemToDelete]);
-
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     const name = newItemName.trim();
     if (!name) return;
-    setErrorMessage(null);
 
     startTransition(async () => {
       try {
         const item = await addPantryItemAction(kitchenId, name);
         setPantryItems((prev) => [...prev, item].sort((a, b) => a.name.localeCompare(b.name)));
         setNewItemName("");
+        toast.success(`Added "${name}" to pantry`);
       } catch (err: any) {
-        setErrorMessage(err.message || "Failed to add item.");
+        toast.error(err.message || "Failed to add item.");
       }
     });
   };
 
   const handleToggleStock = (item: PantryItem) => {
-    setErrorMessage(null);
     const nextValue = !item.is_out_of_stock;
 
     setPantryItems((prev) =>
@@ -64,11 +67,16 @@ export function PantrySection({
     startTransition(async () => {
       try {
         await setPantryItemStockAction(kitchenId, item.id, nextValue);
+        if (nextValue) {
+          toast.warning(`Marked "${item.name}" as Empty — added to shopping list`);
+        } else {
+          toast.success(`Restocked "${item.name}"`);
+        }
       } catch (err: any) {
         setPantryItems((prev) =>
           prev.map((p) => (p.id === item.id ? { ...p, is_out_of_stock: item.is_out_of_stock } : p))
         );
-        setErrorMessage(err.message || "Failed to update stock status.");
+        toast.error(err.message || "Failed to update stock status.");
       }
     });
   };
@@ -76,15 +84,16 @@ export function PantrySection({
   const handleConfirmDelete = () => {
     if (!itemToDelete) return;
     const itemId = itemToDelete.id;
-    setErrorMessage(null);
+    const itemName = itemToDelete.name;
 
     startTransition(async () => {
       try {
         await deletePantryItemAction(kitchenId, itemId);
         setPantryItems((prev) => prev.filter((p) => p.id !== itemId));
         setItemToDelete(null);
+        toast.success(`Deleted "${itemName}" from pantry`);
       } catch (err: any) {
-        setErrorMessage(err.message || "Failed to delete item.");
+        toast.error(err.message || "Failed to delete item.");
       }
     });
   };
@@ -93,46 +102,40 @@ export function PantrySection({
 
   return (
     <>
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+      <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-white flex items-center gap-2">
             <Package className="w-4 h-4 text-zinc-400" />
-            <span>Pantry & Inventory</span>
-            <span className="text-xs bg-zinc-800 border border-zinc-700 text-zinc-300 px-2 py-0.5 rounded-full font-medium">
+            <span>Pantry &amp; Inventory</span>
+            <Badge variant="secondary" className="text-xs font-mono">
               {pantryItems.length}
-            </span>
+            </Badge>
           </h2>
           {outOfStockCount > 0 && (
-            <span className="inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200 font-medium">
-              <AlertTriangle className="w-3 h-3 text-zinc-300" />
+            <Badge variant="warm" className="gap-1 font-medium text-xs">
+              <AlertTriangle className="w-3 h-3 text-accent-warm" />
               <span>{outOfStockCount} empty</span>
-            </span>
+            </Badge>
           )}
         </div>
 
         <form onSubmit={handleAdd} className="flex items-center gap-2">
-          <input
+          <Input
             type="text"
             value={newItemName}
             onChange={(e) => setNewItemName(e.target.value)}
             placeholder="e.g. Eggs, Milk, Rice, Coffee"
-            className="flex-1 px-3.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent text-sm transition"
+            className="flex-1 rounded-xl h-10"
           />
-          <button
+          <Button
             type="submit"
             disabled={isPending || !newItemName.trim()}
-            className="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl bg-white text-black font-semibold hover:bg-zinc-200 disabled:opacity-50 text-sm transition shrink-0"
+            className="rounded-xl h-10 px-4 font-semibold shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span>Add</span>
-          </button>
+          </Button>
         </form>
-
-        {errorMessage && (
-          <div className="p-3 bg-zinc-950 border border-zinc-700 text-zinc-200 text-xs rounded-xl font-medium">
-            {errorMessage}
-          </div>
-        )}
 
         <div className="divide-y divide-zinc-800">
           {pantryItems.length === 0 && (
@@ -143,7 +146,7 @@ export function PantrySection({
           {pantryItems.map((item) => (
             <div
               key={item.id}
-              className="py-3 flex items-center justify-between gap-3 text-sm hover:bg-zinc-800/20 px-2 rounded-lg transition"
+              className="py-3 flex items-center justify-between gap-3 text-sm hover:bg-zinc-800/20 px-2 rounded-xl transition"
             >
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <span
@@ -155,27 +158,31 @@ export function PantrySection({
                 </span>
 
                 {item.is_out_of_stock ? (
-                  <span
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-zinc-800 border border-zinc-700 text-zinc-200 shrink-0"
+                  <Badge
+                    variant="warm"
+                    className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium"
                     title="Out of stock - on shopping list"
                   >
-                    <AlertTriangle className="w-3 h-3 text-zinc-300" />
+                    <AlertTriangle className="w-3 h-3 text-accent-warm" />
                     <span>Empty</span>
-                  </span>
+                  </Badge>
                 ) : (
-                  <span
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-zinc-950/60 border border-zinc-800/80 text-zinc-500 shrink-0"
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium text-zinc-500"
                     title="In stock"
                   >
                     <Check className="w-3 h-3 text-zinc-500" />
                     <span>In Stock</span>
-                  </span>
+                  </Badge>
                 )}
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                <button
+                <Button
                   type="button"
+                  variant={item.is_out_of_stock ? "default" : "secondary"}
+                  size="sm"
                   onClick={() => handleToggleStock(item)}
                   disabled={isPending}
                   title={
@@ -183,10 +190,10 @@ export function PantrySection({
                       ? "Restock item (removes from shopping list)"
                       : "Mark as empty (adds to shopping list)"
                   }
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition border disabled:opacity-50 ${
+                  className={`h-8 px-3 rounded-lg text-xs font-semibold ${
                     item.is_out_of_stock
-                      ? "bg-white border-white text-black hover:bg-zinc-200"
-                      : "bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700 hover:text-white hover:border-zinc-600"
+                      ? "bg-white text-black hover:bg-zinc-200"
+                      : "hover:border-zinc-600"
                   }`}
                 >
                   {item.is_out_of_stock ? (
@@ -196,78 +203,65 @@ export function PantrySection({
                     </>
                   ) : (
                     <>
-                      <AlertTriangle className="w-3.5 h-3.5 text-zinc-400" />
+                      <AlertTriangle className="w-3.5 h-3.5 text-accent-warm" />
                       <span>Mark Empty</span>
                     </>
                   )}
-                </button>
+                </Button>
 
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={() => setItemToDelete(item)}
                   disabled={isPending}
-                  className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-800 transition disabled:opacity-50"
+                  className="text-zinc-500 hover:text-accent-primary hover:bg-zinc-800 rounded-lg"
                   title="Delete item from pantry"
                   aria-label={`Delete ${item.name}`}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                </Button>
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
-      {/* Deletion Confirmation Modal */}
-      {itemToDelete && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div
-            className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-dialog-title"
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-300 shrink-0">
+      {/* Deletion Confirmation Modal via shadcn AlertDialog */}
+      <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2.5 rounded-2xl bg-accent-primary/10 border border-accent-primary/20 text-accent-primary">
                 <Trash2 className="w-5 h-5" />
               </div>
-              <div className="space-y-1.5 flex-1">
-                <h3 id="delete-dialog-title" className="text-base font-bold text-white tracking-tight">
-                  Delete Pantry Item
-                </h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Are you sure you want to delete <strong className="text-white">&ldquo;{itemToDelete.name}&rdquo;</strong> from the pantry?
-                </p>
-                {itemToDelete.is_out_of_stock && (
-                  <p className="text-xs text-zinc-500">
-                    This will also remove its pending entry from the shopping list.
-                  </p>
-                )}
-              </div>
+              <AlertDialogTitle>Delete Pantry Item</AlertDialogTitle>
             </div>
-
-            <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-zinc-800">
-              <button
-                type="button"
-                onClick={() => setItemToDelete(null)}
-                disabled={isPending}
-                className="px-4 py-2 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700 text-xs font-semibold transition"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                disabled={isPending}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white text-black font-semibold hover:bg-zinc-200 text-xs transition shadow-sm disabled:opacity-50"
-              >
-                {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin text-black" />}
-                <span>{isPending ? "Deleting..." : "Delete Item"}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong className="text-white">&ldquo;{itemToDelete?.name}&rdquo;</strong> from the pantry?
+              {itemToDelete?.is_out_of_stock && (
+                <span className="block mt-1 text-accent-warm">
+                  This will also remove its pending entry from the shopping list.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                handleConfirmDelete();
+              }}
+            >
+              {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>{isPending ? "Deleting..." : "Delete Item"}</span>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
+

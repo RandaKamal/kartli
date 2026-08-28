@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { loginUserAction } from "@/app/actions/auth";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 export function LoginForm({
   callbackUrl,
@@ -16,6 +20,12 @@ export function LoginForm({
   const [isPending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
 
+  useEffect(() => {
+    if (initialError) {
+      toast.error(initialError);
+    }
+  }, [initialError]);
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isPending) return;
@@ -28,11 +38,16 @@ export function LoginForm({
         const result = await loginUserAction(null, formData);
         if (result?.error) {
           setError(result.error);
+          toast.error(result.error);
+        } else {
+          toast.success("Signed in successfully!");
         }
       } catch (err: any) {
         // NEXT_REDIRECT errors are expected during navigation
         if (err?.message?.includes("NEXT_REDIRECT")) return;
-        setError(err.message || "Failed to sign in. Please try again.");
+        const msg = err.message || "Failed to sign in. Please try again.";
+        setError(msg);
+        toast.error(msg);
       }
     });
   };
@@ -55,45 +70,47 @@ export function LoginForm({
       )}
 
       {error && (
-        <div className="p-3.5 bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs rounded-xl text-center font-medium">
+        <div className="p-3 bg-accent-primary/10 border border-accent-primary/30 text-accent-primary text-xs rounded-xl text-center font-medium animate-in fade-in-50">
           {error}
         </div>
       )}
 
-      <div>
-        <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+      <div className="space-y-2">
+        <Label htmlFor="login-username">
           Username
-        </label>
-        <input
+        </Label>
+        <Input
+          id="login-username"
           type="text"
           name="username"
           required
           autoComplete="username"
           onKeyDown={handleKeyDown}
           placeholder="e.g. alex"
-          className="w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent text-sm transition"
+          className="rounded-xl"
         />
       </div>
 
-      <div>
-        <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+      <div className="space-y-2">
+        <Label htmlFor="login-password">
           Password
-        </label>
+        </Label>
         <div className="relative">
-          <input
+          <Input
+            id="login-password"
             type={showPassword ? "text" : "password"}
             name="password"
             required
             autoComplete="current-password"
             onKeyDown={handleKeyDown}
             placeholder="••••••••"
-            className="w-full px-4 py-2.5 pr-11 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent text-sm transition"
+            className="rounded-xl pr-11"
           />
           <button
             type="button"
             tabIndex={-1}
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition p-1"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition p-1 cursor-pointer"
             title={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -101,14 +118,15 @@ export function LoginForm({
         </div>
       </div>
 
-      <button
+      <Button
         type="submit"
         disabled={isPending}
-        className="w-full py-3 px-4 rounded-xl bg-white text-black font-semibold hover:bg-zinc-200 disabled:opacity-40 transition shadow-sm inline-flex items-center justify-center gap-2"
+        className="w-full h-11 rounded-xl font-semibold mt-2"
       >
-        {isPending && <Loader2 className="w-4 h-4 animate-spin text-black" />}
+        {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
         <span>{isPending ? "Signing In..." : "Sign In"}</span>
-      </button>
+      </Button>
     </form>
   );
 }
+

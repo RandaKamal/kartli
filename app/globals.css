@@ -1,11 +1,91 @@
 @import "tailwindcss";
 
+@theme {
+  --color-accent-primary: var(--brand-primary);
+  --color-accent-secondary: var(--brand-secondary);
+  --color-accent-warm: var(--brand-warm);
+  --color-accent-muted-green: var(--brand-muted-green);
+  --color-accent-green: var(--brand-muted-green);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
 @layer base {
   :root {
+    --brand-primary: #f14666;
+    --brand-secondary: #ee8980;
+    --brand-warm: #ffcdaa;
+    --brand-muted-green: #9cb898;
+
+    --background: #000000;
+    --foreground: #f4f4f5;
+
+    --card: #09090b;
+    --card-foreground: #f4f4f5;
+
+    --popover: #09090b;
+    --popover-foreground: #f4f4f5;
+
+    --primary: #ffffff;
+    --primary-foreground: #09090b;
+
+    --secondary: #18181b;
+    --secondary-foreground: #f4f4f5;
+
+    --muted: #18181b;
+    --muted-foreground: #a1a1aa;
+
+    --accent: #27272a;
+    --accent-foreground: #f4f4f5;
+
+    --destructive: #f14666;
+    --destructive-foreground: #ffffff;
+
+    --border: #27272a;
+    --input: #27272a;
+    --ring: #f14666;
+
+    --radius: 0.75rem;
+
     color-scheme: dark;
+  }
+
+  * {
+    @apply border-border;
   }
 
   body {
     @apply bg-black text-zinc-100 antialiased min-h-screen selection:bg-zinc-800 selection:text-white;
   }
 }
+

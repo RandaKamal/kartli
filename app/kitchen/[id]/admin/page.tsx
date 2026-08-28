@@ -12,13 +12,17 @@ import { CopyButton } from "@/components/CopyButton";
 import { AdminActiveMembersList } from "@/components/AdminActiveMembersList";
 import { AdminPendingInvitesList } from "@/components/AdminPendingInvitesList";
 import { headers } from "next/headers";
-import { ExternalLink, Users, Mail, UserPlus, ArrowLeft } from "lucide-react";
+import { ExternalLink, Users, Mail, UserPlus, ArrowLeft, Shield } from "lucide-react";
 import { getPantryItems, getShoppingListItems } from "@/lib/pantry";
 import { PantrySection } from "@/components/PantrySection";
 import { ShoppingListSection } from "@/components/ShoppingListSection";
 import { getUserCheckouts } from "@/lib/pantry";
 import { ShoppingCart } from "@/components/ShoppingCart";
-import { MyPurchasesSection } from "@/components/MyPurchasesSection";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default async function KitchenAdminPage({
   params,
@@ -48,7 +52,6 @@ export default async function KitchenAdminPage({
   
   const pantryItems = await getPantryItems(id);
   const shoppingListItems = await getShoppingListItems(id);
-  const myCheckouts = await getUserCheckouts(id, session.user.id);
 
   const headerList = await headers();
   const host = headerList.get("host") || "localhost:3000";
@@ -75,19 +78,20 @@ export default async function KitchenAdminPage({
       <div className="space-y-4">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition"
+          className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition px-1"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Kitchens</span>
         </Link>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">
+              <Badge variant="destructive" className="font-semibold text-[11px] gap-1 px-2.5 py-0.5">
+                <Shield className="w-3 h-3" />
                 ADMIN PANEL
-              </span>
-              <span className="text-xs text-zinc-500">
+              </Badge>
+              <span className="text-xs text-zinc-500 font-mono">
                 Created {new Date(kitchen.created_at).toLocaleDateString()}
               </span>
             </div>
@@ -99,32 +103,25 @@ export default async function KitchenAdminPage({
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <ShoppingCart kitchenId={id} items={shoppingListItems} currentUserId={session.user.id} />
-            <Link
-              href={`/kitchen/${id}/admin/purchases`}
-              className="px-4 py-2 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-200 hover:text-white hover:bg-zinc-700 text-sm font-medium transition"
-            >
-              Purchases
-            </Link>
-            <Link
-              href={`/kitchen/${id}/member`}
-              className="px-4 py-2 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-200 hover:text-white hover:bg-zinc-700 text-sm font-medium transition"
-            >
-              Member View
-            </Link>
+            <Button asChild variant="secondary" size="sm" className="rounded-xl font-medium">
+              <Link href={`/kitchen/${id}/admin/purchases`}>Purchases</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="rounded-xl font-medium">
+              <Link href={`/kitchen/${id}/member`}>Member View</Link>
+            </Button>
           </div>
-
-        </div>
+        </Card>
       </div>
 
       {/* Guest Link Banner */}
-      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <Card className="border-zinc-800 bg-zinc-900/80 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-300 uppercase tracking-wider">
-              Supermarket & Guest Link
-            </span>
+            <Badge variant="secondary" className="font-semibold uppercase tracking-wider text-[10px]">
+              Supermarket &amp; Guest Link
+            </Badge>
           </div>
           <p className="text-xs text-zinc-400">
             Share this link with anyone for instant read-only grocery access without requiring an account.
@@ -132,23 +129,21 @@ export default async function KitchenAdminPage({
         </div>
 
         <div className="flex items-center gap-2">
-          <input
+          <Input
             type="text"
             readOnly
             value={publicGuestUrl}
-            className="px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950 text-xs text-zinc-300 font-mono w-48 sm:w-64 select-all"
+            className="h-8 px-2.5 text-xs text-zinc-300 font-mono w-48 sm:w-64 select-all rounded-lg"
           />
-          <CopyButton text={publicGuestUrl} label="Copy Link" />
-          <Link
-            href={`/kitchen/view/${kitchen.public_view_token}`}
-            target="_blank"
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white text-black hover:bg-zinc-200 text-xs font-semibold transition"
-          >
-            <span>Open</span>
-            <ExternalLink className="w-3 h-3" />
-          </Link>
+          <CopyButton text={publicGuestUrl} label="Copy Link" size="sm" />
+          <Button asChild variant="default" size="sm" className="h-8 px-3 rounded-lg text-xs font-semibold gap-1">
+            <Link href={`/kitchen/view/${kitchen.public_view_token}`} target="_blank">
+              <span>Open</span>
+              <ExternalLink className="w-3 h-3" />
+            </Link>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Pantry & Shopping List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -160,14 +155,14 @@ export default async function KitchenAdminPage({
         {/* Left 2 Cols: Member tables */}
         <div className="lg:col-span-2 space-y-8">
           {/* Active Members */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+          <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-white flex items-center gap-2">
                 <Users className="w-4 h-4 text-zinc-400" />
                 <span>Active Members</span>
-                <span className="text-xs bg-zinc-800 border border-zinc-700 text-zinc-300 px-2 py-0.5 rounded-full font-medium">
+                <Badge variant="secondary" className="text-xs font-mono">
                   {activeMembers.length}
-                </span>
+                </Badge>
               </h2>
             </div>
 
@@ -176,17 +171,17 @@ export default async function KitchenAdminPage({
               members={activeMembers}
               currentUserId={session.user.id}
             />
-          </div>
+          </Card>
 
           {/* Pending Invites */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+          <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-white flex items-center gap-2">
                 <Mail className="w-4 h-4 text-zinc-400" />
                 <span>Pending Invites</span>
-                <span className="text-xs bg-zinc-800 border border-zinc-700 text-zinc-300 px-2 py-0.5 rounded-full font-medium">
+                <Badge variant="secondary" className="text-xs font-mono">
                   {pendingInvites.length}
-                </span>
+                </Badge>
               </h2>
             </div>
 
@@ -195,44 +190,50 @@ export default async function KitchenAdminPage({
               invites={pendingInvites}
               baseUrl={baseUrl}
             />
-          </div>
+          </Card>
         </div>
 
         {/* Right Col: Add Member Form */}
         <div className="space-y-6">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
-            <h2 className="text-base font-semibold text-white flex items-center gap-2">
-              <UserPlus className="w-4 h-4 text-zinc-400" />
-              <span>Invite New Member</span>
-            </h2>
-            <p className="text-xs text-zinc-400">
-              Add another placeholder member to generate a new one-time claim link.
-            </p>
+          <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 shadow-sm space-y-4">
+            <CardHeader className="p-0 space-y-1">
+              <CardTitle className="text-base font-semibold text-white flex items-center gap-2">
+                <UserPlus className="w-4 h-4 text-zinc-400" />
+                <span>Invite New Member</span>
+              </CardTitle>
+              <CardDescription className="text-xs text-zinc-400">
+                Add another placeholder member to generate a new one-time claim link.
+              </CardDescription>
+            </CardHeader>
 
-            <form action={handleAddMember} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
-                  Member Display Name
-                </label>
-                <input
-                  type="text"
-                  name="memberName"
-                  required
-                  placeholder="e.g. Mia or Daniel"
-                  className="w-full px-3.5 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent text-sm transition"
-                />
-              </div>
+            <CardContent className="p-0">
+              <form action={handleAddMember} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="admin-member-name">
+                    Member Display Name
+                  </Label>
+                  <Input
+                    id="admin-member-name"
+                    type="text"
+                    name="memberName"
+                    required
+                    placeholder="e.g. Mia or Daniel"
+                    className="rounded-xl"
+                  />
+                </div>
 
-              <button
-                type="submit"
-                className="w-full py-2.5 px-4 rounded-xl bg-white text-black font-semibold hover:bg-zinc-200 transition text-sm shadow-sm"
-              >
-                Add Member & Generate Link
-              </button>
-            </form>
-          </div>
+                <Button
+                  type="submit"
+                  className="w-full h-10 rounded-xl font-semibold shadow-sm text-xs sm:text-sm"
+                >
+                  Add Member &amp; Generate Link
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
   );
 }
+

@@ -5,7 +5,8 @@ import { getKitchenById, isUserKitchenAdmin } from "@/lib/kitchen";
 import { getKitchenCheckouts } from "@/lib/pantry";
 import { AdminCheckoutsList } from "@/components/AdminCheckoutsList";
 import { ArrowLeft, Receipt } from "lucide-react";
-
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export default async function KitchenPurchasesPage({
   params,
@@ -36,29 +37,30 @@ export default async function KitchenPurchasesPage({
       <div className="space-y-4">
         <Link
           href={`/kitchen/${id}/admin`}
-          className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition"
+          className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition px-1"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Admin Dashboard</span>
         </Link>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-sm">
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">
+        <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-2">
+          <Badge variant="destructive" className="w-fit text-[11px] font-semibold uppercase tracking-wider">
             PURCHASES
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center gap-2 mt-1">
+          </Badge>
+          <CardTitle className="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center gap-2">
             <Receipt className="w-6 h-6 text-zinc-400" />
             {kitchen.name}
-          </h1>
-          <p className="text-sm text-zinc-400 mt-1">
+          </CardTitle>
+          <CardDescription className="text-sm text-zinc-400">
             See who bought what, review receipts, and issue refunds.
-          </p>
-        </div>
+          </CardDescription>
+        </Card>
       </div>
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-sm">
+      <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 shadow-sm">
         <AdminCheckoutsList kitchenId={id} checkouts={checkouts} />
-      </div>
+      </Card>
     </div>
   );
 }
+

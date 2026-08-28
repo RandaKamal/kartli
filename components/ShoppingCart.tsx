@@ -3,7 +3,10 @@
 import { useState, useEffect, useTransition } from "react";
 import { checkoutAction } from "@/app/actions/checkout";
 import type { ShoppingListItem } from "@/types";
-import { ShoppingCart as CartIcon, X, Upload, Loader2 } from "lucide-react";
+import { ShoppingCart as CartIcon, X, Upload, Loader2, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 export function ShoppingCart({
   kitchenId,
@@ -14,12 +17,10 @@ export function ShoppingCart({
   items: ShoppingListItem[];
   currentUserId: string;
 }) {
-const [allItems, setAllItems] = useState<ShoppingListItem[]>(items);
-const [isOpen, setIsOpen] = useState(false);
-const [receiptUploaded, setReceiptUploaded] = useState(false);
-const [isPending, startTransition] = useTransition();
-const [errorMessage, setErrorMessage] = useState<string | null>(null);
-const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [allItems, setAllItems] = useState<ShoppingListItem[]>(items);
+  const [isOpen, setIsOpen] = useState(false);
+  const [receiptUploaded, setReceiptUploaded] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setAllItems(items);
@@ -30,95 +31,111 @@ const [successMessage, setSuccessMessage] = useState<string | null>(null);
   );
 
   const handleCheckout = () => {
-  if (!receiptUploaded) {
-    setErrorMessage("Upload a receipt first.");
-    return;
-  }
-  setErrorMessage(null);
-  setSuccessMessage(null);
-
-  startTransition(async () => {
-    try {
-      await checkoutAction(kitchenId, "receipt.jpg");
-      setReceiptUploaded(false);
-      setSuccessMessage("Checked out! Waiting for admin refund.");
-    } catch (err: any) {
-      setErrorMessage(err.message || "Checkout failed.");
+    if (!receiptUploaded) {
+      toast.error("Please attach a receipt first.");
+      return;
     }
-  });
-};
 
+    startTransition(async () => {
+      try {
+        await checkoutAction(kitchenId, "receipt.jpg");
+        setReceiptUploaded(false);
+        setIsOpen(false);
+        toast.success("Checked out successfully! Waiting for admin refund.");
+      } catch (err: any) {
+        toast.error(err.message || "Checkout failed.");
+      }
+    });
+  };
 
   return (
     <div className="relative">
-      <button
+      <Button
         type="button"
+        variant="secondary"
+        size="sm"
         onClick={() => setIsOpen((v) => !v)}
-        className="relative inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-200 hover:text-white hover:bg-zinc-700 text-sm font-medium transition"
+        className="relative rounded-xl font-medium"
       >
-        <CartIcon className="w-4 h-4" />
+        <CartIcon className="w-4 h-4 mr-1 text-zinc-300" />
         <span>Cart</span>
         {cartItems.length > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-white text-black text-[10px] font-bold">
+          <span className="absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-white text-black text-[10px] font-bold shadow-sm">
             {cartItems.length}
           </span>
         )}
-      </button>
+      </Button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl z-50 p-4 space-y-3">
+        <div className="absolute right-0 mt-2 w-80 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl z-50 p-4 space-y-3 animate-in fade-in-50 zoom-in-95">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-white">Your Cart</h3>
-            <button type="button" onClick={() => setIsOpen(false)} className="text-zinc-500 hover:text-white transition">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-white">Your Cart</h3>
+              {cartItems.length > 0 && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                  {cartItems.length}
+                </Badge>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setIsOpen(false)}
+              className="text-zinc-500 hover:text-white"
+            >
               <X className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
 
           {cartItems.length === 0 ? (
-            <p className="text-xs text-zinc-500 py-2">
+            <p className="text-xs text-zinc-500 py-3 text-center">
               Nothing in your cart yet. Mark items as bought on the shopping list.
             </p>
           ) : (
-            <div className="divide-y divide-zinc-800 max-h-48 overflow-y-auto">
+            <div className="divide-y divide-zinc-800/80 max-h-48 overflow-y-auto pr-1">
               {cartItems.map((item) => (
-                <div key={item.id} className="py-2 text-sm text-zinc-200">
-                  {item.name}
+                <div key={item.id} className="py-2 text-xs font-medium text-zinc-200 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent-muted-green" />
+                  <span className="truncate">{item.name}</span>
                 </div>
               ))}
             </div>
           )}
 
-          {errorMessage && (
-            <div className="p-2.5 bg-zinc-950 border border-zinc-700 text-zinc-200 text-xs rounded-lg">{errorMessage}</div>
-          )}
-          {successMessage && (
-            <div className="p-2.5 bg-zinc-950 border border-zinc-700 text-zinc-200 text-xs rounded-lg">{successMessage}</div>
-          )}
-
           {cartItems.length > 0 && (
             <div className="space-y-2 pt-2 border-t border-zinc-800">
-              <button
+              <Button
                 type="button"
-                onClick={() => setReceiptUploaded(true)}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-xs transition ${
+                variant={receiptUploaded ? "outline" : "ghost"}
+                size="sm"
+                onClick={() => {
+                  setReceiptUploaded(true);
+                  toast.success("Receipt attached!");
+                }}
+                className={`w-full justify-start text-xs rounded-xl ${
                   receiptUploaded
-                    ? "bg-zinc-100 border-white text-black font-semibold"
-                    : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700"
+                    ? "border-accent-muted-green/40 text-accent-muted-green bg-accent-muted-green/10"
+                    : "border border-zinc-800 text-zinc-400 hover:text-zinc-200"
                 }`}
               >
-                <Upload className="w-3.5 h-3.5 shrink-0" />
-                <span>{receiptUploaded ? "Receipt uploaded" : "Upload Receipt"}</span>
-              </button>
+                {receiptUploaded ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 mr-2 text-accent-muted-green shrink-0" />
+                ) : (
+                  <Upload className="w-3.5 h-3.5 mr-2 text-zinc-400 shrink-0" />
+                )}
+                <span>{receiptUploaded ? "Receipt Attached (receipt.jpg)" : "Attach Receipt"}</span>
+              </Button>
 
-              <button
+              <Button
                 type="button"
                 onClick={handleCheckout}
                 disabled={isPending || !receiptUploaded}
-                className="w-full inline-flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white text-black font-semibold hover:bg-zinc-200 disabled:opacity-50 text-sm transition"
+                className="w-full rounded-xl font-semibold shadow-sm text-xs"
               >
-                {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>{isPending ? "Checking out..." : "Checkout"}</span>
-              </button>
+                {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />}
+                <span>{isPending ? "Checking out..." : "Complete Checkout"}</span>
+              </Button>
             </div>
           )}
         </div>
@@ -126,3 +143,4 @@ const [successMessage, setSuccessMessage] = useState<string | null>(null);
     </div>
   );
 }
+

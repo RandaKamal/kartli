@@ -15,7 +15,11 @@ import { ShoppingListSection } from "@/components/ShoppingListSection";
 import { getUserCheckouts } from "@/lib/pantry";
 import { ShoppingCart } from "@/components/ShoppingCart";
 import { MyPurchasesSection } from "@/components/MyPurchasesSection";
-
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 
 export default async function KitchenMemberPage({
   params,
@@ -58,19 +62,19 @@ export default async function KitchenMemberPage({
       <div className="space-y-4">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition"
+          className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition px-1"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Kitchens</span>
         </Link>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">
+              <Badge variant="secondary" className="font-semibold text-[11px]">
                 MEMBER SPACE
-              </span>
-              <span className="text-xs text-zinc-500">
+              </Badge>
+              <span className="text-xs text-zinc-500 font-mono">
                 Joined {membership.joined_at ? new Date(membership.joined_at).toLocaleDateString() : ""}
               </span>
             </div>
@@ -84,41 +88,42 @@ export default async function KitchenMemberPage({
           <div className="flex items-center gap-3">
             <ShoppingCart kitchenId={id} items={shoppingListItems} currentUserId={session.user.id} />
             {membership.role === "ADMIN" && (
-              <Link
-                href={`/kitchen/${id}/admin`}
-                className="px-4 py-2 rounded-xl bg-white text-black font-semibold hover:bg-zinc-200 text-sm transition"
-              >
-                Open Admin Dashboard
-              </Link>
+              <Button asChild variant="default" size="sm" className="rounded-xl font-semibold shadow-xs">
+                <Link href={`/kitchen/${id}/admin`}>Open Admin Dashboard</Link>
+              </Button>
             )}
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Guest Link Banner */}
-      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <Card className="border-zinc-800 bg-zinc-900/80 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-300 uppercase tracking-wider">
-              Supermarket & Guest Link
-            </span>
+            <Badge variant="secondary" className="font-semibold uppercase tracking-wider text-[10px]">
+              Supermarket &amp; Guest Link
+            </Badge>
           </div>
           <p className="text-xs text-zinc-400">
             Share this link with anyone for instant read-only shopping view.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <CopyButton text={publicGuestUrl} label="Copy Link" />
-          <Link
-            href={`/kitchen/view/${kitchen.public_view_token}`}
-            target="_blank"
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white text-black hover:bg-zinc-200 text-xs font-semibold transition"
-          >
-            <span>Open</span>
-            <ExternalLink className="w-3 h-3" />
-          </Link>
+          <Input
+            type="text"
+            readOnly
+            value={publicGuestUrl}
+            className="h-8 px-2.5 text-xs text-zinc-300 font-mono w-48 sm:w-64 select-all rounded-lg"
+          />
+          <CopyButton text={publicGuestUrl} label="Copy Link" size="sm" />
+          <Button asChild variant="default" size="sm" className="h-8 px-3 rounded-lg text-xs font-semibold gap-1">
+            <Link href={`/kitchen/view/${kitchen.public_view_token}`} target="_blank">
+              <span>Open</span>
+              <ExternalLink className="w-3 h-3" />
+            </Link>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Pantry & Shopping List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -129,25 +134,27 @@ export default async function KitchenMemberPage({
       <MyPurchasesSection checkouts={myCheckouts} />
 
       {/* Active Members Roster */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+      <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 shadow-sm space-y-4">
         <h2 className="text-base font-semibold text-white flex items-center gap-2">
           <Users className="w-4 h-4 text-zinc-400" />
           <span>Kitchen Members</span>
-          <span className="text-xs bg-zinc-800 border border-zinc-700 text-zinc-300 px-2 py-0.5 rounded-full font-medium">
+          <Badge variant="secondary" className="text-xs font-mono">
             {activeMembers.length}
-          </span>
+          </Badge>
         </h2>
 
         <div className="divide-y divide-zinc-800">
           {activeMembers.map((member) => (
             <div
               key={member.id}
-              className="py-3 flex items-center justify-between text-sm hover:bg-zinc-800/20 px-2 rounded-lg transition"
+              className="py-3 flex items-center justify-between text-sm hover:bg-zinc-800/20 px-2 rounded-xl transition"
             >
               <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200 font-bold flex items-center justify-center text-xs">
-                  {member.kitchen_display_name.charAt(0).toUpperCase()}
-                </span>
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-zinc-800 text-xs font-semibold text-zinc-300">
+                    {member.kitchen_display_name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <div>
                   <div className="font-medium text-white">
                     {member.kitchen_display_name}
@@ -161,13 +168,17 @@ export default async function KitchenMemberPage({
                 </div>
               </div>
 
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">
+              <Badge
+                variant={member.role === "ADMIN" ? "destructive" : "secondary"}
+                className="text-[11px]"
+              >
                 {member.role}
-              </span>
+              </Badge>
             </div>
           ))}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
+

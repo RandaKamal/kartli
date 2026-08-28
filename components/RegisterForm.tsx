@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { registerUserAction } from "@/app/actions/auth";
 import { Eye, EyeOff, Check, X, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 export function RegisterForm({
   callbackUrl,
@@ -19,6 +23,12 @@ export function RegisterForm({
   const [isPending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
 
+  useEffect(() => {
+    if (initialError) {
+      toast.error(initialError);
+    }
+  }, [initialError]);
+
   const isMatching = confirmPassword.length > 0 && password === confirmPassword;
   const isMismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
@@ -27,7 +37,9 @@ export function RegisterForm({
     if (isPending) return;
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match. Please re-enter your password.");
+      const err = "Passwords do not match. Please re-enter your password.";
+      setError(err);
+      toast.error(err);
       return;
     }
 
@@ -39,10 +51,15 @@ export function RegisterForm({
         const result = await registerUserAction(null, formData);
         if (result?.error) {
           setError(result.error);
+          toast.error(result.error);
+        } else {
+          toast.success("Account created successfully!");
         }
       } catch (err: any) {
         if (err?.message?.includes("NEXT_REDIRECT")) return;
-        setError(err.message || "Failed to create account. Please try again.");
+        const msg = err.message || "Failed to create account. Please try again.";
+        setError(msg);
+        toast.error(msg);
       }
     });
   };
@@ -65,16 +82,17 @@ export function RegisterForm({
       )}
 
       {error && (
-        <div className="p-3.5 bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs rounded-xl text-center font-medium">
+        <div className="p-3 bg-accent-primary/10 border border-accent-primary/30 text-accent-primary text-xs rounded-xl text-center font-medium animate-in fade-in-50">
           {error}
         </div>
       )}
 
-      <div>
-        <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+      <div className="space-y-2">
+        <Label htmlFor="reg-username">
           Username
-        </label>
-        <input
+        </Label>
+        <Input
+          id="reg-username"
           type="text"
           name="username"
           required
@@ -82,19 +100,20 @@ export function RegisterForm({
           minLength={2}
           onKeyDown={handleKeyDown}
           placeholder="e.g. sarah_miller"
-          className="w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent text-sm transition"
+          className="rounded-xl"
         />
-        <span className="text-[11px] text-zinc-500 mt-1 block">
+        <span className="text-[11px] text-zinc-500 block">
           Used to log into your account. Must be unique.
         </span>
       </div>
 
-      <div>
-        <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+      <div className="space-y-2">
+        <Label htmlFor="reg-password">
           Password
-        </label>
+        </Label>
         <div className="relative">
-          <input
+          <Input
+            id="reg-password"
             type={showPassword ? "text" : "password"}
             name="password"
             required
@@ -104,13 +123,13 @@ export function RegisterForm({
             autoComplete="new-password"
             onKeyDown={handleKeyDown}
             placeholder="At least 6 characters"
-            className="w-full px-4 py-2.5 pr-11 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent text-sm transition"
+            className="rounded-xl pr-11"
           />
           <button
             type="button"
             tabIndex={-1}
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition p-1"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition p-1 cursor-pointer"
             title={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -118,12 +137,13 @@ export function RegisterForm({
         </div>
       </div>
 
-      <div>
-        <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+      <div className="space-y-2">
+        <Label htmlFor="reg-confirmPassword">
           Confirm Password
-        </label>
+        </Label>
         <div className="relative">
-          <input
+          <Input
+            id="reg-confirmPassword"
             type={showConfirmPassword ? "text" : "password"}
             name="confirmPassword"
             required
@@ -133,43 +153,44 @@ export function RegisterForm({
             autoComplete="new-password"
             onKeyDown={handleKeyDown}
             placeholder="Re-enter your password"
-            className="w-full px-4 py-2.5 pr-11 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent text-sm transition"
+            className="rounded-xl pr-11"
           />
           <button
             type="button"
             tabIndex={-1}
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition p-1"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition p-1 cursor-pointer"
             title={showConfirmPassword ? "Hide password" : "Show password"}
           >
             {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
 
-        {/* Live Validation Indicator */}
+        {/* Live Validation Indicator with Accent Tokens */}
         {confirmPassword.length > 0 && (
           <div className="mt-1.5 flex items-center gap-1.5 text-xs">
             {isMatching ? (
-              <span className="text-zinc-300 flex items-center gap-1 font-medium">
-                <Check className="w-3.5 h-3.5 text-white" /> Passwords match
+              <span className="text-accent-muted-green flex items-center gap-1 font-medium animate-in fade-in">
+                <Check className="w-3.5 h-3.5" /> Passwords match
               </span>
             ) : (
-              <span className="text-zinc-400 flex items-center gap-1 font-medium">
-                <X className="w-3.5 h-3.5 text-zinc-400" /> Passwords do not match
+              <span className="text-accent-secondary flex items-center gap-1 font-medium animate-in fade-in">
+                <X className="w-3.5 h-3.5" /> Passwords do not match
               </span>
             )}
           </div>
         )}
       </div>
 
-      <button
+      <Button
         type="submit"
         disabled={isPending || isMismatch}
-        className="w-full py-3 px-4 rounded-xl bg-white text-black font-semibold hover:bg-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm inline-flex items-center justify-center gap-2"
+        className="w-full h-11 rounded-xl font-semibold mt-2"
       >
-        {isPending && <Loader2 className="w-4 h-4 animate-spin text-black" />}
+        {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
         <span>{isPending ? "Creating Account..." : "Create Account"}</span>
-      </button>
+      </Button>
     </form>
   );
 }
+

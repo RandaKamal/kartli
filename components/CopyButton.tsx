@@ -2,13 +2,22 @@
 
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 export function CopyButton({
   text,
   label = "Copy Link",
+  size = "sm",
+  variant = "secondary",
+  iconOnly = false,
 }: {
   text: string;
   label?: string;
+  size?: "default" | "sm" | "icon" | "icon-sm";
+  variant?: "default" | "secondary" | "outline" | "ghost";
+  iconOnly?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -16,20 +25,48 @@ export function CopyButton({
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
+      toast.success("Copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
     } catch {
       setCopied(false);
+      toast.error("Failed to copy to clipboard");
     }
   };
 
+  if (iconOnly || size === "icon" || size === "icon-sm") {
+    return (
+      <Tooltip open={copied ? true : undefined}>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            size={size === "icon-sm" ? "icon-sm" : "icon"}
+            variant={copied ? "default" : variant}
+            onClick={handleCopy}
+            className={`transition-colors shrink-0 ${copied ? "bg-white text-black" : ""}`}
+            aria-label={label}
+          >
+            {copied ? (
+              <Check className="h-3.5 w-3.5 text-black" />
+            ) : (
+              <Copy className="h-3.5 w-3.5 text-zinc-400" />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          {copied ? "Copied!" : label}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
   return (
-    <button
+    <Button
       type="button"
+      size="sm"
+      variant={copied ? "default" : variant}
       onClick={handleCopy}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${
-        copied
-          ? "bg-zinc-100 border-white text-black font-bold"
-          : "bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white"
+      className={`inline-flex items-center gap-1.5 rounded-lg text-xs font-semibold transition ${
+        copied ? "bg-white text-black font-bold" : ""
       }`}
     >
       {copied ? (
@@ -39,10 +76,11 @@ export function CopyButton({
         </>
       ) : (
         <>
-          <Copy className="w-3.5 h-3.5" />
+          <Copy className="w-3.5 h-3.5 text-zinc-400" />
           <span>{label}</span>
         </>
       )}
-    </button>
+    </Button>
   );
 }
+

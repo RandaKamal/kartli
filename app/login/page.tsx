@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LoginForm } from "@/components/LoginForm";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 
 export default async function LoginPage({
   searchParams,
@@ -9,25 +10,32 @@ export default async function LoginPage({
   const { error, callbackUrl } = await searchParams;
 
   return (
-    <div className="max-w-md mx-auto my-8 bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-xl">
-      <div className="text-center space-y-2 mb-6">
-        <h1 className="text-2xl font-bold text-white tracking-tight">Sign in to kartli</h1>
-        <p className="text-sm text-zinc-400">
-          Enter your username and password to access your kitchens.
-        </p>
-      </div>
+    <div className="max-w-md mx-auto my-8">
+      <Card className="border-zinc-800/80 bg-zinc-900/90 shadow-2xl p-6 sm:p-8 rounded-3xl">
+        <CardHeader className="p-0 text-center space-y-2 mb-6">
+          <CardTitle className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            Sign in to kartli
+          </CardTitle>
+          <CardDescription className="text-sm text-zinc-400">
+            Enter your username and password to access your kitchens.
+          </CardDescription>
+        </CardHeader>
 
-      <LoginForm callbackUrl={callbackUrl} initialError={error} />
+        <CardContent className="p-0">
+          <LoginForm callbackUrl={callbackUrl} initialError={error} />
+        </CardContent>
 
-      <div className="mt-6 pt-6 border-t border-zinc-800 text-center text-xs text-zinc-400">
-        Don&apos;t have an account?{" "}
-        <Link
-          href={callbackUrl ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/register"}
-          className="font-semibold text-white hover:underline ml-1"
-        >
-          Sign up here
-        </Link>
-      </div>
+        <CardFooter className="p-0 mt-6 pt-6 border-t border-zinc-800 text-center justify-center text-xs text-zinc-400">
+          <span>Don&apos;t have an account?</span>
+          <Link
+            href={callbackUrl ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/register"}
+            className="font-semibold text-white hover:underline ml-1.5 transition-colors"
+          >
+            Sign up here
+          </Link>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
+
