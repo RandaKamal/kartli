@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { removeKitchenMemberAction } from "@/app/actions/kitchen";
 import type { KitchenMemberWithUser } from "@/types";
 import { UserMinus, AlertTriangle, Loader2 } from "lucide-react";
+import { capitalize } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -82,7 +83,7 @@ export function AdminActiveMembersList({
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex items-center">
-                      <span>{member.kitchen_display_name}</span>
+                      <span>{capitalize(member.kitchen_display_name)}</span>
                       {isSelf && (
                         <span className="ml-2 text-xs text-muted-foreground font-normal">(You)</span>
                       )}

@@ -5,6 +5,7 @@ import { Plus, ArrowRight, ExternalLink, UtensilsCrossed } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { capitalize } from "@/lib/utils";
 
 export default async function HomePage() {
   const session = await auth();
@@ -43,7 +44,7 @@ export default async function HomePage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-                Welcome back, <span>{session.user.username}</span>
+                Welcome back, <span>{capitalize(session.user.username)}</span>
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
                 Manage your shared households and grocery inventory.
@@ -119,7 +120,7 @@ export default async function HomePage() {
                         </h3>
 
                         <p className="text-xs text-muted-foreground">
-                          Display Name: <strong className="text-foreground">{membership.kitchen_display_name}</strong>
+                          Display Name: <strong className="text-foreground">{capitalize(membership.kitchen_display_name)}</strong>
                         </p>
                       </div>
 

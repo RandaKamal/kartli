@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { capitalize } from "@/lib/utils";
 
 export default async function PublicKitchenViewPage({
   params,
@@ -105,7 +106,7 @@ export default async function PublicKitchenViewPage({
                     </AvatarFallback>
                   </Avatar>
                   <span className="font-medium text-foreground">
-                    {member.kitchen_display_name}
+                    {capitalize(member.kitchen_display_name)}
                   </span>
                 </div>
 
@@ -124,7 +125,7 @@ export default async function PublicKitchenViewPage({
           {session?.user ? (
             membership ? (
               <>
-                <span>You are a member ({membership.kitchen_display_name})</span>
+                <span>You are a member ({capitalize(membership.kitchen_display_name)})</span>
                 <Link
                   href={`/kitchen/${kitchen.id}`}
                   className="inline-flex items-center gap-1 font-semibold text-foreground hover:underline transition-colors"
@@ -135,7 +136,7 @@ export default async function PublicKitchenViewPage({
               </>
             ) : (
               <>
-                <span>Signed in as <strong className="text-foreground">{session.user.username}</strong></span>
+                <span>Signed in as <strong className="text-foreground">{capitalize(session.user.username)}</strong></span>
                 <Link
                   href="/"
                   className="inline-flex items-center gap-1 font-semibold text-foreground hover:underline transition-colors"

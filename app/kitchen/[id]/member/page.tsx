@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { capitalize } from "@/lib/utils";
 
 export default async function KitchenMemberPage({
   params,
@@ -82,7 +83,7 @@ export default async function KitchenMemberPage({
               {kitchen.name}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Your display name: <strong className="text-foreground">{membership.kitchen_display_name}</strong>
+              Display Name: <strong className="text-foreground">{capitalize(membership.kitchen_display_name)}</strong>
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -157,7 +158,7 @@ export default async function KitchenMemberPage({
                 </Avatar>
                 <div>
                   <div className="font-medium text-foreground">
-                    {member.kitchen_display_name}
+                    {capitalize(member.kitchen_display_name)}
                     {member.user_id === session.user.id && (
                       <span className="ml-2 text-xs text-muted-foreground font-normal">(You)</span>
                     )}
