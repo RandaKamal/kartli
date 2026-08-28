@@ -69,10 +69,21 @@ export default async function PublicKitchenViewPage({
             {pendingItems.map((item) => (
               <li
                 key={item.id}
-                className="px-3.5 py-2.5 rounded-xl bg-muted/40 border border-border text-sm text-foreground font-medium flex items-center gap-2"
+                className="px-3.5 py-2.5 rounded-xl bg-muted/40 border border-border text-sm text-foreground font-medium flex items-center justify-between gap-2"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                <span className="truncate">{item.name}</span>
+                <div className="flex items-center gap-2 truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                  <span className="truncate">{item.name}</span>
+                </div>
+                {item.pantry_item_id ? (
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-medium text-muted-foreground shrink-0">
+                    Pantry
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-[9px] px-1.5 py-0 font-medium shrink-0">
+                    Custom
+                  </Badge>
+                )}
               </li>
             ))}
           </ul>

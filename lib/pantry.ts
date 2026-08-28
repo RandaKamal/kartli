@@ -146,9 +146,29 @@ export async function getShoppingListItems(kitchenId: string): Promise<ShoppingL
 
 
 /**
+ * Adds an ad-hoc / custom item to the shopping list with no pantry reference.
+ */
+export async function addCustomShoppingItem(
+  kitchenId: string,
+  name: string
+): Promise<ShoppingListItem> {
+  const cleanName = name?.trim();
+  if (!cleanName) {
+    throw new Error("Item name cannot be empty.");
+  }
+
+  const sql = `
+    INSERT INTO shopping_list_items (kitchen_id, pantry_item_id, name, is_purchased, created_at)
+    VALUES ($1, NULL, $2, FALSE, NOW())
+    RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, purchased_by, checkout_id, created_at
+  `;
+  const { rows } = await pool.query<ShoppingListItem>(sql, [kitchenId, cleanName]);
+  return rows[0];
+}
+
+/**
  * Marks a shopping list item as purchased/unpurchased.
- * Marking it purchased also restocks the linked pantry item.
- * Un-marking it puts the pantry item back to out-of-stock.
+ * If linked to a pantry item: marking purchased restocks it, unpurchased sets out-of-stock.
  */
 export async function togglePurchased(
   kitchenId: string,
@@ -180,11 +200,13 @@ export async function togglePurchased(
     );
     const item = rows[0];
 
-    await client.query(
-      `UPDATE pantry_items SET is_out_of_stock = $1, updated_at = NOW()
-       WHERE id = $2 AND kitchen_id = $3`,
-      [!isPurchased, item.pantry_item_id, kitchenId]
-    );
+    if (item.pantry_item_id) {
+      await client.query(
+        `UPDATE pantry_items SET is_out_of_stock = $1, updated_at = NOW()
+         WHERE id = $2 AND kitchen_id = $3`,
+        [!isPurchased, item.pantry_item_id, kitchenId]
+      );
+    }
 
     await client.query("COMMIT");
     return item;
@@ -196,17 +218,45 @@ export async function togglePurchased(
   }
 }
 
-
-
 /**
  * Removes an item from the shopping list.
+ * - If it's a pantry-linked item, resets is_out_of_stock = FALSE in pantry_items.
+ * - If it's a custom item, simply deletes the record from shopping_list_items.
  */
 export async function removeShoppingListItem(kitchenId: string, itemId: string): Promise<boolean> {
-  const result = await pool.query(
-    `DELETE FROM shopping_list_items WHERE id = $1 AND kitchen_id = $2`,
-    [itemId, kitchenId]
-  );
-  return (result.rowCount ?? 0) > 0;
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const { rows } = await client.query<{ pantry_item_id: string | null }>(
+      `DELETE FROM shopping_list_items
+       WHERE id = $1 AND kitchen_id = $2
+       RETURNING pantry_item_id`,
+      [itemId, kitchenId]
+    );
+
+    if (rows.length === 0) {
+      await client.query("ROLLBACK");
+      return false;
+    }
+
+    const pantryItemId = rows[0].pantry_item_id;
+    if (pantryItemId) {
+      await client.query(
+        `UPDATE pantry_items SET is_out_of_stock = FALSE, updated_at = NOW()
+         WHERE id = $1 AND kitchen_id = $2`,
+        [pantryItemId, kitchenId]
+      );
+    }
+
+    await client.query("COMMIT");
+    return true;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 

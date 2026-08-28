@@ -2,15 +2,17 @@
 
 import { useState, useTransition, useEffect } from "react";
 import {
+  addCustomShoppingItemAction,
   togglePurchasedAction,
   removeShoppingListItemAction,
   clearBoughtShoppingListItemsAction,
 } from "@/app/actions/pantry";
 import type { ShoppingListItem } from "@/types";
-import { ShoppingCart, Check, X, Trash2, CheckCheck, Loader2 } from "lucide-react";
+import { ShoppingCart, Check, Trash2, CheckCheck, Loader2, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
 export function ShoppingListSection({
@@ -21,11 +23,29 @@ export function ShoppingListSection({
   items: ShoppingListItem[];
 }) {
   const [listItems, setListItems] = useState<ShoppingListItem[]>(items);
+  const [customItemName, setCustomItemName] = useState("");
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setListItems(items);
   }, [items]);
+
+  const handleAddCustomItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = customItemName.trim();
+    if (!name) return;
+
+    startTransition(async () => {
+      try {
+        const newItem = await addCustomShoppingItemAction(kitchenId, name);
+        setListItems((prev) => [...prev, newItem]);
+        setCustomItemName("");
+        toast.success(`Added "${name}" to shopping list`);
+      } catch (err: any) {
+        toast.error(err.message || "Failed to add item.");
+      }
+    });
+  };
 
   const handleTogglePurchased = (item: ShoppingListItem) => {
     const nextValue = !item.is_purchased;
@@ -52,11 +72,16 @@ export function ShoppingListSection({
   };
 
   const handleRemove = (item: ShoppingListItem) => {
+    const isCustom = !item.pantry_item_id;
     startTransition(async () => {
       try {
         await removeShoppingListItemAction(kitchenId, item.id);
         setListItems((prev) => prev.filter((i) => i.id !== item.id));
-        toast.success(`Removed "${item.name}" from shopping list`);
+        if (isCustom) {
+          toast.success(`Deleted "${item.name}" from shopping list`);
+        } else {
+          toast.success(`Removed "${item.name}" from list & restocked in pantry`);
+        }
       } catch (err: any) {
         toast.error(err.message || "Failed to remove item.");
       }
@@ -116,10 +141,28 @@ export function ShoppingListSection({
         )}
       </div>
 
+      <form onSubmit={handleAddCustomItem} className="flex items-center gap-2">
+        <Input
+          type="text"
+          value={customItemName}
+          onChange={(e) => setCustomItemName(e.target.value)}
+          placeholder="e.g. Oat milk, Snacks, Beer..."
+          className="flex-1 rounded-xl h-10"
+        />
+        <Button
+          type="submit"
+          disabled={isPending || !customItemName.trim()}
+          className="rounded-xl h-10 px-4 font-semibold shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add</span>
+        </Button>
+      </form>
+
       <div className="divide-y divide-border">
         {orderedItems.length === 0 && (
           <p className="text-xs text-muted-foreground py-4 text-center">
-            Nothing needed right now. Marking a pantry item as &ldquo;Empty&rdquo; adds it here automatically.
+            Nothing needed right now. Add a custom item above or mark a pantry item as &ldquo;Empty&rdquo;.
           </p>
         )}
         {orderedItems.map((item) => (
@@ -127,7 +170,7 @@ export function ShoppingListSection({
             key={item.id}
             className="py-3 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition"
           >
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
               <span
                 className={`font-medium truncate ${
                   item.is_purchased ? "text-muted-foreground line-through decoration-muted-foreground/50" : "text-foreground"
@@ -136,6 +179,26 @@ export function ShoppingListSection({
                 {item.name}
               </span>
 
+              {/* Origin badge: Pantry vs Custom */}
+              {item.pantry_item_id ? (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0 font-medium text-muted-foreground"
+                  title="Auto-synced from pantry inventory"
+                >
+                  Pantry
+                </Badge>
+              ) : (
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] px-1.5 py-0 font-medium"
+                  title="Ad-hoc custom item"
+                >
+                  Custom
+                </Badge>
+              )}
+
+              {/* Purchase / Checkout status badge */}
               {item.checkout_id ? (
                 <Badge
                   variant="success"
@@ -207,10 +270,10 @@ export function ShoppingListSection({
                 onClick={() => handleRemove(item)}
                 disabled={isPending}
                 className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
-                title="Remove from list"
+                title={item.pantry_item_id ? "Remove from list (restocks in pantry)" : "Delete custom item from shopping list"}
                 aria-label={`Remove ${item.name} from list`}
               >
-                <X className="w-3.5 h-3.5" />
+                <Trash2 className="w-3.5 h-3.5" />
               </Button>
             </div>
           </div>

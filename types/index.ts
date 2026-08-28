@@ -147,7 +147,7 @@ export interface PantryItem {
 export interface ShoppingListItem {
   id: string;
   kitchen_id: string;
-  pantry_item_id: string;
+  pantry_item_id: string | null;
   name: string;
   is_purchased: boolean;
   purchased_by: string | null;

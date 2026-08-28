@@ -9,6 +9,7 @@ import {
   setPantryItemStock,
   deletePantryItem,
   getShoppingListItems,
+  addCustomShoppingItem,
   togglePurchased,
   removeShoppingListItem,
   clearBoughtShoppingListItems,
@@ -65,6 +66,13 @@ export async function deletePantryItemAction(kitchenId: string, itemId: string) 
 export async function getShoppingListItemsAction(kitchenId: string): Promise<ShoppingListItem[]> {
   await requireMembership(kitchenId);
   return await getShoppingListItems(kitchenId);
+}
+
+export async function addCustomShoppingItemAction(kitchenId: string, name: string) {
+  await requireMembership(kitchenId);
+  const item = await addCustomShoppingItem(kitchenId, name);
+  revalidateKitchen(kitchenId);
+  return item;
 }
 
 export async function togglePurchasedAction(
