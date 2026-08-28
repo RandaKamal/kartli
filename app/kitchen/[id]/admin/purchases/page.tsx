@@ -44,7 +44,7 @@ export default async function KitchenPurchasesPage({
         </Link>
 
         <Card className="border border-border/80 bg-card rounded-3xl p-6 sm:p-8 space-y-2">
-          <Badge variant="destructive" className="w-fit text-[11px] font-semibold uppercase tracking-wider">
+          <Badge variant="accent" className="w-fit text-[11px] font-semibold uppercase tracking-wider">
             PURCHASES
           </Badge>
           <CardTitle className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight flex items-center gap-2">

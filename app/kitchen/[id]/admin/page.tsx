@@ -87,7 +87,7 @@ export default async function KitchenAdminPage({
         <Card className="border border-border/80 bg-card rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Badge variant="destructive" className="font-semibold text-[11px] gap-1 px-2.5 py-0.5">
+              <Badge variant="accent" className="font-semibold text-[11px] gap-1 px-2.5 py-0.5">
                 <Shield className="w-3 h-3" />
                 ADMIN PANEL
               </Badge>

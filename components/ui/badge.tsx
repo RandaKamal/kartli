@@ -22,7 +22,7 @@ const badgeVariants = cva(
         success:
           "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-medium",
         accent:
-          "border-accent-primary/30 bg-accent-primary/10 text-accent-primary font-medium",
+          "border-orange-500/30 bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium",
       },
     },
     defaultVariants: {

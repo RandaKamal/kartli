@@ -169,7 +169,7 @@ export default async function KitchenMemberPage({
               </div>
 
               <Badge
-                variant={member.role === "ADMIN" ? "destructive" : "secondary"}
+                variant={member.role === "ADMIN" ? "accent" : "secondary"}
                 className="text-[11px]"
               >
                 {member.role}

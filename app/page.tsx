@@ -104,7 +104,7 @@ export default async function HomePage() {
                       <div className="space-y-3 relative z-0 pointer-events-none">
                         <div className="flex items-center justify-between">
                           <Badge
-                            variant={isAdmin ? "destructive" : "secondary"}
+                            variant={isAdmin ? "accent" : "secondary"}
                             className="font-medium text-[11px]"
                           >
                             {membership.role}

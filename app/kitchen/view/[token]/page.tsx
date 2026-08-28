@@ -110,7 +110,7 @@ export default async function PublicKitchenViewPage({
                 </div>
 
                 <Badge
-                  variant={member.is_active ? "secondary" : "outline"}
+                  variant={!member.is_active ? "outline" : member.role === "ADMIN" ? "accent" : "secondary"}
                   className="text-[10px]"
                 >
                   {member.is_active ? member.role : "Pending"}
