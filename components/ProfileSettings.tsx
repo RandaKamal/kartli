@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { CopyButton } from "@/components/CopyButton";
+import { logoutAction } from "@/app/actions/auth";
 import { toast } from "sonner";
 
 interface ProfileSettingsProps {
@@ -362,6 +363,28 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                 <div className="space-y-0.5">
+                  <span className="text-xs font-semibold text-foreground">Sign Out of This Device</span>
+                  <p className="text-[11px] text-muted-foreground">
+                    End your current session and return to the login screen.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={async () => {
+                    await logoutAction();
+                  }}
+                  className="rounded-xl font-medium"
+                >
+                  Sign Out
+                </Button>
+              </div>
+
+              <Separator className="bg-destructive/20" />
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-0.5">
                   <span className="text-xs font-semibold text-foreground">Sign Out of All Devices</span>
                   <p className="text-[11px] text-muted-foreground">
                     Invalidates active JWT tokens across other browsers.
@@ -371,7 +394,9 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => toast.info("Active sessions cleared")}
+                  onClick={async () => {
+                    await logoutAction();
+                  }}
                   className="border-destructive/40 text-destructive hover:bg-destructive/10 rounded-xl font-medium"
                 >
                   Clear All Sessions

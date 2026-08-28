@@ -92,7 +92,7 @@ export default async function HomePage() {
                   return (
                     <Card
                       key={kitchen.id}
-                      className="group relative border-border bg-card hover:border-accent-primary/40 hover:bg-muted/30 transition-all flex flex-col justify-between cursor-pointer rounded-2xl p-6 shadow-sm overflow-hidden"
+                      className="relative border border-border bg-card flex flex-col justify-between rounded-2xl p-6 overflow-hidden"
                     >
                       {/* Entire Card Overlay Link */}
                       <Link
@@ -114,7 +114,7 @@ export default async function HomePage() {
                           </span>
                         </div>
 
-                        <h3 className="text-xl font-bold text-foreground group-hover:text-accent-primary transition">
+                        <h3 className="text-xl font-bold text-foreground">
                           {kitchen.name}
                         </h3>
 
@@ -123,10 +123,10 @@ export default async function HomePage() {
                         </p>
                       </div>
 
-                      <div className="pt-5 border-t border-border mt-6 flex items-center justify-between relative z-0 pointer-events-none">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground group-hover:text-accent-primary transition">
+                      <div className="pt-5 border-t border-border/70 mt-6 flex items-center justify-between relative z-0 pointer-events-none">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground">
                           <span>Open Dashboard</span>
-                          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
                         </span>
 
                         <div className="pointer-events-auto relative z-10">
@@ -134,7 +134,7 @@ export default async function HomePage() {
                             asChild
                             variant="secondary"
                             size="sm"
-                            className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground rounded-lg border border-border/80 gap-1"
+                            className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground rounded-lg border border-border/70 gap-1"
                           >
                             <Link
                               href={`/kitchen/view/${kitchen.public_view_token}`}

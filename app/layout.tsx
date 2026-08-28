@@ -1,18 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
-import { logoutAction } from "@/app/actions/auth";
-import { User, Plus, LogOut, Settings } from "lucide-react";
+import { UserDropdown } from "@/components/UserDropdown";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -45,9 +36,9 @@ export default async function RootLayout({
               <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
                 <Link
                   href="/"
-                  className="flex items-center gap-2.5 font-bold text-lg text-foreground tracking-tight hover:opacity-90 transition group"
+                  className="flex items-center gap-2.5 font-bold text-lg text-foreground tracking-tight"
                 >
-                  <span className="w-8 h-8 rounded-xl bg-card border border-border/80 group-hover:border-accent-primary/50 flex items-center justify-center text-xs font-black transition-colors shadow-xs relative">
+                  <span className="w-8 h-8 rounded-xl bg-card border border-border/80 flex items-center justify-center text-xs font-black relative">
                     <span className="text-foreground">k</span>
                     <span className="w-1.5 h-1.5 rounded-full bg-accent-primary absolute top-1.5 right-1.5" />
                   </span>
@@ -59,53 +50,14 @@ export default async function RootLayout({
 
                   {session?.user ? (
                     <>
-                      <Button asChild size="sm" variant="default" className="rounded-xl shadow-xs">
+                      <Button asChild size="sm" variant="default" className="rounded-xl">
                         <Link href="/kitchen/new" className="flex items-center gap-1.5 font-semibold">
                           <Plus className="w-3.5 h-3.5" />
                           <span className="hidden sm:inline">New Kitchen</span>
                         </Link>
                       </Button>
 
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="flex items-center gap-2 rounded-xl border border-border/70 px-2.5"
-                          >
-                            <Avatar className="h-5 w-5 border-0">
-                              <AvatarFallback className="bg-secondary text-[10px] text-foreground font-semibold">
-                                {session.user.username?.charAt(0).toUpperCase() || "U"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-xs font-medium">@{session.user.username}</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48 shadow-lg">
-                          <DropdownMenuLabel className="font-normal text-xs text-muted-foreground">
-                            Signed in as <strong className="text-foreground">@{session.user.username}</strong>
-                          </DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem asChild>
-                            <Link href="/profile" className="flex items-center gap-2 w-full cursor-pointer">
-                              <Settings className="w-3.5 h-3.5" />
-                              <span>Settings & Profile</span>
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem asChild>
-                            <form action={logoutAction} className="w-full">
-                              <button
-                                type="submit"
-                                className="flex items-center gap-2 w-full text-destructive hover:text-destructive cursor-pointer text-xs"
-                              >
-                                <LogOut className="w-3.5 h-3.5" />
-                                <span>Sign out</span>
-                              </button>
-                            </form>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <UserDropdown user={{ username: session.user.username }} />
                     </>
                   ) : (
                     <div className="flex items-center gap-2">
