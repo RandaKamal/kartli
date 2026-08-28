@@ -81,11 +81,11 @@ export function ShoppingListSection({
   const orderedItems = [...pendingItems, ...purchasedItems];
 
   return (
-    <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 shadow-sm space-y-4">
+    <Card className="border-border bg-card rounded-3xl p-6 shadow-sm space-y-4">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
-          <ShoppingCart className="w-4 h-4 text-zinc-400" />
-          <h2 className="text-base font-semibold text-white">Shopping List</h2>
+          <ShoppingCart className="w-4 h-4 text-muted-foreground" />
+          <h2 className="text-base font-semibold text-foreground">Shopping List</h2>
           <Badge variant="warm" className="text-xs font-mono">
             {pendingItems.length} needed
           </Badge>
@@ -109,28 +109,28 @@ export function ShoppingListSection({
             {isPending ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
             ) : (
-              <Trash2 className="w-3.5 h-3.5 text-zinc-400 mr-1" />
+              <Trash2 className="w-3.5 h-3.5 text-muted-foreground mr-1" />
             )}
             <span>Clear Bought ({purchasedItems.length})</span>
           </Button>
         )}
       </div>
 
-      <div className="divide-y divide-zinc-800">
+      <div className="divide-y divide-border">
         {orderedItems.length === 0 && (
-          <p className="text-xs text-zinc-500 py-4 text-center">
+          <p className="text-xs text-muted-foreground py-4 text-center">
             Nothing needed right now. Marking a pantry item as &ldquo;Empty&rdquo; adds it here automatically.
           </p>
         )}
         {orderedItems.map((item) => (
           <div
             key={item.id}
-            className="py-3 flex items-center justify-between gap-3 text-sm hover:bg-zinc-800/20 px-2 rounded-xl transition"
+            className="py-3 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition"
           >
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
               <span
                 className={`font-medium truncate ${
-                  item.is_purchased ? "text-zinc-500 line-through" : "text-white"
+                  item.is_purchased ? "text-muted-foreground line-through decoration-muted-foreground/50" : "text-foreground"
                 }`}
               >
                 {item.name}
@@ -142,7 +142,7 @@ export function ShoppingListSection({
                   className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium"
                   title="Checked out / Resolved"
                 >
-                  <CheckCheck className="w-3 h-3 text-accent-muted-green" />
+                  <CheckCheck className="w-3 h-3" />
                   <span>RESOLVED</span>
                 </Badge>
               ) : item.is_purchased ? (
@@ -151,16 +151,16 @@ export function ShoppingListSection({
                   className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium"
                   title="Marked as bought, ready for cart checkout"
                 >
-                  <Check className="w-3 h-3 text-accent-secondary" />
+                  <Check className="w-3 h-3" />
                   <span>BOUGHT</span>
                 </Badge>
               ) : (
                 <Badge
                   variant="warm"
-                  className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium border-accent-warm/40 text-accent-warm"
+                  className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium"
                   title="Needs to be purchased"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent-warm" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                   <span>OPEN</span>
                 </Badge>
               )}
@@ -180,17 +180,11 @@ export function ShoppingListSection({
                     ? "Mark as needed"
                     : "Mark as bought"
                 }
-                className={`h-8 px-3 rounded-lg text-xs font-semibold ${
-                  item.checkout_id
-                    ? "bg-zinc-800 border-zinc-700 text-zinc-400 cursor-not-allowed"
-                    : item.is_purchased
-                    ? "bg-white text-black hover:bg-zinc-200"
-                    : "hover:border-zinc-600"
-                }`}
+                className="h-8 px-3 rounded-lg text-xs font-semibold"
               >
                 {item.checkout_id ? (
                   <>
-                    <CheckCheck className="w-3.5 h-3.5 mr-1 text-accent-muted-green" />
+                    <CheckCheck className="w-3.5 h-3.5 mr-1" />
                     <span>Checked Out</span>
                   </>
                 ) : item.is_purchased ? (
@@ -200,7 +194,7 @@ export function ShoppingListSection({
                   </>
                 ) : (
                   <>
-                    <Check className="w-3.5 h-3.5 mr-1 text-zinc-400" />
+                    <Check className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
                     <span>Mark as Bought</span>
                   </>
                 )}
@@ -212,7 +206,7 @@ export function ShoppingListSection({
                 size="icon-sm"
                 onClick={() => handleRemove(item)}
                 disabled={isPending}
-                className="text-zinc-500 hover:text-accent-primary hover:bg-zinc-800 rounded-lg"
+                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
                 title="Remove from list"
                 aria-label={`Remove ${item.name} from list`}
               >

@@ -62,27 +62,27 @@ export default async function KitchenMemberPage({
       <div className="space-y-4">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition px-1"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition px-1"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Kitchens</span>
         </Link>
 
-        <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <Card className="border border-border/80 bg-card rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Badge variant="secondary" className="font-semibold text-[11px]">
                 MEMBER SPACE
               </Badge>
-              <span className="text-xs text-zinc-500 font-mono">
+              <span className="text-xs text-muted-foreground font-mono">
                 Joined {membership.joined_at ? new Date(membership.joined_at).toLocaleDateString() : ""}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
               {kitchen.name}
             </h1>
-            <p className="text-sm text-zinc-400 mt-1">
-              Your display name: <strong className="text-white">{membership.kitchen_display_name}</strong>
+            <p className="text-sm text-muted-foreground mt-1">
+              Your display name: <strong className="text-foreground">{membership.kitchen_display_name}</strong>
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -97,14 +97,14 @@ export default async function KitchenMemberPage({
       </div>
 
       {/* Guest Link Banner */}
-      <Card className="border-zinc-800 bg-zinc-900/80 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+      <Card className="border-border bg-card rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="font-semibold uppercase tracking-wider text-[10px]">
               Supermarket &amp; Guest Link
             </Badge>
           </div>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-muted-foreground">
             Share this link with anyone for instant read-only shopping view.
           </p>
         </div>
@@ -113,7 +113,7 @@ export default async function KitchenMemberPage({
             type="text"
             readOnly
             value={publicGuestUrl}
-            className="h-8 px-2.5 text-xs text-zinc-300 font-mono w-48 sm:w-64 select-all rounded-lg"
+            className="h-8 px-2.5 text-xs text-foreground font-mono w-48 sm:w-64 select-all rounded-lg"
           />
           <CopyButton text={publicGuestUrl} label="Copy Link" size="sm" />
           <Button asChild variant="default" size="sm" className="h-8 px-3 rounded-lg text-xs font-semibold gap-1">
@@ -134,35 +134,35 @@ export default async function KitchenMemberPage({
       <MyPurchasesSection checkouts={myCheckouts} />
 
       {/* Active Members Roster */}
-      <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 shadow-sm space-y-4">
-        <h2 className="text-base font-semibold text-white flex items-center gap-2">
-          <Users className="w-4 h-4 text-zinc-400" />
+      <Card className="border-border bg-card rounded-3xl p-6 shadow-sm space-y-4">
+        <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+          <Users className="w-4 h-4 text-muted-foreground" />
           <span>Kitchen Members</span>
           <Badge variant="secondary" className="text-xs font-mono">
             {activeMembers.length}
           </Badge>
         </h2>
 
-        <div className="divide-y divide-zinc-800">
+        <div className="divide-y divide-border">
           {activeMembers.map((member) => (
             <div
               key={member.id}
-              className="py-3 flex items-center justify-between text-sm hover:bg-zinc-800/20 px-2 rounded-xl transition"
+              className="py-3 flex items-center justify-between text-sm hover:bg-muted/40 px-2 rounded-xl transition"
             >
               <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-zinc-800 text-xs font-semibold text-zinc-300">
+                  <AvatarFallback className="bg-secondary text-xs font-semibold text-secondary-foreground">
                     {member.kitchen_display_name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <div className="font-medium text-white">
+                  <div className="font-medium text-foreground">
                     {member.kitchen_display_name}
                     {member.user_id === session.user.id && (
-                      <span className="ml-2 text-xs text-zinc-400 font-normal">(You)</span>
+                      <span className="ml-2 text-xs text-muted-foreground font-normal">(You)</span>
                     )}
                   </div>
-                  <div className="text-xs text-zinc-500 font-mono">
+                  <div className="text-xs text-muted-foreground font-mono">
                     @{member.username || "guest"}
                   </div>
                 </div>

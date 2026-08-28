@@ -49,7 +49,7 @@ export function AdminPendingInvitesList({
 
   if (invites.length === 0) {
     return (
-      <p className="text-xs text-zinc-500 py-4 text-center">
+      <p className="text-xs text-muted-foreground py-4 text-center">
         No pending invites. All invited members have claimed their links.
       </p>
     );
@@ -57,7 +57,7 @@ export function AdminPendingInvitesList({
 
   return (
     <>
-      <div className="divide-y divide-zinc-800">
+      <div className="divide-y divide-border">
         {invites.map((invite) => {
           const inviteUrl = `${baseUrl}/invite/${invite.invite_token}`;
           const initial = (invite.kitchen_display_name || "?").charAt(0).toUpperCase();
@@ -65,16 +65,16 @@ export function AdminPendingInvitesList({
           return (
             <div
               key={invite.id}
-              className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-zinc-800/20 px-2 rounded-xl transition"
+              className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/40 px-2 rounded-xl transition"
             >
               <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8 border border-dashed border-zinc-700 bg-zinc-950">
-                  <AvatarFallback className="bg-transparent text-xs font-semibold text-zinc-400">
+                <Avatar className="h-8 w-8 border border-dashed border-border bg-secondary">
+                  <AvatarFallback className="bg-transparent text-xs font-semibold text-muted-foreground">
                     {initial}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <div className="font-medium text-white text-sm">
+                  <div className="font-medium text-foreground text-sm">
                     {invite.kitchen_display_name}
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
@@ -90,7 +90,7 @@ export function AdminPendingInvitesList({
                   type="text"
                   readOnly
                   value={inviteUrl}
-                  className="h-8 px-2.5 text-xs text-zinc-300 font-mono w-44 sm:w-56 select-all rounded-lg"
+                  className="h-8 px-2.5 text-xs text-foreground font-mono w-44 sm:w-56 select-all rounded-lg"
                 />
                 <CopyButton text={inviteUrl} label="Copy Invite Link" size="icon" />
                 <Button
@@ -99,9 +99,9 @@ export function AdminPendingInvitesList({
                   size="sm"
                   onClick={() => setSelectedInvite(invite)}
                   title="Cancel and revoke invite"
-                  className="h-8 px-2.5 text-xs text-zinc-400 hover:text-accent-primary hover:border-accent-primary/40 rounded-lg border-zinc-800"
+                  className="h-8 px-2.5 text-xs text-muted-foreground hover:text-destructive hover:border-destructive/40 rounded-lg border-border"
                 >
-                  <Trash2 className="w-3.5 h-3.5 sm:mr-1 text-zinc-500 hover:text-accent-primary" />
+                  <Trash2 className="w-3.5 h-3.5 sm:mr-1 text-muted-foreground hover:text-destructive" />
                   <span className="hidden sm:inline">Revoke</span>
                 </Button>
               </div>
@@ -115,14 +115,14 @@ export function AdminPendingInvitesList({
         <AlertDialogContent>
           <AlertDialogHeader>
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2.5 rounded-2xl bg-accent-primary/10 border border-accent-primary/20 text-accent-primary">
+              <div className="p-2.5 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <AlertDialogTitle>Cancel Invite</AlertDialogTitle>
             </div>
             <AlertDialogDescription>
               Are you sure you want to cancel the invite for{" "}
-              <strong className="text-white font-semibold">
+              <strong className="text-foreground font-semibold">
                 {selectedInvite?.kitchen_display_name}
               </strong>
               ? The invite link will be permanently revoked.

@@ -5,9 +5,9 @@ import { Badge } from "@/components/ui/badge";
 
 export function MyPurchasesSection({ checkouts }: { checkouts: CheckoutWithDetails[] }) {
   return (
-    <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 shadow-sm space-y-4">
-      <h2 className="text-base font-semibold text-white flex items-center gap-2">
-        <Receipt className="w-4 h-4 text-zinc-400" />
+    <Card className="border-border bg-card rounded-3xl p-6 shadow-sm space-y-4">
+      <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+        <Receipt className="w-4 h-4 text-muted-foreground" />
         <span>My Purchases</span>
         <Badge variant="secondary" className="text-xs font-mono">
           {checkouts.length}
@@ -15,14 +15,14 @@ export function MyPurchasesSection({ checkouts }: { checkouts: CheckoutWithDetai
       </h2>
 
       {checkouts.length === 0 ? (
-        <p className="text-xs text-zinc-500 py-2">Nothing checked out yet.</p>
+        <p className="text-xs text-muted-foreground py-2">Nothing checked out yet.</p>
       ) : (
-        <div className="divide-y divide-zinc-800">
+        <div className="divide-y divide-border">
           {checkouts.map((checkout) => (
-            <div key={checkout.id} className="py-3 flex items-center justify-between gap-3 text-sm hover:bg-zinc-800/20 px-2 rounded-xl transition">
+            <div key={checkout.id} className="py-3 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition">
               <div>
-                <p className="font-medium text-white">{checkout.items.map((i) => i.name).join(", ")}</p>
-                <p className="text-xs text-zinc-500 font-mono mt-0.5">{new Date(checkout.created_at).toLocaleDateString("en-US")}</p>
+                <p className="font-medium text-foreground">{checkout.items.map((i) => i.name).join(", ")}</p>
+                <p className="text-xs text-muted-foreground font-mono mt-0.5">{new Date(checkout.created_at).toLocaleDateString("en-US")}</p>
               </div>
 
               {checkout.is_refunded ? (

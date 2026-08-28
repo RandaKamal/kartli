@@ -82,7 +82,7 @@ export function RegisterForm({
       )}
 
       {error && (
-        <div className="p-3 bg-accent-primary/10 border border-accent-primary/30 text-accent-primary text-xs rounded-xl text-center font-medium animate-in fade-in-50">
+        <div className="p-3 bg-destructive/10 border border-destructive/30 text-destructive text-xs rounded-xl text-center font-medium animate-in fade-in-50">
           {error}
         </div>
       )}
@@ -102,7 +102,7 @@ export function RegisterForm({
           placeholder="e.g. sarah_miller"
           className="rounded-xl"
         />
-        <span className="text-[11px] text-zinc-500 block">
+        <span className="text-[11px] text-muted-foreground block">
           Used to log into your account. Must be unique.
         </span>
       </div>
@@ -129,7 +129,7 @@ export function RegisterForm({
             type="button"
             tabIndex={-1}
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition p-1 cursor-pointer"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition p-1 cursor-pointer"
             title={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -159,7 +159,7 @@ export function RegisterForm({
             type="button"
             tabIndex={-1}
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition p-1 cursor-pointer"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition p-1 cursor-pointer"
             title={showConfirmPassword ? "Hide password" : "Show password"}
           >
             {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -170,11 +170,11 @@ export function RegisterForm({
         {confirmPassword.length > 0 && (
           <div className="mt-1.5 flex items-center gap-1.5 text-xs">
             {isMatching ? (
-              <span className="text-accent-muted-green flex items-center gap-1 font-medium animate-in fade-in">
+              <span className="text-emerald-700 dark:text-emerald-300 flex items-center gap-1 font-medium animate-in fade-in">
                 <Check className="w-3.5 h-3.5" /> Passwords match
               </span>
             ) : (
-              <span className="text-accent-secondary flex items-center gap-1 font-medium animate-in fade-in">
+              <span className="text-destructive flex items-center gap-1 font-medium animate-in fade-in">
                 <X className="w-3.5 h-3.5" /> Passwords do not match
               </span>
             )}

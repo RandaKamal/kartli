@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { User, Shield, Bell, Key, Palette, AlertOctagon, CheckCircle2, Copy } from "lucide-react";
+import { User, Shield, Bell, Key, Palette, AlertOctagon, Sun, Moon, Laptop } from "lucide-react";
+import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -22,9 +23,15 @@ interface ProfileSettingsProps {
 }
 
 export function ProfileSettings({ user }: ProfileSettingsProps) {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [notifyPantry, setNotifyPantry] = useState(true);
   const [notifyShopping, setNotifyShopping] = useState(true);
   const [notifyMembers, setNotifyMembers] = useState(false);
+
+  useState(() => {
+    // client effect
+  });
 
   const initial = (user.username || "?").charAt(0).toUpperCase();
 
@@ -40,7 +47,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="account" className="w-full">
-        <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto mb-6 bg-zinc-900 border border-zinc-800 p-1 rounded-2xl">
+        <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto mb-6 bg-muted/70 border border-border/80 p-1 rounded-2xl">
           <TabsTrigger value="account" className="rounded-xl text-xs font-semibold">
             Account
           </TabsTrigger>
@@ -54,38 +61,38 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
         {/* Tab 1: Account Info */}
         <TabsContent value="account" className="space-y-6 animate-in fade-in-50">
-          <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+          <Card className="border border-border/80 bg-card rounded-3xl p-6 sm:p-8 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16 border-2 border-zinc-700">
-                  <AvatarFallback className="bg-zinc-800 text-xl font-bold text-white">
+                <Avatar className="h-16 w-16 border border-border/80">
+                  <AvatarFallback className="bg-secondary text-xl font-bold text-foreground">
                     {initial}
                   </AvatarFallback>
                 </Avatar>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold text-white tracking-tight">
+                    <h2 className="text-xl font-bold text-foreground tracking-tight">
                       @{user.username}
                     </h2>
                     <Badge variant="secondary" className="text-[10px]">
                       Active
                     </Badge>
                   </div>
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-xs text-muted-foreground">
                     Registered Kitchen Member
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs text-zinc-400 font-mono">
+                <Badge variant="outline" className="text-xs text-muted-foreground font-mono">
                   ID: {user.id.slice(0, 8)}...
                 </Badge>
                 <CopyButton text={user.id} label="Copy Full ID" size="sm" />
               </div>
             </div>
 
-            <Separator className="bg-zinc-800" />
+            <Separator className="bg-border/60" />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -95,9 +102,9 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   value={user.username}
                   readOnly
                   disabled
-                  className="rounded-xl bg-zinc-950/60 font-mono text-zinc-300"
+                  className="rounded-xl bg-muted/40 font-mono text-foreground"
                 />
-                <span className="text-[11px] text-zinc-500 block">
+                <span className="text-[11px] text-muted-foreground block">
                   Your unique identifier across all kitchens.
                 </span>
               </div>
@@ -109,9 +116,9 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   value="Credentials (Encrypted JWT Session)"
                   readOnly
                   disabled
-                  className="rounded-xl bg-zinc-950/60 font-medium text-zinc-300"
+                  className="rounded-xl bg-muted/40 font-medium text-foreground"
                 />
-                <span className="text-[11px] text-zinc-500 block">
+                <span className="text-[11px] text-muted-foreground block">
                   Managed via NextAuth.js / Auth.js v5.
                 </span>
               </div>
@@ -121,24 +128,70 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
         {/* Tab 2: Preferences */}
         <TabsContent value="preferences" className="space-y-6 animate-in fade-in-50">
-          <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+          <Card className="border border-border/80 bg-card rounded-3xl p-6 sm:p-8 space-y-6">
+            {/* Appearance / Theme Selection */}
+            <div className="space-y-3">
+              <div className="space-y-0.5">
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <Palette className="w-5 h-5 text-accent-primary" />
+                  <span>Theme &amp; Appearance</span>
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Choose your preferred visual mode for kartli.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 pt-1">
+                <Button
+                  type="button"
+                  variant={theme === "light" ? "default" : "secondary"}
+                  onClick={() => setTheme("light")}
+                  className="h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border border-border/60 shadow-xs"
+                >
+                  <Sun className="w-4 h-4" />
+                  <span>Light</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={theme === "dark" ? "default" : "secondary"}
+                  onClick={() => setTheme("dark")}
+                  className="h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border border-border/60 shadow-xs"
+                >
+                  <Moon className="w-4 h-4" />
+                  <span>Dark</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={theme === "system" ? "default" : "secondary"}
+                  onClick={() => setTheme("system")}
+                  className="h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border border-border/60 shadow-xs"
+                >
+                  <Laptop className="w-4 h-4" />
+                  <span>System</span>
+                </Button>
+              </div>
+            </div>
+
+            <Separator className="bg-border/60" />
+
+            {/* Notification Preferences */}
             <CardHeader className="p-0 space-y-1">
-              <CardTitle className="text-lg font-bold text-white flex items-center gap-2">
-                <Bell className="w-5 h-5 text-zinc-400" />
+              <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                <Bell className="w-5 h-5 text-muted-foreground" />
                 <span>Notification Preferences</span>
               </CardTitle>
-              <CardDescription className="text-xs text-zinc-400">
+              <CardDescription className="text-xs text-muted-foreground">
                 Configure when and how you receive grocery and kitchen status alerts.
               </CardDescription>
             </CardHeader>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80">
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
                 <div className="space-y-0.5">
-                  <Label htmlFor="notify-pantry" className="text-sm font-medium text-white cursor-pointer">
+                  <Label htmlFor="notify-pantry" className="text-sm font-medium text-foreground cursor-pointer">
                     Pantry Restock Alerts
                   </Label>
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-xs text-muted-foreground">
                     Get notified when an item in your kitchen is marked as Empty.
                   </p>
                 </div>
@@ -149,12 +202,12 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                 />
               </div>
 
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80">
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
                 <div className="space-y-0.5">
-                  <Label htmlFor="notify-shopping" className="text-sm font-medium text-white cursor-pointer">
+                  <Label htmlFor="notify-shopping" className="text-sm font-medium text-foreground cursor-pointer">
                     Shopping Cart &amp; Checkout Updates
                   </Label>
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-xs text-muted-foreground">
                     Receive confirmation when a roommate checks out groceries.
                   </p>
                 </div>
@@ -165,12 +218,12 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                 />
               </div>
 
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80">
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
                 <div className="space-y-0.5">
-                  <Label htmlFor="notify-members" className="text-sm font-medium text-white cursor-pointer">
+                  <Label htmlFor="notify-members" className="text-sm font-medium text-foreground cursor-pointer">
                     Member Activity
                   </Label>
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-xs text-muted-foreground">
                     Alert when a new member claims an invite link in your kitchen.
                   </p>
                 </div>
@@ -182,51 +235,51 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               </div>
             </div>
 
-            <Separator className="bg-zinc-800" />
+            <Separator className="bg-border/60" />
 
             {/* Design System Token Palette Showcase */}
             <div className="space-y-3">
               <div className="space-y-0.5">
-                <h4 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-zinc-400" />
-                  <span>Active Theme Accent Tokens</span>
+                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-accent-primary" />
+                  <span>kartli Brand Palette</span>
                 </h4>
-                <p className="text-xs text-zinc-400">
-                  Modular CSS variables configured in your design system palette.
+                <p className="text-xs text-muted-foreground">
+                  Warm artisanal culinary colors with soft contrast for daily household kitchen use.
                 </p>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                <div className="p-3 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-1.5">
+                <div className="p-3 rounded-2xl bg-muted/40 border border-border/70 space-y-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-accent-primary shadow-xs" />
-                    <span className="text-xs font-semibold text-white">Primary</span>
+                    <span className="w-3.5 h-3.5 rounded-full bg-accent-primary shadow-xs" />
+                    <span className="text-xs font-semibold text-foreground">Hearth Ember</span>
                   </div>
-                  <p className="text-[11px] font-mono text-zinc-400">#f14666</p>
+                  <p className="text-[11px] text-muted-foreground">Terracotta Brand</p>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-1.5">
+                <div className="p-3 rounded-2xl bg-muted/40 border border-border/70 space-y-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-accent-secondary shadow-xs" />
-                    <span className="text-xs font-semibold text-white">Secondary</span>
+                    <span className="w-3.5 h-3.5 rounded-full bg-emerald-600 dark:bg-emerald-500 shadow-xs" />
+                    <span className="text-xs font-semibold text-foreground">Fresh Basil</span>
                   </div>
-                  <p className="text-[11px] font-mono text-zinc-400">#ee8980</p>
+                  <p className="text-[11px] text-muted-foreground">Restocked / Success</p>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-1.5">
+                <div className="p-3 rounded-2xl bg-muted/40 border border-border/70 space-y-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-accent-warm shadow-xs" />
-                    <span className="text-xs font-semibold text-white">Warm</span>
+                    <span className="w-3.5 h-3.5 rounded-full bg-destructive shadow-xs" />
+                    <span className="text-xs font-semibold text-foreground">Pomegranate</span>
                   </div>
-                  <p className="text-[11px] font-mono text-zinc-400">#ffcdaa</p>
+                  <p className="text-[11px] text-muted-foreground">Destructive Action</p>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-1.5">
+                <div className="p-3 rounded-2xl bg-muted/40 border border-border/70 space-y-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-accent-muted-green shadow-xs" />
-                    <span className="text-xs font-semibold text-white">Muted Green</span>
+                    <span className="w-3.5 h-3.5 rounded-full bg-amber-500 shadow-xs" />
+                    <span className="text-xs font-semibold text-foreground">Honey Ochre</span>
                   </div>
-                  <p className="text-[11px] font-mono text-zinc-400">#9cb898</p>
+                  <p className="text-[11px] text-muted-foreground">Needed / Open Item</p>
                 </div>
               </div>
             </div>
@@ -241,13 +294,13 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
         {/* Tab 3: Security & Danger Zone */}
         <TabsContent value="security" className="space-y-6 animate-in fade-in-50">
-          <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+          <Card className="border-border bg-card rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
             <CardHeader className="p-0 space-y-1">
-              <CardTitle className="text-lg font-bold text-white flex items-center gap-2">
-                <Key className="w-5 h-5 text-zinc-400" />
+              <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+                <Key className="w-5 h-5 text-muted-foreground" />
                 <span>Password &amp; Security</span>
               </CardTitle>
-              <CardDescription className="text-xs text-zinc-400">
+              <CardDescription className="text-xs text-muted-foreground">
                 Update your credentials or manage active sessions.
               </CardDescription>
             </CardHeader>
@@ -291,7 +344,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               </div>
             </form>
 
-            <Separator className="bg-zinc-800" />
+            <Separator className="bg-border/60" />
 
             {/* Danger Zone */}
             <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 space-y-4">
@@ -300,8 +353,8 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   <AlertOctagon className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">Danger Zone</h4>
-                  <p className="text-xs text-zinc-400">
+                  <h4 className="text-sm font-bold text-foreground">Danger Zone</h4>
+                  <p className="text-xs text-muted-foreground">
                     Irreversible actions related to your account sessions.
                   </p>
                 </div>
@@ -309,8 +362,8 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                 <div className="space-y-0.5">
-                  <span className="text-xs font-semibold text-zinc-200">Sign Out of All Devices</span>
-                  <p className="text-[11px] text-zinc-500">
+                  <span className="text-xs font-semibold text-foreground">Sign Out of All Devices</span>
+                  <p className="text-[11px] text-muted-foreground">
                     Invalidates active JWT tokens across other browsers.
                   </p>
                 </div>
@@ -319,7 +372,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   variant="outline"
                   size="sm"
                   onClick={() => toast.info("Active sessions cleared")}
-                  className="border-destructive/40 text-destructive hover:bg-destructive/10 rounded-xl"
+                  className="border-destructive/40 text-destructive hover:bg-destructive/10 rounded-xl font-medium"
                 >
                   Clear All Sessions
                 </Button>

@@ -42,13 +42,13 @@ export function CopyButton({
             size={size === "icon-sm" ? "icon-sm" : "icon"}
             variant={copied ? "default" : variant}
             onClick={handleCopy}
-            className={`transition-colors shrink-0 ${copied ? "bg-white text-black" : ""}`}
+            className="transition-colors shrink-0"
             aria-label={label}
           >
             {copied ? (
-              <Check className="h-3.5 w-3.5 text-black" />
+              <Check className="h-3.5 w-3.5" />
             ) : (
-              <Copy className="h-3.5 w-3.5 text-zinc-400" />
+              <Copy className="h-3.5 w-3.5 text-muted-foreground" />
             )}
           </Button>
         </TooltipTrigger>
@@ -65,18 +65,16 @@ export function CopyButton({
       size="sm"
       variant={copied ? "default" : variant}
       onClick={handleCopy}
-      className={`inline-flex items-center gap-1.5 rounded-lg text-xs font-semibold transition ${
-        copied ? "bg-white text-black font-bold" : ""
-      }`}
+      className="inline-flex items-center gap-1.5 rounded-lg text-xs font-semibold transition"
     >
       {copied ? (
         <>
-          <Check className="w-3.5 h-3.5 text-black" />
+          <Check className="w-3.5 h-3.5" />
           <span>Copied!</span>
         </>
       ) : (
         <>
-          <Copy className="w-3.5 h-3.5 text-zinc-400" />
+          <Copy className="w-3.5 h-3.5 text-muted-foreground" />
           <span>{label}</span>
         </>
       )}

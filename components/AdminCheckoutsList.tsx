@@ -35,15 +35,15 @@ export function AdminCheckoutsList({
   return (
     <div className="space-y-4">
       {list.length === 0 ? (
-        <p className="text-xs text-zinc-500 py-4 text-center">No checkouts yet.</p>
+        <p className="text-xs text-muted-foreground py-4 text-center">No checkouts yet.</p>
       ) : (
-        <div className="divide-y divide-zinc-800">
+        <div className="divide-y divide-border">
           {list.map((checkout) => (
-            <div key={checkout.id} className="py-4 space-y-3 hover:bg-zinc-800/20 px-2 rounded-xl transition">
+            <div key={checkout.id} className="py-4 space-y-3 hover:bg-muted/40 px-2 rounded-xl transition">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-white">@{checkout.username || "unknown"}</p>
-                  <p className="text-xs text-zinc-500 font-mono mt-0.5">
+                  <p className="text-sm font-semibold text-foreground">@{checkout.username || "unknown"}</p>
+                  <p className="text-xs text-muted-foreground font-mono mt-0.5">
                     {new Date(checkout.created_at).toLocaleDateString("en-US")} &middot; {checkout.items.length} item{checkout.items.length === 1 ? "" : "s"}
                   </p>
                 </div>
@@ -68,9 +68,9 @@ export function AdminCheckoutsList({
                 )}
               </div>
 
-              <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-                <Receipt className="w-3.5 h-3.5 text-zinc-500" />
-                <span>Receipt uploaded: <span className="font-mono text-zinc-300">{checkout.receipt_filename}</span></span>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Receipt className="w-3.5 h-3.5 text-muted-foreground" />
+                <span>Receipt uploaded: <span className="font-mono text-foreground">{checkout.receipt_filename}</span></span>
               </div>
 
               <div className="flex flex-wrap gap-1.5">

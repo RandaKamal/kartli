@@ -1,11 +1,23 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-accent-primary: var(--brand-primary);
   --color-accent-secondary: var(--brand-secondary);
   --color-accent-warm: var(--brand-warm);
-  --color-accent-muted-green: var(--brand-muted-green);
-  --color-accent-green: var(--brand-muted-green);
+  --color-accent-muted-green: var(--brand-success);
+  --color-accent-green: var(--brand-success);
+  --color-accent-success: var(--brand-success);
+  --color-accent-danger: var(--brand-danger);
+  --color-accent-light: var(--brand-light);
+
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-brand-warm: var(--brand-warm);
+  --color-brand-success: var(--brand-success);
+  --color-brand-danger: var(--brand-danger);
+  --color-brand-light: var(--brand-light);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -42,40 +54,87 @@
 
 @layer base {
   :root {
-    --brand-primary: #f14666;
-    --brand-secondary: #ee8980;
-    --brand-warm: #ffcdaa;
-    --brand-muted-green: #9cb898;
+    /* Brand Identity: Warm Culinary / Terracotta & Fresh Sage */
+    --brand-primary: #ea580c;      /* Warm Terracotta Ember */
+    --brand-secondary: #0f766e;    /* Deep Fresh Sage / Teal */
+    --brand-warm: #d97706;         /* Golden Honey Amber */
+    --brand-success: #16a34a;      /* Fresh Basil Green */
+    --brand-danger: #e11d48;       /* Clean Pomegranate Crimson */
+    --brand-muted-green: #16a34a;  /* Botanical Green */
+    --brand-light: #ffedd5;        /* Warm Apricot Glow */
 
-    --background: #000000;
-    --foreground: #f4f4f5;
+    /* Refined Light Theme: Warm Linen & Milk White with Soft Tones */
+    --background: #fbfaf7;
+    --foreground: #1c1917;
 
-    --card: #09090b;
-    --card-foreground: #f4f4f5;
+    --card: #ffffff;
+    --card-foreground: #1c1917;
 
-    --popover: #09090b;
-    --popover-foreground: #f4f4f5;
+    --popover: #ffffff;
+    --popover-foreground: #1c1917;
 
-    --primary: #ffffff;
-    --primary-foreground: #09090b;
+    --primary: #ea580c;
+    --primary-foreground: #ffffff;
 
-    --secondary: #18181b;
-    --secondary-foreground: #f4f4f5;
+    --secondary: #f4f1ea;
+    --secondary-foreground: #1c1917;
 
-    --muted: #18181b;
-    --muted-foreground: #a1a1aa;
+    --muted: #f4f1ea;
+    --muted-foreground: #78716c;
 
-    --accent: #27272a;
-    --accent-foreground: #f4f4f5;
+    --accent: #f4f1ea;
+    --accent-foreground: #1c1917;
 
-    --destructive: #f14666;
+    --destructive: #e11d48;
     --destructive-foreground: #ffffff;
 
-    --border: #27272a;
-    --input: #27272a;
-    --ring: #f14666;
+    --border: #ece7de;
+    --input: #e5dfd5;
+    --ring: #ea580c;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
+
+    color-scheme: light;
+  }
+
+  .dark {
+    /* Brand Identity: Warm Obsidian & Glowing Ember */
+    --brand-primary: #f97316;      /* Glowing Terracotta Tangerine */
+    --brand-secondary: #2dd4bf;    /* Bright Sage Mint */
+    --brand-warm: #fbbf24;         /* Golden Honey */
+    --brand-success: #22c55e;      /* Crisp Basil Green */
+    --brand-danger: #f43f5e;       /* Rose Crimson */
+    --brand-muted-green: #22c55e;  /* Crisp Green */
+    --brand-light: #431407;        /* Deep Ember Highlight */
+
+    /* Refined Dark Theme: Deep Roasted Espresso & Warm Carbon */
+    --background: #141312;
+    --foreground: #f5f4f0;
+
+    --card: #1c1b18;
+    --card-foreground: #f5f4f0;
+
+    --popover: #1c1b18;
+    --popover-foreground: #f5f4f0;
+
+    --primary: #f97316;
+    --primary-foreground: #141312;
+
+    --secondary: #262421;
+    --secondary-foreground: #f5f4f0;
+
+    --muted: #262421;
+    --muted-foreground: #a8a29e;
+
+    --accent: #2e2b26;
+    --accent-foreground: #f5f4f0;
+
+    --destructive: #f43f5e;
+    --destructive-foreground: #ffffff;
+
+    --border: #2e2b26;
+    --input: #2e2b26;
+    --ring: #f97316;
 
     color-scheme: dark;
   }
@@ -85,7 +144,7 @@
   }
 
   body {
-    @apply bg-black text-zinc-100 antialiased min-h-screen selection:bg-zinc-800 selection:text-white;
+    @apply bg-background text-foreground antialiased min-h-screen selection:bg-accent-primary/20 selection:text-foreground;
   }
 }
 

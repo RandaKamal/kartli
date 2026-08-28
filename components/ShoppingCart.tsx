@@ -57,20 +57,20 @@ export function ShoppingCart({
         onClick={() => setIsOpen((v) => !v)}
         className="relative rounded-xl font-medium"
       >
-        <CartIcon className="w-4 h-4 mr-1 text-zinc-300" />
+        <CartIcon className="w-4 h-4 mr-1 text-muted-foreground" />
         <span>Cart</span>
         {cartItems.length > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-white text-black text-[10px] font-bold shadow-sm">
+          <span className="absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold shadow-sm">
             {cartItems.length}
           </span>
         )}
       </Button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl z-50 p-4 space-y-3 animate-in fade-in-50 zoom-in-95">
+        <div className="absolute right-0 mt-2 w-80 bg-popover border border-border rounded-2xl shadow-2xl z-50 p-4 space-y-3 animate-in fade-in-50 zoom-in-95 text-popover-foreground">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-white">Your Cart</h3>
+              <h3 className="text-sm font-semibold text-foreground">Your Cart</h3>
               {cartItems.length > 0 && (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                   {cartItems.length}
@@ -82,21 +82,21 @@ export function ShoppingCart({
               variant="ghost"
               size="icon-sm"
               onClick={() => setIsOpen(false)}
-              className="text-zinc-500 hover:text-white"
+              className="text-muted-foreground hover:text-foreground"
             >
               <X className="w-4 h-4" />
             </Button>
           </div>
 
           {cartItems.length === 0 ? (
-            <p className="text-xs text-zinc-500 py-3 text-center">
+            <p className="text-xs text-muted-foreground py-3 text-center">
               Nothing in your cart yet. Mark items as bought on the shopping list.
             </p>
           ) : (
-            <div className="divide-y divide-zinc-800/80 max-h-48 overflow-y-auto pr-1">
+            <div className="divide-y divide-border max-h-48 overflow-y-auto pr-1">
               {cartItems.map((item) => (
-                <div key={item.id} className="py-2 text-xs font-medium text-zinc-200 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent-muted-green" />
+                <div key={item.id} className="py-2 text-xs font-medium text-foreground flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   <span className="truncate">{item.name}</span>
                 </div>
               ))}
@@ -104,7 +104,7 @@ export function ShoppingCart({
           )}
 
           {cartItems.length > 0 && (
-            <div className="space-y-2 pt-2 border-t border-zinc-800">
+            <div className="space-y-2 pt-2 border-t border-border">
               <Button
                 type="button"
                 variant={receiptUploaded ? "outline" : "ghost"}
@@ -115,14 +115,14 @@ export function ShoppingCart({
                 }}
                 className={`w-full justify-start text-xs rounded-xl ${
                   receiptUploaded
-                    ? "border-accent-muted-green/40 text-accent-muted-green bg-accent-muted-green/10"
-                    : "border border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                    ? "border-emerald-500/40 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10"
+                    : "border border-border text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {receiptUploaded ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 mr-2 text-accent-muted-green shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 mr-2 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 ) : (
-                  <Upload className="w-3.5 h-3.5 mr-2 text-zinc-400 shrink-0" />
+                  <Upload className="w-3.5 h-3.5 mr-2 text-muted-foreground shrink-0" />
                 )}
                 <span>{receiptUploaded ? "Receipt Attached (receipt.jpg)" : "Attach Receipt"}</span>
               </Button>

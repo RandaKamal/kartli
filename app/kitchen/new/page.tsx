@@ -20,21 +20,21 @@ export default async function NewKitchenPage() {
     <div className="max-w-xl mx-auto my-8 space-y-6">
       <Link
         href="/"
-        className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition px-1"
+        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition px-1"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         <span>Back to Kitchens</span>
       </Link>
 
-      <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+      <Card className="border border-border/80 bg-card rounded-3xl p-6 sm:p-8 space-y-6">
         <CardHeader className="p-0 space-y-2">
           <Badge variant="secondary" className="w-fit text-[11px] font-semibold uppercase tracking-wider">
             Setup Space
           </Badge>
-          <CardTitle className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          <CardTitle className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
             Create a New Kitchen
           </CardTitle>
-          <CardDescription className="text-sm text-zinc-400 leading-relaxed">
+          <CardDescription className="text-sm text-muted-foreground leading-relaxed">
             Set up your shared space and generate invite links for your roommates or family.
           </CardDescription>
         </CardHeader>
@@ -67,7 +67,7 @@ export default async function NewKitchenPage() {
                 placeholder={session.user.username}
                 className="rounded-xl"
               />
-              <span className="text-xs text-zinc-500 block">
+              <span className="text-xs text-muted-foreground block">
                 This name will be shown to your kitchen members (you will be the Admin).
               </span>
             </div>
@@ -81,15 +81,15 @@ export default async function NewKitchenPage() {
                 name="members"
                 rows={4}
                 placeholder={"Sarah\nFelix\nAlex"}
-                className="flex w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary focus-visible:border-transparent transition-colors"
+                className="flex w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-transparent transition-colors"
               />
-              <span className="text-xs text-zinc-500 block">
+              <span className="text-xs text-muted-foreground block">
                 A unique one-time invite link will be generated for each member. You can also add more members later.
               </span>
             </div>
 
-            <div className="pt-4 border-t border-zinc-800 flex items-center justify-end gap-3">
-              <Button asChild variant="ghost" size="sm" className="rounded-xl text-zinc-400 hover:text-white">
+            <div className="pt-4 border-t border-border flex items-center justify-end gap-3">
+              <Button asChild variant="ghost" size="sm" className="rounded-xl text-muted-foreground hover:text-foreground">
                 <Link href="/">Cancel</Link>
               </Button>
               <Button type="submit" size="default" className="rounded-xl font-semibold shadow-sm">

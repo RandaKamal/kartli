@@ -70,7 +70,7 @@ export function LoginForm({
       )}
 
       {error && (
-        <div className="p-3 bg-accent-primary/10 border border-accent-primary/30 text-accent-primary text-xs rounded-xl text-center font-medium animate-in fade-in-50">
+        <div className="p-3 bg-destructive/10 border border-destructive/30 text-destructive text-xs rounded-xl text-center font-medium animate-in fade-in-50">
           {error}
         </div>
       )}
@@ -110,7 +110,7 @@ export function LoginForm({
             type="button"
             tabIndex={-1}
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition p-1 cursor-pointer"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition p-1 cursor-pointer"
             title={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

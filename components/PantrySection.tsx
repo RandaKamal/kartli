@@ -102,10 +102,10 @@ export function PantrySection({
 
   return (
     <>
-      <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 shadow-sm space-y-4">
+      <Card className="border-border bg-card rounded-3xl p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-white flex items-center gap-2">
-            <Package className="w-4 h-4 text-zinc-400" />
+          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+            <Package className="w-4 h-4 text-muted-foreground" />
             <span>Pantry &amp; Inventory</span>
             <Badge variant="secondary" className="text-xs font-mono">
               {pantryItems.length}
@@ -113,7 +113,7 @@ export function PantrySection({
           </h2>
           {outOfStockCount > 0 && (
             <Badge variant="warm" className="gap-1 font-medium text-xs">
-              <AlertTriangle className="w-3 h-3 text-accent-warm" />
+              <AlertTriangle className="w-3 h-3" />
               <span>{outOfStockCount} empty</span>
             </Badge>
           )}
@@ -137,21 +137,21 @@ export function PantrySection({
           </Button>
         </form>
 
-        <div className="divide-y divide-zinc-800">
+        <div className="divide-y divide-border">
           {pantryItems.length === 0 && (
-            <p className="text-xs text-zinc-500 py-4 text-center">
+            <p className="text-xs text-muted-foreground py-4 text-center">
               No pantry items yet. Add your first item above.
             </p>
           )}
           {pantryItems.map((item) => (
             <div
               key={item.id}
-              className="py-3 flex items-center justify-between gap-3 text-sm hover:bg-zinc-800/20 px-2 rounded-xl transition"
+              className="py-3 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition"
             >
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <span
                   className={`font-medium truncate ${
-                    item.is_out_of_stock ? "text-zinc-400" : "text-white"
+                    item.is_out_of_stock ? "text-muted-foreground line-through decoration-muted-foreground/50" : "text-foreground"
                   }`}
                 >
                   {item.name}
@@ -163,16 +163,16 @@ export function PantrySection({
                     className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium"
                     title="Out of stock - on shopping list"
                   >
-                    <AlertTriangle className="w-3 h-3 text-accent-warm" />
+                    <AlertTriangle className="w-3 h-3" />
                     <span>Empty</span>
                   </Badge>
                 ) : (
                   <Badge
                     variant="outline"
-                    className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium text-zinc-500"
+                    className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium text-muted-foreground"
                     title="In stock"
                   >
-                    <Check className="w-3 h-3 text-zinc-500" />
+                    <Check className="w-3 h-3" />
                     <span>In Stock</span>
                   </Badge>
                 )}
@@ -190,11 +190,7 @@ export function PantrySection({
                       ? "Restock item (removes from shopping list)"
                       : "Mark as empty (adds to shopping list)"
                   }
-                  className={`h-8 px-3 rounded-lg text-xs font-semibold ${
-                    item.is_out_of_stock
-                      ? "bg-white text-black hover:bg-zinc-200"
-                      : "hover:border-zinc-600"
-                  }`}
+                  className="h-8 px-3 rounded-lg text-xs font-semibold"
                 >
                   {item.is_out_of_stock ? (
                     <>
@@ -203,7 +199,7 @@ export function PantrySection({
                     </>
                   ) : (
                     <>
-                      <AlertTriangle className="w-3.5 h-3.5 text-accent-warm" />
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
                       <span>Mark Empty</span>
                     </>
                   )}
@@ -215,7 +211,7 @@ export function PantrySection({
                   size="icon-sm"
                   onClick={() => setItemToDelete(item)}
                   disabled={isPending}
-                  className="text-zinc-500 hover:text-accent-primary hover:bg-zinc-800 rounded-lg"
+                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
                   title="Delete item from pantry"
                   aria-label={`Delete ${item.name}`}
                 >
@@ -232,15 +228,15 @@ export function PantrySection({
         <AlertDialogContent>
           <AlertDialogHeader>
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2.5 rounded-2xl bg-accent-primary/10 border border-accent-primary/20 text-accent-primary">
+              <div className="p-2.5 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive">
                 <Trash2 className="w-5 h-5" />
               </div>
               <AlertDialogTitle>Delete Pantry Item</AlertDialogTitle>
             </div>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong className="text-white">&ldquo;{itemToDelete?.name}&rdquo;</strong> from the pantry?
+              Are you sure you want to delete <strong className="text-foreground font-semibold">&ldquo;{itemToDelete?.name}&rdquo;</strong> from the pantry?
               {itemToDelete?.is_out_of_stock && (
-                <span className="block mt-1 text-accent-warm">
+                <span className="block mt-1 text-amber-600 dark:text-amber-400 font-medium">
                   This will also remove its pending entry from the shopping list.
                 </span>
               )}

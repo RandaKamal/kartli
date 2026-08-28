@@ -11,12 +11,12 @@ export default async function LoginPage({
 
   return (
     <div className="max-w-md mx-auto my-8">
-      <Card className="border-zinc-800/80 bg-zinc-900/90 shadow-2xl p-6 sm:p-8 rounded-3xl">
+      <Card className="border border-border/80 bg-card p-6 sm:p-8 rounded-3xl">
         <CardHeader className="p-0 text-center space-y-2 mb-6">
-          <CardTitle className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          <CardTitle className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
             Sign in to kartli
           </CardTitle>
-          <CardDescription className="text-sm text-zinc-400">
+          <CardDescription className="text-sm text-muted-foreground">
             Enter your username and password to access your kitchens.
           </CardDescription>
         </CardHeader>
@@ -25,11 +25,11 @@ export default async function LoginPage({
           <LoginForm callbackUrl={callbackUrl} initialError={error} />
         </CardContent>
 
-        <CardFooter className="p-0 mt-6 pt-6 border-t border-zinc-800 text-center justify-center text-xs text-zinc-400">
+        <CardFooter className="p-0 mt-6 pt-6 border-t border-border text-center justify-center text-xs text-muted-foreground">
           <span>Don&apos;t have an account?</span>
           <Link
             href={callbackUrl ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/register"}
-            className="font-semibold text-white hover:underline ml-1.5 transition-colors"
+            className="font-semibold text-foreground hover:underline ml-1.5 transition-colors"
           >
             Sign up here
           </Link>

@@ -37,27 +37,27 @@ export default async function KitchenPurchasesPage({
       <div className="space-y-4">
         <Link
           href={`/kitchen/${id}/admin`}
-          className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition px-1"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition px-1"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Admin Dashboard</span>
         </Link>
 
-        <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-2">
+        <Card className="border border-border/80 bg-card rounded-3xl p-6 sm:p-8 space-y-2">
           <Badge variant="destructive" className="w-fit text-[11px] font-semibold uppercase tracking-wider">
             PURCHASES
           </Badge>
-          <CardTitle className="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center gap-2">
-            <Receipt className="w-6 h-6 text-zinc-400" />
+          <CardTitle className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight flex items-center gap-2">
+            <Receipt className="w-6 h-6 text-muted-foreground" />
             {kitchen.name}
           </CardTitle>
-          <CardDescription className="text-sm text-zinc-400">
+          <CardDescription className="text-sm text-muted-foreground">
             See who bought what, review receipts, and issue refunds.
           </CardDescription>
         </Card>
       </div>
 
-      <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 shadow-sm">
+      <Card className="border-border bg-card rounded-3xl p-6 shadow-sm">
         <AdminCheckoutsList kitchenId={id} checkouts={checkouts} />
       </Card>
     </div>

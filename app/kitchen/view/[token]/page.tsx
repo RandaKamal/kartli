@@ -32,29 +32,29 @@ export default async function PublicKitchenViewPage({
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <Card className="border-zinc-800/80 bg-zinc-900/90 text-white rounded-3xl p-6 sm:p-8 shadow-2xl space-y-4">
+      <Card className="border border-border/80 bg-card text-card-foreground rounded-3xl p-6 sm:p-8 space-y-4">
         <div className="flex items-center justify-between">
           <Badge variant="secondary" className="gap-1.5 px-3 py-1 font-semibold uppercase tracking-wider text-[11px]">
             <ShoppingBag className="w-3.5 h-3.5" />
             <span>Supermarket View</span>
           </Badge>
-          <span className="text-xs text-zinc-500 font-medium">
+          <span className="text-xs text-muted-foreground font-medium">
             Read-only mode
           </span>
         </div>
 
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">{kitchen.name}</h1>
-          <p className="text-sm text-zinc-400 mt-1">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{kitchen.name}</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Viewing shared kitchen grocery list and household roster.
           </p>
         </div>
       </Card>
 
       {/* Shopping List */}
-      <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 sm:p-8 shadow-sm space-y-4">
-        <h2 className="text-base font-semibold text-white flex items-center gap-2">
-          <ShoppingBag className="w-4 h-4 text-zinc-400" />
+      <Card className="border-border bg-card rounded-3xl p-6 sm:p-8 shadow-sm space-y-4">
+        <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+          <ShoppingBag className="w-4 h-4 text-muted-foreground" />
           <span>Shopping List</span>
           <Badge variant="secondary" className="text-xs font-mono">
             {pendingItems.length}
@@ -62,15 +62,15 @@ export default async function PublicKitchenViewPage({
         </h2>
 
         {pendingItems.length === 0 ? (
-          <p className="text-xs text-zinc-500 py-2">Nothing needed right now.</p>
+          <p className="text-xs text-muted-foreground py-2">Nothing needed right now.</p>
         ) : (
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {pendingItems.map((item) => (
               <li
                 key={item.id}
-                className="px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 text-sm text-zinc-200 font-medium flex items-center gap-2"
+                className="px-3.5 py-2.5 rounded-xl bg-muted/40 border border-border text-sm text-foreground font-medium flex items-center gap-2"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-accent-warm" />
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                 <span className="truncate">{item.name}</span>
               </li>
             ))}
@@ -78,10 +78,10 @@ export default async function PublicKitchenViewPage({
         )}
       </Card>
 
-      <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+      <Card className="border-border bg-card rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
         <div>
-          <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-            <Users className="w-4 h-4 text-zinc-400" />
+          <h2 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
+            <Users className="w-4 h-4 text-muted-foreground" />
             <span>Kitchen Roster</span>
             <Badge variant="secondary" className="text-xs font-mono">
               {activeMembers.length} active
@@ -94,17 +94,17 @@ export default async function PublicKitchenViewPage({
                 key={member.id}
                 className={`p-3.5 rounded-xl border flex items-center justify-between text-sm ${
                   member.is_active
-                    ? "bg-zinc-950 border-zinc-800"
-                    : "bg-zinc-950/40 border-dashed border-zinc-800 opacity-60"
+                    ? "bg-muted/40 border-border"
+                    : "bg-muted/20 border-dashed border-border opacity-60"
                 }`}
               >
                 <div className="flex items-center gap-2.5">
                   <Avatar className="h-7 w-7">
-                    <AvatarFallback className="bg-zinc-800 text-[11px] font-semibold text-zinc-300">
+                    <AvatarFallback className="bg-secondary text-[11px] font-semibold text-secondary-foreground">
                       {member.kitchen_display_name.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="font-medium text-zinc-200">
+                  <span className="font-medium text-foreground">
                     {member.kitchen_display_name}
                   </span>
                 </div>
@@ -120,14 +120,14 @@ export default async function PublicKitchenViewPage({
           </div>
         </div>
 
-        <div className="pt-6 border-t border-zinc-800 flex items-center justify-between text-xs text-zinc-400">
+        <div className="pt-6 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
           {session?.user ? (
             membership ? (
               <>
                 <span>You are a member ({membership.kitchen_display_name})</span>
                 <Link
                   href={`/kitchen/${kitchen.id}`}
-                  className="inline-flex items-center gap-1 font-semibold text-white hover:underline transition-colors"
+                  className="inline-flex items-center gap-1 font-semibold text-foreground hover:underline transition-colors"
                 >
                   <span>Go to kitchen space</span>
                   <ArrowRight className="w-3 h-3" />
@@ -135,10 +135,10 @@ export default async function PublicKitchenViewPage({
               </>
             ) : (
               <>
-                <span>Signed in as <strong className="text-zinc-200">{session.user.username}</strong></span>
+                <span>Signed in as <strong className="text-foreground">{session.user.username}</strong></span>
                 <Link
                   href="/"
-                  className="inline-flex items-center gap-1 font-semibold text-white hover:underline transition-colors"
+                  className="inline-flex items-center gap-1 font-semibold text-foreground hover:underline transition-colors"
                 >
                   <span>My Kitchens</span>
                   <ArrowRight className="w-3 h-3" />
@@ -150,7 +150,7 @@ export default async function PublicKitchenViewPage({
               <span>Are you a member of this kitchen?</span>
               <Link
                 href={`/login?callbackUrl=${encodeURIComponent(`/kitchen/${kitchen.id}`)}`}
-                className="inline-flex items-center gap-1 font-semibold text-white hover:underline transition-colors"
+                className="inline-flex items-center gap-1 font-semibold text-foreground hover:underline transition-colors"
               >
                 <span>Sign in to manage</span>
                 <ArrowRight className="w-3 h-3" />

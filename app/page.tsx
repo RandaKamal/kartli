@@ -15,19 +15,19 @@ export default async function HomePage() {
   return (
     <div className="space-y-10">
       {!session?.user ? (
-        <Card className="border-zinc-800/80 bg-zinc-900/90 text-white shadow-2xl relative overflow-hidden p-8 sm:p-12">
+        <Card className="border border-border/80 bg-gradient-to-br from-card via-card to-muted/30 text-card-foreground relative overflow-hidden p-8 sm:p-12">
           <div className="max-w-2xl space-y-6 relative z-10">
-            <Badge variant="secondary" className="px-3 py-1 font-semibold tracking-wider uppercase text-[11px] border-zinc-700 bg-zinc-800/80 text-zinc-300">
+            <Badge variant="secondary" className="px-3 py-1 font-semibold tracking-wider uppercase text-[11px]">
               Email-Free &amp; Lean
             </Badge>
-            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight text-white">
+            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight text-foreground">
               Manage your shared kitchen groceries effortlessly.
             </h1>
-            <p className="text-zinc-400 text-base sm:text-lg leading-relaxed">
+            <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
               Set up your flatmate or family kitchen in seconds. No emails or complicated passwords required—just pick a username and share instant invite links.
             </p>
             <div className="flex flex-wrap gap-4 pt-2">
-              <Button asChild size="lg" className="rounded-xl shadow-md font-semibold">
+              <Button asChild size="lg" className="rounded-xl shadow-xs font-semibold">
                 <Link href="/register">Get Started</Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="rounded-xl font-semibold">
@@ -35,17 +35,17 @@ export default async function HomePage() {
               </Button>
             </div>
           </div>
-          {/* Subtle background glow element using accent-primary */}
-          <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-accent-primary/5 rounded-full blur-3xl pointer-events-none" />
+          {/* Subtle background glow element using brand primary */}
+          <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-accent-primary/10 rounded-full blur-3xl pointer-events-none" />
         </Card>
       ) : (
         <section className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                Welcome back, <span className="text-white">{session.user.username}</span>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+                Welcome back, <span>{session.user.username}</span>
               </h1>
-              <p className="text-sm text-zinc-400 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Manage your shared households and grocery inventory.
               </p>
             </div>
@@ -58,20 +58,20 @@ export default async function HomePage() {
           </div>
 
           <div>
-            <h2 className="text-xs font-semibold text-zinc-400 mb-4 uppercase tracking-wider">
+            <h2 className="text-xs font-semibold text-muted-foreground mb-4 uppercase tracking-wider">
               Your Kitchens
             </h2>
 
             {userKitchens.length === 0 ? (
-              <Card className="border-dashed border-zinc-800 bg-zinc-900/60 p-10 text-center space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-300 mx-auto">
-                  <UtensilsCrossed className="w-6 h-6 text-zinc-400" />
+              <Card className="border-dashed border-border bg-card/60 p-10 text-center space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-muted border border-border flex items-center justify-center text-muted-foreground mx-auto">
+                  <UtensilsCrossed className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <div className="space-y-1">
-                  <CardTitle className="text-base font-semibold text-white">
+                  <CardTitle className="text-base font-semibold text-foreground">
                     You are not part of any kitchen yet
                   </CardTitle>
-                  <CardDescription className="text-sm text-zinc-400 max-w-sm mx-auto">
+                  <CardDescription className="text-sm text-muted-foreground max-w-sm mx-auto">
                     Create a new kitchen or accept an invite link from your flatmate.
                   </CardDescription>
                 </div>
@@ -92,7 +92,7 @@ export default async function HomePage() {
                   return (
                     <Card
                       key={kitchen.id}
-                      className="group relative border-zinc-800/80 bg-zinc-900/90 hover:border-zinc-700 hover:bg-zinc-900 transition-all flex flex-col justify-between cursor-pointer rounded-2xl p-6 shadow-sm overflow-hidden"
+                      className="group relative border-border bg-card hover:border-accent-primary/40 hover:bg-muted/30 transition-all flex flex-col justify-between cursor-pointer rounded-2xl p-6 shadow-sm overflow-hidden"
                     >
                       {/* Entire Card Overlay Link */}
                       <Link
@@ -109,22 +109,22 @@ export default async function HomePage() {
                           >
                             {membership.role}
                           </Badge>
-                          <span className="text-xs text-zinc-500 font-mono">
+                          <span className="text-xs text-muted-foreground font-mono">
                             {new Date(kitchen.created_at).toLocaleDateString()}
                           </span>
                         </div>
 
-                        <h3 className="text-xl font-bold text-white group-hover:text-zinc-100 transition">
+                        <h3 className="text-xl font-bold text-foreground group-hover:text-accent-primary transition">
                           {kitchen.name}
                         </h3>
 
-                        <p className="text-xs text-zinc-400">
-                          Display Name: <strong className="text-zinc-200">{membership.kitchen_display_name}</strong>
+                        <p className="text-xs text-muted-foreground">
+                          Display Name: <strong className="text-foreground">{membership.kitchen_display_name}</strong>
                         </p>
                       </div>
 
-                      <div className="pt-5 border-t border-zinc-800/80 mt-6 flex items-center justify-between relative z-0 pointer-events-none">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-white group-hover:text-zinc-200 transition">
+                      <div className="pt-5 border-t border-border mt-6 flex items-center justify-between relative z-0 pointer-events-none">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground group-hover:text-accent-primary transition">
                           <span>Open Dashboard</span>
                           <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                         </span>
@@ -134,7 +134,7 @@ export default async function HomePage() {
                             asChild
                             variant="secondary"
                             size="sm"
-                            className="h-7 px-2.5 text-xs text-zinc-400 hover:text-white rounded-lg border-zinc-700 gap-1"
+                            className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground rounded-lg border border-border/80 gap-1"
                           >
                             <Link
                               href={`/kitchen/view/${kitchen.public_view_token}`}

@@ -74,22 +74,22 @@ export function AdminActiveMembersList({
 
             return (
               <TableRow key={member.id}>
-                <TableCell className="font-medium text-white">
+                <TableCell className="font-medium text-foreground">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-zinc-800 text-xs font-semibold text-zinc-300">
+                      <AvatarFallback className="bg-secondary text-xs font-semibold text-secondary-foreground">
                         {initial}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex items-center">
                       <span>{member.kitchen_display_name}</span>
                       {isSelf && (
-                        <span className="ml-2 text-xs text-zinc-500 font-normal">(You)</span>
+                        <span className="ml-2 text-xs text-muted-foreground font-normal">(You)</span>
                       )}
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="text-zinc-400 font-mono text-xs">
+                <TableCell className="text-muted-foreground font-mono text-xs">
                   @{member.username || "—"}
                 </TableCell>
                 <TableCell>
@@ -100,7 +100,7 @@ export function AdminActiveMembersList({
                     {member.role}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-xs text-zinc-500 font-mono">
+                <TableCell className="text-xs text-muted-foreground font-mono">
                   {member.joined_at
                     ? new Date(member.joined_at).toLocaleDateString()
                     : "—"}
@@ -112,13 +112,13 @@ export function AdminActiveMembersList({
                       variant="outline"
                       size="sm"
                       onClick={() => setSelectedMember(member)}
-                      className="h-8 px-2.5 text-xs text-zinc-400 hover:text-white rounded-lg border-zinc-800"
+                      className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground rounded-lg border-border"
                     >
-                      <UserMinus className="w-3.5 h-3.5 mr-1 text-zinc-500" />
+                      <UserMinus className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
                       <span>Remove</span>
                     </Button>
                   ) : isSelf ? (
-                    <span className="text-xs text-zinc-500 font-mono italic">Primary</span>
+                    <span className="text-xs text-muted-foreground font-mono italic">Primary</span>
                   ) : null}
                 </TableCell>
               </TableRow>
@@ -132,18 +132,18 @@ export function AdminActiveMembersList({
         <AlertDialogContent>
           <AlertDialogHeader>
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2.5 rounded-2xl bg-accent-primary/10 border border-accent-primary/20 text-accent-primary">
+              <div className="p-2.5 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <AlertDialogTitle>Remove Kitchen Member</AlertDialogTitle>
             </div>
             <AlertDialogDescription>
               Are you sure you want to remove{" "}
-              <strong className="text-white font-semibold">
+              <strong className="text-foreground font-semibold">
                 {selectedMember?.kitchen_display_name}
               </strong>{" "}
               {selectedMember?.username && (
-                <span className="font-mono text-zinc-300">
+                <span className="font-mono text-muted-foreground">
                   (@{selectedMember.username})
                 </span>
               )}{" "}

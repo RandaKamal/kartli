@@ -78,27 +78,27 @@ export default async function KitchenAdminPage({
       <div className="space-y-4">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition px-1"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition px-1"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Kitchens</span>
         </Link>
 
-        <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <Card className="border border-border/80 bg-card rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Badge variant="destructive" className="font-semibold text-[11px] gap-1 px-2.5 py-0.5">
                 <Shield className="w-3 h-3" />
                 ADMIN PANEL
               </Badge>
-              <span className="text-xs text-zinc-500 font-mono">
+              <span className="text-xs text-muted-foreground font-mono">
                 Created {new Date(kitchen.created_at).toLocaleDateString()}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
               {kitchen.name}
             </h1>
-            <p className="text-sm text-zinc-400 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Manage members, generate invite tokens, and view guest links.
             </p>
           </div>
@@ -116,14 +116,14 @@ export default async function KitchenAdminPage({
       </div>
 
       {/* Guest Link Banner */}
-      <Card className="border-zinc-800 bg-zinc-900/80 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+      <Card className="border-border bg-card rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="font-semibold uppercase tracking-wider text-[10px]">
               Supermarket &amp; Guest Link
             </Badge>
           </div>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-muted-foreground">
             Share this link with anyone for instant read-only grocery access without requiring an account.
           </p>
         </div>
@@ -133,7 +133,7 @@ export default async function KitchenAdminPage({
             type="text"
             readOnly
             value={publicGuestUrl}
-            className="h-8 px-2.5 text-xs text-zinc-300 font-mono w-48 sm:w-64 select-all rounded-lg"
+            className="h-8 px-2.5 text-xs text-foreground font-mono w-48 sm:w-64 select-all rounded-lg"
           />
           <CopyButton text={publicGuestUrl} label="Copy Link" size="sm" />
           <Button asChild variant="default" size="sm" className="h-8 px-3 rounded-lg text-xs font-semibold gap-1">
@@ -155,10 +155,10 @@ export default async function KitchenAdminPage({
         {/* Left 2 Cols: Member tables */}
         <div className="lg:col-span-2 space-y-8">
           {/* Active Members */}
-          <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 shadow-sm space-y-4">
+          <Card className="border-border bg-card rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-white flex items-center gap-2">
-                <Users className="w-4 h-4 text-zinc-400" />
+              <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                <Users className="w-4 h-4 text-muted-foreground" />
                 <span>Active Members</span>
                 <Badge variant="secondary" className="text-xs font-mono">
                   {activeMembers.length}
@@ -174,10 +174,10 @@ export default async function KitchenAdminPage({
           </Card>
 
           {/* Pending Invites */}
-          <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 shadow-sm space-y-4">
+          <Card className="border-border bg-card rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-white flex items-center gap-2">
-                <Mail className="w-4 h-4 text-zinc-400" />
+              <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                <Mail className="w-4 h-4 text-muted-foreground" />
                 <span>Pending Invites</span>
                 <Badge variant="secondary" className="text-xs font-mono">
                   {pendingInvites.length}
@@ -195,13 +195,13 @@ export default async function KitchenAdminPage({
 
         {/* Right Col: Add Member Form */}
         <div className="space-y-6">
-          <Card className="border-zinc-800/80 bg-zinc-900/90 rounded-3xl p-6 shadow-sm space-y-4">
+          <Card className="border-border bg-card rounded-3xl p-6 shadow-sm space-y-4">
             <CardHeader className="p-0 space-y-1">
-              <CardTitle className="text-base font-semibold text-white flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-zinc-400" />
+              <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                <UserPlus className="w-4 h-4 text-muted-foreground" />
                 <span>Invite New Member</span>
               </CardTitle>
-              <CardDescription className="text-xs text-zinc-400">
+              <CardDescription className="text-xs text-muted-foreground">
                 Add another placeholder member to generate a new one-time claim link.
               </CardDescription>
             </CardHeader>

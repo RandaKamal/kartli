@@ -17,18 +17,18 @@ export default async function ProfilePage() {
       <div className="space-y-4">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition px-1"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition px-1"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Kitchens</span>
         </Link>
 
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
             Settings &amp; Profile
           </h1>
-          <p className="text-sm text-zinc-400 mt-1">
-            Manage your account credentials, notifications, and theme token preferences.
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage your account credentials, notifications, and theme preferences.
           </p>
         </div>
       </div>

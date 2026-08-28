@@ -4,24 +4,26 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer select-none",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer select-none",
   {
     variants: {
       variant: {
         default:
-          "bg-white text-black hover:bg-zinc-200 shadow-sm active:scale-[0.98]",
+          "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm active:scale-[0.98]",
         destructive:
-          "bg-accent-primary text-white hover:bg-accent-primary/90 shadow-sm active:scale-[0.98]",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm active:scale-[0.98]",
         outline:
-          "border border-zinc-800 bg-zinc-950 text-zinc-200 hover:bg-zinc-900 hover:text-white hover:border-zinc-700 active:scale-[0.98]",
+          "border border-input bg-background text-foreground hover:bg-muted hover:text-foreground active:scale-[0.98]",
         secondary:
-          "bg-zinc-900 border border-zinc-800 text-zinc-200 hover:bg-zinc-800 hover:text-white hover:border-zinc-700 active:scale-[0.98]",
+          "bg-secondary border border-border/70 text-secondary-foreground hover:bg-secondary/80 active:scale-[0.98]",
         ghost:
-          "text-zinc-400 hover:text-white hover:bg-zinc-900 active:scale-[0.98]",
+          "text-muted-foreground hover:text-foreground hover:bg-muted active:scale-[0.98]",
         link:
-          "text-zinc-300 underline-offset-4 hover:underline hover:text-white",
+          "text-accent-primary underline-offset-4 hover:underline",
         accent:
-          "bg-accent-primary/10 border border-accent-primary/30 text-accent-primary hover:bg-accent-primary/20 active:scale-[0.98]",
+          "bg-accent-primary text-white hover:bg-accent-primary/90 shadow-sm active:scale-[0.98]",
+        success:
+          "bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-sm active:scale-[0.98]",
       },
       size: {
         default: "h-10 px-4 py-2 text-sm",

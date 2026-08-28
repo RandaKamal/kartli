@@ -11,12 +11,12 @@ export default async function RegisterPage({
 
   return (
     <div className="max-w-md mx-auto my-8">
-      <Card className="border-zinc-800/80 bg-zinc-900/90 shadow-2xl p-6 sm:p-8 rounded-3xl">
+      <Card className="border border-border/80 bg-card p-6 sm:p-8 rounded-3xl">
         <CardHeader className="p-0 text-center space-y-2 mb-6">
-          <CardTitle className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          <CardTitle className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
             Create your account
           </CardTitle>
-          <CardDescription className="text-sm text-zinc-400">
+          <CardDescription className="text-sm text-muted-foreground">
             Pick a username and password. No email address required.
           </CardDescription>
         </CardHeader>
@@ -25,11 +25,11 @@ export default async function RegisterPage({
           <RegisterForm callbackUrl={callbackUrl} initialError={error} />
         </CardContent>
 
-        <CardFooter className="p-0 mt-6 pt-6 border-t border-zinc-800 text-center justify-center text-xs text-zinc-400">
+        <CardFooter className="p-0 mt-6 pt-6 border-t border-border text-center justify-center text-xs text-muted-foreground">
           <span>Already have an account?</span>
           <Link
             href={callbackUrl ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/login"}
-            className="font-semibold text-white hover:underline ml-1.5 transition-colors"
+            className="font-semibold text-foreground hover:underline ml-1.5 transition-colors"
           >
             Sign in
           </Link>
