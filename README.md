@@ -109,5 +109,4 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## License
 
-This project is open source and available under the [MIT License](LICENSE).
-
+This project is available for personal and noncommercial use under the [PolyForm Noncommercial License](LICENSE).
