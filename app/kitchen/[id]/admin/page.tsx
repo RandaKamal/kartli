@@ -11,13 +11,12 @@ import {
 import { CopyButton } from "@/components/CopyButton";
 import { AdminActiveMembersList } from "@/components/AdminActiveMembersList";
 import { AdminPendingInvitesList } from "@/components/AdminPendingInvitesList";
+import { AdminKitchenHeader } from "@/components/AdminKitchenHeader";
 import { headers } from "next/headers";
-import { ExternalLink, Users, Mail, UserPlus, ArrowLeft, Shield } from "lucide-react";
+import { ExternalLink, Users, Mail, UserPlus } from "lucide-react";
 import { getPantryItems, getShoppingListItems } from "@/lib/pantry";
 import { PantrySection } from "@/components/PantrySection";
 import { ShoppingListSection } from "@/components/ShoppingListSection";
-import { getUserCheckouts } from "@/lib/pantry";
-import { ShoppingCart } from "@/components/ShoppingCart";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,46 +73,12 @@ export default async function KitchenAdminPage({
 
   return (
     <div className="space-y-8">
-      {/* Top Breadcrumb & Header */}
-      <div className="space-y-4">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition px-1"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Kitchens</span>
-        </Link>
-
-        <Card className="border border-border/80 bg-card rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Badge variant="accent" className="font-semibold text-[11px] gap-1 px-2.5 py-0.5">
-                <Shield className="w-3 h-3" />
-                ADMIN PANEL
-              </Badge>
-              <span className="text-xs text-muted-foreground font-mono">
-                Created {new Date(kitchen.created_at).toLocaleDateString()}
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-              {kitchen.name}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Manage members, generate invite tokens, and view guest links.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <ShoppingCart kitchenId={id} items={shoppingListItems} currentUserId={session.user.id} />
-            <Button asChild variant="secondary" size="sm" className="rounded-xl font-medium">
-              <Link href={`/kitchen/${id}/admin/purchases`}>Purchases</Link>
-            </Button>
-            <Button asChild variant="outline" size="sm" className="rounded-xl font-medium">
-              <Link href={`/kitchen/${id}/member`}>Member View</Link>
-            </Button>
-          </div>
-        </Card>
-      </div>
+      {/* Top Breadcrumb & Header with Inline Name Editing */}
+      <AdminKitchenHeader
+        kitchen={kitchen}
+        shoppingListItems={shoppingListItems}
+        currentUserId={session.user.id}
+      />
 
       {/* Guest Link Banner */}
       <Card className="border-border bg-card rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
@@ -148,7 +113,7 @@ export default async function KitchenAdminPage({
       {/* Pantry & Shopping List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PantrySection kitchenId={id} items={pantryItems} />
-        <ShoppingListSection kitchenId={id} items={shoppingListItems} />
+        <ShoppingListSection kitchenId={id} items={shoppingListItems} currentUserId={session.user.id} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

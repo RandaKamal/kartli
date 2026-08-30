@@ -129,7 +129,7 @@ export default async function KitchenMemberPage({
       {/* Pantry & Shopping List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PantrySection kitchenId={id} items={pantryItems} />
-        <ShoppingListSection kitchenId={id} items={shoppingListItems} />
+        <ShoppingListSection kitchenId={id} items={shoppingListItems} currentUserId={session.user.id} />
       </div>
 
       <MyPurchasesSection checkouts={myCheckouts} />

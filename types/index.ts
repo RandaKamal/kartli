@@ -151,8 +151,14 @@ export interface ShoppingListItem {
   name: string;
   is_purchased: boolean;
   purchased_by: string | null;
+  purchased_by_name?: string | null;
   checkout_id: string | null;
   created_at: Date;
+}
+
+export interface UpdateKitchenNameInput {
+  kitchenId: string;
+  newName: string;
 }
 
 export interface Checkout {

@@ -120,25 +120,36 @@ export async function deletePantryItem(kitchenId: string, itemId: string): Promi
 }
 
 /**
- * Clears and removes all bought items from the shopping list for a kitchen.
+ * Clears and removes all bought/cart items that have not been checked out yet for a kitchen.
  */
 export async function clearBoughtShoppingListItems(kitchenId: string): Promise<number> {
   const result = await pool.query(
-    `DELETE FROM shopping_list_items WHERE kitchen_id = $1 AND is_purchased = TRUE`,
+    `DELETE FROM shopping_list_items WHERE kitchen_id = $1 AND is_purchased = TRUE AND checkout_id IS NULL`,
     [kitchenId]
   );
   return result.rowCount ?? 0;
 }
 
 /**
- * Fetches all shopping list items for a kitchen (pending first).
+ * Fetches all shopping list items for a kitchen (pending first) with user attribution for cart items.
  */
 export async function getShoppingListItems(kitchenId: string): Promise<ShoppingListItem[]> {
   const sql = `
-    SELECT id, kitchen_id, pantry_item_id, name, is_purchased, purchased_by, checkout_id, created_at
-    FROM shopping_list_items
-    WHERE kitchen_id = $1
-    ORDER BY is_purchased ASC, created_at ASC
+    SELECT
+      sli.id,
+      sli.kitchen_id,
+      sli.pantry_item_id,
+      sli.name,
+      sli.is_purchased,
+      sli.purchased_by,
+      sli.checkout_id,
+      sli.created_at,
+      COALESCE(km.kitchen_display_name, u.username) AS purchased_by_name
+    FROM shopping_list_items sli
+    LEFT JOIN users u ON sli.purchased_by = u.id
+    LEFT JOIN kitchen_members km ON km.kitchen_id = sli.kitchen_id AND km.user_id = sli.purchased_by
+    WHERE sli.kitchen_id = $1
+    ORDER BY sli.is_purchased ASC, sli.created_at ASC
   `;
   const { rows } = await pool.query<ShoppingListItem>(sql, [kitchenId]);
   return rows;
@@ -167,8 +178,9 @@ export async function addCustomShoppingItem(
 }
 
 /**
- * Marks a shopping list item as purchased/unpurchased.
- * If linked to a pantry item: marking purchased restocks it, unpurchased sets out-of-stock.
+ * Marks a shopping list item as purchased/in-cart or unpurchased/needed.
+ * If linked to a pantry item: marking purchased restocks it (is_out_of_stock = false),
+ * unpurchased/returning to list marks it back as out-of-stock (is_out_of_stock = true).
  */
 export async function togglePurchased(
   kitchenId: string,
@@ -208,8 +220,20 @@ export async function togglePurchased(
       );
     }
 
+    let purchasedByName: string | null = null;
+    if (isPurchased && userId) {
+      const userRes = await client.query<{ name: string }>(
+        `SELECT COALESCE(km.kitchen_display_name, u.username) AS name
+         FROM users u
+         LEFT JOIN kitchen_members km ON km.kitchen_id = $1 AND km.user_id = u.id
+         WHERE u.id = $2`,
+        [kitchenId, userId]
+      );
+      purchasedByName = userRes.rows[0]?.name ?? null;
+    }
+
     await client.query("COMMIT");
-    return item;
+    return { ...item, purchased_by_name: purchasedByName };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;

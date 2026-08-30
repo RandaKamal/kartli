@@ -12,12 +12,14 @@ import {
   getKitchenMembersWithUsers,
   isUserKitchenAdmin,
   getUserKitchens,
+  updateKitchenName as updateKitchenNameDb,
 } from "@/lib/kitchen";
 import type {
   CreateKitchenInput,
   CreateKitchenResult,
   Kitchen,
   KitchenMemberWithUser,
+  UpdateKitchenNameInput,
 } from "@/types";
 
 /**
@@ -139,3 +141,34 @@ export async function getMyKitchensAction() {
 
   return await getUserKitchens(session.user.id);
 }
+
+/**
+ * Server Action for an admin to rename a kitchen.
+ * Supports passing either an object { kitchenId, newName } or two separate string arguments.
+ */
+export async function updateKitchenName(
+  params: UpdateKitchenNameInput | string,
+  maybeNewName?: string
+): Promise<Kitchen> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in to rename the kitchen.");
+  }
+
+  const kitchenId = typeof params === "object" ? params.kitchenId : params;
+  const newName = typeof params === "object" ? params.newName : (maybeNewName ?? "");
+
+  const updatedKitchen = await updateKitchenNameDb(kitchenId, newName, session.user.id);
+
+  revalidatePath(`/kitchen/${kitchenId}`);
+  revalidatePath(`/kitchen/${kitchenId}/admin`);
+  revalidatePath(`/kitchen/${kitchenId}/member`);
+  revalidatePath(`/kitchen/${kitchenId}/admin/purchases`);
+  revalidatePath(`/kitchen/view/${updatedKitchen.public_view_token}`);
+  revalidatePath("/");
+
+  return updatedKitchen;
+}
+
+export const updateKitchenNameAction = updateKitchenName;
+

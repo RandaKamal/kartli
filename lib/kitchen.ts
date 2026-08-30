@@ -465,3 +465,43 @@ export async function getUserKitchens(userId: string): Promise<
     },
   }));
 }
+
+/**
+ * Updates a kitchen's display name (Admin only action).
+ *
+ * @param kitchenId - UUID of the kitchen.
+ * @param newName - The new name for the kitchen.
+ * @param adminUserId - UUID of the requesting admin user.
+ * @returns The updated Kitchen record.
+ */
+export async function updateKitchenName(
+  kitchenId: string,
+  newName: string,
+  adminUserId: string
+): Promise<Kitchen> {
+  const cleanName = newName?.trim();
+  if (!cleanName) {
+    throw new Error("Kitchen name is required and cannot be empty.");
+  }
+  if (cleanName.length > 255) {
+    throw new Error("Kitchen name cannot exceed 255 characters.");
+  }
+
+  const isAdmin = await isUserKitchenAdmin(kitchenId, adminUserId);
+  if (!isAdmin) {
+    throw new Error("Unauthorized: Only kitchen admins can rename this kitchen.");
+  }
+
+  const sql = `
+    UPDATE kitchens
+    SET name = $1, updated_at = NOW()
+    WHERE id = $2
+    RETURNING id, name, public_view_token, created_at, updated_at
+  `;
+  const { rows } = await pool.query<Kitchen>(sql, [cleanName, kitchenId]);
+  if (rows.length === 0) {
+    throw new Error("Kitchen not found.");
+  }
+  return rows[0];
+}
+

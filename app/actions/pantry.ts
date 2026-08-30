@@ -86,6 +86,14 @@ export async function togglePurchasedAction(
   return item;
 }
 
+export async function moveToCartAction(kitchenId: string, itemId: string) {
+  return await togglePurchasedAction(kitchenId, itemId, true);
+}
+
+export async function returnToShoppingListAction(kitchenId: string, itemId: string) {
+  return await togglePurchasedAction(kitchenId, itemId, false);
+}
+
 export async function removeShoppingListItemAction(kitchenId: string, itemId: string) {
   await requireMembership(kitchenId);
   const result = await removeShoppingListItem(kitchenId, itemId);
@@ -99,3 +107,6 @@ export async function clearBoughtShoppingListItemsAction(kitchenId: string) {
   revalidateKitchen(kitchenId);
   return count;
 }
+
+export const clearCartAction = clearBoughtShoppingListItemsAction;
+
