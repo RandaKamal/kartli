@@ -53,13 +53,19 @@ export async function createKitchen(
 
     // 1. Insert kitchen with public view token
     const publicViewToken = generateSecureToken(24);
+    const spaceType =
+      input.spaceType === "FAMILY" || input.spaceType === "NEUTRAL"
+        ? input.spaceType
+        : "FLATSHARE";
+
     const insertKitchenSql = `
-      INSERT INTO kitchens (name, public_view_token, created_at, updated_at)
-      VALUES ($1, $2, NOW(), NOW())
-      RETURNING id, name, public_view_token, created_at, updated_at
+      INSERT INTO kitchens (name, space_type, public_view_token, created_at, updated_at)
+      VALUES ($1, $2, $3, NOW(), NOW())
+      RETURNING id, name, space_type, public_view_token, created_at, updated_at
     `;
     const { rows: kitchenRows } = await client.query<Kitchen>(insertKitchenSql, [
       kitchenName,
+      spaceType,
       publicViewToken,
     ]);
     const kitchen = kitchenRows[0];
@@ -271,7 +277,7 @@ export async function removeKitchenMember(
  */
 export async function getKitchenById(kitchenId: string): Promise<Kitchen | null> {
   const sql = `
-    SELECT id, name, public_view_token, created_at, updated_at
+    SELECT id, name, space_type, public_view_token, created_at, updated_at
     FROM kitchens
     WHERE id = $1
   `;
@@ -368,13 +374,14 @@ export async function getKitchenByPublicToken(
   if (!trimmedToken) return null;
 
   const kitchenSql = `
-    SELECT id, name, public_view_token, created_at
+    SELECT id, name, space_type, public_view_token, created_at
     FROM kitchens
     WHERE public_view_token = $1
   `;
   const { rows: kitchenRows } = await pool.query<{
     id: string;
     name: string;
+    space_type: Kitchen["space_type"];
     public_view_token: string;
     created_at: Date;
   }>(kitchenSql, [trimmedToken]);
@@ -405,6 +412,7 @@ export async function getKitchenByPublicToken(
   return {
     id: kitchen.id,
     name: kitchen.name,
+    space_type: kitchen.space_type,
     public_view_token: kitchen.public_view_token,
     created_at: kitchen.created_at,
     members: memberRows,
@@ -427,6 +435,7 @@ export async function getUserKitchens(userId: string): Promise<
     SELECT
       k.id AS k_id,
       k.name AS k_name,
+      k.space_type AS k_space_type,
       k.public_view_token AS k_public_view_token,
       k.created_at AS k_created_at,
       k.updated_at AS k_updated_at,
@@ -449,6 +458,7 @@ export async function getUserKitchens(userId: string): Promise<
     kitchen: {
       id: row.k_id,
       name: row.k_name,
+      space_type: row.k_space_type || "FLATSHARE",
       public_view_token: row.k_public_view_token,
       created_at: row.k_created_at,
       updated_at: row.k_updated_at,
@@ -468,11 +478,6 @@ export async function getUserKitchens(userId: string): Promise<
 
 /**
  * Updates a kitchen's display name (Admin only action).
- *
- * @param kitchenId - UUID of the kitchen.
- * @param newName - The new name for the kitchen.
- * @param adminUserId - UUID of the requesting admin user.
- * @returns The updated Kitchen record.
  */
 export async function updateKitchenName(
   kitchenId: string,
@@ -496,9 +501,47 @@ export async function updateKitchenName(
     UPDATE kitchens
     SET name = $1, updated_at = NOW()
     WHERE id = $2
-    RETURNING id, name, public_view_token, created_at, updated_at
+    RETURNING id, name, space_type, public_view_token, created_at, updated_at
   `;
   const { rows } = await pool.query<Kitchen>(sql, [cleanName, kitchenId]);
+  if (rows.length === 0) {
+    throw new Error("Kitchen not found.");
+  }
+  return rows[0];
+}
+
+/**
+ * Updates a kitchen's settings including name and space preset (Admin only action).
+ */
+export async function updateKitchenSettings(
+  kitchenId: string,
+  name: string,
+  spaceType: Kitchen["space_type"],
+  adminUserId: string
+): Promise<Kitchen> {
+  const cleanName = name?.trim();
+  if (!cleanName) {
+    throw new Error("Kitchen name is required and cannot be empty.");
+  }
+  if (cleanName.length > 255) {
+    throw new Error("Kitchen name cannot exceed 255 characters.");
+  }
+
+  const validSpaceType: Kitchen["space_type"] =
+    spaceType === "FAMILY" || spaceType === "NEUTRAL" ? spaceType : "FLATSHARE";
+
+  const isAdmin = await isUserKitchenAdmin(kitchenId, adminUserId);
+  if (!isAdmin) {
+    throw new Error("Unauthorized: Only kitchen admins can update kitchen settings.");
+  }
+
+  const sql = `
+    UPDATE kitchens
+    SET name = $1, space_type = $2, updated_at = NOW()
+    WHERE id = $3
+    RETURNING id, name, space_type, public_view_token, created_at, updated_at
+  `;
+  const { rows } = await pool.query<Kitchen>(sql, [cleanName, validSpaceType, kitchenId]);
   if (rows.length === 0) {
     throw new Error("Kitchen not found.");
   }

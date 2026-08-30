@@ -6,6 +6,11 @@ import type { DefaultSession } from "next-auth";
 export type KitchenRole = "ADMIN" | "MEMBER";
 
 /**
+ * Household / Space preset controlling terminology across the app.
+ */
+export type KitchenSpaceType = "FLATSHARE" | "FAMILY" | "NEUTRAL";
+
+/**
  * Represents a user record in the `users` table.
  */
 export interface DbUser {
@@ -22,6 +27,7 @@ export interface DbUser {
 export interface Kitchen {
   id: string;
   name: string;
+  space_type: KitchenSpaceType;
   public_view_token: string;
   created_at: Date;
   updated_at: Date;
@@ -53,6 +59,7 @@ export interface KitchenMemberWithUser extends KitchenMember {
  */
 export interface CreateKitchenInput {
   name: string;
+  spaceType?: KitchenSpaceType;
   memberNames?: string[];
   adminDisplayName?: string;
 }
@@ -119,6 +126,7 @@ export type ClaimInviteResult =
 export interface PublicKitchenContext {
   id: string;
   name: string;
+  space_type?: KitchenSpaceType;
   public_view_token: string;
   created_at: Date;
   members: Array<{
@@ -160,6 +168,12 @@ export interface ShoppingListItem {
 export interface UpdateKitchenNameInput {
   kitchenId: string;
   newName: string;
+}
+
+export interface UpdateKitchenSettingsInput {
+  kitchenId: string;
+  name: string;
+  spaceType: KitchenSpaceType;
 }
 
 export interface Checkout {

@@ -35,6 +35,7 @@ import {
   returnToShoppingListAction,
   stageGuestShoppingItemAction,
 } from "@/app/actions/pantry";
+import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import { toast } from "sonner";
 
 interface GuestShoppingViewProps {
@@ -56,6 +57,7 @@ export function GuestShoppingView({
   sessionUser,
 }: GuestShoppingViewProps) {
   const router = useRouter();
+  const terminology = getSpaceTerminology(kitchen.space_type);
   const [openItems, setOpenItems] = useState<ShoppingListItem[]>(initialOpenItems);
   const [inCartItems, setInCartItems] = useState<ShoppingListItem[]>(initialInCartItems);
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
@@ -435,7 +437,7 @@ export function GuestShoppingView({
                   ? "You"
                   : item.purchased_by_name
                   ? capitalize(item.purchased_by_name)
-                  : "Roommate";
+                  : terminology.cartAttributionFallback;
 
                 return (
                   <div
@@ -492,7 +494,7 @@ export function GuestShoppingView({
         >
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-muted-foreground" />
-            <span>Kitchen Household</span>
+            <span>{terminology.kitchenMembersTitle}</span>
             <Badge variant="secondary" className="text-[10px] font-mono px-1.5 py-0">
               {kitchen.members.filter((m) => m.is_active).length}
             </Badge>

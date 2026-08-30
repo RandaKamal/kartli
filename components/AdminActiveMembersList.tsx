@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { removeKitchenMemberAction } from "@/app/actions/kitchen";
-import type { KitchenMemberWithUser } from "@/types";
+import type { KitchenMemberWithUser, KitchenSpaceType } from "@/types";
+import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import { UserMinus, AlertTriangle, Loader2 } from "lucide-react";
 import { capitalize } from "@/lib/utils";
 import {
@@ -32,13 +33,17 @@ export function AdminActiveMembersList({
   kitchenId,
   members,
   currentUserId,
+  spaceType = "FLATSHARE",
 }: {
   kitchenId: string;
   members: KitchenMemberWithUser[];
   currentUserId: string;
+  spaceType?: KitchenSpaceType;
 }) {
   const [selectedMember, setSelectedMember] = useState<KitchenMemberWithUser | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const terminology = getSpaceTerminology(spaceType);
 
   const handleConfirmRemove = () => {
     if (!selectedMember) return;
@@ -59,7 +64,7 @@ export function AdminActiveMembersList({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Member</TableHead>
+            <TableHead>{terminology.memberLabel}</TableHead>
             <TableHead>Username</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Joined Date</TableHead>
@@ -136,7 +141,7 @@ export function AdminActiveMembersList({
               <div className="p-2.5 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive">
                 <AlertTriangle className="w-5 h-5" />
               </div>
-              <AlertDialogTitle>Remove Kitchen Member</AlertDialogTitle>
+              <AlertDialogTitle>Remove {terminology.memberLabel}</AlertDialogTitle>
             </div>
             <AlertDialogDescription>
               Are you sure you want to remove{" "}
@@ -161,7 +166,7 @@ export function AdminActiveMembersList({
               }}
             >
               {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>{isPending ? "Removing..." : "Remove Member"}</span>
+              <span>{isPending ? "Removing..." : `Remove ${terminology.memberLabel}`}</span>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -169,4 +174,3 @@ export function AdminActiveMembersList({
     </>
   );
 }
-

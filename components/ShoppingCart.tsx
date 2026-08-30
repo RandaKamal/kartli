@@ -5,7 +5,8 @@ import {
   returnToShoppingListAction,
   clearCartAction,
 } from "@/app/actions/pantry";
-import type { ShoppingListItem } from "@/types";
+import type { ShoppingListItem, KitchenSpaceType } from "@/types";
+import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import {
   ShoppingCart as CartIcon,
   RotateCcw,
@@ -31,14 +32,18 @@ export function ShoppingCart({
   kitchenId,
   items,
   currentUserId,
+  spaceType = "FLATSHARE",
 }: {
   kitchenId: string;
   items: ShoppingListItem[];
   currentUserId: string;
+  spaceType?: KitchenSpaceType;
 }) {
   const [allItems, setAllItems] = useState<ShoppingListItem[]>(items);
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  const terminology = getSpaceTerminology(spaceType);
 
   useEffect(() => {
     setAllItems(items);
@@ -54,7 +59,7 @@ export function ShoppingCart({
   const handleReturnToList = (item: ShoppingListItem) => {
     // Only owner can return their item
     if (item.purchased_by !== currentUserId) {
-      toast.error("You cannot modify another roommate's cart.");
+      toast.error(`You cannot modify another ${terminology.memberLabel.toLowerCase()}'s cart.`);
       return;
     }
 
@@ -139,12 +144,12 @@ export function ShoppingCart({
               </Badge>
               {otherCartItems.length > 0 && (
                 <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-muted-foreground">
-                  {otherCartItems.length} by roommates
+                  {otherCartItems.length} by {terminology.memberLabelPlural.toLowerCase()}
                 </Badge>
               )}
             </div>
             <DialogDescription className="text-sm text-muted-foreground mt-1">
-              Your staged items pending checkout or receipt upload.
+              {terminology.cartRoommateDescription}
             </DialogDescription>
           </DialogHeader>
 
@@ -226,7 +231,7 @@ export function ShoppingCart({
                 <div className="space-y-2 pt-2 border-t border-border/60">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
                     <Users className="w-3.5 h-3.5" />
-                    <span>Staged by Roommates ({otherCartItems.length})</span>
+                    <span>Staged by {terminology.memberLabelPlural} ({otherCartItems.length})</span>
                   </div>
                   <div className="space-y-2 opacity-85">
                     {otherCartItems.map((item) => {
@@ -235,7 +240,7 @@ export function ShoppingCart({
                         ? "Guest"
                         : item.purchased_by_name
                         ? capitalize(item.purchased_by_name)
-                        : "Roommate";
+                        : terminology.cartAttributionFallback;
 
                       return (
                         <div

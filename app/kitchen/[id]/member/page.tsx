@@ -6,22 +6,22 @@ import {
   getKitchenMembersWithUsers,
   getUserMembership,
 } from "@/lib/kitchen";
+import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import { CopyButton } from "@/components/CopyButton";
 import { headers } from "next/headers";
-import { ExternalLink, Users, ArrowLeft } from "lucide-react";
-import { getPantryItems, getShoppingListItems } from "@/lib/pantry";
+import { ArrowLeft, ExternalLink, Users } from "lucide-react";
+import { getPantryItems, getShoppingListItems, getUserCheckouts } from "@/lib/pantry";
 import { PantrySection } from "@/components/PantrySection";
 import { ShoppingListSection } from "@/components/ShoppingListSection";
-import { getUserCheckouts } from "@/lib/pantry";
-import { ShoppingCart } from "@/components/ShoppingCart";
 import { MyPurchasesSection } from "@/components/MyPurchasesSection";
+import { ShoppingCart } from "@/components/ShoppingCart";
 import { GuestCartHandoverListener } from "@/components/GuestCartHandoverListener";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { capitalize } from "@/lib/utils";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default async function KitchenMemberPage({
   params,
@@ -44,6 +44,8 @@ export default async function KitchenMemberPage({
   if (!kitchen) {
     notFound();
   }
+
+  const terminology = getSpaceTerminology(kitchen.space_type);
 
   const members = await getKitchenMembersWithUsers(id);
   const activeMembers = members.filter((m) => m.joined_at !== null);
@@ -75,7 +77,7 @@ export default async function KitchenMemberPage({
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Badge variant="secondary" className="font-semibold text-[11px]">
-                MEMBER SPACE
+                {terminology.spaceLabel.toUpperCase()} SPACE
               </Badge>
               <span className="text-xs text-muted-foreground font-mono">
                 Joined {membership.joined_at ? new Date(membership.joined_at).toLocaleDateString() : ""}
@@ -89,7 +91,12 @@ export default async function KitchenMemberPage({
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <ShoppingCart kitchenId={id} items={shoppingListItems} currentUserId={session.user.id} />
+            <ShoppingCart
+              kitchenId={id}
+              items={shoppingListItems}
+              currentUserId={session.user.id}
+              spaceType={kitchen.space_type}
+            />
             {membership.role === "ADMIN" && (
               <Button asChild variant="default" size="sm" className="rounded-xl font-semibold shadow-xs">
                 <Link href={`/kitchen/${id}/admin`}>Open Admin Dashboard</Link>
@@ -145,7 +152,7 @@ export default async function KitchenMemberPage({
       <Card className="border-border bg-card rounded-3xl p-6 shadow-sm space-y-4">
         <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
           <Users className="w-4 h-4 text-muted-foreground" />
-          <span>Kitchen Members</span>
+          <span>{terminology.kitchenMembersTitle}</span>
           <Badge variant="secondary" className="text-xs font-mono">
             {activeMembers.length}
           </Badge>
@@ -189,4 +196,3 @@ export default async function KitchenMemberPage({
     </div>
   );
 }
-

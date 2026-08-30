@@ -13,6 +13,7 @@ import {
   isUserKitchenAdmin,
   getUserKitchens,
   updateKitchenName as updateKitchenNameDb,
+  updateKitchenSettings as updateKitchenSettingsDb,
   regeneratePublicViewToken as regeneratePublicViewTokenDb,
 } from "@/lib/kitchen";
 import type {
@@ -20,7 +21,9 @@ import type {
   CreateKitchenResult,
   Kitchen,
   KitchenMemberWithUser,
+  KitchenSpaceType,
   UpdateKitchenNameInput,
+  UpdateKitchenSettingsInput,
 } from "@/types";
 
 /**
@@ -48,6 +51,9 @@ export async function createKitchenFormAction(formData: FormData) {
   }
 
   const name = String(formData.get("name") || "").trim();
+  const spaceTypeRaw = String(formData.get("spaceType") || "FLATSHARE").toUpperCase();
+  const spaceType: KitchenSpaceType =
+    spaceTypeRaw === "FAMILY" || spaceTypeRaw === "NEUTRAL" ? spaceTypeRaw : "FLATSHARE";
   const adminDisplayName = String(formData.get("adminDisplayName") || session.user.username || "").trim();
   const rawMembers = String(formData.get("members") || "");
   const memberNames = rawMembers
@@ -62,6 +68,7 @@ export async function createKitchenFormAction(formData: FormData) {
   const result = await createKitchen(
     {
       name,
+      spaceType,
       memberNames,
       adminDisplayName,
     },
@@ -172,6 +179,36 @@ export async function updateKitchenName(
 }
 
 export const updateKitchenNameAction = updateKitchenName;
+
+/**
+ * Server Action for an admin to update kitchen settings including name and space type.
+ */
+export async function updateKitchenSettingsAction(
+  params: UpdateKitchenSettingsInput
+): Promise<Kitchen> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in to update kitchen settings.");
+  }
+
+  const updatedKitchen = await updateKitchenSettingsDb(
+    params.kitchenId,
+    params.name,
+    params.spaceType,
+    session.user.id
+  );
+
+  revalidatePath(`/kitchen/${params.kitchenId}`);
+  revalidatePath(`/kitchen/${params.kitchenId}/admin`);
+  revalidatePath(`/kitchen/${params.kitchenId}/member`);
+  revalidatePath(`/kitchen/${params.kitchenId}/admin/purchases`);
+  revalidatePath(`/kitchen/view/${updatedKitchen.public_view_token}`);
+  revalidatePath("/");
+
+  return updatedKitchen;
+}
+
+export const updateKitchenSettings = updateKitchenSettingsAction;
 
 /**
  * Server Action for an admin to regenerate the disposable public supermarket guest token.

@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { cancelInviteAction } from "@/app/actions/kitchen";
-import type { KitchenMemberWithUser } from "@/types";
+import type { KitchenMemberWithUser, KitchenSpaceType } from "@/types";
+import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import { CopyButton } from "@/components/CopyButton";
 import { Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -25,13 +26,17 @@ export function AdminPendingInvitesList({
   kitchenId,
   invites,
   baseUrl,
+  spaceType = "FLATSHARE",
 }: {
   kitchenId: string;
   invites: KitchenMemberWithUser[];
   baseUrl: string;
+  spaceType?: KitchenSpaceType;
 }) {
   const [selectedInvite, setSelectedInvite] = useState<KitchenMemberWithUser | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const terminology = getSpaceTerminology(spaceType);
 
   const handleConfirmCancel = () => {
     if (!selectedInvite) return;
@@ -50,7 +55,7 @@ export function AdminPendingInvitesList({
   if (invites.length === 0) {
     return (
       <p className="text-xs text-muted-foreground py-4 text-center">
-        No pending invites. All invited members have claimed their links.
+        No pending invites. All invited {terminology.memberLabelPlural.toLowerCase()} have claimed their links.
       </p>
     );
   }
@@ -65,44 +70,47 @@ export function AdminPendingInvitesList({
           return (
             <div
               key={invite.id}
-              className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/40 px-2 rounded-xl transition"
+              className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
             >
               <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8 border border-dashed border-border bg-secondary">
-                  <AvatarFallback className="bg-transparent text-xs font-semibold text-muted-foreground">
+                <Avatar className="h-8 w-8 opacity-60">
+                  <AvatarFallback className="bg-muted text-xs font-semibold text-muted-foreground">
                     {initial}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <div className="font-medium text-foreground text-sm">
-                    {invite.kitchen_display_name}
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <Badge variant="pending" className="text-[10px] px-2 py-0">
-                      Pending Claim
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-foreground text-sm">
+                      {invite.kitchen_display_name}
+                    </span>
+                    <Badge variant="outline" className="text-[10px] text-muted-foreground font-mono">
+                      Pending
                     </Badge>
                   </div>
+                  <span className="text-xs text-muted-foreground">
+                    Created {new Date(invite.created_at).toLocaleDateString()}
+                  </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 self-end sm:self-center">
                 <Input
                   type="text"
                   readOnly
                   value={inviteUrl}
-                  className="h-8 px-2.5 text-xs text-foreground font-mono w-44 sm:w-56 select-all rounded-lg"
+                  className="h-8 px-2 text-xs text-muted-foreground font-mono w-40 sm:w-56 select-all rounded-lg"
                 />
-                <CopyButton text={inviteUrl} label="Copy Invite Link" size="icon" />
+                <CopyButton text={inviteUrl} label="Copy" size="sm" />
                 <Button
                   type="button"
-                  variant="outline"
-                  size="sm"
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={() => setSelectedInvite(invite)}
-                  title="Cancel and revoke invite"
-                  className="h-8 px-2.5 text-xs text-muted-foreground hover:text-destructive hover:border-destructive/40 rounded-lg border-border"
+                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                  title="Cancel invite"
+                  aria-label={`Cancel invite for ${invite.kitchen_display_name}`}
                 >
-                  <Trash2 className="w-3.5 h-3.5 sm:mr-1 text-muted-foreground hover:text-destructive" />
-                  <span className="hidden sm:inline">Revoke</span>
+                  <Trash2 className="w-3.5 h-3.5" />
                 </Button>
               </div>
             </div>
@@ -110,7 +118,7 @@ export function AdminPendingInvitesList({
         })}
       </div>
 
-      {/* Confirmation Modal via shadcn AlertDialog */}
+      {/* Revoke Invite Confirmation Modal */}
       <AlertDialog open={!!selectedInvite} onOpenChange={(open) => !open && setSelectedInvite(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -118,18 +126,18 @@ export function AdminPendingInvitesList({
               <div className="p-2.5 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive">
                 <AlertTriangle className="w-5 h-5" />
               </div>
-              <AlertDialogTitle>Cancel Invite</AlertDialogTitle>
+              <AlertDialogTitle>Revoke {terminology.memberLabel} Invite</AlertDialogTitle>
             </div>
             <AlertDialogDescription>
-              Are you sure you want to cancel the invite for{" "}
+              Are you sure you want to revoke the invite for{" "}
               <strong className="text-foreground font-semibold">
                 {selectedInvite?.kitchen_display_name}
               </strong>
-              ? The invite link will be permanently revoked.
+              ? This link will become invalid immediately.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending}>Keep Invite</AlertDialogCancel>
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               disabled={isPending}
               onClick={(e) => {
@@ -146,4 +154,3 @@ export function AdminPendingInvitesList({
     </>
   );
 }
-

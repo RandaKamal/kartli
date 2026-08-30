@@ -8,6 +8,7 @@ import {
   isUserKitchenAdmin,
   addKitchenMember,
 } from "@/lib/kitchen";
+import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import { CopyButton } from "@/components/CopyButton";
 import { AdminActiveMembersList } from "@/components/AdminActiveMembersList";
 import { AdminPendingInvitesList } from "@/components/AdminPendingInvitesList";
@@ -46,6 +47,8 @@ export default async function KitchenAdminPage({
     notFound();
   }
 
+  const terminology = getSpaceTerminology(kitchen.space_type);
+
   const members = await getKitchenMembersWithUsers(id);
   const activeMembers = members.filter((m) => m.joined_at !== null);
   const pendingInvites = members.filter((m) => m.joined_at === null && m.invite_token !== null);
@@ -75,7 +78,7 @@ export default async function KitchenAdminPage({
   return (
     <div className="space-y-8">
       <GuestCartHandoverListener kitchenId={id} />
-      {/* Top Breadcrumb & Header with Inline Name Editing */}
+      {/* Top Breadcrumb & Header with Settings & Terminology presets */}
       <AdminKitchenHeader
         kitchen={kitchen}
         shoppingListItems={shoppingListItems}
@@ -131,7 +134,7 @@ export default async function KitchenAdminPage({
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
                 <Users className="w-4 h-4 text-muted-foreground" />
-                <span>Active Members</span>
+                <span>{terminology.activeMembersTitle}</span>
                 <Badge variant="secondary" className="text-xs font-mono">
                   {activeMembers.length}
                 </Badge>
@@ -142,6 +145,7 @@ export default async function KitchenAdminPage({
               kitchenId={id}
               members={activeMembers}
               currentUserId={session.user.id}
+              spaceType={kitchen.space_type}
             />
           </Card>
 
@@ -161,6 +165,7 @@ export default async function KitchenAdminPage({
               kitchenId={id}
               invites={pendingInvites}
               baseUrl={baseUrl}
+              spaceType={kitchen.space_type}
             />
           </Card>
         </div>
@@ -171,10 +176,10 @@ export default async function KitchenAdminPage({
             <CardHeader className="p-0 space-y-1">
               <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
                 <UserPlus className="w-4 h-4 text-muted-foreground" />
-                <span>Invite New Member</span>
+                <span>{terminology.inviteCardTitle}</span>
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                Add another placeholder member to generate a new one-time claim link.
+                {terminology.inviteCardDescription}
               </CardDescription>
             </CardHeader>
 
@@ -182,14 +187,14 @@ export default async function KitchenAdminPage({
               <form action={handleAddMember} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="admin-member-name">
-                    Member Display Name
+                    {terminology.memberLabel} Display Name
                   </Label>
                   <Input
                     id="admin-member-name"
                     type="text"
                     name="memberName"
                     required
-                    placeholder="e.g. Mia or Daniel"
+                    placeholder={terminology.namePlaceholder}
                     className="rounded-xl"
                   />
                 </div>
@@ -198,7 +203,7 @@ export default async function KitchenAdminPage({
                   type="submit"
                   className="w-full h-10 rounded-xl font-semibold shadow-sm text-xs sm:text-sm"
                 >
-                  Add Member &amp; Generate Link
+                  Invite {terminology.memberLabel} &amp; Generate Link
                 </Button>
               </form>
             </CardContent>
@@ -208,4 +213,3 @@ export default async function KitchenAdminPage({
     </div>
   );
 }
-

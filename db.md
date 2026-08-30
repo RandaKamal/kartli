@@ -1,10 +1,17 @@
 # Database Schema: kartli Core Architecture
 
-This document outlines the PostgreSQL database schema for **kartli**. It powers email-free credentials authentication (JWT strategy), multi-tenant kitchen management with tokenized invites, pantry tracking, ad-hoc shopping lists, disposable guest access tokens, and receipt refund workflows.
+This document outlines the PostgreSQL database schema for **kartli**. It powers email-free credentials authentication (JWT strategy), multi-tenant kitchen management with customizable space contexts (Flatshare, Family, Neutral), tokenized invites, pantry tracking, ad-hoc shopping lists, disposable guest access tokens, and receipt refund workflows.
 
 ---
 
-## 1. Schema Tables
+## 1. Custom Types
+
+* `kitchen_role`: `ENUM('ADMIN', 'MEMBER')`
+* `kitchen_space_type`: `ENUM('FLATSHARE', 'FAMILY', 'NEUTRAL')`
+
+---
+
+## 2. Schema Tables
 
 ### `users`
 Stores registered user credentials and account timestamps.
@@ -20,6 +27,7 @@ Stores registered user credentials and account timestamps.
 Represents a shared kitchen / household space.
 * `id` **(PK, UUID, Default: `gen_random_uuid()`)**: Primary key.
 * `name` (VARCHAR(255), NOT NULL): Kitchen display name.
+* `space_type` (ENUM: `kitchen_space_type`, Default: `'FLATSHARE'`, NOT NULL): Contextual space preset (`'FLATSHARE'`, `'FAMILY'`, `'NEUTRAL'`) dynamically controlling UI terminology (e.g. Roommates vs. Family Members vs. Members).
 * `public_view_token` (VARCHAR(255), Unique, NOT NULL): Secure, regeneratable token for unauthenticated supermarket read-only guest access.
 * `created_at` (TIMESTAMPTZ, Default: `NOW()`): Creation timestamp.
 * `updated_at` (TIMESTAMPTZ, Default: `NOW()`): Last update timestamp.
@@ -32,7 +40,7 @@ Represents kitchen memberships, permissions, and claimable invite slots.
 * `kitchen_id` **(FK -> `kitchens.id`, ON DELETE CASCADE, NOT NULL)**: Associated kitchen.
 * `user_id` **(FK -> `users.id`, ON DELETE SET NULL, Nullable)**: Linked user account (`NULL` until invite token is claimed).
 * `kitchen_display_name` (VARCHAR(255), NOT NULL): Name assigned to the slot by the admin.
-* `role` (ENUM: `'ADMIN'`, `'MEMBER'`, Default: `'MEMBER'`, NOT NULL): Member permissions.
+* `role` (ENUM: `kitchen_role`, Default: `'MEMBER'`, NOT NULL): Member permissions.
 * `invite_token` (VARCHAR(255), Unique, Nullable): Secure one-time claim token (`NULL` once claimed).
 * `joined_at` (TIMESTAMPTZ, Nullable): Timestamp when the invite was accepted (`NOW()` for creator).
 * `created_at` (TIMESTAMPTZ, Default: `NOW()`): Record creation timestamp.
@@ -77,18 +85,18 @@ Receipt upload batches for cost reimbursement.
 
 ---
 
-## 2. Core Workflows & Logic
+## 3. Core Workflows & Dynamic Terminology
 
-### Authentication (Credentials + JWT)
-- Pure username/password signup with `bcryptjs` hashing.
-- Client session maintained via secure JWT cookies.
-- Session object exposes `session.user.id` and `session.user.username`.
+### Dynamic Space Context & Terminology
+- When `kitchens.space_type` is set:
+  - `'FLATSHARE'`: UI labels refer to **Roommates / Flatmates** (e.g., "Active Roommates", "Waiting for flatmate to claim").
+  - `'FAMILY'`: UI labels refer to **Family Members** (e.g., "Active Family", "Waiting for family member").
+  - `'NEUTRAL'`: UI labels refer to **Members** (e.g., "Active Members", "Household Members").
 
 ### Disposable Supermarket Guest Link
 - The `kitchens.public_view_token` is unique and can be regenerated on demand by household admins in Kitchen Settings.
-- Regenerating replaces the token with a cryptographically random value, instantly invalidating any previously shared guest links.
+- Regenerating replaces the token with a cryptographically random value, instantly invalidating previous links.
 
 ### Anonymous Guest Cart Staging & Handover
-- **Guest Staging**: When an unauthenticated visitor checks off an item at `/kitchen/view/[token]`, `is_guest_staged` is set to `true` (with `purchased_by = NULL`). The item ID is also appended to the client cookie `kartli_guest_cart_[kitchenId]`.
-- **Admin Clearance**: Household Admins can unstage guest items (`is_guest_staged = false`), returning them to "Needed Items" if abandoned.
-- **Login Handover**: When an unauthenticated shopper registers or logs in, any item IDs in `kartli_guest_cart_[kitchenId]` are claimed: `purchased_by = session.user.id` and `is_guest_staged = false`.
+- Guest check-offs set `is_guest_staged = true` and persist in client cookie `kartli_guest_cart_[kitchenId]`.
+- Claimed automatically by member upon subsequent login.
