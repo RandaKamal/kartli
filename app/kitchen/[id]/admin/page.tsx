@@ -17,6 +17,7 @@ import { ExternalLink, Users, Mail, UserPlus } from "lucide-react";
 import { getPantryItems, getShoppingListItems } from "@/lib/pantry";
 import { PantrySection } from "@/components/PantrySection";
 import { ShoppingListSection } from "@/components/ShoppingListSection";
+import { GuestCartHandoverListener } from "@/components/GuestCartHandoverListener";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,7 @@ export default async function KitchenAdminPage({
 
   return (
     <div className="space-y-8">
+      <GuestCartHandoverListener kitchenId={id} />
       {/* Top Breadcrumb & Header with Inline Name Editing */}
       <AdminKitchenHeader
         kitchen={kitchen}

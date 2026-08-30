@@ -391,3 +391,70 @@ export async function refundCheckout(
   }
   return rows[0];
 }
+
+/**
+ * Atomically transfers guest-staged shopping list items to a logged-in user's active cart.
+ * - Updates shopping_list_items setting is_purchased = true, purchased_by = userId.
+ * - Restocks linked pantry items (is_out_of_stock = false).
+ * - Ignores items that are already purchased, checked out, or deleted.
+ */
+export async function transferGuestCartToUser(
+  kitchenId: string,
+  itemIds: string[],
+  userId: string
+): Promise<number> {
+  if (!Array.isArray(itemIds) || itemIds.length === 0) {
+    return 0;
+  }
+
+  // Filter for valid UUID strings
+  const validIds = itemIds.filter(
+    (id) => typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  );
+  if (validIds.length === 0) {
+    return 0;
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const updateSql = `
+      UPDATE shopping_list_items
+      SET is_purchased = TRUE, purchased_by = $1
+      WHERE kitchen_id = $2
+        AND id = ANY($3::uuid[])
+        AND is_purchased = FALSE
+        AND checkout_id IS NULL
+      RETURNING id, pantry_item_id
+    `;
+    const { rows } = await client.query<{ id: string; pantry_item_id: string | null }>(
+      updateSql,
+      [userId, kitchenId, validIds]
+    );
+
+    if (rows.length > 0) {
+      const pantryItemIds = rows
+        .map((r) => r.pantry_item_id)
+        .filter((id): id is string => id !== null);
+
+      if (pantryItemIds.length > 0) {
+        await client.query(
+          `UPDATE pantry_items
+           SET is_out_of_stock = FALSE, updated_at = NOW()
+           WHERE kitchen_id = $1 AND id = ANY($2::uuid[])`,
+          [kitchenId, pantryItemIds]
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+    return rows.length;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+

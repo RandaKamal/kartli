@@ -2,7 +2,9 @@
 
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { getUserMembership } from "@/lib/kitchen";
+import { getGuestCartCookieName } from "@/lib/guestCart";
 import {
   getPantryItems,
   addPantryItem,
@@ -13,6 +15,7 @@ import {
   togglePurchased,
   removeShoppingListItem,
   clearBoughtShoppingListItems,
+  transferGuestCartToUser,
 } from "@/lib/pantry";
 import type { PantryItem, ShoppingListItem } from "@/types";
 
@@ -109,4 +112,48 @@ export async function clearBoughtShoppingListItemsAction(kitchenId: string) {
 }
 
 export const clearCartAction = clearBoughtShoppingListItemsAction;
+
+/**
+ * Claims and transfers guest-staged shopping list items into the authenticated user's cart.
+ */
+export async function claimGuestCartAction(
+  kitchenId: string,
+  clientItemIds?: string[]
+): Promise<{ transferredCount: number }> {
+  const userId = await requireMembership(kitchenId);
+  const cookieStore = await cookies();
+  const cookieName = getGuestCartCookieName(kitchenId);
+
+  let itemIds: string[] = clientItemIds || [];
+  if (itemIds.length === 0) {
+    const cookieVal = cookieStore.get(cookieName)?.value;
+    if (cookieVal) {
+      try {
+        const decoded = decodeURIComponent(cookieVal);
+        const parsed = JSON.parse(decoded);
+        if (Array.isArray(parsed)) {
+          itemIds = parsed;
+        }
+      } catch {
+        // Ignore parsing errors
+      }
+    }
+  }
+
+  if (itemIds.length === 0) {
+    return { transferredCount: 0 };
+  }
+
+  const transferredCount = await transferGuestCartToUser(kitchenId, itemIds, userId);
+
+  // Clear the cookie on the server
+  cookieStore.delete(cookieName);
+
+  if (transferredCount > 0) {
+    revalidateKitchen(kitchenId);
+  }
+
+  return { transferredCount };
+}
+
 

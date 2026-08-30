@@ -15,6 +15,7 @@ import { ShoppingListSection } from "@/components/ShoppingListSection";
 import { getUserCheckouts } from "@/lib/pantry";
 import { ShoppingCart } from "@/components/ShoppingCart";
 import { MyPurchasesSection } from "@/components/MyPurchasesSection";
+import { GuestCartHandoverListener } from "@/components/GuestCartHandoverListener";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,7 @@ export default async function KitchenMemberPage({
 
   return (
     <div className="space-y-8">
+      <GuestCartHandoverListener kitchenId={id} />
       {/* Top Breadcrumb & Header */}
       <div className="space-y-4">
         <Link
