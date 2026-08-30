@@ -2,15 +2,25 @@
 
 import { useState, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { updateKitchenName } from "@/app/actions/kitchen";
+import { updateKitchenName, regeneratePublicViewToken } from "@/app/actions/kitchen";
 import type { Kitchen, ShoppingListItem } from "@/types";
 import { ShoppingCart } from "@/components/ShoppingCart";
-import { ArrowLeft, Shield, Settings, Loader2 } from "lucide-react";
+import { CopyButton } from "@/components/CopyButton";
+import {
+  ArrowLeft,
+  Shield,
+  Settings,
+  Loader2,
+  RefreshCw,
+  ShoppingBag,
+  ExternalLink,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -31,14 +41,22 @@ export function AdminKitchenHeader({
   currentUserId: string;
 }) {
   const [name, setName] = useState(kitchen.name);
+  const [publicViewToken, setPublicViewToken] = useState(kitchen.public_view_token);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [draftName, setDraftName] = useState(kitchen.name);
   const [isPending, startTransition] = useTransition();
+  const [isRegenerating, startRegenerateTransition] = useTransition();
 
   useEffect(() => {
     setName(kitchen.name);
     setDraftName(kitchen.name);
-  }, [kitchen.name]);
+    setPublicViewToken(kitchen.public_view_token);
+  }, [kitchen.name, kitchen.public_view_token]);
+
+  const publicGuestUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/kitchen/view/${publicViewToken}`
+      : `/kitchen/view/${publicViewToken}`;
 
   const handleOpenSettings = () => {
     setDraftName(name);
@@ -73,6 +91,20 @@ export function AdminKitchenHeader({
         setName(previousName);
         setDraftName(previousName);
         toast.error(err.message || "Failed to update kitchen name.");
+      }
+    });
+  };
+
+  const handleRegenerateGuestLink = () => {
+    startRegenerateTransition(async () => {
+      try {
+        const res = await regeneratePublicViewToken(kitchen.id);
+        if (res.success && res.newToken) {
+          setPublicViewToken(res.newToken);
+          toast.success("Guest supermarket link regenerated!");
+        }
+      } catch (err: any) {
+        toast.error(err.message || "Failed to regenerate guest link.");
       }
     });
   };
@@ -137,7 +169,7 @@ export function AdminKitchenHeader({
 
       {/* Kitchen Settings Modal Dialog */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="max-w-md w-full p-6 space-y-4">
+        <DialogContent className="max-w-md w-full p-6 space-y-5 rounded-3xl">
           <DialogHeader className="space-y-1 text-left">
             <div className="flex items-center gap-2">
               <Settings className="w-5 h-5 text-muted-foreground" />
@@ -146,14 +178,15 @@ export function AdminKitchenHeader({
               </DialogTitle>
             </div>
             <DialogDescription className="text-xs text-muted-foreground">
-              Update the display name of your shared kitchen space.
+              Manage kitchen details and disposable guest access links.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSaveSettings} className="space-y-4 py-1">
+          {/* Section 1: Name Update Form */}
+          <form onSubmit={handleSaveSettings} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="modal-kitchen-name" className="text-xs font-semibold text-foreground">
-                Kitchen Name
+                Kitchen Display Name
               </Label>
               <Input
                 id="modal-kitchen-name"
@@ -169,33 +202,78 @@ export function AdminKitchenHeader({
               />
             </div>
 
-            <DialogFooter className="flex flex-col sm:flex-row items-center justify-end gap-2 pt-3 border-t border-border mt-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsSettingsOpen(false)}
-                disabled={isPending}
-                className="w-full sm:w-auto h-9 text-xs font-medium rounded-xl"
-              >
-                Cancel
-              </Button>
-
+            <div className="flex justify-end">
               <Button
                 type="submit"
                 variant="default"
                 size="sm"
                 disabled={isPending || !draftName.trim()}
-                className="w-full sm:w-auto h-9 text-xs font-semibold rounded-xl gap-1.5"
+                className="h-9 text-xs font-semibold rounded-xl gap-1.5"
               >
                 {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>{isPending ? "Saving..." : "Save Changes"}</span>
+                <span>{isPending ? "Saving..." : "Save Name"}</span>
               </Button>
-            </DialogFooter>
+            </div>
           </form>
+
+          <Separator className="bg-border/70" />
+
+          {/* Section 2: Disposable Guest Supermarket Link */}
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <h4 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <ShoppingBag className="w-3.5 h-3.5 text-accent-brand" />
+                <span>Guest Supermarket Link</span>
+              </h4>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Disposable read-only link for supermarket visitors. Regenerating invalidates the previous link immediately.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Input
+                type="text"
+                readOnly
+                value={publicGuestUrl}
+                className="h-8 px-2.5 text-xs text-foreground font-mono select-all rounded-xl bg-muted/40"
+              />
+              <CopyButton text={publicGuestUrl} label="Copy" size="sm" />
+              <Button asChild variant="ghost" size="icon-sm" className="h-8 w-8 rounded-xl" title="Open guest view">
+                <Link href={`/kitchen/view/${publicViewToken}`} target="_blank">
+                  <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
+                </Link>
+              </Button>
+            </div>
+
+            <div className="pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleRegenerateGuestLink}
+                disabled={isRegenerating}
+                className="rounded-xl text-xs font-medium gap-1.5 h-8 border-border"
+                title="Regenerate token and revoke previous link"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRegenerating ? "animate-spin" : ""}`} />
+                <span>{isRegenerating ? "Regenerating..." : "Regenerate Link"}</span>
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter className="pt-3 border-t border-border">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsSettingsOpen(false)}
+              className="w-full sm:w-auto h-9 text-xs font-medium rounded-xl"
+            >
+              Close
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
   );
 }
-

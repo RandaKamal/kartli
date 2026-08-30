@@ -152,6 +152,7 @@ export interface ShoppingListItem {
   is_purchased: boolean;
   purchased_by: string | null;
   purchased_by_name?: string | null;
+  is_guest_staged: boolean;
   checkout_id: string | null;
   created_at: Date;
 }

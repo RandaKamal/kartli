@@ -56,6 +56,7 @@ export default async function PublicKitchenViewPage({
 
   const sessionUser = session?.user
     ? {
+        id: session.user.id,
         username: session.user.username,
         isMember: !!membership,
         role: membership?.role || null,

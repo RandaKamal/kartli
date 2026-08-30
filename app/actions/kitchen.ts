@@ -13,6 +13,7 @@ import {
   isUserKitchenAdmin,
   getUserKitchens,
   updateKitchenName as updateKitchenNameDb,
+  regeneratePublicViewToken as regeneratePublicViewTokenDb,
 } from "@/lib/kitchen";
 import type {
   CreateKitchenInput,
@@ -171,4 +172,30 @@ export async function updateKitchenName(
 }
 
 export const updateKitchenNameAction = updateKitchenName;
+
+/**
+ * Server Action for an admin to regenerate the disposable public supermarket guest token.
+ * Instantly revokes previously shared guest links.
+ */
+export async function regeneratePublicViewTokenAction(
+  params: { kitchenId: string } | string
+): Promise<{ success: boolean; newToken: string }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in to regenerate the guest link.");
+  }
+
+  const kitchenId = typeof params === "object" ? params.kitchenId : params;
+  const newToken = await regeneratePublicViewTokenDb(kitchenId, session.user.id);
+
+  revalidatePath(`/kitchen/${kitchenId}`);
+  revalidatePath(`/kitchen/${kitchenId}/admin`);
+  revalidatePath(`/kitchen/${kitchenId}/member`);
+  revalidatePath(`/kitchen/view/${newToken}`);
+
+  return { success: true, newToken };
+}
+
+export const regeneratePublicViewToken = regeneratePublicViewTokenAction;
+
 

@@ -25,8 +25,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { capitalize } from "@/lib/utils";
-import { readGuestCartCookie, writeGuestCartCookie, clearGuestCartCookieClient } from "@/lib/guestCart";
-import { moveToCartAction, returnToShoppingListAction } from "@/app/actions/pantry";
+import {
+  readGuestCartCookie,
+  writeGuestCartCookie,
+  clearGuestCartCookieClient,
+} from "@/lib/guestCart";
+import {
+  moveToCartAction,
+  returnToShoppingListAction,
+  stageGuestShoppingItemAction,
+} from "@/app/actions/pantry";
 import { toast } from "sonner";
 
 interface GuestShoppingViewProps {
@@ -34,6 +42,7 @@ interface GuestShoppingViewProps {
   openItems: ShoppingListItem[];
   inCartItems: ShoppingListItem[];
   sessionUser: {
+    id: string;
     username: string;
     isMember: boolean;
     role?: "ADMIN" | "MEMBER" | null;
@@ -47,32 +56,30 @@ export function GuestShoppingView({
   sessionUser,
 }: GuestShoppingViewProps) {
   const router = useRouter();
-  const [isRefreshing, startTransition] = useTransition();
-  const [isMutating, startMutation] = useTransition();
   const [openItems, setOpenItems] = useState<ShoppingListItem[]>(initialOpenItems);
   const [inCartItems, setInCartItems] = useState<ShoppingListItem[]>(initialInCartItems);
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
-  const [showInCart, setShowInCart] = useState(true);
+  const [showInCart, setShowInCart] = useState(false);
   const [showRoster, setShowRoster] = useState(false);
+  const [isRefreshing, startTransition] = useTransition();
+  const [isMutating, startMutation] = useTransition();
+
+  // Load guest cookie on initial mount
+  useEffect(() => {
+    const saved = readGuestCartCookie(kitchen.id);
+    if (saved && saved.length > 0) {
+      setCheckedIds(new Set(saved));
+    }
+  }, [kitchen.id]);
 
   useEffect(() => {
     setOpenItems(initialOpenItems);
     setInCartItems(initialInCartItems);
   }, [initialOpenItems, initialInCartItems]);
 
-  // Load and synchronize guest cart cookie if unauthenticated/non-member
-  useEffect(() => {
-    if (!sessionUser?.isMember) {
-      const savedIds = readGuestCartCookie(kitchen.id);
-      if (savedIds.length > 0) {
-        setCheckedIds(new Set(savedIds));
-      }
-    }
-  }, [kitchen.id, sessionUser]);
-
   const handleToggleItem = (item: ShoppingListItem) => {
-    // Case A: User is an authenticated member of this kitchen (real-time DB sync)
+    // Case A: Authenticated member (real-time server action)
     if (sessionUser?.isMember) {
       setOpenItems((prev) => prev.filter((i) => i.id !== item.id));
       setInCartItems((prev) => [
@@ -97,10 +104,10 @@ export function GuestShoppingView({
       return;
     }
 
-    // Case B: Unauthenticated guest (local + cookie persistence)
+    // Case B: Unauthenticated guest (local + cookie persistence + server staging)
+    const isNowChecked = !checkedIds.has(item.id);
     setCheckedIds((prev) => {
       const next = new Set(prev);
-      const isNowChecked = !next.has(item.id);
       if (isNowChecked) {
         next.add(item.id);
       } else {
@@ -109,19 +116,45 @@ export function GuestShoppingView({
 
       const itemArray = Array.from(next);
       writeGuestCartCookie(kitchen.id, itemArray);
-
-      if (isNowChecked) {
-        toast.info(`Saved "${item.name}" in temporary cart. Log in to claim.`, {
-          duration: 2500,
-        });
-      }
-
       return next;
+    });
+
+    startMutation(async () => {
+      try {
+        await stageGuestShoppingItemAction({
+          kitchenId: kitchen.id,
+          itemId: item.id,
+          isStaged: isNowChecked,
+        });
+
+        if (isNowChecked) {
+          toast.info(`Saved "${item.name}" in temporary cart. Log in to claim.`, {
+            duration: 2500,
+          });
+        }
+      } catch (err: any) {
+        // Revert local state on failure
+        setCheckedIds((prev) => {
+          const next = new Set(prev);
+          if (isNowChecked) next.delete(item.id);
+          else next.add(item.id);
+          writeGuestCartCookie(kitchen.id, Array.from(next));
+          return next;
+        });
+        toast.error(err.message || "Failed to update item.");
+      }
     });
   };
 
   const handleReturnInCartItem = (item: ShoppingListItem) => {
     if (!sessionUser?.isMember) return;
+    const isMine =
+      item.purchased_by === sessionUser.id ||
+      item.purchased_by_name?.toLowerCase() === sessionUser.username?.toLowerCase();
+    if (!isMine) {
+      toast.error("You cannot modify another roommate's staged cart.");
+      return;
+    }
 
     setInCartItems((prev) => prev.filter((i) => i.id !== item.id));
     setOpenItems((prev) => [...prev, { ...item, is_purchased: false, purchased_by: null }]);
@@ -139,8 +172,24 @@ export function GuestShoppingView({
   };
 
   const handleResetChecklist = () => {
+    const currentChecked = Array.from(checkedIds);
     setCheckedIds(new Set());
     clearGuestCartCookieClient(kitchen.id);
+
+    if (currentChecked.length > 0) {
+      startMutation(async () => {
+        try {
+          await Promise.all(
+            currentChecked.map((id) =>
+              stageGuestShoppingItemAction({ kitchenId: kitchen.id, itemId: id, isStaged: false })
+            )
+          );
+        } catch {
+          // Ignore background cleanup errors
+        }
+      });
+    }
+
     toast.info("Cleared guest checklist.");
   };
 
@@ -377,39 +426,58 @@ export function GuestShoppingView({
 
           {showInCart && (
             <div className="p-4 pt-0 divide-y divide-border/60">
-              {inCartItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="py-2.5 flex items-center justify-between gap-3 text-xs"
-                >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent-success shrink-0" />
-                    <span className="truncate font-medium text-muted-foreground line-through decoration-muted-foreground/40">
-                      {item.name}
-                    </span>
-                  </div>
+              {inCartItems.map((item) => {
+                const isMine =
+                  !!sessionUser &&
+                  (item.purchased_by === sessionUser.id ||
+                    item.purchased_by_name?.toLowerCase() === sessionUser.username?.toLowerCase());
+                const attribution = isMine
+                  ? "You"
+                  : item.purchased_by_name
+                  ? capitalize(item.purchased_by_name)
+                  : "Roommate";
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[11px] text-muted-foreground font-medium">
-                      {item.purchased_by_name ? capitalize(item.purchased_by_name) : "Roommate"}
-                    </span>
-                    {sessionUser?.isMember && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleReturnInCartItem(item)}
-                        disabled={isMutating}
-                        className="h-7 px-2 text-[10px] text-muted-foreground hover:text-foreground gap-1 rounded-lg"
-                        title="Return to needed list"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                        <span>Return</span>
-                      </Button>
-                    )}
+                return (
+                  <div
+                    key={item.id}
+                    className="py-2.5 flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent-success shrink-0" />
+                      <span className="truncate font-medium text-muted-foreground line-through decoration-muted-foreground/40">
+                        {item.name}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[11px] text-muted-foreground font-medium">
+                        {attribution}
+                      </span>
+                      {isMine ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleReturnInCartItem(item)}
+                          disabled={isMutating}
+                          className="h-7 px-2 text-[10px] text-muted-foreground hover:text-foreground gap-1 rounded-lg"
+                          title="Return to needed list"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          <span>Return</span>
+                        </Button>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="text-[9px] px-1.5 py-0 text-muted-foreground font-medium bg-muted/20 border-border/80"
+                        >
+                          In {attribution}&apos;s Cart
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </Card>

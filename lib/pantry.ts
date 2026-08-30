@@ -120,15 +120,54 @@ export async function deletePantryItem(kitchenId: string, itemId: string): Promi
 }
 
 /**
- * Clears and removes all bought/cart items that have not been checked out yet for a kitchen.
+ * Puts all of a specific user's staged cart items back on the needed shopping list.
+ * - Sets is_purchased = FALSE, purchased_by = NULL for that user's items in the kitchen.
+ * - Sets is_out_of_stock = TRUE for any linked pantry items.
+ * - Does NOT delete any rows.
  */
-export async function clearBoughtShoppingListItems(kitchenId: string): Promise<number> {
-  const result = await pool.query(
-    `DELETE FROM shopping_list_items WHERE kitchen_id = $1 AND is_purchased = TRUE AND checkout_id IS NULL`,
-    [kitchenId]
-  );
-  return result.rowCount ?? 0;
+export async function clearUserCart(kitchenId: string, userId: string): Promise<number> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const { rows } = await client.query<{ id: string; pantry_item_id: string | null }>(
+      `UPDATE shopping_list_items
+       SET is_purchased = FALSE, purchased_by = NULL
+       WHERE kitchen_id = $1
+         AND purchased_by = $2
+         AND is_purchased = TRUE
+         AND checkout_id IS NULL
+       RETURNING id, pantry_item_id`,
+      [kitchenId, userId]
+    );
+
+    if (rows.length > 0) {
+      const pantryItemIds = rows
+        .map((r) => r.pantry_item_id)
+        .filter((id): id is string => id !== null);
+
+      if (pantryItemIds.length > 0) {
+        await client.query(
+          `UPDATE pantry_items
+           SET is_out_of_stock = TRUE, updated_at = NOW()
+           WHERE kitchen_id = $1 AND id = ANY($2::uuid[])`,
+          [kitchenId, pantryItemIds]
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+    return rows.length;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
+
+/** Legacy alias for clearing user's cart */
+export const clearBoughtShoppingListItems = clearUserCart;
 
 /**
  * Fetches all shopping list items for a kitchen (pending first) with user attribution for cart items.
@@ -142,6 +181,7 @@ export async function getShoppingListItems(kitchenId: string): Promise<ShoppingL
       sli.name,
       sli.is_purchased,
       sli.purchased_by,
+      sli.is_guest_staged,
       sli.checkout_id,
       sli.created_at,
       COALESCE(km.kitchen_display_name, u.username) AS purchased_by_name
@@ -149,7 +189,7 @@ export async function getShoppingListItems(kitchenId: string): Promise<ShoppingL
     LEFT JOIN users u ON sli.purchased_by = u.id
     LEFT JOIN kitchen_members km ON km.kitchen_id = sli.kitchen_id AND km.user_id = sli.purchased_by
     WHERE sli.kitchen_id = $1
-    ORDER BY sli.is_purchased ASC, sli.created_at ASC
+    ORDER BY (sli.is_purchased OR sli.is_guest_staged) ASC, sli.created_at ASC
   `;
   const { rows } = await pool.query<ShoppingListItem>(sql, [kitchenId]);
   return rows;
@@ -169,9 +209,9 @@ export async function addCustomShoppingItem(
   }
 
   const sql = `
-    INSERT INTO shopping_list_items (kitchen_id, pantry_item_id, name, is_purchased, created_at)
-    VALUES ($1, NULL, $2, FALSE, NOW())
-    RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, purchased_by, checkout_id, created_at
+    INSERT INTO shopping_list_items (kitchen_id, pantry_item_id, name, is_purchased, is_guest_staged, created_at)
+    VALUES ($1, NULL, $2, FALSE, FALSE, NOW())
+    RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, purchased_by, is_guest_staged, checkout_id, created_at
   `;
   const { rows } = await pool.query<ShoppingListItem>(sql, [kitchenId, cleanName]);
   return rows[0];
@@ -181,6 +221,7 @@ export async function addCustomShoppingItem(
  * Marks a shopping list item as purchased/in-cart or unpurchased/needed.
  * If linked to a pantry item: marking purchased restocks it (is_out_of_stock = false),
  * unpurchased/returning to list marks it back as out-of-stock (is_out_of_stock = true).
+ * Enforces ownership authorization: only the user who staged the item (or admin) can un-stage it.
  */
 export async function togglePurchased(
   kitchenId: string,
@@ -192,22 +233,44 @@ export async function togglePurchased(
   try {
     await client.query("BEGIN");
 
-    const { rows: existingRows } = await client.query(
-      `SELECT checkout_id FROM shopping_list_items WHERE id = $1 AND kitchen_id = $2`,
+    const { rows: existingRows } = await client.query<{
+      id: string;
+      is_purchased: boolean;
+      purchased_by: string | null;
+      is_guest_staged: boolean;
+      checkout_id: string | null;
+    }>(
+      `SELECT id, is_purchased, purchased_by, is_guest_staged, checkout_id FROM shopping_list_items WHERE id = $1 AND kitchen_id = $2`,
       [itemId, kitchenId]
     );
     if (existingRows.length === 0) {
       throw new Error("Shopping list item not found.");
     }
-    if (existingRows[0].checkout_id) {
+    const existing = existingRows[0];
+    if (existing.checkout_id) {
       throw new Error("This item has already been checked out.");
+    }
+
+    // Authorization checks
+    if (!isPurchased && existing.is_purchased && existing.purchased_by && existing.purchased_by !== userId) {
+      const adminRes = await client.query(
+        `SELECT 1 FROM kitchen_members WHERE kitchen_id = $1 AND user_id = $2 AND role = 'ADMIN'`,
+        [kitchenId, userId]
+      );
+      if (adminRes.rows.length === 0) {
+        throw new Error("You cannot remove another member's item from their cart.");
+      }
+    }
+
+    if (isPurchased && existing.is_purchased && existing.purchased_by && existing.purchased_by !== userId) {
+      throw new Error("This item is already in another member's cart.");
     }
 
     const { rows } = await client.query<ShoppingListItem>(
       `UPDATE shopping_list_items
-       SET is_purchased = $1, purchased_by = $2
+       SET is_purchased = $1, purchased_by = $2, is_guest_staged = FALSE
        WHERE id = $3 AND kitchen_id = $4
-       RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, purchased_by, checkout_id, created_at`,
+       RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, purchased_by, is_guest_staged, checkout_id, created_at`,
       [isPurchased, isPurchased ? userId : null, itemId, kitchenId]
     );
     const item = rows[0];
@@ -245,26 +308,49 @@ export async function togglePurchased(
 /**
  * Removes an item from the shopping list.
  * - If it's a pantry-linked item, resets is_out_of_stock = FALSE in pantry_items.
- * - If it's a custom item, simply deletes the record from shopping_list_items.
+ * - If it's a custom item, deletes the record from shopping_list_items.
+ * - Only the owner or an admin can delete an item currently staged in cart.
  */
-export async function removeShoppingListItem(kitchenId: string, itemId: string): Promise<boolean> {
+export async function removeShoppingListItem(
+  kitchenId: string,
+  itemId: string,
+  userId?: string
+): Promise<boolean> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
-    const { rows } = await client.query<{ pantry_item_id: string | null }>(
-      `DELETE FROM shopping_list_items
-       WHERE id = $1 AND kitchen_id = $2
-       RETURNING pantry_item_id`,
+    const { rows: existingRows } = await client.query<{
+      is_purchased: boolean;
+      purchased_by: string | null;
+      checkout_id: string | null;
+      pantry_item_id: string | null;
+    }>(
+      `SELECT is_purchased, purchased_by, checkout_id, pantry_item_id FROM shopping_list_items WHERE id = $1 AND kitchen_id = $2`,
       [itemId, kitchenId]
     );
-
-    if (rows.length === 0) {
+    if (existingRows.length === 0) {
       await client.query("ROLLBACK");
       return false;
     }
+    const existing = existingRows[0];
 
-    const pantryItemId = rows[0].pantry_item_id;
+    if (existing.is_purchased && existing.purchased_by && userId && existing.purchased_by !== userId) {
+      const adminRes = await client.query(
+        `SELECT 1 FROM kitchen_members WHERE kitchen_id = $1 AND user_id = $2 AND role = 'ADMIN'`,
+        [kitchenId, userId]
+      );
+      if (adminRes.rows.length === 0) {
+        throw new Error("You cannot delete an item staged in another member's cart.");
+      }
+    }
+
+    await client.query(
+      `DELETE FROM shopping_list_items WHERE id = $1 AND kitchen_id = $2`,
+      [itemId, kitchenId]
+    );
+
+    const pantryItemId = existing.pantry_item_id;
     if (pantryItemId) {
       await client.query(
         `UPDATE pantry_items SET is_out_of_stock = FALSE, updated_at = NOW()
@@ -394,7 +480,7 @@ export async function refundCheckout(
 
 /**
  * Atomically transfers guest-staged shopping list items to a logged-in user's active cart.
- * - Updates shopping_list_items setting is_purchased = true, purchased_by = userId.
+ * - Updates shopping_list_items setting is_purchased = true, purchased_by = userId, is_guest_staged = false.
  * - Restocks linked pantry items (is_out_of_stock = false).
  * - Ignores items that are already purchased, checked out, or deleted.
  */
@@ -421,10 +507,9 @@ export async function transferGuestCartToUser(
 
     const updateSql = `
       UPDATE shopping_list_items
-      SET is_purchased = TRUE, purchased_by = $1
+      SET is_purchased = TRUE, purchased_by = $1, is_guest_staged = FALSE
       WHERE kitchen_id = $2
         AND id = ANY($3::uuid[])
-        AND is_purchased = FALSE
         AND checkout_id IS NULL
       RETURNING id, pantry_item_id
     `;
@@ -457,4 +542,118 @@ export async function transferGuestCartToUser(
     client.release();
   }
 }
+
+/**
+ * Stages or unstages an item anonymously from the guest supermarket view.
+ * Updates shopping_list_items.is_guest_staged flag.
+ */
+export async function stageGuestShoppingItem(
+  kitchenId: string,
+  itemId: string,
+  isStaged: boolean
+): Promise<ShoppingListItem> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const { rows: existingRows } = await client.query<{
+      id: string;
+      is_purchased: boolean;
+      purchased_by: string | null;
+      checkout_id: string | null;
+      pantry_item_id: string | null;
+    }>(
+      `SELECT id, is_purchased, purchased_by, checkout_id, pantry_item_id
+       FROM shopping_list_items
+       WHERE id = $1 AND kitchen_id = $2`,
+      [itemId, kitchenId]
+    );
+
+    if (existingRows.length === 0) {
+      throw new Error("Shopping list item not found.");
+    }
+    const existing = existingRows[0];
+    if (existing.checkout_id) {
+      throw new Error("This item has already been checked out.");
+    }
+    if (existing.is_purchased && existing.purchased_by) {
+      throw new Error("This item is already in a member's cart.");
+    }
+
+    const { rows } = await client.query<ShoppingListItem>(
+      `UPDATE shopping_list_items
+       SET is_guest_staged = $1, is_purchased = FALSE, purchased_by = NULL
+       WHERE id = $2 AND kitchen_id = $3
+       RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, purchased_by, is_guest_staged, checkout_id, created_at`,
+      [isStaged, itemId, kitchenId]
+    );
+    const item = rows[0];
+
+    if (item.pantry_item_id) {
+      await client.query(
+        `UPDATE pantry_items SET is_out_of_stock = $1, updated_at = NOW()
+         WHERE id = $2 AND kitchen_id = $3`,
+        [!isStaged, item.pantry_item_id, kitchenId]
+      );
+    }
+
+    await client.query("COMMIT");
+    return { ...item, purchased_by_name: isStaged ? "Guest" : null };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Allows a household admin to unstage an abandoned guest item.
+ * Sets is_guest_staged = FALSE, returning it to Needed Items.
+ */
+export async function unstageGuestItem(
+  kitchenId: string,
+  itemId: string,
+  adminUserId: string
+): Promise<ShoppingListItem> {
+  const isAdmin = await isUserKitchenAdmin(kitchenId, adminUserId);
+  if (!isAdmin) {
+    throw new Error("Unauthorized: Only kitchen admins can unstage guest items.");
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const { rows } = await client.query<ShoppingListItem>(
+      `UPDATE shopping_list_items
+       SET is_guest_staged = FALSE, is_purchased = FALSE, purchased_by = NULL
+       WHERE id = $1 AND kitchen_id = $2
+       RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, purchased_by, is_guest_staged, checkout_id, created_at`,
+      [itemId, kitchenId]
+    );
+
+    if (rows.length === 0) {
+      throw new Error("Guest staged item not found.");
+    }
+    const item = rows[0];
+
+    if (item.pantry_item_id) {
+      await client.query(
+        `UPDATE pantry_items SET is_out_of_stock = TRUE, updated_at = NOW()
+         WHERE id = $1 AND kitchen_id = $2`,
+        [item.pantry_item_id, kitchenId]
+      );
+    }
+
+    await client.query("COMMIT");
+    return item;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 

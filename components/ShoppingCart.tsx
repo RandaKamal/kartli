@@ -12,6 +12,7 @@ import {
   Trash2,
   Receipt,
   Loader2,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,14 +44,23 @@ export function ShoppingCart({
     setAllItems(items);
   }, [items]);
 
-  const cartItems = allItems.filter(
-    (i) => i.is_purchased && !i.checkout_id
+  const myCartItems = allItems.filter(
+    (i) => i.is_purchased && !i.is_guest_staged && !i.checkout_id && i.purchased_by === currentUserId
+  );
+  const otherCartItems = allItems.filter(
+    (i) => (i.is_purchased || i.is_guest_staged) && !i.checkout_id && (i.purchased_by !== currentUserId || i.is_guest_staged)
   );
 
   const handleReturnToList = (item: ShoppingListItem) => {
+    // Only owner can return their item
+    if (item.purchased_by !== currentUserId) {
+      toast.error("You cannot modify another roommate's cart.");
+      return;
+    }
+
     setAllItems((prev) =>
       prev.map((i) =>
-        i.id === item.id ? { ...i, is_purchased: false, purchased_by: null } : i
+        i.id === item.id ? { ...i, is_purchased: false, purchased_by: null, is_guest_staged: false } : i
       )
     );
 
@@ -59,24 +69,29 @@ export function ShoppingCart({
         await returnToShoppingListAction(kitchenId, item.id);
         toast.success(`Returned "${item.name}" to shopping list`);
       } catch (err: any) {
-        setAllItems((prev) =>
-          prev.map((i) => (i.id === item.id ? item : i))
-        );
+        setAllItems(items);
         toast.error(err.message || "Failed to return item to list.");
       }
     });
   };
 
   const handleClearCart = () => {
-    const count = cartItems.length;
+    const count = myCartItems.length;
     if (count === 0) return;
 
-    setAllItems((prev) => prev.filter((i) => !i.is_purchased || !!i.checkout_id));
+    // Optimistically reset user's cart items back to unpurchased/needed
+    setAllItems((prev) =>
+      prev.map((i) =>
+        i.is_purchased && !i.is_guest_staged && !i.checkout_id && i.purchased_by === currentUserId
+          ? { ...i, is_purchased: false, purchased_by: null, is_guest_staged: false }
+          : i
+      )
+    );
 
     startTransition(async () => {
       try {
         await clearCartAction(kitchenId);
-        toast.success(`Cleared ${count} item${count === 1 ? "" : "s"} from cart`);
+        toast.success(`Returned ${count} item${count === 1 ? "" : "s"} to shopping list`);
       } catch (err: any) {
         setAllItems(items);
         toast.error(err.message || "Failed to clear cart.");
@@ -85,7 +100,7 @@ export function ShoppingCart({
   };
 
   const handleProceedToReceipt = () => {
-    if (cartItems.length === 0) {
+    if (myCartItems.length === 0) {
       toast.error("Your cart is empty.");
       return;
     }
@@ -104,9 +119,9 @@ export function ShoppingCart({
       >
         <CartIcon className="w-4 h-4 mr-1.5 text-muted-foreground" />
         <span>Cart</span>
-        {cartItems.length > 0 && (
+        {myCartItems.length > 0 && (
           <span className="ml-1 px-1.5 py-0.2 rounded-full bg-secondary text-foreground border border-border text-[11px] font-bold">
-            {cartItems.length}
+            {myCartItems.length}
           </span>
         )}
       </Button>
@@ -114,21 +129,26 @@ export function ShoppingCart({
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-lg bg-card border border-border p-6 text-card-foreground flex flex-col gap-5 rounded-3xl shadow-xl">
           <DialogHeader>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <CartIcon className="w-5 h-5 text-accent-brand" />
               <DialogTitle className="text-lg font-bold text-foreground">
                 Active Cart
               </DialogTitle>
               <Badge variant="secondary" className="text-xs px-2 py-0.5 font-mono">
-                {cartItems.length} {cartItems.length === 1 ? "item" : "items"}
+                {myCartItems.length} in your cart
               </Badge>
+              {otherCartItems.length > 0 && (
+                <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-muted-foreground">
+                  {otherCartItems.length} by roommates
+                </Badge>
+              )}
             </div>
             <DialogDescription className="text-sm text-muted-foreground mt-1">
-              Staged items pending checkout or receipt upload.
+              Your staged items pending checkout or receipt upload.
             </DialogDescription>
           </DialogHeader>
 
-          {cartItems.length === 0 ? (
+          {myCartItems.length === 0 && otherCartItems.length === 0 ? (
             <div className="py-10 px-6 text-center rounded-2xl border border-dashed border-border bg-muted/20 flex flex-col items-center justify-center">
               <CartIcon className="w-8 h-8 text-muted-foreground/60 mb-2" />
               <p className="text-sm font-medium text-foreground">
@@ -139,62 +159,137 @@ export function ShoppingCart({
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1 py-1">
-              {cartItems.map((item) => {
-                const isMine = item.purchased_by === currentUserId;
-                const attribution = isMine
-                  ? "You"
-                  : item.purchased_by_name
-                  ? capitalize(item.purchased_by_name)
-                  : "Member";
-
-                return (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 border border-border/80"
-                  >
-                    <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-accent-success shrink-0" />
-                        <span className="font-medium text-sm text-foreground truncate">
-                          {item.name}
-                        </span>
-                        {item.pantry_item_id ? (
-                          <Badge
-                            variant="outline"
-                            className="text-[9px] px-1.5 py-0 font-medium text-muted-foreground shrink-0"
-                          >
-                            Pantry
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="secondary"
-                            className="text-[9px] px-1.5 py-0 font-medium shrink-0"
-                          >
-                            Custom
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Added by {attribution}
-                      </p>
-                    </div>
-
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleReturnToList(item)}
-                      disabled={isPending}
-                      className="h-8 text-xs text-muted-foreground hover:text-foreground hover:bg-muted gap-1.5 shrink-0 rounded-lg"
-                      title="Return to shopping list"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Return to List</span>
-                    </Button>
+            <div className="flex flex-col gap-4 max-h-[360px] overflow-y-auto pr-1 py-1">
+              {/* My Staged Items */}
+              {myCartItems.length > 0 ? (
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
+                    Your Staged Items ({myCartItems.length})
                   </div>
-                );
-              })}
+                  <div className="space-y-2">
+                    {myCartItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 border border-border/80"
+                      >
+                        <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-accent-success shrink-0" />
+                            <span className="font-medium text-sm text-foreground truncate">
+                              {item.name}
+                            </span>
+                            {item.pantry_item_id ? (
+                              <Badge
+                                variant="outline"
+                                className="text-[9px] px-1.5 py-0 font-medium text-muted-foreground shrink-0"
+                              >
+                                Pantry
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant="secondary"
+                                className="text-[9px] px-1.5 py-0 font-medium shrink-0"
+                              >
+                                Custom
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Added by You
+                          </p>
+                        </div>
+
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleReturnToList(item)}
+                          disabled={isPending}
+                          className="h-8 text-xs text-muted-foreground hover:text-foreground hover:bg-muted gap-1.5 shrink-0 rounded-lg"
+                          title="Return to shopping list"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Return to List</span>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl border border-dashed border-border text-center text-xs text-muted-foreground">
+                  You have no items in your cart.
+                </div>
+              )}
+
+              {/* Roommates' Staged Items (Read-Only) */}
+              {otherCartItems.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-border/60">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Staged by Roommates ({otherCartItems.length})</span>
+                  </div>
+                  <div className="space-y-2 opacity-85">
+                    {otherCartItems.map((item) => {
+                      const isGuest = item.is_guest_staged;
+                      const attribution = isGuest
+                        ? "Guest"
+                        : item.purchased_by_name
+                        ? capitalize(item.purchased_by_name)
+                        : "Roommate";
+
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between p-3 rounded-xl bg-secondary/20 border border-border/60"
+                        >
+                          <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${isGuest ? "bg-accent-warning" : "bg-accent-success/60"}`} />
+                              <span className="font-medium text-sm text-muted-foreground truncate">
+                                {item.name}
+                              </span>
+                              {item.pantry_item_id ? (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[9px] px-1.5 py-0 font-medium text-muted-foreground shrink-0"
+                                >
+                                  Pantry
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant="secondary"
+                                  className="text-[9px] px-1.5 py-0 font-medium shrink-0"
+                                >
+                                  Custom
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Added by {attribution}
+                            </p>
+                          </div>
+
+                          {isGuest ? (
+                            <Badge
+                              variant="warm"
+                              className="text-[10px] px-2 py-0.5 font-medium shrink-0"
+                            >
+                              Guest (in cart)
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-2 py-0.5 text-muted-foreground shrink-0 bg-muted/20"
+                            >
+                              In {attribution}&apos;s Cart
+                            </Badge>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -204,8 +299,13 @@ export function ShoppingCart({
               variant="outline"
               size="sm"
               onClick={handleClearCart}
-              disabled={isPending || cartItems.length === 0}
+              disabled={isPending || myCartItems.length === 0}
               className="h-9 rounded-xl text-xs gap-1.5"
+              title={
+                myCartItems.length > 0
+                  ? `Return ${myCartItems.length} item(s) to shopping list`
+                  : "Cart is empty"
+              }
             >
               {isPending ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -218,7 +318,7 @@ export function ShoppingCart({
             <Button
               type="button"
               onClick={handleProceedToReceipt}
-              disabled={cartItems.length === 0}
+              disabled={myCartItems.length === 0}
               className="h-9 px-4 text-xs font-medium rounded-xl gap-2"
               title="Proceed to receipt upload"
             >
@@ -231,4 +331,3 @@ export function ShoppingCart({
     </>
   );
 }
-

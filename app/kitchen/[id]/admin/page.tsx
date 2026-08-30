@@ -115,7 +115,12 @@ export default async function KitchenAdminPage({
       {/* Pantry & Shopping List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PantrySection kitchenId={id} items={pantryItems} />
-        <ShoppingListSection kitchenId={id} items={shoppingListItems} currentUserId={session.user.id} />
+        <ShoppingListSection
+          kitchenId={id}
+          items={shoppingListItems}
+          currentUserId={session.user.id}
+          isAdmin={true}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

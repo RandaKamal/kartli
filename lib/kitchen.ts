@@ -505,3 +505,37 @@ export async function updateKitchenName(
   return rows[0];
 }
 
+/**
+ * Regenerates the disposable public view token for a kitchen (Admin only action).
+ * Instantly invalidates any previously shared guest supermarket links.
+ *
+ * @param kitchenId - UUID of the kitchen.
+ * @param adminUserId - UUID of the requesting admin user.
+ * @returns The new public view token.
+ */
+export async function regeneratePublicViewToken(
+  kitchenId: string,
+  adminUserId: string
+): Promise<string> {
+  const isAdmin = await isUserKitchenAdmin(kitchenId, adminUserId);
+  if (!isAdmin) {
+    throw new Error("Unauthorized: Only kitchen admins can regenerate the guest link.");
+  }
+
+  const newToken = generateSecureToken(24);
+  const { rows } = await pool.query<{ public_view_token: string }>(
+    `UPDATE kitchens
+     SET public_view_token = $1, updated_at = NOW()
+     WHERE id = $2
+     RETURNING public_view_token`,
+    [newToken, kitchenId]
+  );
+
+  if (rows.length === 0) {
+    throw new Error("Kitchen not found.");
+  }
+
+  return rows[0].public_view_token;
+}
+
+

@@ -14,8 +14,11 @@ import {
   addCustomShoppingItem,
   togglePurchased,
   removeShoppingListItem,
+  clearUserCart,
   clearBoughtShoppingListItems,
   transferGuestCartToUser,
+  stageGuestShoppingItem as stageGuestShoppingItemDb,
+  unstageGuestItem as unstageGuestItemDb,
 } from "@/lib/pantry";
 import type { PantryItem, ShoppingListItem } from "@/types";
 
@@ -98,20 +101,25 @@ export async function returnToShoppingListAction(kitchenId: string, itemId: stri
 }
 
 export async function removeShoppingListItemAction(kitchenId: string, itemId: string) {
-  await requireMembership(kitchenId);
-  const result = await removeShoppingListItem(kitchenId, itemId);
+  const userId = await requireMembership(kitchenId);
+  const result = await removeShoppingListItem(kitchenId, itemId, userId);
   revalidateKitchen(kitchenId);
   return result;
 }
 
-export async function clearBoughtShoppingListItemsAction(kitchenId: string) {
-  await requireMembership(kitchenId);
-  const count = await clearBoughtShoppingListItems(kitchenId);
+/**
+ * Puts all of the current user's staged cart items back on the needed shopping list.
+ * Does NOT delete any items.
+ */
+export async function clearUserCartAction(kitchenId: string) {
+  const userId = await requireMembership(kitchenId);
+  const count = await clearUserCart(kitchenId, userId);
   revalidateKitchen(kitchenId);
   return count;
 }
 
-export const clearCartAction = clearBoughtShoppingListItemsAction;
+export const clearCartAction = clearUserCartAction;
+export const clearBoughtShoppingListItemsAction = clearUserCartAction;
 
 /**
  * Claims and transfers guest-staged shopping list items into the authenticated user's cart.
@@ -155,5 +163,48 @@ export async function claimGuestCartAction(
 
   return { transferredCount };
 }
+
+/**
+ * Server Action to stage or unstage an item anonymously from the guest view.
+ */
+export async function stageGuestShoppingItemAction(
+  params: { kitchenId: string; itemId: string; isStaged: boolean } | string,
+  maybeItemId?: string,
+  maybeIsStaged?: boolean
+) {
+  const kitchenId = typeof params === "object" ? params.kitchenId : params;
+  const itemId = typeof params === "object" ? params.itemId : (maybeItemId ?? "");
+  const isStaged = typeof params === "object" ? params.isStaged : (maybeIsStaged ?? true);
+
+  const item = await stageGuestShoppingItemDb(kitchenId, itemId, isStaged);
+  revalidateKitchen(kitchenId);
+  return item;
+}
+
+export const stageGuestShoppingItem = stageGuestShoppingItemAction;
+
+/**
+ * Server Action for an admin to unstage an abandoned guest item.
+ * Sets is_guest_staged = FALSE, returning it to Needed Items.
+ */
+export async function unstageGuestItemAction(
+  params: { kitchenId: string; itemId: string } | string,
+  maybeItemId?: string
+) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in.");
+  }
+
+  const kitchenId = typeof params === "object" ? params.kitchenId : params;
+  const itemId = typeof params === "object" ? params.itemId : (maybeItemId ?? "");
+
+  const item = await unstageGuestItemDb(kitchenId, itemId, session.user.id);
+  revalidateKitchen(kitchenId);
+  return item;
+}
+
+export const unstageGuestItem = unstageGuestItemAction;
+
 
 
