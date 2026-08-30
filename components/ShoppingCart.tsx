@@ -105,36 +105,36 @@ export function ShoppingCart({
         <CartIcon className="w-4 h-4 mr-1.5 text-muted-foreground" />
         <span>Cart</span>
         {cartItems.length > 0 && (
-          <span className="ml-1 px-1.5 py-0.2 rounded-full bg-accent-primary text-white text-[11px] font-bold">
+          <span className="ml-1 px-1.5 py-0.2 rounded-full bg-secondary text-foreground border border-border text-[11px] font-bold">
             {cartItems.length}
           </span>
         )}
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-lg bg-zinc-950 border border-zinc-800 p-6 text-zinc-100 flex flex-col gap-5 rounded-xl">
+        <DialogContent className="sm:max-w-lg bg-card border border-border p-6 text-card-foreground flex flex-col gap-5 rounded-3xl shadow-xl">
           <DialogHeader>
             <div className="flex items-center gap-2.5">
-              <CartIcon className="w-5 h-5 text-zinc-200" />
-              <DialogTitle className="text-lg font-bold text-zinc-100">
+              <CartIcon className="w-5 h-5 text-accent-brand" />
+              <DialogTitle className="text-lg font-bold text-foreground">
                 Active Cart
               </DialogTitle>
-              <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-zinc-800 text-zinc-300 border-zinc-700">
+              <Badge variant="secondary" className="text-xs px-2 py-0.5 font-mono">
                 {cartItems.length} {cartItems.length === 1 ? "item" : "items"}
               </Badge>
             </div>
-            <DialogDescription className="text-sm text-zinc-400 mt-1">
+            <DialogDescription className="text-sm text-muted-foreground mt-1">
               Staged items pending checkout or receipt upload.
             </DialogDescription>
           </DialogHeader>
 
           {cartItems.length === 0 ? (
-            <div className="py-10 px-6 text-center rounded-lg border border-dashed border-zinc-800 bg-zinc-900/30 flex flex-col items-center justify-center">
-              <CartIcon className="w-8 h-8 text-zinc-600 mb-2" />
-              <p className="text-sm font-medium text-zinc-400">
+            <div className="py-10 px-6 text-center rounded-2xl border border-dashed border-border bg-muted/20 flex flex-col items-center justify-center">
+              <CartIcon className="w-8 h-8 text-muted-foreground/60 mb-2" />
+              <p className="text-sm font-medium text-foreground">
                 Your cart is currently empty.
               </p>
-              <p className="text-xs text-zinc-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Click &ldquo;Put in Cart&rdquo; on any open item in the shopping list to stage it here.
               </p>
             </div>
@@ -151,19 +151,31 @@ export function ShoppingCart({
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/80 border border-zinc-800"
+                    className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 border border-border/80"
                   >
                     <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                        <span className="font-medium text-sm text-zinc-100 truncate">
+                        <span className="w-2 h-2 rounded-full bg-accent-success shrink-0" />
+                        <span className="font-medium text-sm text-foreground truncate">
                           {item.name}
                         </span>
-                        <span className="text-[10px] uppercase font-semibold text-zinc-400 bg-zinc-800 px-1.5 py-0.5 rounded shrink-0">
-                          {item.pantry_item_id ? "Pantry" : "Custom"}
-                        </span>
+                        {item.pantry_item_id ? (
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] px-1.5 py-0 font-medium text-muted-foreground shrink-0"
+                          >
+                            Pantry
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="secondary"
+                            className="text-[9px] px-1.5 py-0 font-medium shrink-0"
+                          >
+                            Custom
+                          </Badge>
+                        )}
                       </div>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-muted-foreground">
                         Added by {attribution}
                       </p>
                     </div>
@@ -174,7 +186,7 @@ export function ShoppingCart({
                       variant="ghost"
                       onClick={() => handleReturnToList(item)}
                       disabled={isPending}
-                      className="h-8 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 gap-1.5 shrink-0"
+                      className="h-8 text-xs text-muted-foreground hover:text-foreground hover:bg-muted gap-1.5 shrink-0 rounded-lg"
                       title="Return to shopping list"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
@@ -186,14 +198,14 @@ export function ShoppingCart({
             </div>
           )}
 
-          <DialogFooter className="flex items-center justify-between gap-3 pt-4 border-t border-zinc-800/80 mt-2">
+          <DialogFooter className="flex items-center justify-between gap-3 pt-4 border-t border-border mt-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={handleClearCart}
               disabled={isPending || cartItems.length === 0}
-              className="h-9 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 text-xs gap-1.5"
+              className="h-9 rounded-xl text-xs gap-1.5"
             >
               {isPending ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -207,7 +219,7 @@ export function ShoppingCart({
               type="button"
               onClick={handleProceedToReceipt}
               disabled={cartItems.length === 0}
-              className="h-9 px-4 text-xs font-medium bg-white text-black hover:bg-zinc-200 rounded-md transition-colors gap-2"
+              className="h-9 px-4 text-xs font-medium rounded-xl gap-2"
               title="Proceed to receipt upload"
             >
               <Receipt className="w-4 h-4" />

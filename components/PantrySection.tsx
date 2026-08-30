@@ -129,8 +129,9 @@ export function PantrySection({
           />
           <Button
             type="submit"
+            variant="secondary"
             disabled={isPending || !newItemName.trim()}
-            className="rounded-xl h-10 px-4 font-semibold shrink-0"
+            className="rounded-xl h-10 px-4 font-medium shrink-0 border border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
           >
             <Plus className="w-4 h-4" />
             <span>Add</span>
@@ -190,7 +191,11 @@ export function PantrySection({
                       ? "Restock item (removes from shopping list)"
                       : "Mark as empty (adds to shopping list)"
                   }
-                  className="h-8 px-3 rounded-lg text-xs font-semibold"
+                  className={`h-8 px-3 rounded-lg text-xs font-semibold ${
+                    item.is_out_of_stock
+                      ? "bg-accent-success text-white dark:text-zinc-950 hover:bg-accent-success/90"
+                      : ""
+                  }`}
                 >
                   {item.is_out_of_stock ? (
                     <>
@@ -199,7 +204,7 @@ export function PantrySection({
                     </>
                   ) : (
                     <>
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                      <AlertTriangle className="w-3.5 h-3.5 text-accent-warning" />
                       <span>Mark Empty</span>
                     </>
                   )}
@@ -236,7 +241,7 @@ export function PantrySection({
             <AlertDialogDescription>
               Are you sure you want to delete <strong className="text-foreground font-semibold">&ldquo;{itemToDelete?.name}&rdquo;</strong> from the pantry?
               {itemToDelete?.is_out_of_stock && (
-                <span className="block mt-1 text-amber-600 dark:text-amber-400 font-medium">
+                <span className="block mt-1 text-accent-warning font-medium">
                   This will also remove its pending entry from the shopping list.
                 </span>
               )}

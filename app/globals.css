@@ -3,21 +3,24 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-accent-primary: var(--brand-primary);
-  --color-accent-secondary: var(--brand-secondary);
-  --color-accent-warm: var(--brand-warm);
-  --color-accent-muted-green: var(--brand-success);
-  --color-accent-green: var(--brand-success);
-  --color-accent-success: var(--brand-success);
-  --color-accent-danger: var(--brand-danger);
-  --color-accent-light: var(--brand-light);
+  --color-accent-brand: var(--accent-brand);
+  --color-accent-warning: var(--accent-warning);
+  --color-accent-success: var(--accent-success);
 
-  --color-brand-primary: var(--brand-primary);
-  --color-brand-secondary: var(--brand-secondary);
-  --color-brand-warm: var(--brand-warm);
-  --color-brand-success: var(--brand-success);
-  --color-brand-danger: var(--brand-danger);
-  --color-brand-light: var(--brand-light);
+  --color-accent-primary: var(--accent-brand);
+  --color-accent-secondary: var(--accent-success);
+  --color-accent-warm: var(--accent-warning);
+  --color-accent-muted-green: var(--accent-success);
+  --color-accent-green: var(--accent-success);
+  --color-accent-danger: var(--destructive);
+  --color-accent-light: var(--muted);
+
+  --color-brand-primary: var(--accent-brand);
+  --color-brand-secondary: var(--accent-success);
+  --color-brand-warm: var(--accent-warning);
+  --color-brand-success: var(--accent-success);
+  --color-brand-danger: var(--destructive);
+  --color-brand-light: var(--muted);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -54,43 +57,38 @@
 
 @layer base {
   :root {
-    /* Brand Identity: Warm Culinary / Terracotta & Fresh Sage */
-    --brand-primary: #ea580c;      /* Warm Terracotta Ember */
-    --brand-secondary: #0f766e;    /* Deep Fresh Sage / Teal */
-    --brand-warm: #d97706;         /* Golden Honey Amber */
-    --brand-success: #16a34a;      /* Fresh Basil Green */
-    --brand-danger: #e11d48;       /* Clean Pomegranate Crimson */
-    --brand-muted-green: #16a34a;  /* Botanical Green */
-    --brand-light: #ffedd5;        /* Warm Apricot Glow */
-
-    /* Refined Light Theme: Warm Linen & Milk White with Soft Tones */
-    --background: #fbfaf7;
-    --foreground: #1c1917;
-
-    --card: #ffffff;
-    --card-foreground: #1c1917;
-
-    --popover: #ffffff;
-    --popover-foreground: #1c1917;
-
-    --primary: #ea580c;
-    --primary-foreground: #ffffff;
-
-    --secondary: #f4f1ea;
-    --secondary-foreground: #1c1917;
-
-    --muted: #f4f1ea;
-    --muted-foreground: #78716c;
-
-    --accent: #f4f1ea;
-    --accent-foreground: #1c1917;
-
-    --destructive: #e11d48;
+    /* Culinary Warmth Functional Accent Tokens (Light Mode - High WCAG Contrast) */
+    --accent-brand: #d95d5b;      /* Deep Warm Coral */
+    --accent-warning: #b07d1e;    /* Rich Honey Ochre */
+    --accent-success: #437065;    /* Deep Laurel Green */
+    --destructive: #c9184a;       /* Crimson Rose */
     --destructive-foreground: #ffffff;
 
-    --border: #ece7de;
-    --input: #e5dfd5;
-    --ring: #ea580c;
+    /* Light Theme Foundations (Warm Alabaster / Linen) */
+    --background: #faf9f6;
+    --foreground: #18181b;
+
+    --card: #ffffff;
+    --card-foreground: #18181b;
+
+    --popover: #ffffff;
+    --popover-foreground: #18181b;
+
+    --primary: #18181b;
+    --primary-foreground: #faf9f6;
+
+    --secondary: #f2f0eb;
+    --secondary-foreground: #18181b;
+
+    --muted: #f2f0eb;
+    --muted-foreground: #63636e;
+
+    --accent: #eae7e1;
+    --accent-foreground: #18181b;
+
+    --border: #e4e2dd;
+    --input: #e4e2dd;
+    --ring: #d95d5b;
 
     --radius: 1rem;
 
@@ -98,43 +96,39 @@
   }
 
   .dark {
-    /* Brand Identity: Warm Obsidian & Glowing Ember */
-    --brand-primary: #f97316;      /* Glowing Terracotta Tangerine */
-    --brand-secondary: #2dd4bf;    /* Bright Sage Mint */
-    --brand-warm: #fbbf24;         /* Golden Honey */
-    --brand-success: #22c55e;      /* Crisp Basil Green */
-    --brand-danger: #f43f5e;       /* Rose Crimson */
-    --brand-muted-green: #22c55e;  /* Crisp Green */
-    --brand-light: #431407;        /* Deep Ember Highlight */
-
-    /* Refined Dark Theme: Deep Roasted Espresso & Warm Carbon */
-    --background: #141312;
-    --foreground: #f5f4f0;
-
-    --card: #1c1b18;
-    --card-foreground: #f5f4f0;
-
-    --popover: #1c1b18;
-    --popover-foreground: #f5f4f0;
-
-    --primary: #f97316;
-    --primary-foreground: #141312;
-
-    --secondary: #262421;
-    --secondary-foreground: #f5f4f0;
-
-    --muted: #262421;
-    --muted-foreground: #a8a29e;
-
-    --accent: #2e2b26;
-    --accent-foreground: #f5f4f0;
-
-    --destructive: #f43f5e;
+    /* Culinary Warmth Functional Accent Tokens (Dark Mode) */
+    --accent-brand: #f28482;      /* Warm Terracotta / Soft Apricot Coral */
+    --accent-warning: #f6bd60;    /* Warm Honey Amber */
+    --accent-success: #84a59d;    /* Sage / Soft Forest Moss */
+    --destructive: #ef476f;       /* Vivid Crimson */
     --destructive-foreground: #ffffff;
 
-    --border: #2e2b26;
-    --input: #2e2b26;
-    --ring: #f97316;
+    /* Dark Theme Foundations (Warm Charcoal & Elevated Panels) */
+    --background: #0c0c0e;
+    --foreground: #f7f7f8;
+
+    --card: #16161a;
+    --card-foreground: #f7f7f8;
+
+    --popover: #16161a;
+    --popover-foreground: #f7f7f8;
+
+    /* Primary Action Buttons: High-Contrast Neutral */
+    --primary: #f7f7f8;
+    --primary-foreground: #0c0c0e;
+
+    --secondary: #1f1f24;
+    --secondary-foreground: #f7f7f8;
+
+    --muted: #1f1f24;
+    --muted-foreground: #9e9ea7;
+
+    --accent: #25252b;
+    --accent-foreground: #f7f7f8;
+
+    --border: #27272e;
+    --input: #27272e;
+    --ring: #f28482;
 
     color-scheme: dark;
   }
@@ -144,7 +138,6 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased min-h-screen selection:bg-accent-primary/20 selection:text-foreground;
+    @apply bg-background text-foreground antialiased min-h-screen selection:bg-accent-brand/20 selection:text-foreground;
   }
 }
-

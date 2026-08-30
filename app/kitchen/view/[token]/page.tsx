@@ -72,7 +72,7 @@ export default async function PublicKitchenViewPage({
                 className="px-3.5 py-2.5 rounded-xl bg-muted/40 border border-border text-sm text-foreground font-medium flex items-center justify-between gap-2"
               >
                 <div className="flex items-center gap-2 truncate">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent-warning shrink-0" />
                   <span className="truncate">{item.name}</span>
                 </div>
                 {item.pantry_item_id ? (

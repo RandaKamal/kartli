@@ -198,8 +198,9 @@ export function ShoppingListSection({
         />
         <Button
           type="submit"
+          variant="secondary"
           disabled={isPending || !customItemName.trim()}
-          className="rounded-xl h-10 px-4 font-semibold shrink-0"
+          className="rounded-xl h-10 px-4 font-medium shrink-0 border border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
         >
           <Plus className="w-4 h-4" />
           <span>Add</span>
@@ -250,7 +251,7 @@ export function ShoppingListSection({
                   className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium"
                   title="Needs to be purchased"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent-warning" />
                   <span>OPEN</span>
                 </Badge>
               </div>
@@ -265,7 +266,7 @@ export function ShoppingListSection({
                   title="Stage in active cart"
                   className="h-8 px-3 rounded-lg text-xs font-semibold border-border hover:bg-muted gap-1.5 text-foreground"
                 >
-                  <CartIcon className="w-3.5 h-3.5 text-accent-primary" />
+                  <CartIcon className="w-3.5 h-3.5 text-muted-foreground" />
                   <span>Put in Cart</span>
                 </Button>
 
@@ -281,7 +282,7 @@ export function ShoppingListSection({
                       ? "Remove from list (restocks in pantry)"
                       : "Delete custom item from shopping list"
                   }
-                  aria-label={`Remove ${item.name} from list`}
+                  aria-label={`Remove ${item.name}`}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
@@ -296,7 +297,7 @@ export function ShoppingListSection({
         <div className="space-y-2 pt-3 border-t border-border">
           <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
             <span className="flex items-center gap-1.5">
-              <CartIcon className="w-3.5 h-3.5 text-emerald-500" />
+              <CartIcon className="w-3.5 h-3.5 text-accent-success" />
               <span>In Cart ({inCartItems.length})</span>
             </span>
           </div>
@@ -325,7 +326,7 @@ export function ShoppingListSection({
                       className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium"
                       title="Staged in cart"
                     >
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent-success" />
                       <span>IN CART</span>
                     </Badge>
 

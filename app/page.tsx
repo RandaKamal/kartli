@@ -36,8 +36,8 @@ export default async function HomePage() {
               </Button>
             </div>
           </div>
-          {/* Subtle background glow element using brand primary */}
-          <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-accent-primary/10 rounded-full blur-3xl pointer-events-none" />
+          {/* Subtle background glow element using brand warmth */}
+          <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-accent-brand/10 rounded-full blur-3xl pointer-events-none" />
         </Card>
       ) : (
         <section className="space-y-6">
@@ -98,7 +98,7 @@ export default async function HomePage() {
                       {/* Entire Card Overlay Link */}
                       <Link
                         href={targetUrl}
-                        className="absolute inset-0 z-0 rounded-2xl focus:outline-none focus:ring-2 focus:ring-accent-primary"
+                        className="absolute inset-0 z-0 rounded-2xl focus:outline-none focus:ring-2 focus:ring-accent-brand"
                         aria-label={`Open ${kitchen.name} dashboard`}
                       />
 

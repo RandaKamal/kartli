@@ -38,9 +38,9 @@ export default async function RootLayout({
                   href="/"
                   className="flex items-center gap-2.5 font-bold text-lg text-foreground tracking-tight"
                 >
-                  <span className="w-8 h-8 rounded-xl bg-card border border-border/80 flex items-center justify-center text-xs font-black relative">
+                  <span className="w-8 h-8 rounded-xl bg-card border border-border/80 flex items-center justify-center text-xs font-black relative shadow-xs">
                     <span className="text-foreground">k</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent-primary absolute top-1.5 right-1.5" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent-brand absolute top-1.5 right-1.5" />
                   </span>
                   <span className="tracking-tight text-foreground font-extrabold">kartli</span>
                 </Link>
@@ -50,8 +50,8 @@ export default async function RootLayout({
 
                   {session?.user ? (
                     <>
-                      <Button asChild size="sm" variant="default" className="rounded-xl">
-                        <Link href="/kitchen/new" className="flex items-center gap-1.5 font-semibold">
+                      <Button asChild size="sm" variant="default" className="rounded-xl font-medium bg-zinc-900 text-zinc-100 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white transition-colors">
+                        <Link href="/kitchen/new" className="flex items-center gap-1.5">
                           <Plus className="w-3.5 h-3.5" />
                           <span className="hidden sm:inline">New Kitchen</span>
                         </Link>

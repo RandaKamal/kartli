@@ -143,33 +143,42 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               </div>
 
               <div className="grid grid-cols-3 gap-3 pt-1">
-                <Button
+                <button
                   type="button"
-                  variant={theme === "light" ? "default" : "secondary"}
                   onClick={() => setTheme("light")}
-                  className="h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border border-border/60 shadow-xs"
+                  className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
+                    theme === "light"
+                      ? "bg-zinc-800 text-white border-zinc-700 shadow-sm"
+                      : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted"
+                  }`}
                 >
                   <Sun className="w-4 h-4" />
                   <span>Light</span>
-                </Button>
-                <Button
+                </button>
+                <button
                   type="button"
-                  variant={theme === "dark" ? "default" : "secondary"}
                   onClick={() => setTheme("dark")}
-                  className="h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border border-border/60 shadow-xs"
+                  className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
+                    theme === "dark"
+                      ? "bg-zinc-800 text-white border-zinc-700 shadow-sm"
+                      : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted"
+                  }`}
                 >
                   <Moon className="w-4 h-4" />
                   <span>Dark</span>
-                </Button>
-                <Button
+                </button>
+                <button
                   type="button"
-                  variant={theme === "system" ? "default" : "secondary"}
                   onClick={() => setTheme("system")}
-                  className="h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border border-border/60 shadow-xs"
+                  className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
+                    theme === "system"
+                      ? "bg-zinc-800 text-white border-zinc-700 shadow-sm"
+                      : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted"
+                  }`}
                 >
                   <Laptop className="w-4 h-4" />
                   <span>System</span>
-                </Button>
+                </button>
               </div>
             </div>
 
@@ -242,51 +251,51 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
             <div className="space-y-3">
               <div className="space-y-0.5">
                 <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-accent-primary" />
-                  <span>kartli Brand Palette</span>
+                  <Palette className="w-4 h-4 text-accent-brand" />
+                  <span>kartli Culinary Warmth Palette</span>
                 </h4>
                 <p className="text-xs text-muted-foreground">
-                  Warm artisanal culinary colors with soft contrast for daily household kitchen use.
+                  Carefully calibrated culinary palette: apricot clay brand warmth, honey amber alerts, forest sage in-cart states, and crimson danger.
                 </p>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
                 <div className="p-3 rounded-2xl bg-muted/40 border border-border/70 space-y-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 rounded-full bg-accent-primary shadow-xs" />
-                    <span className="text-xs font-semibold text-foreground">Hearth Ember</span>
+                    <span className="w-3.5 h-3.5 rounded-full bg-accent-brand shadow-xs" />
+                    <span className="text-xs font-semibold text-foreground">Apricot Clay</span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">Terracotta Brand</p>
+                  <p className="text-[11px] text-muted-foreground">Brand Warmth</p>
                 </div>
 
                 <div className="p-3 rounded-2xl bg-muted/40 border border-border/70 space-y-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 rounded-full bg-emerald-600 dark:bg-emerald-500 shadow-xs" />
-                    <span className="text-xs font-semibold text-foreground">Fresh Basil</span>
+                    <span className="w-3.5 h-3.5 rounded-full bg-accent-success shadow-xs" />
+                    <span className="text-xs font-semibold text-foreground">Forest Sage</span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">Restocked / Success</p>
+                  <p className="text-[11px] text-muted-foreground">In-Cart / Restocked</p>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-muted/40 border border-border/70 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3.5 h-3.5 rounded-full bg-accent-warning shadow-xs" />
+                    <span className="text-xs font-semibold text-foreground">Honey Amber</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">Out of Stock / Alert</p>
                 </div>
 
                 <div className="p-3 rounded-2xl bg-muted/40 border border-border/70 space-y-1.5">
                   <div className="flex items-center gap-2">
                     <span className="w-3.5 h-3.5 rounded-full bg-destructive shadow-xs" />
-                    <span className="text-xs font-semibold text-foreground">Pomegranate</span>
+                    <span className="text-xs font-semibold text-foreground">Crimson Rose</span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">Destructive Action</p>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-muted/40 border border-border/70 space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 rounded-full bg-amber-500 shadow-xs" />
-                    <span className="text-xs font-semibold text-foreground">Honey Ochre</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">Needed / Open Item</p>
+                  <p className="text-[11px] text-muted-foreground">Destructive / Delete</p>
                 </div>
               </div>
             </div>
 
             <div className="pt-2 flex justify-end">
-              <Button onClick={handleSavePreferences} className="rounded-xl font-semibold">
+              <Button onClick={handleSavePreferences} className="rounded-xl font-semibold bg-zinc-100 text-zinc-900 hover:bg-white dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white">
                 Save Preferences
               </Button>
             </div>
