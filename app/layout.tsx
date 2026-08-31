@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { cookies } from "next/headers";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import "./globals.css";
@@ -21,9 +22,21 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
+  const cookieStore = await cookies();
+  const culinaryTheme =
+    cookieStore.get("kartli-theme")?.value ||
+    cookieStore.get("culinary-theme")?.value ||
+    "olive";
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-theme={culinaryTheme} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('kartli-theme')||localStorage.getItem('culinary-theme')||(document.cookie.match(/(?:kartli-theme|culinary-theme)=([^;]+)/)||[])[1]||'${culinaryTheme}';document.documentElement.setAttribute('data-theme',t);}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body className="bg-background text-foreground min-h-screen flex flex-col antialiased selection:bg-accent-primary/20 selection:text-foreground">
         <ThemeProvider
           attribute="class"

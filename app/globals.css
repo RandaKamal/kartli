@@ -3,13 +3,13 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-accent-brand: var(--accent-brand);
+  --color-accent-brand: var(--accent-primary);
+  --color-accent-primary: var(--accent-primary);
   --color-accent-warning: var(--accent-warning);
   --color-accent-success: var(--accent-success);
-  --color-accent-sage: var(--accent-sage);
-  --color-accent-ochre: var(--accent-ochre);
+  --color-accent-sage: var(--accent-success);
+  --color-accent-ochre: var(--accent-warning);
 
-  --color-accent-primary: var(--accent-brand);
   --color-accent-secondary: var(--accent-success);
   --color-accent-warm: var(--accent-warning);
   --color-accent-muted-green: var(--accent-success);
@@ -17,7 +17,7 @@
   --color-accent-danger: var(--destructive);
   --color-accent-light: var(--muted);
 
-  --color-brand-primary: var(--accent-brand);
+  --color-brand-primary: var(--accent-primary);
   --color-brand-secondary: var(--accent-success);
   --color-brand-warm: var(--accent-warning);
   --color-brand-success: var(--accent-success);
@@ -58,17 +58,19 @@
 }
 
 @layer base {
-  :root {
-    /* Functional Accent Tokens (Light Mode) */
-    --accent-brand: #d95d5b;
-    --accent-warning: #e9c46a;
-    --accent-success: #81b29a;
-    --accent-sage: #81b29a;
-    --accent-ochre: #e9c46a;
-    --destructive: #c9184a;
+  /* ==========================================
+     Theme 1: Saffron Citrus (Default)
+     ========================================== */
+  :root,
+  :root[data-theme='saffron'],
+  :root[data-theme='olive'] {
+    --accent-primary: #e9c46a;
+    --accent-success: #90be6d;
+    --accent-warning: #f4a261;
+    --accent-brand: #e9c46a;
+    --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
-    /* Light Theme Foundations */
     --background: #ffffff;
     --foreground: #09090b;
 
@@ -92,48 +94,276 @@
 
     --border: #e4e4e7;
     --input: #e4e4e7;
-    --ring: #d95d5b;
+    --ring: #e9c46a;
 
     --radius: 1rem;
 
     color-scheme: light;
   }
 
-  .dark {
-    /* Functional Accent Tokens (Dark Mode) */
-    --accent-brand: #f28482;
-    --accent-warning: #e9c46a;
-    --accent-success: #81b29a;
-    --accent-sage: #81b29a;
-    --accent-ochre: #e9c46a;
-    --destructive: #ef476f;
+  .dark,
+  .dark[data-theme='saffron'],
+  .dark[data-theme='olive'] {
+    --accent-primary: #e9c46a;
+    --accent-success: #90be6d;
+    --accent-warning: #f4a261;
+    --accent-brand: #e9c46a;
+    --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
-    /* Dark Theme Foundations */
-    --background: #09090b;
+    /* Base Dark: #0c0c0e, Card: #141418, Border: #27272a */
+    --background: #0c0c0e;
     --foreground: #f4f4f5;
 
-    --card: #121215;
+    --card: #141418;
     --card-foreground: #f4f4f5;
 
-    --popover: #121215;
+    --popover: #141418;
     --popover-foreground: #f4f4f5;
 
     --primary: #f4f4f5;
-    --primary-foreground: #09090b;
+    --primary-foreground: #0c0c0e;
 
-    --secondary: #1e1e23;
+    --secondary: #18181b;
     --secondary-foreground: #f4f4f5;
 
-    --muted: #27272a;
+    --muted: #18181b;
     --muted-foreground: #a1a1aa;
 
-    --accent: #27272a;
+    --accent: #18181b;
     --accent-foreground: #f4f4f5;
 
     --border: #27272a;
     --input: #27272a;
-    --ring: #f28482;
+    --ring: #e9c46a;
+
+    color-scheme: dark;
+  }
+
+  /* ==========================================
+     Theme 2: Black Truffle
+     ========================================== */
+  :root[data-theme='truffle'] {
+    --accent-primary: #18181b;
+    --accent-success: #34d399;
+    --accent-warning: #fbbf24;
+    --accent-brand: #18181b;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    --background: #ffffff;
+    --foreground: #09090b;
+
+    --card: #ffffff;
+    --card-foreground: #09090b;
+
+    --popover: #ffffff;
+    --popover-foreground: #09090b;
+
+    --primary: #09090b;
+    --primary-foreground: #ffffff;
+
+    --secondary: #f4f4f5;
+    --secondary-foreground: #09090b;
+
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+
+    --accent: #f4f4f5;
+    --accent-foreground: #09090b;
+
+    --border: #e4e4e7;
+    --input: #e4e4e7;
+    --ring: #18181b;
+
+    color-scheme: light;
+  }
+
+  .dark[data-theme='truffle'] {
+    --accent-primary: #f4f4f5;
+    --accent-success: #34d399;
+    --accent-warning: #fbbf24;
+    --accent-brand: #f4f4f5;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    /* Base Dark: #000000, Card: #0d0d10, Border: #222226 */
+    --background: #000000;
+    --foreground: #f4f4f5;
+
+    --card: #0d0d10;
+    --card-foreground: #f4f4f5;
+
+    --popover: #0d0d10;
+    --popover-foreground: #f4f4f5;
+
+    --primary: #f4f4f5;
+    --primary-foreground: #000000;
+
+    --secondary: #18181b;
+    --secondary-foreground: #f4f4f5;
+
+    --muted: #18181b;
+    --muted-foreground: #a1a1aa;
+
+    --accent: #18181b;
+    --accent-foreground: #f4f4f5;
+
+    --border: #222226;
+    --input: #222226;
+    --ring: #f4f4f5;
+
+    color-scheme: dark;
+  }
+
+  /* ==========================================
+     Theme 3: Midnight Plum (Neo-Bistro)
+     ========================================== */
+  :root[data-theme='plum'] {
+    --accent-primary: #c084fc;
+    --accent-success: #4ade80;
+    --accent-warning: #f59e0b;
+    --accent-brand: #c084fc;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    --background: #ffffff;
+    --foreground: #09090b;
+
+    --card: #ffffff;
+    --card-foreground: #09090b;
+
+    --popover: #ffffff;
+    --popover-foreground: #09090b;
+
+    --primary: #18181b;
+    --primary-foreground: #ffffff;
+
+    --secondary: #f4f4f5;
+    --secondary-foreground: #18181b;
+
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+
+    --accent: #f4f4f5;
+    --accent-foreground: #18181b;
+
+    --border: #e4e4e7;
+    --input: #e4e4e7;
+    --ring: #c084fc;
+
+    color-scheme: light;
+  }
+
+  .dark[data-theme='plum'] {
+    --accent-primary: #c084fc;
+    --accent-success: #4ade80;
+    --accent-warning: #f59e0b;
+    --accent-brand: #c084fc;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    /* Base Dark: #0d0f14, Card: #131720, Border: #242b38 */
+    --background: #0d0f14;
+    --foreground: #f4f4f5;
+
+    --card: #131720;
+    --card-foreground: #f4f4f5;
+
+    --popover: #131720;
+    --popover-foreground: #f4f4f5;
+
+    --primary: #f4f4f5;
+    --primary-foreground: #0d0f14;
+
+    --secondary: #1a202c;
+    --secondary-foreground: #f4f4f5;
+
+    --muted: #1a202c;
+    --muted-foreground: #94a3b8;
+
+    --accent: #1a202c;
+    --accent-foreground: #f4f4f5;
+
+    --border: #242b38;
+    --input: #242b38;
+    --ring: #c084fc;
+
+    color-scheme: dark;
+  }
+
+  /* ==========================================
+     Theme 4: Nordic Salt (Scandinavian Slate & Teal)
+     ========================================== */
+  :root[data-theme='nordic'] {
+    --accent-primary: #22d3ee;
+    --accent-success: #10b981;
+    --accent-warning: #fb923c;
+    --accent-brand: #22d3ee;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    --background: #ffffff;
+    --foreground: #09090b;
+
+    --card: #ffffff;
+    --card-foreground: #09090b;
+
+    --popover: #ffffff;
+    --popover-foreground: #09090b;
+
+    --primary: #083344;
+    --primary-foreground: #ffffff;
+
+    --secondary: #f4f4f5;
+    --secondary-foreground: #09090b;
+
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+
+    --accent: #f4f4f5;
+    --accent-foreground: #09090b;
+
+    --border: #e4e4e7;
+    --input: #e4e4e7;
+    --ring: #22d3ee;
+
+    color-scheme: light;
+  }
+
+  .dark[data-theme='nordic'] {
+    --accent-primary: #22d3ee;
+    --accent-success: #10b981;
+    --accent-warning: #fb923c;
+    --accent-brand: #22d3ee;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    /* Base Dark: #0a0e13, Card: #11161d, Border: #1e2633 */
+    --background: #0a0e13;
+    --foreground: #f4f4f5;
+
+    --card: #11161d;
+    --card-foreground: #f4f4f5;
+
+    --popover: #11161d;
+    --popover-foreground: #f4f4f5;
+
+    --primary: #f4f4f5;
+    --primary-foreground: #0a0e13;
+
+    --secondary: #17202c;
+    --secondary-foreground: #f4f4f5;
+
+    --muted: #17202c;
+    --muted-foreground: #94a3b8;
+
+    --accent: #17202c;
+    --accent-foreground: #f4f4f5;
+
+    --border: #1e2633;
+    --input: #1e2633;
+    --ring: #22d3ee;
 
     color-scheme: dark;
   }
@@ -143,6 +373,6 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased min-h-screen selection:bg-accent-brand/20 selection:text-foreground;
+    @apply bg-background text-foreground antialiased min-h-screen selection:bg-accent-primary/20 selection:text-foreground;
   }
 }

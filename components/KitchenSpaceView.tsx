@@ -341,7 +341,7 @@ export function KitchenSpaceView({
             <div className="relative flex items-center shrink-0">
               <CartIcon className="w-4 h-4" />
               {myCartCount > 0 && (
-                <span className="w-1.5 h-1.5 rounded-full bg-[#81b29a] absolute -top-0.5 -right-0.5 shadow-[0_0_6px_rgba(129,178,154,0.6)] md:hidden" />
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-success absolute -top-0.5 -right-0.5 shadow-xs md:hidden" />
               )}
             </div>
 

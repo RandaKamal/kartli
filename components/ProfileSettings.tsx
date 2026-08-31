@@ -1,10 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { User, Shield, Bell, Key, Palette, AlertOctagon, Sun, Moon, Laptop } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  User,
+  Shield,
+  Bell,
+  Key,
+  Palette,
+  AlertOctagon,
+  Sun,
+  Moon,
+  Laptop,
+  Check,
+  UtensilsCrossed,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,16 +36,86 @@ interface ProfileSettingsProps {
   };
 }
 
+interface CulinaryTheme {
+  id: string;
+  name: string;
+  subtitle: string;
+  colors: [string, string, string]; // [Primary, Success/In-Cart, Warning/Needed]
+}
+
+const CULINARY_THEMES: CulinaryTheme[] = [
+  {
+    id: "saffron",
+    name: "Saffron Citrus",
+    subtitle: "Warm Mediterranean",
+    colors: ["#e9c46a", "#90be6d", "#f4a261"],
+  },
+  {
+    id: "truffle",
+    name: "Black Truffle",
+    subtitle: "Minimalist High-Contrast Luxury",
+    colors: ["#f4f4f5", "#34d399", "#fbbf24"],
+  },
+  {
+    id: "plum",
+    name: "Midnight Plum",
+    subtitle: "Neo-Bistro",
+    colors: ["#c084fc", "#4ade80", "#f59e0b"],
+  },
+  {
+    id: "nordic",
+    name: "Nordic Salt",
+    subtitle: "Scandinavian Slate & Teal",
+    colors: ["#22d3ee", "#10b981", "#fb923c"],
+  },
+];
+
 export function ProfileSettings({ user }: ProfileSettingsProps) {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+
+  const [activeTab, setActiveTab] = useState("account");
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const [culinaryTheme, setCulinaryTheme] = useState<string>("saffron");
   const [notifyPantry, setNotifyPantry] = useState(true);
   const [notifyShopping, setNotifyShopping] = useState(true);
   const [notifyMembers, setNotifyMembers] = useState(false);
 
-  useState(() => {
-    // client effect
-  });
+  useEffect(() => {
+    if (tabParam === "settings" || tabParam === "preferences") {
+      setActiveTab("preferences");
+    } else if (tabParam === "security") {
+      setActiveTab("security");
+    } else if (tabParam === "account") {
+      setActiveTab("account");
+    }
+  }, [tabParam]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const active =
+        document.documentElement.dataset.theme ||
+        document.documentElement.getAttribute("data-theme") ||
+        localStorage.getItem("kartli-theme") ||
+        localStorage.getItem("culinary-theme") ||
+        "saffron";
+      setCulinaryTheme(active);
+    }
+  }, []);
+
+  const handleCulinaryThemeChange = (themeKey: string) => {
+    setCulinaryTheme(themeKey);
+    if (typeof document !== "undefined") {
+      document.documentElement.dataset.theme = themeKey;
+      document.documentElement.setAttribute("data-theme", themeKey);
+      localStorage.setItem("kartli-theme", themeKey);
+      localStorage.setItem("culinary-theme", themeKey);
+      document.cookie = `kartli-theme=${themeKey}; path=/; max-age=31536000; SameSite=Lax`;
+      document.cookie = `culinary-theme=${themeKey}; path=/; max-age=31536000; SameSite=Lax`;
+    }
+    const selected = CULINARY_THEMES.find((t) => t.id === themeKey);
+    toast.success(`Theme updated to ${selected?.name || themeKey}`);
+  };
 
   const initial = (user.username || "?").charAt(0).toUpperCase();
 
@@ -47,7 +130,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="account" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto mb-6 bg-muted/70 border border-border/80 p-1 rounded-2xl">
           <TabsTrigger value="account" className="rounded-xl text-xs font-semibold">
             Account
@@ -130,15 +213,15 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
         {/* Tab 2: Preferences */}
         <TabsContent value="preferences" className="space-y-6 animate-in fade-in-50">
           <Card className="border border-border/80 bg-card rounded-3xl p-6 sm:p-8 space-y-6">
-            {/* Appearance / Theme Selection */}
+            {/* Appearance / Light & Dark Mode */}
             <div className="space-y-3">
               <div className="space-y-0.5">
                 <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                   <Palette className="w-5 h-5 text-accent-primary" />
-                  <span>Theme &amp; Appearance</span>
+                  <span>Light &amp; Dark Mode</span>
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Choose your preferred visual mode for kartli.
+                  Choose your preferred contrast mode (Light, Dark, or System default).
                 </p>
               </div>
 
@@ -247,50 +330,70 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
             <Separator className="bg-border/60" />
 
-            {/* Design System Token Palette Showcase */}
+            {/* Interactive Culinary Color Themes Card Grid */}
             <div className="space-y-3">
               <div className="space-y-0.5">
-                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-accent-brand" />
-                  <span>kartli Culinary Warmth Palette</span>
-                </h4>
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <UtensilsCrossed className="w-5 h-5 text-accent-primary" />
+                  <span>Culinary Color Themes</span>
+                </h3>
                 <p className="text-xs text-muted-foreground">
-                  Carefully calibrated culinary palette: apricot clay brand warmth, honey amber alerts, forest sage in-cart states, and crimson danger.
+                  Choose an artisanal food-inspired palette for your personal kartli workspace.
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                <div className="p-3 rounded-2xl bg-muted/40 border border-border/70 space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 rounded-full bg-accent-brand shadow-xs" />
-                    <span className="text-xs font-semibold text-foreground">Apricot Clay</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">Brand Warmth</p>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {CULINARY_THEMES.map((theme) => {
+                  const isSelected = culinaryTheme === theme.id;
+                  return (
+                    <button
+                      key={theme.id}
+                      type="button"
+                      onClick={() => handleCulinaryThemeChange(theme.id)}
+                      className={`flex flex-col justify-between p-4 rounded-xl border transition-all h-[110px] text-left cursor-pointer ${
+                        isSelected
+                          ? "border-accent-primary bg-accent-primary/5 ring-2 ring-accent-primary/20 shadow-xs"
+                          : "bg-card border-border hover:border-primary/60 hover:bg-muted/30"
+                      }`}
+                    >
+                      {/* Top Row */}
+                      <div className="flex items-start justify-between gap-2 w-full">
+                        <div>
+                          <div className="text-sm font-semibold text-foreground">
+                            {theme.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {theme.subtitle}
+                          </div>
+                        </div>
 
-                <div className="p-3 rounded-2xl bg-muted/40 border border-border/70 space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 rounded-full bg-accent-success shadow-xs" />
-                    <span className="text-xs font-semibold text-foreground">Forest Sage</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">In-Cart / Restocked</p>
-                </div>
+                        {isSelected ? (
+                          <div className="w-5 h-5 rounded-full bg-accent-primary text-primary-foreground flex items-center justify-center shrink-0">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          </div>
+                        ) : (
+                          <div className="w-5 h-5 rounded-full border border-border shrink-0" />
+                        )}
+                      </div>
 
-                <div className="p-3 rounded-2xl bg-muted/40 border border-border/70 space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 rounded-full bg-accent-warning shadow-xs" />
-                    <span className="text-xs font-semibold text-foreground">Honey Amber</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">Out of Stock / Alert</p>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-muted/40 border border-border/70 space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 rounded-full bg-destructive shadow-xs" />
-                    <span className="text-xs font-semibold text-foreground">Crimson Rose</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">Destructive / Delete</p>
-                </div>
+                      {/* Bottom Row */}
+                      <div className="flex items-center justify-between pt-2 border-t border-border/40 mt-auto w-full">
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+                          Palette
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {theme.colors.map((hex, idx) => (
+                            <span
+                              key={idx}
+                              className="w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/10 shrink-0 shadow-xs"
+                              style={{ backgroundColor: hex }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

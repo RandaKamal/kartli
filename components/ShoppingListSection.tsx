@@ -236,7 +236,7 @@ export function ShoppingListSection({
         <div className="pt-2 border-t border-border">
           <div className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-muted/40 border border-border">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="w-2 h-2 rounded-full bg-[#81b29a] shrink-0 shadow-[0_0_6px_rgba(129,178,154,0.4)]" />
+              <span className="w-2 h-2 rounded-full bg-accent-success shrink-0 shadow-xs" />
               <span className="text-xs text-muted-foreground font-medium truncate">
                 <strong className="text-foreground font-semibold">{myStagedItemsCount}</strong> {myStagedItemsCount === 1 ? "item" : "items"} staged in your cart
               </span>

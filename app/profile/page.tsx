@@ -4,6 +4,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { ProfileSettings } from "@/components/ProfileSettings";
 
+import { Suspense } from "react";
+
 export default async function ProfilePage() {
   const session = await auth();
 
@@ -33,12 +35,14 @@ export default async function ProfilePage() {
         </div>
       </div>
 
-      <ProfileSettings
-        user={{
-          id: session.user.id,
-          username: session.user.username,
-        }}
-      />
+      <Suspense fallback={<div className="p-8 text-center text-xs text-muted-foreground">Loading settings...</div>}>
+        <ProfileSettings
+          user={{
+            id: session.user.id,
+            username: session.user.username,
+          }}
+        />
+      </Suspense>
     </div>
   );
 }
