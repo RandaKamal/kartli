@@ -22,6 +22,7 @@ import { AdminActiveMembersList } from "@/components/AdminActiveMembersList";
 import { AdminPendingInvitesList } from "@/components/AdminPendingInvitesList";
 import { MyPurchasesSection } from "@/components/MyPurchasesSection";
 import { AdminRefundsSection } from "@/components/AdminRefundsSection";
+import { ActiveCartSection } from "@/components/ActiveCartSection";
 import { GuestCartHandoverListener } from "@/components/GuestCartHandoverListener";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -43,8 +44,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   ArrowLeft,
+  ArrowRight,
   ShoppingBag,
+  ShoppingCart as CartIcon,
   ExternalLink,
+  Share2,
   Users,
   Mail,
   UserPlus,
@@ -57,6 +61,8 @@ import {
   Loader2,
   AlertTriangle,
   LogOut,
+  UtensilsCrossed,
+  Receipt,
 } from "lucide-react";
 import { capitalize } from "@/lib/utils";
 import { toast } from "sonner";
@@ -111,8 +117,8 @@ export function KitchenSpaceView({
   const terminology = getSpaceTerminology(spaceType);
   const isAdmin = membership.role === "ADMIN";
   const validTabs = isAdmin
-    ? ["kitchen", "members", "refunds", "settings"]
-    : ["kitchen", "members", "settings"];
+    ? ["kitchen", "cart", "members", "refunds", "settings"]
+    : ["kitchen", "cart", "members", "settings"];
 
   // Tab state syncing
   const urlTab = searchParams.get("tab");
@@ -140,6 +146,11 @@ export function KitchenSpaceView({
   const activeMembers = initialMembers.filter((m) => m.joined_at !== null);
   const pendingInvites = initialMembers.filter((m) => m.joined_at === null && m.invite_token !== null);
 
+  const myCartItems = shoppingListItems.filter(
+    (i) => i.is_purchased && !i.is_guest_staged && !i.checkout_id && i.purchased_by === currentUserId
+  );
+  const myCartCount = myCartItems.length;
+
   const publicGuestUrl = `${baseUrl}/kitchen/view/${publicViewToken}`;
 
   const handleTabChange = (tab: string) => {
@@ -159,21 +170,18 @@ export function KitchenSpaceView({
       return;
     }
 
-    if (trimmed === kitchenName && draftSpaceType === spaceType) {
-      toast.info("No changes to save.");
-      return;
-    }
-
     setIsSavingSettings(true);
     startTransition(async () => {
       try {
-        await updateKitchenSettings({
+        const updated = await updateKitchenSettings({
           kitchenId: initialKitchen.id,
           name: trimmed,
           spaceType: draftSpaceType,
         });
-        setKitchenName(trimmed);
-        setSpaceType(draftSpaceType);
+        setKitchenName(updated.name);
+        setSpaceType(updated.space_type);
+        setDraftName(updated.name);
+        setDraftSpaceType(updated.space_type);
         toast.success("Kitchen settings saved successfully!");
         router.refresh();
       } catch (err: any) {
@@ -189,13 +197,13 @@ export function KitchenSpaceView({
     startTransition(async () => {
       try {
         const res = await regeneratePublicViewToken(initialKitchen.id);
-        if (res.success && res.newToken) {
+        if (res.newToken) {
           setPublicViewToken(res.newToken);
-          toast.success("Guest supermarket link regenerated!");
+          toast.success("Guest supermarket link regenerated! Previous link revoked.");
           router.refresh();
         }
       } catch (err: any) {
-        toast.error(err.message || "Failed to regenerate guest link.");
+        toast.error(err.message || "Failed to regenerate link.");
       } finally {
         setIsRegenerating(false);
       }
@@ -212,10 +220,10 @@ export function KitchenSpaceView({
       try {
         const res = await addMemberAction(initialKitchen.id, name);
         setInviteMemberName("");
-        toast.success(`Generated invite for ${res.member.kitchen_display_name}`);
+        toast.success(`Invite generated for ${res.member.kitchen_display_name}!`);
         router.refresh();
       } catch (err: any) {
-        toast.error(err.message || "Failed to create invite.");
+        toast.error(err.message || "Failed to generate invite.");
       } finally {
         setIsInviting(false);
       }
@@ -227,11 +235,12 @@ export function KitchenSpaceView({
     startTransition(async () => {
       try {
         await leaveKitchenAction(initialKitchen.id);
-        toast.success(`You have left ${kitchenName}`);
+        toast.success(`You left ${kitchenName}`);
         router.push("/");
       } catch (err: any) {
         toast.error(err.message || "Failed to leave kitchen.");
         setIsLeaving(false);
+        setIsLeaveModalOpen(false);
       }
     });
   };
@@ -251,16 +260,19 @@ export function KitchenSpaceView({
         </Link>
 
         {/* Compact Header Card */}
-        <Card className="border border-border/80 bg-card dark:bg-zinc-900/60 dark:border-zinc-800 backdrop-blur-sm rounded-3xl p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+        <Card className="border border-border bg-card rounded-3xl p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
           <div className="space-y-1.5 min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <Badge
-                variant={isAdmin ? "accent" : "secondary"}
-                className="font-semibold text-[10px] tracking-wider uppercase"
+                variant="secondary"
+                className="bg-muted text-foreground border border-border font-medium text-[10px] tracking-wider uppercase"
               >
                 {isAdmin ? "ADMIN" : "MEMBER"}
               </Badge>
-              <Badge variant="secondary" className="font-semibold text-[10px] uppercase">
+              <Badge
+                variant="secondary"
+                className="bg-muted text-foreground border border-border font-medium text-[10px] uppercase"
+              >
                 {terminology.spaceLabel} SPACE
               </Badge>
               <span className="text-xs text-muted-foreground font-mono">
@@ -278,52 +290,100 @@ export function KitchenSpaceView({
             </p>
           </div>
 
-          {/* Right Header Toolbar Actions */}
-          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
-            {/* Compact Supermarket Link Action */}
-            <div className="flex items-center gap-1.5 bg-muted/60 dark:bg-zinc-800/60 border border-border/70 dark:border-zinc-700/80 rounded-xl px-2.5 py-1 text-xs">
-              <ShoppingBag className="w-3.5 h-3.5 text-accent-brand shrink-0" />
-              <span className="text-[11px] font-medium text-muted-foreground hidden sm:inline">Guest Link:</span>
-              <Input
-                type="text"
-                readOnly
-                value={publicGuestUrl}
-                className="h-6 px-1 text-[11px] text-foreground font-mono w-24 sm:w-32 select-all border-none bg-transparent shadow-none focus-visible:ring-0"
-              />
+          {/* Right Header Toolbar Actions: Sleek Guest Link Pill Bar */}
+          <div className="flex items-center bg-muted/60 border border-border rounded-2xl p-1 gap-1 shadow-xs shrink-0 self-start md:self-center">
+            <div className="flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 text-xs text-foreground">
+              <Share2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <span className="font-semibold text-xs tracking-tight">Guest Link</span>
+            </div>
+            <div className="flex items-center gap-0.5 border-l border-border/80 pl-1">
               <CopyButton text={publicGuestUrl} label="Copy" size="sm" />
-              <Button asChild variant="ghost" size="icon-sm" className="h-7 w-7 rounded-lg" title="Open guest view in new tab">
+              <Button
+                asChild
+                variant="ghost"
+                size="icon-sm"
+                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                title="Open guest view in new tab"
+                aria-label="Open guest view in new tab"
+              >
                 <Link href={publicGuestUrl} target="_blank">
-                  <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
+                  <ExternalLink className="w-3.5 h-3.5" />
                 </Link>
               </Button>
             </div>
-
-            <ShoppingCart
-              kitchenId={initialKitchen.id}
-              items={shoppingListItems}
-              currentUserId={currentUserId}
-              spaceType={spaceType}
-            />
           </div>
         </Card>
       </div>
 
-      {/* Pill-Based Tab Navigation Control */}
+      {/* Responsive Pill-Based Tab Navigation Control */}
       <Tabs defaultValue={defaultTab} value={activeTab} onValueChange={handleTabChange} className="w-full space-y-6">
-        <TabsList className={`grid ${isAdmin ? "grid-cols-4 max-w-xl" : "grid-cols-3 max-w-md"} w-full mx-auto mb-6 bg-muted/70 dark:bg-zinc-900/80 border border-border/80 dark:border-zinc-800 p-1 rounded-2xl`}>
-          <TabsTrigger value="kitchen" className="rounded-xl text-xs font-semibold data-[state=active]:bg-card dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-foreground dark:data-[state=active]:text-white dark:data-[state=active]:border-zinc-700 data-[state=active]:shadow-xs">
-            Kitchen
+        <TabsList
+          className={`grid ${
+            isAdmin ? "grid-cols-5 max-w-2xl" : "grid-cols-4 max-w-xl"
+          } w-full mx-auto mb-6 bg-muted/70 border border-border p-1 rounded-2xl h-11`}
+        >
+          {/* Tab 1: Kitchen */}
+          <TabsTrigger
+            value="kitchen"
+            aria-label="Kitchen"
+            className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer"
+          >
+            <UtensilsCrossed className="w-4 h-4 shrink-0" />
+            <span className="hidden md:inline">Kitchen</span>
           </TabsTrigger>
-          <TabsTrigger value="members" className="rounded-xl text-xs font-semibold data-[state=active]:bg-card dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-foreground dark:data-[state=active]:text-white dark:data-[state=active]:border-zinc-700 data-[state=active]:shadow-xs">
-            {terminology.memberLabelPlural}
+
+          {/* Tab 2: Cart */}
+          <TabsTrigger
+            value="cart"
+            aria-label="Cart"
+            className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer relative"
+          >
+            <div className="relative flex items-center shrink-0">
+              <CartIcon className="w-4 h-4" />
+              {myCartCount > 0 && (
+                <span className="w-1.5 h-1.5 rounded-full bg-[#81b29a] absolute -top-0.5 -right-0.5 shadow-[0_0_6px_rgba(129,178,154,0.6)] md:hidden" />
+              )}
+            </div>
+
+            <span className="hidden md:inline">Cart</span>
+
+            {myCartCount > 0 && (
+              <span className="hidden md:inline-flex px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full bg-secondary text-secondary-foreground border border-border">
+                {myCartCount}
+              </span>
+            )}
           </TabsTrigger>
+
+          {/* Tab 3: Members / Roommates */}
+          <TabsTrigger
+            value="members"
+            aria-label={terminology.memberLabelPlural}
+            className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer"
+          >
+            <Users className="w-4 h-4 shrink-0" />
+            <span className="hidden md:inline">{terminology.memberLabelPlural}</span>
+          </TabsTrigger>
+
+          {/* Tab 4: Refunds (Admin Only) */}
           {isAdmin && (
-            <TabsTrigger value="refunds" className="rounded-xl text-xs font-semibold data-[state=active]:bg-card dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-foreground dark:data-[state=active]:text-white dark:data-[state=active]:border-zinc-700 data-[state=active]:shadow-xs">
-              Refunds
+            <TabsTrigger
+              value="refunds"
+              aria-label="Purchases & Refunds"
+              className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer"
+            >
+              <Receipt className="w-4 h-4 shrink-0" />
+              <span className="hidden md:inline">Refunds</span>
             </TabsTrigger>
           )}
-          <TabsTrigger value="settings" className="rounded-xl text-xs font-semibold data-[state=active]:bg-card dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-foreground dark:data-[state=active]:text-white dark:data-[state=active]:border-zinc-700 data-[state=active]:shadow-xs">
-            Settings
+
+          {/* Tab 5: Settings */}
+          <TabsTrigger
+            value="settings"
+            aria-label="Settings"
+            className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer"
+          >
+            <Settings className="w-4 h-4 shrink-0" />
+            <span className="hidden md:inline">Settings</span>
           </TabsTrigger>
         </TabsList>
 
@@ -336,6 +396,7 @@ export function KitchenSpaceView({
               items={shoppingListItems}
               currentUserId={currentUserId}
               isAdmin={isAdmin}
+              onViewCart={() => handleTabChange("cart")}
             />
           </div>
 
@@ -344,13 +405,24 @@ export function KitchenSpaceView({
           )}
         </TabsContent>
 
-        {/* Tab 2: Members (Dynamic Label based on space_type) */}
+        {/* Tab 2: Cart (Full Workspace) */}
+        <TabsContent value="cart" className="space-y-6 animate-in fade-in-50">
+          <ActiveCartSection
+            kitchenId={initialKitchen.id}
+            items={shoppingListItems}
+            currentUserId={currentUserId}
+            spaceType={spaceType}
+            onSwitchTab={handleTabChange}
+          />
+        </TabsContent>
+
+        {/* Tab 3: Members (Dynamic Label based on space_type) */}
         <TabsContent value="members" className="space-y-6 animate-in fade-in-50">
           {isAdmin ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left 2 Cols: Active members & Pending invites */}
               <div className="lg:col-span-2 space-y-6">
-                <Card className="border border-border/80 bg-card dark:bg-zinc-900/60 dark:border-zinc-800 backdrop-blur-sm rounded-3xl p-6 shadow-sm space-y-4">
+                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
                       <Users className="w-4 h-4 text-muted-foreground" />
@@ -369,7 +441,7 @@ export function KitchenSpaceView({
                   />
                 </Card>
 
-                <Card className="border border-border/80 bg-card dark:bg-zinc-900/60 dark:border-zinc-800 backdrop-blur-sm rounded-3xl p-6 shadow-sm space-y-4">
+                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
                       <Mail className="w-4 h-4 text-muted-foreground" />
@@ -391,7 +463,7 @@ export function KitchenSpaceView({
 
               {/* Right Col: Add Member Form */}
               <div className="space-y-6">
-                <Card className="border border-border/80 bg-card dark:bg-zinc-900/60 dark:border-zinc-800 backdrop-blur-sm rounded-3xl p-6 shadow-sm space-y-4">
+                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
                   <CardHeader className="p-0 space-y-1">
                     <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
                       <UserPlus className="w-4 h-4 text-muted-foreground" />
@@ -436,7 +508,7 @@ export function KitchenSpaceView({
           ) : (
             /* Member Read-Only View */
             <div className="max-w-2xl mx-auto space-y-6">
-              <Card className="border border-border/80 bg-card dark:bg-zinc-900/60 dark:border-zinc-800 backdrop-blur-sm rounded-3xl p-6 sm:p-8 shadow-sm space-y-5">
+              <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-5">
                 <div className="flex items-center justify-between">
                   <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
                     <Users className="w-4 h-4 text-muted-foreground" />
@@ -477,8 +549,8 @@ export function KitchenSpaceView({
                           {member.joined_at ? new Date(member.joined_at).toLocaleDateString() : ""}
                         </span>
                         <Badge
-                          variant={member.role === "ADMIN" ? "accent" : "secondary"}
-                          className="text-[11px]"
+                          variant="secondary"
+                          className="text-[11px] font-medium"
                         >
                           {member.role}
                         </Badge>
@@ -496,7 +568,7 @@ export function KitchenSpaceView({
           )}
         </TabsContent>
 
-        {/* Tab 3: Admin Refunds (Visible only to Admin) */}
+        {/* Tab 4: Admin Refunds (Visible only to Admin) */}
         {isAdmin && (
           <TabsContent value="refunds" className="space-y-6 animate-in fade-in-50">
             <AdminRefundsSection
@@ -508,11 +580,11 @@ export function KitchenSpaceView({
           </TabsContent>
         )}
 
-        {/* Tab 4: Settings */}
+        {/* Tab 5: Settings */}
         <TabsContent value="settings" className="space-y-6 animate-in fade-in-50">
           {isAdmin ? (
             <div className="max-w-2xl mx-auto space-y-6">
-              <Card className="border border-border/80 bg-card dark:bg-zinc-900/60 dark:border-zinc-800 backdrop-blur-sm rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+              <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-6">
                 <CardHeader className="p-0 space-y-1">
                   <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
                     <Settings className="w-5 h-5 text-muted-foreground" />
@@ -631,7 +703,7 @@ export function KitchenSpaceView({
                 <div className="space-y-3 rounded-2xl p-5 bg-muted/30 border border-border/70">
                   <div className="space-y-1">
                     <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <ShoppingBag className="w-4 h-4 text-accent-brand" />
+                      <Share2 className="w-4 h-4 text-muted-foreground" />
                       <span>Guest Supermarket Link</span>
                     </h4>
                     <p className="text-xs text-muted-foreground leading-relaxed">
@@ -694,7 +766,7 @@ export function KitchenSpaceView({
           ) : (
             /* Member Settings View */
             <div className="max-w-2xl mx-auto space-y-6">
-              <Card className="border border-border/80 bg-card dark:bg-zinc-900/60 dark:border-zinc-800 backdrop-blur-sm rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+              <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-6">
                 <CardHeader className="p-0 space-y-1">
                   <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
                     <Settings className="w-5 h-5 text-muted-foreground" />
@@ -759,7 +831,7 @@ export function KitchenSpaceView({
                       variant="outline"
                       size="sm"
                       onClick={() => setIsLeaveModalOpen(true)}
-                      className="border-destructive/40 text-red-400 hover:text-red-300 hover:bg-destructive/10 rounded-xl font-medium"
+                      className="border-destructive/40 text-destructive hover:bg-destructive/10 rounded-xl font-medium"
                     >
                       <LogOut className="w-3.5 h-3.5 mr-1.5" />
                       <span>Leave Kitchen</span>
@@ -802,6 +874,33 @@ export function KitchenSpaceView({
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Floating Cart Bottom Bar (Sticky UX when user has items in cart) */}
+      {myCartCount > 0 && activeTab === "kitchen" && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-lg animate-in slide-in-from-bottom-5 duration-300">
+          <div className="bg-card/95 backdrop-blur-md border border-border text-card-foreground rounded-2xl p-3 sm:px-5 sm:py-3.5 shadow-2xl flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="relative flex h-2.5 w-2.5 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              </span>
+              <p className="text-xs sm:text-sm font-medium text-foreground truncate">
+                You have <strong className="text-foreground font-bold">{myCartCount}</strong> item{myCartCount === 1 ? "" : "s"} staged in your cart
+              </p>
+            </div>
+
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => handleTabChange("cart")}
+              className="rounded-xl text-xs font-semibold shrink-0 gap-1.5 h-8.5 px-3.5 shadow-sm cursor-pointer"
+            >
+              <span>View Cart &amp; Checkout</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

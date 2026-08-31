@@ -47,7 +47,7 @@ export function UserDropdown({ user }: UserDropdownProps) {
               {user.username?.charAt(0).toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
-          <span className="text-xs font-medium">@{user.username}</span>
+          <span className="text-xs font-medium max-w-[90px] sm:max-w-none truncate">@{user.username}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">

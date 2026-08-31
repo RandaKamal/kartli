@@ -361,7 +361,7 @@ export function GuestShoppingView({
                     <div
                       className={`w-6 h-6 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
                         isChecked
-                          ? "bg-accent-success border-accent-success text-white dark:text-zinc-950"
+                          ? "bg-accent-success border-accent-success text-primary-foreground"
                           : "border-border bg-secondary/40 text-transparent"
                       }`}
                     >

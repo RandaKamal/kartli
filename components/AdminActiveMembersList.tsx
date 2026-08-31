@@ -100,8 +100,8 @@ export function AdminActiveMembersList({
                 </TableCell>
                 <TableCell>
                   <Badge
-                    variant={member.role === "ADMIN" ? "accent" : "secondary"}
-                    className="text-[11px]"
+                    variant="secondary"
+                    className="text-[11px] font-medium"
                   >
                     {member.role}
                   </Badge>

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   returnToShoppingListAction,
   clearCartAction,
 } from "@/app/actions/pantry";
 import type { ShoppingListItem, KitchenSpaceType } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
+import { capitalize } from "@/lib/utils";
 import {
   ShoppingCart as CartIcon,
   RotateCcw,
@@ -14,9 +16,8 @@ import {
   Receipt,
   Loader2,
   Users,
+  ArrowRight,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -25,23 +26,41 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { capitalize } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+
+interface ShoppingCartProps {
+  kitchenId: string;
+  items: ShoppingListItem[];
+  currentUserId: string;
+  spaceType?: KitchenSpaceType;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
 
 export function ShoppingCart({
   kitchenId,
   items,
   currentUserId,
   spaceType = "FLATSHARE",
-}: {
-  kitchenId: string;
-  items: ShoppingListItem[];
-  currentUserId: string;
-  spaceType?: KitchenSpaceType;
-}) {
+  isOpen: controlledIsOpen,
+  onOpenChange: setControlledIsOpen,
+}: ShoppingCartProps) {
+  const router = useRouter();
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [allItems, setAllItems] = useState<ShoppingListItem[]>(items);
-  const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  const isControlled = controlledIsOpen !== undefined;
+  const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
+  const setIsOpen = (open: boolean) => {
+    if (isControlled && setControlledIsOpen) {
+      setControlledIsOpen(open);
+    } else {
+      setInternalIsOpen(open);
+    }
+  };
 
   const terminology = getSpaceTerminology(spaceType);
 
@@ -49,15 +68,32 @@ export function ShoppingCart({
     setAllItems(items);
   }, [items]);
 
+  useEffect(() => {
+    const handleOpenCartModal = () => {
+      setIsOpen(true);
+    };
+
+    window.addEventListener("open-cart-modal", handleOpenCartModal);
+    return () => {
+      window.removeEventListener("open-cart-modal", handleOpenCartModal);
+    };
+  }, []);
+
   const myCartItems = allItems.filter(
     (i) => i.is_purchased && !i.is_guest_staged && !i.checkout_id && i.purchased_by === currentUserId
   );
   const otherCartItems = allItems.filter(
-    (i) => (i.is_purchased || i.is_guest_staged) && !i.checkout_id && (i.purchased_by !== currentUserId || i.is_guest_staged)
+    (i) =>
+      (i.is_purchased || i.is_guest_staged) &&
+      !i.checkout_id &&
+      (i.purchased_by !== currentUserId || i.is_guest_staged)
   );
 
+  const totalHouseholdCartCount = myCartItems.length + otherCartItems.length;
+  const isEmpty = totalHouseholdCartCount === 0;
+  const hasUserItems = myCartItems.length > 0;
+
   const handleReturnToList = (item: ShoppingListItem) => {
-    // Only owner can return their item
     if (item.purchased_by !== currentUserId) {
       toast.error(`You cannot modify another ${terminology.memberLabel.toLowerCase()}'s cart.`);
       return;
@@ -65,7 +101,9 @@ export function ShoppingCart({
 
     setAllItems((prev) =>
       prev.map((i) =>
-        i.id === item.id ? { ...i, is_purchased: false, purchased_by: null, is_guest_staged: false } : i
+        i.id === item.id
+          ? { ...i, is_purchased: false, purchased_by: null, is_guest_staged: false }
+          : i
       )
     );
 
@@ -73,6 +111,7 @@ export function ShoppingCart({
       try {
         await returnToShoppingListAction(kitchenId, item.id);
         toast.success(`Returned "${item.name}" to shopping list`);
+        router.refresh();
       } catch (err: any) {
         setAllItems(items);
         toast.error(err.message || "Failed to return item to list.");
@@ -84,7 +123,6 @@ export function ShoppingCart({
     const count = myCartItems.length;
     if (count === 0) return;
 
-    // Optimistically reset user's cart items back to unpurchased/needed
     setAllItems((prev) =>
       prev.map((i) =>
         i.is_purchased && !i.is_guest_staged && !i.checkout_id && i.purchased_by === currentUserId
@@ -97,6 +135,7 @@ export function ShoppingCart({
       try {
         await clearCartAction(kitchenId);
         toast.success(`Returned ${count} item${count === 1 ? "" : "s"} to shopping list`);
+        router.refresh();
       } catch (err: any) {
         setAllItems(items);
         toast.error(err.message || "Failed to clear cart.");
@@ -109,28 +148,60 @@ export function ShoppingCart({
       toast.error("Your cart is empty.");
       return;
     }
-    setIsOpen(false);
     toast.info("Receipt upload flow coming up next!");
   };
 
   return (
     <>
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        onClick={() => setIsOpen(true)}
-        className="relative rounded-xl font-medium border border-border/80 hover:bg-muted transition"
-      >
-        <CartIcon className="w-4 h-4 mr-1.5 text-muted-foreground" />
-        <span>Cart</span>
-        {myCartItems.length > 0 && (
-          <span className="ml-1 px-1.5 py-0.2 rounded-full bg-secondary text-foreground border border-border text-[11px] font-bold">
-            {myCartItems.length}
-          </span>
-        )}
-      </Button>
+      {isEmpty ? (
+        /* State A: Empty Cart (0 items in household) */
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setIsOpen(true)}
+          className="relative rounded-xl font-medium border-border text-muted-foreground hover:text-foreground transition h-9 px-3"
+          title="Household cart is empty"
+        >
+          <CartIcon className="w-4 h-4 mr-1.5 text-muted-foreground" />
+          <span>Cart</span>
+        </Button>
+      ) : (
+        /* State B: Active Household Cart (items staged by user or roommates) */
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => setIsOpen(true)}
+          className="relative rounded-xl font-medium bg-secondary text-secondary-foreground border border-border shadow-sm transition flex items-center gap-2 px-3 h-9"
+          title={
+            hasUserItems
+              ? `${myCartItems.length} item(s) in your cart (${totalHouseholdCartCount} total in household)`
+              : `${otherCartItems.length} item(s) staged by ${terminology.memberLabelPlural.toLowerCase()}`
+          }
+        >
+          {/* Live Status Indicator Dot */}
+          {hasUserItems ? (
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-success opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-success shadow-[0_0_8px_rgba(129,178,154,0.5)]" />
+            </span>
+          ) : (
+            <span className="w-2 h-2 rounded-full bg-accent-ochre shadow-[0_0_6px_rgba(233,196,106,0.4)] shrink-0" />
+          )}
 
+          <CartIcon className="w-4 h-4 text-muted-foreground" />
+          <span>Cart</span>
+          <span className="text-muted-foreground text-xs">&middot;</span>
+          <Badge
+            variant="secondary"
+            className="text-[11px] px-1.5 py-0 font-mono font-bold"
+          >
+            {totalHouseholdCartCount}
+          </Badge>
+        </Button>
+      )}
+
+      {/* Cart Modal Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-lg bg-card border border-border p-6 text-card-foreground flex flex-col gap-5 rounded-3xl shadow-xl">
           <DialogHeader>
@@ -143,43 +214,51 @@ export function ShoppingCart({
                 {myCartItems.length} in your cart
               </Badge>
               {otherCartItems.length > 0 && (
-                <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-muted-foreground">
+                <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-muted-foreground border-border">
                   {otherCartItems.length} by {terminology.memberLabelPlural.toLowerCase()}
                 </Badge>
               )}
             </div>
-            <DialogDescription className="text-sm text-muted-foreground mt-1">
+            <DialogDescription className="text-xs sm:text-sm text-muted-foreground mt-1">
               {terminology.cartRoommateDescription}
             </DialogDescription>
           </DialogHeader>
 
-          {myCartItems.length === 0 && otherCartItems.length === 0 ? (
+          {isEmpty ? (
             <div className="py-10 px-6 text-center rounded-2xl border border-dashed border-border bg-muted/20 flex flex-col items-center justify-center">
-              <CartIcon className="w-8 h-8 text-muted-foreground/60 mb-2" />
-              <p className="text-sm font-medium text-foreground">
-                Your cart is currently empty.
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground mb-3">
+                <CartIcon className="w-5 h-5" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">
+                Household cart is empty
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Click &ldquo;Put in Cart&rdquo; on any open item in the shopping list to stage it here.
+              <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                Click &ldquo;Put in Cart&rdquo; on any item in the shopping list to stage it here for checkout.
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-4 max-h-[360px] overflow-y-auto pr-1 py-1">
-              {/* My Staged Items */}
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+              {/* User's Staged Items */}
               {myCartItems.length > 0 ? (
                 <div className="space-y-2">
-                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
-                    Your Staged Items ({myCartItems.length})
+                  <div className="flex items-center justify-between text-xs font-semibold text-foreground px-1">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-accent-success" />
+                      <span>Your Staged Items ({myCartItems.length})</span>
+                    </span>
+                    <span className="text-[11px] text-accent-success font-medium">
+                      Ready for checkout
+                    </span>
                   </div>
                   <div className="space-y-2">
                     {myCartItems.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 border border-border/80"
+                        className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border"
                       >
                         <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-accent-success shrink-0" />
+                            <span className="w-2 h-2 rounded-full bg-accent-success shrink-0 shadow-[0_0_6px_rgba(129,178,154,0.4)]" />
                             <span className="font-medium text-sm text-foreground truncate">
                               {item.name}
                             </span>
@@ -199,7 +278,7 @@ export function ShoppingCart({
                               </Badge>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-[11px] text-muted-foreground">
                             Added by You
                           </p>
                         </div>
@@ -210,7 +289,7 @@ export function ShoppingCart({
                           variant="ghost"
                           onClick={() => handleReturnToList(item)}
                           disabled={isPending}
-                          className="h-8 text-xs text-muted-foreground hover:text-foreground hover:bg-muted gap-1.5 shrink-0 rounded-lg"
+                          className="h-8 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary gap-1.5 shrink-0 rounded-lg"
                           title="Return to shopping list"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
@@ -228,12 +307,12 @@ export function ShoppingCart({
 
               {/* Roommates' Staged Items (Read-Only) */}
               {otherCartItems.length > 0 && (
-                <div className="space-y-2 pt-2 border-t border-border/60">
+                <div className="space-y-2 pt-2 border-t border-border">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
                     <Users className="w-3.5 h-3.5" />
                     <span>Staged by {terminology.memberLabelPlural} ({otherCartItems.length})</span>
                   </div>
-                  <div className="space-y-2 opacity-85">
+                  <div className="space-y-2 opacity-90">
                     {otherCartItems.map((item) => {
                       const isGuest = item.is_guest_staged;
                       const attribution = isGuest
@@ -245,11 +324,17 @@ export function ShoppingCart({
                       return (
                         <div
                           key={item.id}
-                          className="flex items-center justify-between p-3 rounded-xl bg-secondary/20 border border-border/60"
+                          className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border"
                         >
                           <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                             <div className="flex items-center gap-2">
-                              <span className={`w-2 h-2 rounded-full shrink-0 ${isGuest ? "bg-accent-warning" : "bg-accent-success/60"}`} />
+                              <span
+                                className={`w-2 h-2 rounded-full shrink-0 ${
+                                  isGuest
+                                    ? "bg-accent-ochre"
+                                    : "bg-accent-sage/70"
+                                }`}
+                              />
                               <span className="font-medium text-sm text-muted-foreground truncate">
                                 {item.name}
                               </span>
@@ -269,7 +354,7 @@ export function ShoppingCart({
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-[11px] text-muted-foreground">
                               Added by {attribution}
                             </p>
                           </div>
@@ -277,14 +362,14 @@ export function ShoppingCart({
                           {isGuest ? (
                             <Badge
                               variant="warm"
-                              className="text-[10px] px-2 py-0.5 font-medium shrink-0"
+                              className="text-[10px] px-2 py-0.5 font-medium shrink-0 bg-accent-ochre/15 text-accent-warning border-accent-ochre/30"
                             >
                               Guest (in cart)
                             </Badge>
                           ) : (
                             <Badge
                               variant="outline"
-                              className="text-[10px] px-2 py-0.5 text-muted-foreground shrink-0 bg-muted/20"
+                              className="text-[10px] px-2 py-0.5 text-muted-foreground shrink-0 bg-muted/40 border-border"
                             >
                               In {attribution}&apos;s Cart
                             </Badge>
@@ -298,14 +383,14 @@ export function ShoppingCart({
             </div>
           )}
 
-          <DialogFooter className="flex items-center justify-between gap-3 pt-4 border-t border-border mt-2">
+          <DialogFooter className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-border mt-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={handleClearCart}
               disabled={isPending || myCartItems.length === 0}
-              className="h-9 rounded-xl text-xs gap-1.5"
+              className="h-9 rounded-xl text-xs gap-1.5 border-border"
               title={
                 myCartItems.length > 0
                   ? `Return ${myCartItems.length} item(s) to shopping list`
@@ -324,11 +409,12 @@ export function ShoppingCart({
               type="button"
               onClick={handleProceedToReceipt}
               disabled={myCartItems.length === 0}
-              className="h-9 px-4 text-xs font-medium rounded-xl gap-2"
+              className="h-9 px-4 text-xs font-semibold rounded-xl gap-2 shadow-sm"
               title="Proceed to receipt upload"
             >
               <Receipt className="w-4 h-4" />
               <span>Proceed to Receipt Upload</span>
+              <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
             </Button>
           </DialogFooter>
         </DialogContent>

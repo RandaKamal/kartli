@@ -4,10 +4,7 @@ import { useState, useTransition, useEffect } from "react";
 import {
   addCustomShoppingItemAction,
   moveToCartAction,
-  returnToShoppingListAction,
   removeShoppingListItemAction,
-  clearCartAction,
-  unstageGuestItemAction,
 } from "@/app/actions/pantry";
 import type { ShoppingListItem } from "@/types";
 import {
@@ -16,16 +13,13 @@ import {
   CheckCheck,
   Loader2,
   Plus,
-  RotateCcw,
-  Package,
-  User,
   ShoppingBag,
+  ArrowRight,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { capitalize } from "@/lib/utils";
 import { toast } from "sonner";
 
 export function ShoppingListSection({
@@ -33,11 +27,13 @@ export function ShoppingListSection({
   items,
   currentUserId,
   isAdmin = false,
+  onViewCart,
 }: {
   kitchenId: string;
   items: ShoppingListItem[];
   currentUserId?: string;
   isAdmin?: boolean;
+  onViewCart?: () => void;
 }) {
   const [listItems, setListItems] = useState<ShoppingListItem[]>(items);
   const [customItemName, setCustomItemName] = useState("");
@@ -86,58 +82,6 @@ export function ShoppingListSection({
     });
   };
 
-  const handleReturnToList = (item: ShoppingListItem) => {
-    if (item.purchased_by !== currentUserId && !isAdmin) {
-      toast.error("You cannot modify another roommate's staged cart.");
-      return;
-    }
-
-    setListItems((prev) =>
-      prev.map((i) =>
-        i.id === item.id
-          ? { ...i, is_purchased: false, purchased_by: null, is_guest_staged: false }
-          : i
-      )
-    );
-
-    startTransition(async () => {
-      try {
-        await returnToShoppingListAction(kitchenId, item.id);
-        toast.success(`Returned "${item.name}" to shopping list`);
-      } catch (err: any) {
-        setListItems((prev) =>
-          prev.map((i) => (i.id === item.id ? item : i))
-        );
-        toast.error(err.message || "Failed to return item to list.");
-      }
-    });
-  };
-
-  const handleUnstageGuestItem = (item: ShoppingListItem) => {
-    if (!isAdmin) {
-      toast.error("Only admins can unstage guest items.");
-      return;
-    }
-
-    setListItems((prev) =>
-      prev.map((i) =>
-        i.id === item.id
-          ? { ...i, is_guest_staged: false, is_purchased: false, purchased_by: null }
-          : i
-      )
-    );
-
-    startTransition(async () => {
-      try {
-        await unstageGuestItemAction({ kitchenId, itemId: item.id });
-        toast.success(`Unstaged "${item.name}" and returned to needed list`);
-      } catch (err: any) {
-        setListItems(items);
-        toast.error(err.message || "Failed to unstage guest item.");
-      }
-    });
-  };
-
   const handleRemove = (item: ShoppingListItem) => {
     if (item.is_purchased && item.purchased_by && item.purchased_by !== currentUserId && !isAdmin) {
       toast.error("You cannot delete an item staged in another roommate's cart.");
@@ -160,72 +104,26 @@ export function ShoppingListSection({
     });
   };
 
-  const handleClearMyCart = () => {
-    const count = myCartItems.length;
-    if (count === 0) return;
-
-    // Optimistically return current user's cart items back to open list
-    setListItems((prev) =>
-      prev.map((i) =>
-        i.is_purchased && !i.checkout_id && i.purchased_by === currentUserId
-          ? { ...i, is_purchased: false, purchased_by: null, is_guest_staged: false }
-          : i
-      )
-    );
-
-    startTransition(async () => {
-      try {
-        await clearCartAction(kitchenId);
-        toast.success(`Returned ${count} item${count === 1 ? "" : "s"} to shopping list`);
-      } catch (err: any) {
-        toast.error(err.message || "Failed to clear cart.");
-      }
-    });
-  };
-
   const openItems = listItems.filter((i) => !i.is_purchased && !i.is_guest_staged);
-  const myCartItems = listItems.filter(
-    (i) => i.is_purchased && !i.is_guest_staged && !i.checkout_id && i.purchased_by === currentUserId
-  );
-  const inCartItems = listItems.filter(
-    (i) => (i.is_purchased || i.is_guest_staged) && !i.checkout_id
-  );
+  const myStagedItemsCount = listItems.filter(
+    (i) =>
+      i.is_purchased &&
+      !i.is_guest_staged &&
+      !i.checkout_id &&
+      i.purchased_by === currentUserId
+  ).length;
   const resolvedItems = listItems.filter((i) => !!i.checkout_id);
 
   return (
-    <Card className="border border-border/80 bg-card dark:bg-zinc-900/60 dark:border-zinc-800 backdrop-blur-sm rounded-3xl p-6 shadow-sm space-y-5">
+    <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-5">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <ShoppingBag className="w-4 h-4 text-muted-foreground" />
           <h2 className="text-base font-semibold text-foreground">Shopping List</h2>
-          <Badge variant="warm" className="text-xs font-mono bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20">
+          <Badge variant="warm" className="text-xs font-mono bg-accent-ochre/15 text-accent-warning border-accent-ochre/30">
             {openItems.length} needed
           </Badge>
-          {inCartItems.length > 0 && (
-            <Badge variant="success" className="text-xs font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border-emerald-500/20">
-              {inCartItems.length} in cart
-            </Badge>
-          )}
         </div>
-
-        {myCartItems.length > 0 && (
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={handleClearMyCart}
-            disabled={isPending}
-            className="h-8 px-3 rounded-lg text-xs font-semibold"
-            title={`Return ${myCartItems.length} item(s) from your cart to the needed list`}
-          >
-            {isPending ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
-            ) : (
-              <RotateCcw className="w-3.5 h-3.5 text-muted-foreground mr-1" />
-            )}
-            <span>Clear My Cart ({myCartItems.length})</span>
-          </Button>
-        )}
       </div>
 
       {/* Add Custom Item Input */}
@@ -236,7 +134,7 @@ export function ShoppingListSection({
           value={customItemName}
           onChange={(e) => setCustomItemName(e.target.value)}
           disabled={isPending}
-          className="text-sm h-9 rounded-xl"
+          className="text-sm h-9 rounded-xl bg-background border-border text-foreground"
         />
         <Button
           type="submit"
@@ -260,7 +158,7 @@ export function ShoppingListSection({
         </div>
 
         {openItems.length === 0 ? (
-          <div className="py-8 text-center rounded-2xl border border-dashed border-border bg-muted/20">
+          <div className="py-8 text-center rounded-2xl border border-dashed border-border bg-muted/30">
             <CheckCheck className="w-6 h-6 text-accent-success mx-auto mb-1.5 opacity-80" />
             <p className="text-sm font-medium text-foreground">All stocked up!</p>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -282,14 +180,14 @@ export function ShoppingListSection({
                   {item.pantry_item_id ? (
                     <Badge
                       variant="outline"
-                      className="text-[10px] px-1.5 py-0 font-medium text-muted-foreground shrink-0"
+                      className="text-[10px] px-1.5 py-0 font-medium text-muted-foreground shrink-0 border-border"
                     >
                       Pantry
                     </Badge>
                   ) : (
                     <Badge
                       variant="secondary"
-                      className="text-[10px] px-1.5 py-0 font-medium shrink-0"
+                      className="text-[10px] px-1.5 py-0 font-medium shrink-0 bg-secondary text-secondary-foreground"
                     >
                       Custom
                     </Badge>
@@ -333,137 +231,35 @@ export function ShoppingListSection({
         )}
       </div>
 
-      {/* In-Cart / Staged Items Section */}
-      {inCartItems.length > 0 && (
-        <div className="space-y-2 pt-3 border-t border-border">
-          <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
-            <span className="flex items-center gap-1.5">
-              <CartIcon className="w-3.5 h-3.5 text-accent-success" />
-              <span>In Cart ({inCartItems.length})</span>
-            </span>
-          </div>
+      {/* Compact In-Cart Callout Bar (Strictly Current User's Staged Items) */}
+      {myStagedItemsCount > 0 && (
+        <div className="pt-2 border-t border-border">
+          <div className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-muted/40 border border-border">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-[#81b29a] shrink-0 shadow-[0_0_6px_rgba(129,178,154,0.4)]" />
+              <span className="text-xs text-muted-foreground font-medium truncate">
+                <strong className="text-foreground font-semibold">{myStagedItemsCount}</strong> {myStagedItemsCount === 1 ? "item" : "items"} staged in your cart
+              </span>
+            </div>
 
-          <div className="divide-y divide-border">
-            {inCartItems.map((item) => {
-              const isGuest = item.is_guest_staged;
-              const isMine = !isGuest && item.purchased_by === currentUserId;
-              const attribution = isGuest
-                ? "Guest"
-                : isMine
-                ? "You"
-                : item.purchased_by_name
-                ? capitalize(item.purchased_by_name)
-                : "Member";
-
-              return (
-                <div
-                  key={item.id}
-                  className="py-2.5 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition"
-                >
-                  <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
-                    <span className="font-medium text-muted-foreground line-through decoration-muted-foreground/40 truncate">
-                      {item.name}
-                    </span>
-
-                    {isGuest ? (
-                      <Badge
-                        variant="warm"
-                        className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20"
-                        title="Staged in anonymous guest cart"
-                      >
-                        <User className="w-3 h-3 text-amber-500" />
-                        <span>Guest (in cart)</span>
-                      </Badge>
-                    ) : (
-                      <>
-                        <Badge
-                          variant="pending"
-                          className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border-emerald-500/20"
-                          title="Staged in cart"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                          <span>IN CART</span>
-                        </Badge>
-
-                        <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                          <User className="w-3 h-3 text-muted-foreground/60" />
-                          <span>{attribution}</span>
-                        </span>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    {isGuest ? (
-                      isAdmin ? (
-                        <>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleUnstageGuestItem(item)}
-                            disabled={isPending}
-                            className="h-8 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg gap-1"
-                            title="Unstage guest item and return to needed list"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                            <span>Unstage</span>
-                          </Button>
-
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => handleRemove(item)}
-                            disabled={isPending}
-                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
-                            title="Delete item"
-                            aria-label={`Remove ${item.name}`}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </>
-                      ) : null
-                    ) : isMine ? (
-                      <>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleReturnToList(item)}
-                          disabled={isPending}
-                          className="h-8 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg gap-1"
-                          title="Return item to needed shopping list"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          <span>Undo</span>
-                        </Button>
-
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => handleRemove(item)}
-                          disabled={isPending}
-                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
-                          title="Delete item"
-                          aria-label={`Remove ${item.name}`}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </>
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] px-2 py-0.5 text-muted-foreground font-medium bg-muted/20 border-border/80"
-                      >
-                        In {attribution}&apos;s Cart
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (onViewCart) {
+                  onViewCart();
+                } else if (typeof window !== "undefined") {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set("tab", "cart");
+                  window.history.replaceState({}, "", url.toString());
+                }
+              }}
+              className="h-7 text-xs text-foreground hover:bg-muted gap-1 px-2.5 shrink-0 rounded-lg font-medium cursor-pointer"
+            >
+              <span>View Cart Tab</span>
+              <ArrowRight className="w-3 h-3" />
+            </Button>
           </div>
         </div>
       )}

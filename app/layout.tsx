@@ -50,7 +50,7 @@ export default async function RootLayout({
 
                   {session?.user ? (
                     <>
-                      <Button asChild size="sm" variant="default" className="rounded-xl font-medium bg-zinc-900 text-zinc-100 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white transition-colors">
+                      <Button asChild size="sm" variant="default" className="rounded-xl font-medium shadow-sm">
                         <Link href="/kitchen/new" className="flex items-center gap-1.5">
                           <Plus className="w-3.5 h-3.5" />
                           <span className="hidden sm:inline">New Kitchen</span>
@@ -73,7 +73,7 @@ export default async function RootLayout({
               </div>
             </header>
 
-            <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
+            <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 py-6 sm:py-8">
               {children}
             </main>
 

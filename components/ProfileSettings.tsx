@@ -148,8 +148,8 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   onClick={() => setTheme("light")}
                   className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
                     theme === "light"
-                      ? "bg-zinc-800 text-white border-zinc-700 shadow-sm"
-                      : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted"
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
                   }`}
                 >
                   <Sun className="w-4 h-4" />
@@ -160,8 +160,8 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   onClick={() => setTheme("dark")}
                   className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
                     theme === "dark"
-                      ? "bg-zinc-800 text-white border-zinc-700 shadow-sm"
-                      : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted"
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
                   }`}
                 >
                   <Moon className="w-4 h-4" />
@@ -172,8 +172,8 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   onClick={() => setTheme("system")}
                   className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
                     theme === "system"
-                      ? "bg-zinc-800 text-white border-zinc-700 shadow-sm"
-                      : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted"
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
                   }`}
                 >
                   <Laptop className="w-4 h-4" />
@@ -295,7 +295,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
             </div>
 
             <div className="pt-2 flex justify-end">
-              <Button onClick={handleSavePreferences} className="rounded-xl font-semibold bg-zinc-100 text-zinc-900 hover:bg-white dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white">
+              <Button onClick={handleSavePreferences} className="rounded-xl font-semibold">
                 Save Preferences
               </Button>
             </div>

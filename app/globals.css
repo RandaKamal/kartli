@@ -6,6 +6,8 @@
   --color-accent-brand: var(--accent-brand);
   --color-accent-warning: var(--accent-warning);
   --color-accent-success: var(--accent-success);
+  --color-accent-sage: var(--accent-sage);
+  --color-accent-ochre: var(--accent-ochre);
 
   --color-accent-primary: var(--accent-brand);
   --color-accent-secondary: var(--accent-success);
@@ -57,37 +59,39 @@
 
 @layer base {
   :root {
-    /* Culinary Warmth Functional Accent Tokens (Light Mode - High WCAG Contrast) */
-    --accent-brand: #d95d5b;      /* Deep Warm Coral */
-    --accent-warning: #b07d1e;    /* Rich Honey Ochre */
-    --accent-success: #437065;    /* Deep Laurel Green */
-    --destructive: #c9184a;       /* Crimson Rose */
+    /* Functional Accent Tokens (Light Mode) */
+    --accent-brand: #d95d5b;
+    --accent-warning: #e9c46a;
+    --accent-success: #81b29a;
+    --accent-sage: #81b29a;
+    --accent-ochre: #e9c46a;
+    --destructive: #c9184a;
     --destructive-foreground: #ffffff;
 
-    /* Light Theme Foundations (Warm Alabaster / Linen) */
-    --background: #faf9f6;
-    --foreground: #18181b;
+    /* Light Theme Foundations */
+    --background: #ffffff;
+    --foreground: #09090b;
 
     --card: #ffffff;
-    --card-foreground: #18181b;
+    --card-foreground: #09090b;
 
     --popover: #ffffff;
-    --popover-foreground: #18181b;
+    --popover-foreground: #09090b;
 
     --primary: #18181b;
-    --primary-foreground: #faf9f6;
+    --primary-foreground: #ffffff;
 
-    --secondary: #f2f0eb;
+    --secondary: #f4f4f5;
     --secondary-foreground: #18181b;
 
-    --muted: #f2f0eb;
-    --muted-foreground: #63636e;
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
 
-    --accent: #eae7e1;
+    --accent: #f4f4f5;
     --accent-foreground: #18181b;
 
-    --border: #e4e2dd;
-    --input: #e4e2dd;
+    --border: #e4e4e7;
+    --input: #e4e4e7;
     --ring: #d95d5b;
 
     --radius: 1rem;
@@ -96,38 +100,39 @@
   }
 
   .dark {
-    /* Culinary Warmth Functional Accent Tokens (Dark Mode) */
-    --accent-brand: #f28482;      /* Warm Terracotta / Soft Apricot Coral */
-    --accent-warning: #f6bd60;    /* Warm Honey Amber */
-    --accent-success: #84a59d;    /* Sage / Soft Forest Moss */
-    --destructive: #ef476f;       /* Vivid Crimson */
+    /* Functional Accent Tokens (Dark Mode) */
+    --accent-brand: #f28482;
+    --accent-warning: #e9c46a;
+    --accent-success: #81b29a;
+    --accent-sage: #81b29a;
+    --accent-ochre: #e9c46a;
+    --destructive: #ef476f;
     --destructive-foreground: #ffffff;
 
-    /* Dark Theme Foundations (Warm Charcoal & Elevated Panels) */
-    --background: #0c0c0e;
-    --foreground: #f7f7f8;
+    /* Dark Theme Foundations */
+    --background: #09090b;
+    --foreground: #f4f4f5;
 
-    --card: #16161a;
-    --card-foreground: #f7f7f8;
+    --card: #121215;
+    --card-foreground: #f4f4f5;
 
-    --popover: #16161a;
-    --popover-foreground: #f7f7f8;
+    --popover: #121215;
+    --popover-foreground: #f4f4f5;
 
-    /* Primary Action Buttons: High-Contrast Neutral */
-    --primary: #f7f7f8;
-    --primary-foreground: #0c0c0e;
+    --primary: #f4f4f5;
+    --primary-foreground: #09090b;
 
-    --secondary: #1f1f24;
-    --secondary-foreground: #f7f7f8;
+    --secondary: #1e1e23;
+    --secondary-foreground: #f4f4f5;
 
-    --muted: #1f1f24;
-    --muted-foreground: #9e9ea7;
+    --muted: #27272a;
+    --muted-foreground: #a1a1aa;
 
-    --accent: #25252b;
-    --accent-foreground: #f7f7f8;
+    --accent: #27272a;
+    --accent-foreground: #f4f4f5;
 
-    --border: #27272e;
-    --input: #27272e;
+    --border: #27272a;
+    --input: #27272a;
     --ring: #f28482;
 
     color-scheme: dark;

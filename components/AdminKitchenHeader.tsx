@@ -4,7 +4,6 @@ import { useState, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { updateKitchenSettings, regeneratePublicViewToken } from "@/app/actions/kitchen";
 import type { Kitchen, ShoppingListItem, KitchenSpaceType } from "@/types";
-import { ShoppingCart } from "@/components/ShoppingCart";
 import { CopyButton } from "@/components/CopyButton";
 import {
   ArrowLeft,
@@ -141,9 +140,9 @@ export function AdminKitchenHeader({
         <Card className="border border-border/80 bg-card rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <Badge variant="accent" className="font-semibold text-[11px] gap-1 px-2.5 py-0.5">
-                <Shield className="w-3 h-3" />
-                ADMIN PANEL
+              <Badge variant="secondary" className="bg-muted text-foreground border border-border font-medium text-[11px] gap-1 px-2.5 py-0.5">
+                <Shield className="w-3 h-3 text-muted-foreground" />
+                <span>ADMIN PANEL</span>
               </Badge>
               <span className="text-xs text-muted-foreground font-mono">
                 Created {new Date(kitchen.created_at).toLocaleDateString()}
@@ -159,14 +158,8 @@ export function AdminKitchenHeader({
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
-            <ShoppingCart
-              kitchenId={kitchen.id}
-              items={shoppingListItems}
-              currentUserId={currentUserId}
-              spaceType={spaceType}
-            />
-            <Button asChild variant="outline" size="sm" className="rounded-xl font-medium">
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
+            <Button asChild variant="outline" size="sm" className="rounded-lg font-medium text-xs h-8">
               <Link href={`/kitchen/${kitchen.id}/member`}>Member View</Link>
             </Button>
             <Button
@@ -174,7 +167,7 @@ export function AdminKitchenHeader({
               variant="outline"
               size="sm"
               onClick={handleOpenSettings}
-              className="rounded-xl font-medium gap-1.5"
+              className="rounded-lg font-medium text-xs h-8 gap-1.5"
             >
               <Settings className="w-3.5 h-3.5 text-muted-foreground" />
               <span>Settings</span>
