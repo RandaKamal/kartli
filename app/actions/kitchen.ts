@@ -26,6 +26,7 @@ import type {
   UpdateKitchenNameInput,
   UpdateKitchenSettingsInput,
 } from "@/types";
+import { updateKitchenSettingsSchema } from "@/lib/validations/kitchen";
 
 /**
  * Server Action to create a kitchen and redirect to the admin dashboard.
@@ -54,7 +55,9 @@ export async function createKitchenFormAction(formData: FormData) {
   const name = String(formData.get("name") || "").trim();
   const spaceTypeRaw = String(formData.get("spaceType") || "FLATSHARE").toUpperCase();
   const spaceType: KitchenSpaceType =
-    spaceTypeRaw === "FAMILY" || spaceTypeRaw === "NEUTRAL" ? spaceTypeRaw : "FLATSHARE";
+    spaceTypeRaw === "FAMILY" || spaceTypeRaw === "NEUTRAL" || spaceTypeRaw === "OFFICE"
+      ? (spaceTypeRaw as KitchenSpaceType)
+      : "FLATSHARE";
   const adminDisplayName = String(formData.get("adminDisplayName") || session.user.username || "").trim();
   const rawMembers = String(formData.get("members") || "");
   const memberNames = rawMembers
@@ -192,10 +195,16 @@ export async function updateKitchenSettingsAction(
     throw new Error("You must be logged in to update kitchen settings.");
   }
 
+  const validated = updateKitchenSettingsSchema.parse({
+    kitchenId: params.kitchenId,
+    name: params.name,
+    space_type: params.spaceType,
+  });
+
   const updatedKitchen = await updateKitchenSettingsDb(
-    params.kitchenId,
-    params.name,
-    params.spaceType,
+    validated.kitchenId,
+    validated.name,
+    validated.space_type,
     session.user.id
   );
 

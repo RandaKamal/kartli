@@ -15,6 +15,7 @@ import {
   ExternalLink,
   Home,
   Heart,
+  Briefcase,
   Building2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -227,7 +228,7 @@ export function AdminKitchenHeader({
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-2.5 pt-1">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-1">
                 <button
                   type="button"
                   onClick={() => setDraftSpaceType("FLATSHARE")}
@@ -261,6 +262,24 @@ export function AdminKitchenHeader({
                   </div>
                   <span className="text-[10px] font-normal text-muted-foreground">
                     Term: Family
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDraftSpaceType("OFFICE")}
+                  className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs border transition-all cursor-pointer ${
+                    draftSpaceType === "OFFICE"
+                      ? "bg-secondary text-foreground border-foreground/25 shadow-xs"
+                      : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Briefcase className="w-3.5 h-3.5" />
+                    <span>Office</span>
+                  </div>
+                  <span className="text-[10px] font-normal text-muted-foreground">
+                    Term: Team
                   </span>
                 </button>
 

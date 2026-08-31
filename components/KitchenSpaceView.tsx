@@ -629,7 +629,7 @@ export function KitchenSpaceView({
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-1">
                       <button
                         type="button"
                         onClick={() => setDraftSpaceType("FLATSHARE")}
@@ -644,7 +644,7 @@ export function KitchenSpaceView({
                           <span>Flatshare</span>
                         </div>
                         <span className="text-[10px] font-normal text-muted-foreground">
-                          Term: Roomies
+                          Term: Roommates
                         </span>
                       </button>
 
@@ -677,7 +677,7 @@ export function KitchenSpaceView({
                       >
                         <div className="flex items-center gap-1.5">
                           <Briefcase className="w-3.5 h-3.5" />
-                          <span>Office / Studio</span>
+                          <span>Office</span>
                         </div>
                         <span className="text-[10px] font-normal text-muted-foreground">
                           Term: Team
@@ -695,7 +695,7 @@ export function KitchenSpaceView({
                       >
                         <div className="flex items-center gap-1.5">
                           <Building2 className="w-3.5 h-3.5" />
-                          <span>Shared Space</span>
+                          <span>Neutral</span>
                         </div>
                         <span className="text-[10px] font-normal text-muted-foreground">
                           Term: Members

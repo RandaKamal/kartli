@@ -54,7 +54,7 @@ export async function createKitchen(
     // 1. Insert kitchen with public view token
     const publicViewToken = generateSecureToken(24);
     const spaceType =
-      input.spaceType === "FAMILY" || input.spaceType === "NEUTRAL"
+      input.spaceType === "FAMILY" || input.spaceType === "NEUTRAL" || input.spaceType === "OFFICE"
         ? input.spaceType
         : "FLATSHARE";
 
@@ -528,7 +528,7 @@ export async function updateKitchenSettings(
   }
 
   const validSpaceType: Kitchen["space_type"] =
-    spaceType === "FAMILY" || spaceType === "NEUTRAL" ? spaceType : "FLATSHARE";
+    spaceType === "FAMILY" || spaceType === "NEUTRAL" || spaceType === "OFFICE" ? spaceType : "FLATSHARE";
 
   const isAdmin = await isUserKitchenAdmin(kitchenId, adminUserId);
   if (!isAdmin) {
