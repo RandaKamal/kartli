@@ -6,7 +6,8 @@ import {
   moveToCartAction,
   removeShoppingListItemAction,
 } from "@/app/actions/pantry";
-import type { ShoppingListItem } from "@/types";
+import type { ShoppingListItem, KitchenSpaceType } from "@/types";
+import { getSpaceWording } from "@/lib/space-wording";
 import {
   ShoppingCart as CartIcon,
   Trash2,
@@ -27,14 +28,17 @@ export function ShoppingListSection({
   items,
   currentUserId,
   isAdmin = false,
+  spaceType = "FLATSHARE",
   onViewCart,
 }: {
   kitchenId: string;
   items: ShoppingListItem[];
   currentUserId?: string;
   isAdmin?: boolean;
+  spaceType?: KitchenSpaceType;
   onViewCart?: () => void;
 }) {
+  const wording = getSpaceWording(spaceType);
   const [listItems, setListItems] = useState<ShoppingListItem[]>(items);
   const [customItemName, setCustomItemName] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -160,9 +164,9 @@ export function ShoppingListSection({
         {openItems.length === 0 ? (
           <div className="py-8 text-center rounded-2xl border border-dashed border-border bg-muted/30">
             <CheckCheck className="w-6 h-6 text-accent-success mx-auto mb-1.5 opacity-80" />
-            <p className="text-sm font-medium text-foreground">All stocked up!</p>
+            <p className="text-sm font-medium text-foreground">{wording.emptyListHeading}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Items will appear here when marked empty or added above.
+              {wording.emptyListSub}
             </p>
           </div>
         ) : (

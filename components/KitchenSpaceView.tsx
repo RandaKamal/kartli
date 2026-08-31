@@ -56,6 +56,7 @@ import {
   Settings,
   Home,
   Heart,
+  Briefcase,
   Building2,
   RefreshCw,
   Loader2,
@@ -583,7 +584,7 @@ export function KitchenSpaceView({
         {/* Tab 5: Settings */}
         <TabsContent value="settings" className="space-y-6 animate-in fade-in-50">
           {isAdmin ? (
-            <div className="max-w-2xl mx-auto space-y-6">
+            <div className="w-full max-w-6xl mx-auto flex flex-col gap-6">
               <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-6">
                 <CardHeader className="p-0 space-y-1">
                   <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
@@ -628,7 +629,7 @@ export function KitchenSpaceView({
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3 pt-1">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
                       <button
                         type="button"
                         onClick={() => setDraftSpaceType("FLATSHARE")}
@@ -643,7 +644,7 @@ export function KitchenSpaceView({
                           <span>Flatshare</span>
                         </div>
                         <span className="text-[10px] font-normal text-muted-foreground">
-                          Term: Roommates
+                          Term: Roomies
                         </span>
                       </button>
 
@@ -667,6 +668,24 @@ export function KitchenSpaceView({
 
                       <button
                         type="button"
+                        onClick={() => setDraftSpaceType("OFFICE")}
+                        className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs border transition-all cursor-pointer ${
+                          draftSpaceType === "OFFICE"
+                            ? "bg-secondary text-foreground border-foreground/30 shadow-xs"
+                            : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted/40"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Briefcase className="w-3.5 h-3.5" />
+                          <span>Office / Studio</span>
+                        </div>
+                        <span className="text-[10px] font-normal text-muted-foreground">
+                          Term: Team
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => setDraftSpaceType("NEUTRAL")}
                         className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs border transition-all cursor-pointer ${
                           draftSpaceType === "NEUTRAL"
@@ -676,7 +695,7 @@ export function KitchenSpaceView({
                       >
                         <div className="flex items-center gap-1.5">
                           <Building2 className="w-3.5 h-3.5" />
-                          <span>Neutral</span>
+                          <span>Shared Space</span>
                         </div>
                         <span className="text-[10px] font-normal text-muted-foreground">
                           Term: Members
@@ -765,7 +784,7 @@ export function KitchenSpaceView({
             </div>
           ) : (
             /* Member Settings View */
-            <div className="max-w-2xl mx-auto space-y-6">
+            <div className="w-full max-w-6xl mx-auto flex flex-col gap-6">
               <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-6">
                 <CardHeader className="p-0 space-y-1">
                   <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">

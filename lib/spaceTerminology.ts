@@ -1,4 +1,5 @@
 import type { KitchenSpaceType } from "@/types";
+import { getSpaceWording, SpaceType } from "./space-wording";
 
 export interface SpaceTerminology {
   spaceType: KitchenSpaceType;
@@ -12,13 +13,20 @@ export interface SpaceTerminology {
   namePlaceholder: string;
   cartRoommateDescription: string;
   cartAttributionFallback: string;
+  memberTab: string;
+  membersHeading: string;
+  stagedByOthers: string;
+  inviteAction: string;
+  inviteDescription: string;
+  badgeLabel: string;
 }
 
 /**
  * Returns dynamic contextual terminology based on the household/space type.
- * Supports FLATSHARE, FAMILY, and NEUTRAL spaces.
+ * Supports FLATSHARE, FAMILY, OFFICE, and NEUTRAL spaces.
  */
 export function getSpaceTerminology(spaceType: KitchenSpaceType = "FLATSHARE"): SpaceTerminology {
+  const wording = getSpaceWording(spaceType as SpaceType);
   switch (spaceType) {
     case "FAMILY":
       return {
@@ -27,12 +35,38 @@ export function getSpaceTerminology(spaceType: KitchenSpaceType = "FLATSHARE"): 
         memberLabel: "Family Member",
         memberLabelPlural: "Family Members",
         activeMembersTitle: "Active Family Members",
-        kitchenMembersTitle: "Family Members",
-        inviteCardTitle: "Invite Family Member",
-        inviteCardDescription: "Add a family member slot and generate an instant access link.",
-        namePlaceholder: "e.g. Mom, Dad, Leo",
+        kitchenMembersTitle: wording.membersHeading,
+        inviteCardTitle: wording.inviteAction,
+        inviteCardDescription: wording.inviteDescription,
+        namePlaceholder: wording.invitePlaceholder,
         cartRoommateDescription: "Items staged for purchase by family.",
         cartAttributionFallback: "Family",
+        memberTab: wording.memberTab,
+        membersHeading: wording.membersHeading,
+        stagedByOthers: wording.stagedByOthers,
+        inviteAction: wording.inviteAction,
+        inviteDescription: wording.inviteDescription,
+        badgeLabel: wording.badgeLabel,
+      };
+    case "OFFICE":
+      return {
+        spaceType: "OFFICE",
+        spaceLabel: "Office",
+        memberLabel: "Team Member",
+        memberLabelPlural: "Team Members",
+        activeMembersTitle: "Active Team Members",
+        kitchenMembersTitle: wording.membersHeading,
+        inviteCardTitle: wording.inviteAction,
+        inviteCardDescription: wording.inviteDescription,
+        namePlaceholder: wording.invitePlaceholder,
+        cartRoommateDescription: "Items staged for purchase by teammates.",
+        cartAttributionFallback: "Teammate",
+        memberTab: wording.memberTab,
+        membersHeading: wording.membersHeading,
+        stagedByOthers: wording.stagedByOthers,
+        inviteAction: wording.inviteAction,
+        inviteDescription: wording.inviteDescription,
+        badgeLabel: wording.badgeLabel,
       };
     case "NEUTRAL":
       return {
@@ -41,12 +75,18 @@ export function getSpaceTerminology(spaceType: KitchenSpaceType = "FLATSHARE"): 
         memberLabel: "Member",
         memberLabelPlural: "Members",
         activeMembersTitle: "Active Members",
-        kitchenMembersTitle: "Kitchen Members",
-        inviteCardTitle: "Invite New Member",
-        inviteCardDescription: "Add a member slot and generate an instant access link.",
-        namePlaceholder: "e.g. Alex or Taylor",
+        kitchenMembersTitle: wording.membersHeading,
+        inviteCardTitle: wording.inviteAction,
+        inviteCardDescription: wording.inviteDescription,
+        namePlaceholder: wording.invitePlaceholder,
         cartRoommateDescription: "Items staged for purchase by members.",
         cartAttributionFallback: "Member",
+        memberTab: wording.memberTab,
+        membersHeading: wording.membersHeading,
+        stagedByOthers: wording.stagedByOthers,
+        inviteAction: wording.inviteAction,
+        inviteDescription: wording.inviteDescription,
+        badgeLabel: wording.badgeLabel,
       };
     case "FLATSHARE":
     default:
@@ -56,12 +96,18 @@ export function getSpaceTerminology(spaceType: KitchenSpaceType = "FLATSHARE"): 
         memberLabel: "Roommate",
         memberLabelPlural: "Roommates",
         activeMembersTitle: "Active Roommates",
-        kitchenMembersTitle: "Kitchen Roommates",
-        inviteCardTitle: "Invite New Roommate",
-        inviteCardDescription: "Add a roommate slot and generate an instant access link.",
-        namePlaceholder: "e.g. Mia or Daniel",
+        kitchenMembersTitle: wording.membersHeading,
+        inviteCardTitle: wording.inviteAction,
+        inviteCardDescription: wording.inviteDescription,
+        namePlaceholder: wording.invitePlaceholder,
         cartRoommateDescription: "Items staged for purchase by roommates.",
         cartAttributionFallback: "Roommate",
+        memberTab: wording.memberTab,
+        membersHeading: wording.membersHeading,
+        stagedByOthers: wording.stagedByOthers,
+        inviteAction: wording.inviteAction,
+        inviteDescription: wording.inviteDescription,
+        badgeLabel: wording.badgeLabel,
       };
   }
 }

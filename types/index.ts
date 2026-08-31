@@ -8,7 +8,7 @@ export type KitchenRole = "ADMIN" | "MEMBER";
 /**
  * Household / Space preset controlling terminology across the app.
  */
-export type KitchenSpaceType = "FLATSHARE" | "FAMILY" | "NEUTRAL";
+export type KitchenSpaceType = "FLATSHARE" | "FAMILY" | "NEUTRAL" | "OFFICE";
 
 /**
  * Represents a user record in the `users` table.
