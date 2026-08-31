@@ -1,13 +1,13 @@
 # Database Schema: kartli Core Architecture
 
-This document outlines the PostgreSQL database schema for **kartli**. It powers email-free credentials authentication (JWT strategy), multi-tenant kitchen management with customizable space contexts (Flatshare, Family, Neutral), tokenized invites, pantry tracking, ad-hoc shopping lists, disposable guest access tokens, and receipt refund workflows.
+This document outlines the PostgreSQL database schema for **kartli**. It powers email-free credentials authentication (JWT strategy), multi-tenant kitchen management with customizable space contexts (Flatshare, Family, Office, Neutral), tokenized invites, pantry tracking, ad-hoc shopping lists, disposable guest access tokens, and receipt refund workflows.
 
 ---
 
 ## 1. Custom Types
 
 * `kitchen_role`: `ENUM('ADMIN', 'MEMBER')`
-* `kitchen_space_type`: `ENUM('FLATSHARE', 'FAMILY', 'NEUTRAL')`
+* `kitchen_space_type`: `ENUM('FLATSHARE', 'FAMILY', 'OFFICE', 'NEUTRAL')`
 
 ---
 
@@ -27,7 +27,7 @@ Stores registered user credentials and account timestamps.
 Represents a shared kitchen / household space.
 * `id` **(PK, UUID, Default: `gen_random_uuid()`)**: Primary key.
 * `name` (VARCHAR(255), NOT NULL): Kitchen display name.
-* `space_type` (ENUM: `kitchen_space_type`, Default: `'FLATSHARE'`, NOT NULL): Contextual space preset (`'FLATSHARE'`, `'FAMILY'`, `'NEUTRAL'`) dynamically controlling UI terminology (e.g. Roommates vs. Family Members vs. Members).
+* `space_type` (ENUM: `kitchen_space_type`, Default: `'FLATSHARE'`, NOT NULL): Contextual space preset (`'FLATSHARE'`, `'FAMILY'`, `'OFFICE'`, `'NEUTRAL'`) dynamically controlling UI terminology (e.g., Roommates vs. Family vs. Team vs. Members).
 * `public_view_token` (VARCHAR(255), Unique, NOT NULL): Secure, regeneratable token for unauthenticated supermarket read-only guest access.
 * `created_at` (TIMESTAMPTZ, Default: `NOW()`): Creation timestamp.
 * `updated_at` (TIMESTAMPTZ, Default: `NOW()`): Last update timestamp.
@@ -89,9 +89,10 @@ Receipt upload batches for cost reimbursement.
 
 ### Dynamic Space Context & Terminology
 - When `kitchens.space_type` is set:
-  - `'FLATSHARE'`: UI labels refer to **Roommates / Flatmates** (e.g., "Active Roommates", "Waiting for flatmate to claim").
-  - `'FAMILY'`: UI labels refer to **Family Members** (e.g., "Active Family", "Waiting for family member").
-  - `'NEUTRAL'`: UI labels refer to **Members** (e.g., "Active Members", "Household Members").
+  - `'FLATSHARE'`: UI labels refer to **Roommates / Flatmates** (e.g., "Active Roomies", "Grabbed by Roomies").
+  - `'FAMILY'`: UI labels refer to **Family Members** (e.g., "Family Members", "Picked up by Family").
+  - `'OFFICE'`: UI labels refer to **Team / Coworkers** (e.g., "Team Members", "Staged by Teammates").
+  - `'NEUTRAL'`: UI labels refer to **Members** (e.g., "Kitchen Members", "Staged by Members").
 
 ### Disposable Supermarket Guest Link
 - The `kitchens.public_view_token` is unique and can be regenerated on demand by household admins in Kitchen Settings.
