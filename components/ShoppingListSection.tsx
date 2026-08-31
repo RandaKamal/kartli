@@ -193,16 +193,16 @@ export function ShoppingListSection({
   const resolvedItems = listItems.filter((i) => !!i.checkout_id);
 
   return (
-    <Card className="border-border bg-card rounded-3xl p-6 shadow-sm space-y-5">
+    <Card className="border border-border/80 bg-card dark:bg-zinc-900/60 dark:border-zinc-800 backdrop-blur-sm rounded-3xl p-6 shadow-sm space-y-5">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <ShoppingBag className="w-4 h-4 text-muted-foreground" />
           <h2 className="text-base font-semibold text-foreground">Shopping List</h2>
-          <Badge variant="warm" className="text-xs font-mono">
+          <Badge variant="warm" className="text-xs font-mono bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20">
             {openItems.length} needed
           </Badge>
           {inCartItems.length > 0 && (
-            <Badge variant="success" className="text-xs font-mono">
+            <Badge variant="success" className="text-xs font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border-emerald-500/20">
               {inCartItems.length} in cart
             </Badge>
           )}
@@ -368,20 +368,20 @@ export function ShoppingListSection({
                     {isGuest ? (
                       <Badge
                         variant="warm"
-                        className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium"
+                        className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20"
                         title="Staged in anonymous guest cart"
                       >
-                        <User className="w-3 h-3 text-accent-warning" />
+                        <User className="w-3 h-3 text-amber-500" />
                         <span>Guest (in cart)</span>
                       </Badge>
                     ) : (
                       <>
                         <Badge
                           variant="pending"
-                          className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium"
+                          className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border-emerald-500/20"
                           title="Staged in cart"
                         >
-                          <span className="w-1.5 h-1.5 rounded-full bg-accent-success" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                           <span>IN CART</span>
                         </Badge>
 

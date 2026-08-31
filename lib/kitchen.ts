@@ -581,4 +581,38 @@ export async function regeneratePublicViewToken(
   return rows[0].public_view_token;
 }
 
+/**
+ * Removes the authenticated user's own membership from a kitchen (Member leave action).
+ * Admins cannot leave directly.
+ *
+ * @param kitchenId - UUID of the kitchen.
+ * @param userId - UUID of the leaving user.
+ * @returns True if successfully removed.
+ */
+export async function leaveKitchen(
+  kitchenId: string,
+  userId: string
+): Promise<boolean> {
+  if (!kitchenId || !userId) {
+    throw new Error("Kitchen ID and User ID are required.");
+  }
+
+  const membership = await getUserMembership(kitchenId, userId);
+  if (!membership) {
+    throw new Error("You are not an active member of this kitchen.");
+  }
+
+  if (membership.role === "ADMIN") {
+    throw new Error("Kitchen admins cannot leave the kitchen.");
+  }
+
+  const deleteSql = `
+    DELETE FROM kitchen_members
+    WHERE kitchen_id = $1 AND user_id = $2
+  `;
+  const result = await pool.query(deleteSql, [kitchenId, userId]);
+  return (result.rowCount ?? 0) > 0;
+}
+
+
 

@@ -15,6 +15,7 @@ import {
   updateKitchenName as updateKitchenNameDb,
   updateKitchenSettings as updateKitchenSettingsDb,
   regeneratePublicViewToken as regeneratePublicViewTokenDb,
+  leaveKitchen as leaveKitchenDb,
 } from "@/lib/kitchen";
 import type {
   CreateKitchenInput,
@@ -234,5 +235,22 @@ export async function regeneratePublicViewTokenAction(
 }
 
 export const regeneratePublicViewToken = regeneratePublicViewTokenAction;
+
+/**
+ * Server Action for a regular member to leave a kitchen.
+ */
+export async function leaveKitchenAction(kitchenId: string): Promise<{ success: boolean }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in to leave a kitchen.");
+  }
+
+  await leaveKitchenDb(kitchenId, session.user.id);
+  revalidatePath("/");
+  revalidatePath(`/kitchen/${kitchenId}`);
+  return { success: true };
+}
+
+export const leaveKitchen = leaveKitchenAction;
 
 

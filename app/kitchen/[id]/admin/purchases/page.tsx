@@ -36,11 +36,11 @@ export default async function KitchenPurchasesPage({
     <div className="space-y-8">
       <div className="space-y-4">
         <Link
-          href={`/kitchen/${id}/admin`}
+          href={`/kitchen/${id}?tab=settings`}
           className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition px-1"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Admin Dashboard</span>
+          <span>Back to Kitchen Settings</span>
         </Link>
 
         <Card className="border border-border/80 bg-card rounded-3xl p-6 sm:p-8 space-y-2">

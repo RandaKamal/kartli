@@ -556,13 +556,7 @@ export function GuestShoppingView({
           <div className="flex items-center justify-between w-full">
             <span>You are viewing as a household member.</span>
             <Button asChild size="sm" variant="default" className="rounded-xl font-semibold gap-1">
-              <Link
-                href={
-                  sessionUser.role === "ADMIN"
-                    ? `/kitchen/${kitchen.id}/admin`
-                    : `/kitchen/${kitchen.id}/member`
-                }
-              >
+              <Link href={`/kitchen/${kitchen.id}`}>
                 <span>Open Dashboard</span>
                 <ArrowRight className="w-3 h-3" />
               </Link>

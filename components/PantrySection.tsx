@@ -102,7 +102,7 @@ export function PantrySection({
 
   return (
     <>
-      <Card className="border-border bg-card rounded-3xl p-6 shadow-sm space-y-4">
+      <Card className="border border-border/80 bg-card dark:bg-zinc-900/60 dark:border-zinc-800 backdrop-blur-sm rounded-3xl p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
             <Package className="w-4 h-4 text-muted-foreground" />
@@ -112,8 +112,8 @@ export function PantrySection({
             </Badge>
           </h2>
           {outOfStockCount > 0 && (
-            <Badge variant="warm" className="gap-1 font-medium text-xs">
-              <AlertTriangle className="w-3 h-3" />
+            <Badge variant="warm" className="gap-1 font-medium text-xs bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20">
+              <AlertTriangle className="w-3 h-3 text-amber-500" />
               <span>{outOfStockCount} empty</span>
             </Badge>
           )}
@@ -131,7 +131,7 @@ export function PantrySection({
             type="submit"
             variant="secondary"
             disabled={isPending || !newItemName.trim()}
-            className="rounded-xl h-10 px-4 font-medium shrink-0 border border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
+            className="rounded-xl h-10 px-4 font-medium shrink-0 border border-border/70 hover:bg-muted"
           >
             <Plus className="w-4 h-4" />
             <span>Add</span>
@@ -161,19 +161,19 @@ export function PantrySection({
                 {item.is_out_of_stock ? (
                   <Badge
                     variant="warm"
-                    className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium"
+                    className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20"
                     title="Out of stock - on shopping list"
                   >
-                    <AlertTriangle className="w-3 h-3" />
+                    <AlertTriangle className="w-3 h-3 text-amber-500" />
                     <span>Empty</span>
                   </Badge>
                 ) : (
                   <Badge
-                    variant="outline"
-                    className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium text-muted-foreground"
+                    variant="success"
+                    className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border-emerald-500/20"
                     title="In stock"
                   >
-                    <Check className="w-3 h-3" />
+                    <Check className="w-3 h-3 text-emerald-500" />
                     <span>In Stock</span>
                   </Badge>
                 )}
@@ -193,8 +193,8 @@ export function PantrySection({
                   }
                   className={`h-8 px-3 rounded-lg text-xs font-semibold ${
                     item.is_out_of_stock
-                      ? "bg-accent-success text-white dark:text-zinc-950 hover:bg-accent-success/90"
-                      : ""
+                      ? "bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:text-zinc-950 dark:hover:bg-emerald-400 shadow-xs"
+                      : "hover:bg-muted/80"
                   }`}
                 >
                   {item.is_out_of_stock ? (
@@ -204,7 +204,7 @@ export function PantrySection({
                     </>
                   ) : (
                     <>
-                      <AlertTriangle className="w-3.5 h-3.5 text-accent-warning" />
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
                       <span>Mark Empty</span>
                     </>
                   )}

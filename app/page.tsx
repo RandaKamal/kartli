@@ -86,9 +86,7 @@ export default async function HomePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {userKitchens.map(({ kitchen, membership }) => {
                   const isAdmin = membership.role === "ADMIN";
-                  const targetUrl = isAdmin
-                    ? `/kitchen/${kitchen.id}/admin`
-                    : `/kitchen/${kitchen.id}/member`;
+                  const targetUrl = `/kitchen/${kitchen.id}`;
 
                   return (
                     <Card

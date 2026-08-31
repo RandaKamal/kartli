@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 
 export function MyPurchasesSection({ checkouts }: { checkouts: CheckoutWithDetails[] }) {
   return (
-    <Card className="border-border bg-card rounded-3xl p-6 shadow-sm space-y-4">
+    <Card className="border border-border/80 bg-card dark:bg-zinc-900/60 dark:border-zinc-800 backdrop-blur-sm rounded-3xl p-6 shadow-sm space-y-4">
       <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
         <Receipt className="w-4 h-4 text-muted-foreground" />
         <span>My Purchases</span>
