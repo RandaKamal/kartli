@@ -21,6 +21,7 @@ import { CopyButton } from "@/components/CopyButton";
 import { AdminActiveMembersList } from "@/components/AdminActiveMembersList";
 import { AdminPendingInvitesList } from "@/components/AdminPendingInvitesList";
 import { MyPurchasesSection } from "@/components/MyPurchasesSection";
+import { AdminRefundsSection } from "@/components/AdminRefundsSection";
 import { GuestCartHandoverListener } from "@/components/GuestCartHandoverListener";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -67,6 +68,7 @@ interface KitchenSpaceViewProps {
   pantryItems: PantryItem[];
   shoppingListItems: ShoppingListItem[];
   myCheckouts: CheckoutWithDetails[];
+  adminCheckouts?: CheckoutWithDetails[];
   currentUserId: string;
   baseUrl: string;
   initialTab?: string;
@@ -79,6 +81,7 @@ export function KitchenSpaceView({
   pantryItems,
   shoppingListItems,
   myCheckouts,
+  adminCheckouts = [],
   currentUserId,
   baseUrl,
   initialTab = "kitchen",
@@ -105,16 +108,26 @@ export function KitchenSpaceView({
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [, startTransition] = useTransition();
 
+  const terminology = getSpaceTerminology(spaceType);
+  const isAdmin = membership.role === "ADMIN";
+  const validTabs = isAdmin
+    ? ["kitchen", "members", "refunds", "settings"]
+    : ["kitchen", "members", "settings"];
+
   // Tab state syncing
   const urlTab = searchParams.get("tab");
-  const defaultTab = urlTab && ["kitchen", "members", "settings"].includes(urlTab) ? urlTab : initialTab;
+  const defaultTab = urlTab && validTabs.includes(urlTab)
+    ? urlTab
+    : (validTabs.includes(initialTab) ? initialTab : "kitchen");
   const [activeTab, setActiveTab] = useState(defaultTab);
 
   useEffect(() => {
-    if (urlTab && ["kitchen", "members", "settings"].includes(urlTab)) {
+    if (urlTab && validTabs.includes(urlTab)) {
       setActiveTab(urlTab);
+    } else if (urlTab && !validTabs.includes(urlTab)) {
+      setActiveTab("kitchen");
     }
-  }, [urlTab]);
+  }, [urlTab, validTabs]);
 
   useEffect(() => {
     setKitchenName(initialKitchen.name);
@@ -123,9 +136,6 @@ export function KitchenSpaceView({
     setDraftSpaceType(initialKitchen.space_type || "FLATSHARE");
     setPublicViewToken(initialKitchen.public_view_token);
   }, [initialKitchen.name, initialKitchen.space_type, initialKitchen.public_view_token]);
-
-  const terminology = getSpaceTerminology(spaceType);
-  const isAdmin = membership.role === "ADMIN";
 
   const activeMembers = initialMembers.filter((m) => m.joined_at !== null);
   const pendingInvites = initialMembers.filter((m) => m.joined_at === null && m.invite_token !== null);
@@ -294,26 +304,25 @@ export function KitchenSpaceView({
               currentUserId={currentUserId}
               spaceType={spaceType}
             />
-
-            {isAdmin && (
-              <Button asChild variant="outline" size="sm" className="rounded-xl font-medium text-xs h-9">
-                <Link href={`/kitchen/${initialKitchen.id}/admin/purchases`}>Purchases</Link>
-              </Button>
-            )}
           </div>
         </Card>
       </div>
 
       {/* Pill-Based Tab Navigation Control */}
       <Tabs defaultValue={defaultTab} value={activeTab} onValueChange={handleTabChange} className="w-full space-y-6">
-        <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto mb-6 bg-muted/70 dark:bg-zinc-900/80 border border-border/80 dark:border-zinc-800 p-1 rounded-2xl">
-          <TabsTrigger value="kitchen" className="rounded-xl text-xs font-semibold data-[state=active]:bg-card dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-foreground data-[state=active]:shadow-xs">
+        <TabsList className={`grid ${isAdmin ? "grid-cols-4 max-w-xl" : "grid-cols-3 max-w-md"} w-full mx-auto mb-6 bg-muted/70 dark:bg-zinc-900/80 border border-border/80 dark:border-zinc-800 p-1 rounded-2xl`}>
+          <TabsTrigger value="kitchen" className="rounded-xl text-xs font-semibold data-[state=active]:bg-card dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-foreground dark:data-[state=active]:text-white dark:data-[state=active]:border-zinc-700 data-[state=active]:shadow-xs">
             Kitchen
           </TabsTrigger>
-          <TabsTrigger value="members" className="rounded-xl text-xs font-semibold data-[state=active]:bg-card dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-foreground data-[state=active]:shadow-xs">
+          <TabsTrigger value="members" className="rounded-xl text-xs font-semibold data-[state=active]:bg-card dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-foreground dark:data-[state=active]:text-white dark:data-[state=active]:border-zinc-700 data-[state=active]:shadow-xs">
             {terminology.memberLabelPlural}
           </TabsTrigger>
-          <TabsTrigger value="settings" className="rounded-xl text-xs font-semibold data-[state=active]:bg-card dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-foreground data-[state=active]:shadow-xs">
+          {isAdmin && (
+            <TabsTrigger value="refunds" className="rounded-xl text-xs font-semibold data-[state=active]:bg-card dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-foreground dark:data-[state=active]:text-white dark:data-[state=active]:border-zinc-700 data-[state=active]:shadow-xs">
+              Refunds
+            </TabsTrigger>
+          )}
+          <TabsTrigger value="settings" className="rounded-xl text-xs font-semibold data-[state=active]:bg-card dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-foreground dark:data-[state=active]:text-white dark:data-[state=active]:border-zinc-700 data-[state=active]:shadow-xs">
             Settings
           </TabsTrigger>
         </TabsList>
@@ -487,7 +496,19 @@ export function KitchenSpaceView({
           )}
         </TabsContent>
 
-        {/* Tab 3: Settings */}
+        {/* Tab 3: Admin Refunds (Visible only to Admin) */}
+        {isAdmin && (
+          <TabsContent value="refunds" className="space-y-6 animate-in fade-in-50">
+            <AdminRefundsSection
+              kitchenId={initialKitchen.id}
+              checkouts={adminCheckouts}
+              members={initialMembers}
+              spaceType={spaceType}
+            />
+          </TabsContent>
+        )}
+
+        {/* Tab 4: Settings */}
         <TabsContent value="settings" className="space-y-6 animate-in fade-in-50">
           {isAdmin ? (
             <div className="max-w-2xl mx-auto space-y-6">
@@ -658,8 +679,14 @@ export function KitchenSpaceView({
                       Review checkout receipts and audit member grocery expenditures.
                     </p>
                   </div>
-                  <Button asChild variant="secondary" size="sm" className="rounded-xl font-semibold shrink-0">
-                    <Link href={`/kitchen/${initialKitchen.id}/admin/purchases`}>View Purchases</Link>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleTabChange("refunds")}
+                    className="rounded-xl font-semibold shrink-0"
+                  >
+                    View Refunds
                   </Button>
                 </div>
               </Card>

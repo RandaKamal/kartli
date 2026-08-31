@@ -6,7 +6,7 @@ import {
   getUserMembership,
   getKitchenMembersWithUsers,
 } from "@/lib/kitchen";
-import { getPantryItems, getShoppingListItems, getUserCheckouts } from "@/lib/pantry";
+import { getPantryItems, getShoppingListItems, getUserCheckouts, getKitchenCheckouts } from "@/lib/pantry";
 import { KitchenSpaceView } from "@/components/KitchenSpaceView";
 
 export default async function KitchenPage({
@@ -37,6 +37,7 @@ export default async function KitchenPage({
   const pantryItems = await getPantryItems(id);
   const shoppingListItems = await getShoppingListItems(id);
   const myCheckouts = await getUserCheckouts(id, session.user.id);
+  const adminCheckouts = membership.role === "ADMIN" ? await getKitchenCheckouts(id) : [];
 
   const headerList = await headers();
   const host = headerList.get("host") || "localhost:3000";
@@ -54,6 +55,7 @@ export default async function KitchenPage({
       pantryItems={pantryItems}
       shoppingListItems={shoppingListItems}
       myCheckouts={myCheckouts}
+      adminCheckouts={adminCheckouts}
       currentUserId={session.user.id}
       baseUrl={baseUrl}
       initialTab={initialTab}

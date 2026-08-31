@@ -166,9 +166,6 @@ export function AdminKitchenHeader({
               currentUserId={currentUserId}
               spaceType={spaceType}
             />
-            <Button asChild variant="secondary" size="sm" className="rounded-xl font-medium">
-              <Link href={`/kitchen/${kitchen.id}/admin/purchases`}>Purchases</Link>
-            </Button>
             <Button asChild variant="outline" size="sm" className="rounded-xl font-medium">
               <Link href={`/kitchen/${kitchen.id}/member`}>Member View</Link>
             </Button>
