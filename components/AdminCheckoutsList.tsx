@@ -6,6 +6,14 @@ import type { CheckoutWithDetails } from "@/types";
 import { Receipt, RotateCcw, Loader2, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 export function AdminCheckoutsList({
@@ -17,6 +25,8 @@ export function AdminCheckoutsList({
 }) {
   const [list, setList] = useState<CheckoutWithDetails[]>(checkouts);
   const [isPending, startTransition] = useTransition();
+
+  const [selectedCheckout, setSelectedCheckout] = useState<CheckoutWithDetails | null>(null);
 
   const handleRefund = (checkoutId: string) => {
     startTransition(async () => {
@@ -68,9 +78,17 @@ export function AdminCheckoutsList({
                 )}
               </div>
 
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Receipt className="w-3.5 h-3.5 text-muted-foreground" />
-                <span>Receipt uploaded: <span className="font-mono text-foreground">{checkout.receipt_filename}</span></span>
+              <div className="flex items-center justify-between gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedCheckout(checkout)}
+                  className="rounded-xl text-xs font-medium h-8 gap-1.5 border-border hover:bg-secondary"
+                >
+                  <Receipt className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span>View Receipt</span>
+                </Button>
               </div>
 
               <div className="flex flex-wrap gap-1.5">
@@ -84,6 +102,42 @@ export function AdminCheckoutsList({
           ))}
         </div>
       )}
+
+      {/* Full-res preview dialog */}
+      <Dialog open={!!selectedCheckout} onOpenChange={(open) => !open && setSelectedCheckout(null)}>
+        <DialogContent className="sm:max-w-2xl max-h-[92vh] overflow-y-auto bg-card border border-border p-5 text-card-foreground rounded-3xl shadow-xl flex flex-col gap-4">
+          {selectedCheckout && (
+            <>
+              <DialogHeader className="text-left space-y-1">
+                <DialogTitle className="text-base font-bold text-foreground">
+                  {selectedCheckout.store_name || "Supermarket Receipt"}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">
+                  Submitted by @{selectedCheckout.username || "unknown"} on {new Date(selectedCheckout.created_at).toLocaleDateString("en-US")}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="relative rounded-2xl overflow-hidden border border-border bg-muted/30 p-2 flex items-center justify-center">
+                <img
+                  src={
+                    selectedCheckout.receipt_filename.startsWith("/")
+                      ? selectedCheckout.receipt_filename
+                      : `/uploads/receipts/${selectedCheckout.receipt_filename}`
+                  }
+                  alt="Receipt"
+                  className="max-h-[75vh] w-auto max-w-full object-contain rounded-md border border-border shadow-xs"
+                />
+              </div>
+
+              <DialogFooter className="pt-2 border-t border-border">
+                <Button variant="outline" size="sm" onClick={() => setSelectedCheckout(null)} className="rounded-xl text-xs">
+                  Close
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

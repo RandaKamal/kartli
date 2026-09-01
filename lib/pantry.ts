@@ -424,8 +424,9 @@ async function attachItems(checkouts: (Checkout & { username: string | null })[]
   const results: CheckoutWithDetails[] = [];
   for (const checkout of checkouts) {
     const { rows: itemRows } = await pool.query<ShoppingListItem>(
-      `SELECT id, kitchen_id, pantry_item_id, name, is_purchased, purchased_by, checkout_id, created_at
-       FROM shopping_list_items WHERE checkout_id = $1`,
+      `SELECT id, kitchen_id, pantry_item_id, name, item_price, is_purchased, purchased_by, is_guest_staged, checkout_id, created_at
+       FROM shopping_list_items WHERE checkout_id = $1
+       ORDER BY created_at ASC`,
       [checkout.id]
     );
     results.push({ ...checkout, items: itemRows });
@@ -436,7 +437,7 @@ async function attachItems(checkouts: (Checkout & { username: string | null })[]
 /** Admin view: all checkouts in a kitchen, newest first, with buyer + items. */
 export async function getKitchenCheckouts(kitchenId: string): Promise<CheckoutWithDetails[]> {
   const { rows } = await pool.query<Checkout & { username: string | null }>(
-    `SELECT c.id, c.kitchen_id, c.user_id, c.receipt_filename, c.is_refunded, c.created_at, c.refunded_at, u.username
+    `SELECT c.id, c.kitchen_id, c.user_id, c.store_name, c.total_claimed_amount, c.total_receipt_amount, c.receipt_filename, c.is_refunded, c.created_at, c.refunded_at, c.receipt_deleted_at, u.username
      FROM checkouts c LEFT JOIN users u ON c.user_id = u.id
      WHERE c.kitchen_id = $1 ORDER BY c.created_at DESC`,
     [kitchenId]
@@ -447,7 +448,7 @@ export async function getKitchenCheckouts(kitchenId: string): Promise<CheckoutWi
 /** A single user's own checkout history within a kitchen. */
 export async function getUserCheckouts(kitchenId: string, userId: string): Promise<CheckoutWithDetails[]> {
   const { rows } = await pool.query<Checkout & { username: string | null }>(
-    `SELECT c.id, c.kitchen_id, c.user_id, c.receipt_filename, c.is_refunded, c.created_at, c.refunded_at, u.username
+    `SELECT c.id, c.kitchen_id, c.user_id, c.store_name, c.total_claimed_amount, c.total_receipt_amount, c.receipt_filename, c.is_refunded, c.created_at, c.refunded_at, c.receipt_deleted_at, u.username
      FROM checkouts c LEFT JOIN users u ON c.user_id = u.id
      WHERE c.kitchen_id = $1 AND c.user_id = $2 ORDER BY c.created_at DESC`,
     [kitchenId, userId]
