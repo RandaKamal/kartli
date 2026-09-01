@@ -20,6 +20,7 @@ import {
   Package,
   Store,
   ImageIcon,
+  MessageSquare,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -248,8 +249,8 @@ export function AdminRefundsSection({
                     </div>
                   </div>
 
-                  {/* Staged Items Badge Pills */}
-                  <div className="flex-1 min-w-0">
+                  {/* Staged Items Badge Pills & Note */}
+                  <div className="flex-1 min-w-0 space-y-1.5">
                     <div className="flex flex-wrap gap-1.5 items-center">
                       {checkout.items.slice(0, 4).map((item) => (
                         <Badge
@@ -269,21 +270,38 @@ export function AdminRefundsSection({
                         </Badge>
                       )}
                     </div>
+
+                    {/* Note to Admin Pill */}
+                    {checkout.note && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground italic bg-muted/40 px-2.5 py-1 rounded-xl border border-border/60 w-fit">
+                        <MessageSquare className="w-3 h-3 text-muted-foreground shrink-0 not-italic" />
+                        <span>&ldquo;{checkout.note}&rdquo;</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Receipt & Action Group */}
                   <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-border">
-                    {/* View Receipt Action Button */}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedCheckout(checkout)}
-                      className="rounded-xl text-xs font-medium h-8 gap-1.5 border-border hover:bg-secondary"
-                    >
-                      <Receipt className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span>View Receipt</span>
-                    </Button>
+                    {/* View Receipt or No Receipt Badge */}
+                    {checkout.receipt_filename ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedCheckout(checkout)}
+                        className="rounded-xl text-xs font-medium h-8 gap-1.5 border-border hover:bg-secondary"
+                      >
+                        <Receipt className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>View Receipt</span>
+                      </Button>
+                    ) : (
+                      <Badge
+                        variant="secondary"
+                        className="rounded-xl text-xs font-normal h-8 px-2.5 bg-muted text-muted-foreground border border-border flex items-center justify-center"
+                      >
+                        No Receipt
+                      </Badge>
+                    )}
 
                     {/* Status Badge & Settle Button */}
                     {checkout.is_refunded ? (
@@ -372,20 +390,41 @@ export function AdminRefundsSection({
                 </div>
               </DialogHeader>
 
-              {/* Body: High Resolution Receipt Preview & Items */}
+              {/* Body: High Resolution Receipt Preview / Note & Items */}
               <div className="space-y-4">
-                {/* High Resolution Image Container */}
-                <div className="relative rounded-2xl overflow-hidden border border-border bg-muted/30 p-2 sm:p-3 flex items-center justify-center min-h-[220px]">
-                  <img
-                    src={
-                      selectedCheckout.receipt_filename.startsWith("/")
-                        ? selectedCheckout.receipt_filename
-                        : `/uploads/receipts/${selectedCheckout.receipt_filename}`
-                    }
-                    alt={`Receipt for ${selectedCheckout.store_name || "household purchase"}`}
-                    className="max-h-[75vh] w-auto max-w-full object-contain rounded-md border border-border shadow-xs"
-                  />
-                </div>
+                {/* Note from Buyer if present */}
+                {selectedCheckout.note && (
+                  <div className="p-3 rounded-2xl bg-muted/40 border border-border space-y-1">
+                    <span className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>Note to Admin</span>
+                    </span>
+                    <p className="text-xs text-foreground italic">&ldquo;{selectedCheckout.note}&rdquo;</p>
+                  </div>
+                )}
+
+                {/* High Resolution Image Container or Receiptless placeholder */}
+                {selectedCheckout.receipt_filename ? (
+                  <div className="relative rounded-2xl overflow-hidden border border-border bg-muted/30 p-2 sm:p-3 flex items-center justify-center min-h-[220px]">
+                    <img
+                      src={
+                        selectedCheckout.receipt_filename.startsWith("/")
+                          ? selectedCheckout.receipt_filename
+                          : `/uploads/receipts/${selectedCheckout.receipt_filename}`
+                      }
+                      alt={`Receipt for ${selectedCheckout.store_name || "household purchase"}`}
+                      className="max-h-[75vh] w-auto max-w-full object-contain rounded-md border border-border shadow-xs"
+                    />
+                  </div>
+                ) : (
+                  <div className="p-6 rounded-2xl border border-dashed border-border bg-muted/20 text-center space-y-1.5">
+                    <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
+                      <Receipt className="w-4 h-4" />
+                    </div>
+                    <p className="text-xs font-medium text-foreground">No Receipt Attached</p>
+                    <p className="text-[11px] text-muted-foreground">This purchase was checked out directly without a receipt image.</p>
+                  </div>
+                )}
 
                 {/* Claimed Shopping List Items */}
                 {selectedCheckout.items.length > 0 && (

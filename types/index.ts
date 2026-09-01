@@ -182,9 +182,10 @@ export interface Checkout {
   kitchen_id: string;
   user_id: string;
   store_name: string | null;
+  note: string | null;
   total_claimed_amount: number;
   total_receipt_amount: number | null;
-  receipt_filename: string;
+  receipt_filename: string | null;
   is_refunded: boolean;
   created_at: Date;
   refunded_at: Date | null;

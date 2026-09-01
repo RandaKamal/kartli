@@ -79,17 +79,27 @@ export function AdminCheckoutsList({
               </div>
 
               <div className="flex items-center justify-between gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedCheckout(checkout)}
-                  className="rounded-xl text-xs font-medium h-8 gap-1.5 border-border hover:bg-secondary"
-                >
-                  <Receipt className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>View Receipt</span>
-                </Button>
+                {checkout.receipt_filename ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedCheckout(checkout)}
+                    className="rounded-xl text-xs font-medium h-8 gap-1.5 border-border hover:bg-secondary"
+                  >
+                    <Receipt className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span>View Receipt</span>
+                  </Button>
+                ) : (
+                  <Badge variant="secondary" className="rounded-xl text-xs font-normal h-8 px-2.5 bg-muted text-muted-foreground border border-border">
+                    No Receipt
+                  </Badge>
+                )}
               </div>
+
+              {checkout.note && (
+                <p className="text-xs text-muted-foreground italic">&ldquo;{checkout.note}&rdquo;</p>
+              )}
 
               <div className="flex flex-wrap gap-1.5">
                 {checkout.items.map((item) => (
@@ -117,17 +127,27 @@ export function AdminCheckoutsList({
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="relative rounded-2xl overflow-hidden border border-border bg-muted/30 p-2 flex items-center justify-center">
-                <img
-                  src={
-                    selectedCheckout.receipt_filename.startsWith("/")
-                      ? selectedCheckout.receipt_filename
-                      : `/uploads/receipts/${selectedCheckout.receipt_filename}`
-                  }
-                  alt="Receipt"
-                  className="max-h-[75vh] w-auto max-w-full object-contain rounded-md border border-border shadow-xs"
-                />
-              </div>
+              {selectedCheckout.note && (
+                <p className="text-xs text-foreground italic bg-muted/40 p-2.5 rounded-xl border border-border">&ldquo;{selectedCheckout.note}&rdquo;</p>
+              )}
+
+              {selectedCheckout.receipt_filename ? (
+                <div className="relative rounded-2xl overflow-hidden border border-border bg-muted/30 p-2 flex items-center justify-center">
+                  <img
+                    src={
+                      selectedCheckout.receipt_filename.startsWith("/")
+                        ? selectedCheckout.receipt_filename
+                        : `/uploads/receipts/${selectedCheckout.receipt_filename}`
+                    }
+                    alt="Receipt"
+                    className="max-h-[75vh] w-auto max-w-full object-contain rounded-md border border-border shadow-xs"
+                  />
+                </div>
+              ) : (
+                <div className="p-6 rounded-2xl border border-dashed border-border bg-muted/20 text-center text-xs text-muted-foreground">
+                  No receipt image attached
+                </div>
+              )}
 
               <DialogFooter className="pt-2 border-t border-border">
                 <Button variant="outline" size="sm" onClick={() => setSelectedCheckout(null)} className="rounded-xl text-xs">

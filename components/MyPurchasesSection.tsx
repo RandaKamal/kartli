@@ -22,6 +22,9 @@ export function MyPurchasesSection({ checkouts }: { checkouts: CheckoutWithDetai
             <div key={checkout.id} className="py-3 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition">
               <div>
                 <p className="font-medium text-foreground">{checkout.items.map((i) => i.name).join(", ")}</p>
+                {checkout.note && (
+                  <p className="text-xs text-muted-foreground italic">&ldquo;{checkout.note}&rdquo;</p>
+                )}
                 <p className="text-xs text-muted-foreground font-mono mt-0.5">{new Date(checkout.created_at).toLocaleDateString("en-US")}</p>
               </div>
 

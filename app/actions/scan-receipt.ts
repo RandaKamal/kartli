@@ -150,14 +150,15 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
   if (!session?.user?.id) throw new Error("You must be logged in.");
 
   const kitchenId = formData.get("kitchenId") as string;
-  const storeName = formData.get("storeName") as string;
+  const storeName = (formData.get("storeName") as string)?.trim() || null;
+  const note = (formData.get("note") as string)?.trim() || null;
   const totalClaimedAmountStr = formData.get("totalClaimedAmount") as string;
   const totalReceiptAmountStr = formData.get("totalReceiptAmount") as string;
-  const receiptPath = formData.get("receiptPath") as string;
+  const receiptPath = (formData.get("receiptPath") as string)?.trim() || null;
   const matchedItemsStr = formData.get("matchedItems") as string;
 
-  const totalClaimedAmount = Number(totalClaimedAmountStr);
-  const totalReceiptAmount = Number(totalReceiptAmountStr);
+  const totalClaimedAmount = Number(totalClaimedAmountStr) || 0;
+  const totalReceiptAmount = totalReceiptAmountStr ? Number(totalReceiptAmountStr) : null;
 
   const membership = await getUserMembership(kitchenId, session.user.id);
   if (!membership) {
@@ -170,12 +171,12 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
   try {
     await client.query('BEGIN');
     
-    // Insert checkout row with all the receipt data
+    // Insert checkout row with note and receipt data
     const { rows: checkoutRows } = await client.query(
-      `INSERT INTO checkouts (kitchen_id, user_id, store_name, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, FALSE, NOW())
+      `INSERT INTO checkouts (kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, NOW())
        RETURNING id`,
-      [kitchenId, userId, storeName, totalClaimedAmount, totalReceiptAmount, receiptPath]
+      [kitchenId, userId, storeName, note, totalClaimedAmount, totalReceiptAmount, receiptPath]
     );
     const checkoutId = checkoutRows[0].id;
     
@@ -186,7 +187,7 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
         `UPDATE shopping_list_items
          SET is_purchased = TRUE, checkout_id = $1, item_price = $2, is_guest_staged = FALSE
          WHERE id = $3 AND kitchen_id = $4`,
-        [checkoutId, item.price, item.shopping_list_item_id, kitchenId]
+        [checkoutId, item.price ?? null, item.shopping_list_item_id, kitchenId]
       );
       
       // If tied to a pantry item, restock it
@@ -201,12 +202,108 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
     
     await client.query('COMMIT');
     
+    revalidatePath(`/kitchen/${kitchenId}`);
     revalidatePath(`/kitchen/${kitchenId}/member`);
     revalidatePath(`/kitchen/${kitchenId}/admin`);
     
     return { success: true, checkoutId, totalClaimedAmount };
   } catch (error) {
     await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Direct checkout without receipt upload.
+ * Persists optional store name, total claimed amount, and note for the admin.
+ */
+export async function receiptlessCheckoutAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("You must be logged in.");
+
+  const kitchenId = formData.get("kitchenId") as string;
+  const storeName = (formData.get("storeName") as string)?.trim() || null;
+  const note = (formData.get("note") as string)?.trim() || null;
+  const totalAmountStr = formData.get("totalAmount") as string;
+  const itemIdsStr = formData.get("itemIds") as string;
+
+  const totalAmount = parseFloat(totalAmountStr) || 0;
+  const itemIds: string[] = JSON.parse(itemIdsStr || "[]");
+
+  const membership = await getUserMembership(kitchenId, session.user.id);
+  if (!membership) {
+    throw new Error("You are not a member of this kitchen.");
+  }
+
+  const userId = session.user.id;
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Fetch user's cart items
+    let cartRows: { id: string; pantry_item_id: string | null }[] = [];
+    if (itemIds.length > 0) {
+      const res = await client.query<{ id: string; pantry_item_id: string | null }>(
+        `SELECT id, pantry_item_id FROM shopping_list_items
+         WHERE kitchen_id = $1 AND purchased_by = $2 AND is_purchased = TRUE AND checkout_id IS NULL AND id = ANY($3::uuid[])`,
+        [kitchenId, userId, itemIds]
+      );
+      cartRows = res.rows;
+    } else {
+      const res = await client.query<{ id: string; pantry_item_id: string | null }>(
+        `SELECT id, pantry_item_id FROM shopping_list_items
+         WHERE kitchen_id = $1 AND purchased_by = $2 AND is_purchased = TRUE AND checkout_id IS NULL`,
+        [kitchenId, userId]
+      );
+      cartRows = res.rows;
+    }
+
+    if (cartRows.length === 0) {
+      throw new Error("Your cart is empty.");
+    }
+
+    // Insert checkout row with NULL receipt_filename
+    const { rows: checkoutRows } = await client.query<{ id: string }>(
+      `INSERT INTO checkouts (kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, created_at)
+       VALUES ($1, $2, $3, $4, $5, NULL, NULL, FALSE, NOW())
+       RETURNING id`,
+      [kitchenId, userId, storeName, note, totalAmount]
+    );
+    const checkoutId = checkoutRows[0].id;
+
+    const checkoutItemIds = cartRows.map((i) => i.id);
+    await client.query(
+      `UPDATE shopping_list_items
+       SET is_purchased = TRUE, checkout_id = $1, is_guest_staged = FALSE
+       WHERE id = ANY($2::uuid[]) AND kitchen_id = $3`,
+      [checkoutId, checkoutItemIds, kitchenId]
+    );
+
+    // Restock any linked pantry items
+    const pantryIds = cartRows
+      .map((i) => i.pantry_item_id)
+      .filter((id): id is string => id !== null);
+
+    if (pantryIds.length > 0) {
+      await client.query(
+        `UPDATE pantry_items SET is_out_of_stock = FALSE, updated_at = NOW()
+         WHERE id = ANY($1::uuid[]) AND kitchen_id = $2`,
+        [pantryIds, kitchenId]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    revalidatePath(`/kitchen/${kitchenId}`);
+    revalidatePath(`/kitchen/${kitchenId}/member`);
+    revalidatePath(`/kitchen/${kitchenId}/admin`);
+
+    return { success: true, checkoutId, totalClaimedAmount: totalAmount };
+  } catch (error) {
+    await client.query("ROLLBACK");
     throw error;
   } finally {
     client.release();

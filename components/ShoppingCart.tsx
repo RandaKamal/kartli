@@ -10,6 +10,7 @@ import type { ShoppingListItem, KitchenSpaceType } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import { capitalize } from "@/lib/utils";
 import { ReceiptReviewModal } from "@/components/ReceiptReviewModal";
+import { ReceiptlessCheckoutDialog } from "@/components/ReceiptlessCheckoutDialog";
 import {
   ShoppingCart as CartIcon,
   RotateCcw,
@@ -53,6 +54,7 @@ export function ShoppingCart({
   const [allItems, setAllItems] = useState<ShoppingListItem[]>(items);
   const [isPending, startTransition] = useTransition();
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [isReceiptlessModalOpen, setIsReceiptlessModalOpen] = useState(false);
 
   const isControlled = controlledIsOpen !== undefined;
   const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
@@ -408,17 +410,33 @@ export function ShoppingCart({
               <span>Clear Cart</span>
             </Button>
 
-            <Button
-              type="button"
-              onClick={handleProceedToReceipt}
-              disabled={myCartItems.length === 0}
-              className="h-9 px-4 text-xs font-semibold rounded-xl gap-2 shadow-sm"
-              title="Proceed to receipt upload"
-            >
-              <Receipt className="w-4 h-4" />
-              <span>Proceed to Receipt Upload</span>
-              <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
-            </Button>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsOpen(false);
+                  setIsReceiptlessModalOpen(true);
+                }}
+                disabled={isPending || myCartItems.length === 0}
+                className="h-9 px-3 text-xs font-medium rounded-xl border border-border/80 hover:bg-secondary text-muted-foreground hover:text-foreground"
+              >
+                Checkout without Receipt
+              </Button>
+
+              <Button
+                type="button"
+                onClick={handleProceedToReceipt}
+                disabled={myCartItems.length === 0}
+                className="h-9 px-4 text-xs font-semibold rounded-xl gap-2 shadow-sm"
+                title="Proceed to receipt upload"
+              >
+                <Receipt className="w-4 h-4" />
+                <span>Proceed to Receipt Upload</span>
+                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -432,6 +450,17 @@ export function ShoppingCart({
         }))}
         isOpen={isReceiptModalOpen}
         onOpenChange={setIsReceiptModalOpen}
+      />
+
+      <ReceiptlessCheckoutDialog
+        kitchenId={kitchenId}
+        stagedCartItems={myCartItems.map((i) => ({
+          id: i.id,
+          name: i.name,
+          pantry_item_id: i.pantry_item_id,
+        }))}
+        isOpen={isReceiptlessModalOpen}
+        onOpenChange={setIsReceiptlessModalOpen}
       />
     </>
   );

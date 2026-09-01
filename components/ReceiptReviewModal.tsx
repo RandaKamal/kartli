@@ -63,6 +63,7 @@ export function ReceiptReviewModal({
   const [phase, setPhase] = useState<'upload' | 'scanning' | 'review'>('upload');
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [storeName, setStoreName] = useState('');
+  const [note, setNote] = useState('');
   const [lineStates, setLineStates] = useState<Array<{ checked: boolean; price: number }>>([]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isZoomed, setIsZoomed] = useState(false);
@@ -138,6 +139,7 @@ export function ReceiptReviewModal({
     setPhase('upload');
     setScanResult(null);
     setStoreName('');
+    setNote('');
     setLineStates([]);
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
@@ -168,6 +170,7 @@ export function ReceiptReviewModal({
     formData.append('kitchenId', kitchenId);
     formData.append('receiptPath', scanResult.receiptPath);
     formData.append('storeName', storeName);
+    formData.append('note', note.trim());
     formData.append('totalReceiptAmount', scanResult.totalReceiptAmount.toString());
     formData.append('totalClaimedAmount', claimedAmount.toString());
     formData.append('matchedItems', JSON.stringify(matchedItems));
@@ -180,6 +183,7 @@ export function ReceiptReviewModal({
         setPhase('upload');
         setScanResult(null);
         setStoreName('');
+        setNote('');
         setLineStates([]);
         if (previewUrl) URL.revokeObjectURL(previewUrl);
         setPreviewUrl(null);
@@ -189,7 +193,7 @@ export function ReceiptReviewModal({
         toast.error(error.message || 'Failed to submit refund request');
       }
     });
-  }, [scanResult, lineStates, stagedCartItems, kitchenId, storeName, claimedAmount, previewUrl, router, onOpenChange]);
+  }, [scanResult, lineStates, stagedCartItems, kitchenId, storeName, note, claimedAmount, previewUrl, router, onOpenChange]);
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -353,6 +357,16 @@ export function ReceiptReviewModal({
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Optional Note to Admin */}
+              <div className="space-y-1">
+                <Input
+                  placeholder="Add an optional note for the admin (e.g. 'Bought at weekly farmer market')"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  className="h-8.5 text-xs bg-muted/40 border-border rounded-xl placeholder:text-muted-foreground/70"
+                />
               </div>
 
               <div className="border-t border-border pt-3 space-y-3">
