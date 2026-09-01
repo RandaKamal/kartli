@@ -193,13 +193,18 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
     // Validate that all shopping list items belong to this kitchen and are not already checked out
     if (itemIds.length > 0) {
       const { rows: validItems } = await client.query<{ id: string; pantry_item_id: string | null }>(
-        `SELECT id, pantry_item_id FROM shopping_list_items
-         WHERE id = ANY($1::uuid[]) AND kitchen_id = $2 AND checkout_id IS NULL`,
-        [itemIds, kitchenId]
+        `SELECT id, pantry_item_id 
+         FROM shopping_list_items
+         WHERE id = ANY($1::uuid[]) 
+           AND kitchen_id = $2 
+           AND purchased_by = $3
+           AND is_guest_staged = FALSE
+           AND checkout_id IS NULL`,
+        [itemIds, kitchenId, session.user.id]
       );
 
       if (validItems.length !== itemIds.length) {
-        throw new Error("One or more items do not belong to this kitchen or have already been checked out.");
+        throw new Error("One or more items do not belong to your active cart or have already been checked out.");
       }
     }
 
@@ -214,15 +219,21 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
     
     // Update each matched shopping list item enforcing kitchen_id
     for (const item of items) {
-      const updateRes = await client.query(
+      const updateResult = await client.query(
         `UPDATE shopping_list_items
-         SET is_purchased = TRUE, checkout_id = $1, item_price = $2, is_guest_staged = FALSE
-         WHERE id = $3 AND kitchen_id = $4`,
-        [checkoutId, item.price ?? null, item.shopping_list_item_id, kitchenId]
+         SET is_purchased = TRUE, 
+             checkout_id = $1, 
+             item_price = $2, 
+             is_guest_staged = FALSE
+         WHERE id = $3 
+           AND kitchen_id = $4
+           AND purchased_by = $5
+           AND checkout_id IS NULL`,
+        [checkoutId, item.price ?? null, item.shopping_list_item_id, kitchenId, session.user.id]
       );
 
-      if ((updateRes.rowCount ?? 0) === 0) {
-        throw new Error(`Failed to update item ${item.shopping_list_item_id} for this kitchen.`);
+      if (updateResult.rowCount === 0) {
+        throw new Error(`Item ${item.shopping_list_item_id} could not be updated or was already processed.`);
       }
       
       // If tied to a pantry item, restock it enforcing kitchen_id
