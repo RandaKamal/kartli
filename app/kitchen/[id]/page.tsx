@@ -40,9 +40,9 @@ export default async function KitchenPage({
   const adminCheckouts = membership.role === "ADMIN" ? await getKitchenCheckouts(id) : [];
 
   const headerList = await headers();
-  const host = headerList.get("host") || "localhost:3000";
+  const host = headerList.get("x-forwarded-host") || headerList.get("host") || "";
   const protocol = headerList.get("x-forwarded-proto") || "http";
-  const baseUrl = `${protocol}://${host}`;
+  const baseUrl = host ? `${protocol}://${host}` : "";
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const initialTab = resolvedSearchParams?.tab || "kitchen";

@@ -25,9 +25,13 @@ function revalidateKitchen(kitchenId: string) {
   revalidatePath(`/kitchen/${kitchenId}/admin/purchases`);
 }
 
-export async function checkoutAction(kitchenId: string, receiptFilename: string): Promise<Checkout> {
+export async function checkoutAction(
+  kitchenId: string,
+  receiptFilename?: string | null,
+  options?: { storeName?: string | null; note?: string | null; totalAmount?: number }
+): Promise<Checkout> {
   const userId = await requireMembership(kitchenId);
-  const checkout = await createCheckout(kitchenId, userId, receiptFilename);
+  const checkout = await createCheckout(kitchenId, userId, receiptFilename, options);
   revalidateKitchen(kitchenId);
   return checkout;
 }

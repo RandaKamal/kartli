@@ -18,6 +18,9 @@ import {
   Loader2,
   Check,
   Package,
+  Store,
+  ImageIcon,
+  MessageSquare,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -246,8 +249,8 @@ export function AdminRefundsSection({
                     </div>
                   </div>
 
-                  {/* Staged Items Badge Pills */}
-                  <div className="flex-1 min-w-0">
+                  {/* Staged Items Badge Pills & Note */}
+                  <div className="flex-1 min-w-0 space-y-1.5">
                     <div className="flex flex-wrap gap-1.5 items-center">
                       {checkout.items.slice(0, 4).map((item) => (
                         <Badge
@@ -267,23 +270,38 @@ export function AdminRefundsSection({
                         </Badge>
                       )}
                     </div>
+
+                    {/* Note to Admin Pill */}
+                    {checkout.note && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground italic bg-muted/40 px-2.5 py-1 rounded-xl border border-border/60 w-fit">
+                        <MessageSquare className="w-3 h-3 text-muted-foreground shrink-0 not-italic" />
+                        <span>&ldquo;{checkout.note}&rdquo;</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Receipt & Action Group */}
                   <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-border">
-                    {/* View Receipt Pill Button */}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedCheckout(checkout)}
-                      className="rounded-xl text-xs font-medium h-8.5 gap-1.5 border-border hover:bg-secondary"
-                    >
-                      <Receipt className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="truncate max-w-[100px] sm:max-w-[130px]">
-                        {checkout.receipt_filename}
-                      </span>
-                    </Button>
+                    {/* View Receipt or No Receipt Badge */}
+                    {checkout.receipt_filename ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedCheckout(checkout)}
+                        className="rounded-xl text-xs font-medium h-8 gap-1.5 border-border hover:bg-secondary"
+                      >
+                        <Receipt className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>View Receipt</span>
+                      </Button>
+                    ) : (
+                      <Badge
+                        variant="secondary"
+                        className="rounded-xl text-xs font-normal h-8 px-2.5 bg-muted text-muted-foreground border border-border flex items-center justify-center"
+                      >
+                        No Receipt
+                      </Badge>
+                    )}
 
                     {/* Status Badge & Settle Button */}
                     {checkout.is_refunded ? (
@@ -304,7 +322,7 @@ export function AdminRefundsSection({
                           size="sm"
                           onClick={() => handleMarkAsSettled(checkout.id)}
                           disabled={isPending}
-                          className="rounded-xl text-xs font-semibold h-8.5 px-3 shadow-sm gap-1.5"
+                          className="rounded-xl text-xs font-semibold h-8 px-3 shadow-sm gap-1.5"
                         >
                           {isSettling ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -323,91 +341,149 @@ export function AdminRefundsSection({
         </div>
       )}
 
-      {/* Receipt Details Modal Dialog */}
+      {/* Full Resolution Receipt Preview Modal Dialog */}
       <Dialog open={!!selectedCheckout} onOpenChange={(open) => !open && setSelectedCheckout(null)}>
-        <DialogContent className="sm:max-w-md bg-card border border-border p-6 text-card-foreground rounded-3xl shadow-xl space-y-4">
+        <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[92vh] overflow-y-auto bg-card border border-border p-5 sm:p-6 text-card-foreground rounded-3xl shadow-xl flex flex-col gap-4">
           {selectedCheckout && (
             <>
-              <DialogHeader className="space-y-1.5 text-left">
-                <div className="flex items-center justify-between">
+              {/* Header */}
+              <DialogHeader className="space-y-2 text-left">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <Receipt className="w-5 h-5 text-accent-brand" />
-                    <DialogTitle className="text-base font-bold text-foreground">
-                      Purchase Receipt Details
+                    <Store className="w-5 h-5 text-accent-brand shrink-0" />
+                    <DialogTitle className="text-base sm:text-lg font-bold text-foreground">
+                      {selectedCheckout.store_name || "Supermarket Receipt"}
                     </DialogTitle>
                   </div>
                   {selectedCheckout.is_refunded ? (
-                    <Badge variant="success" className="bg-accent-sage/15 text-accent-success border-accent-sage/30">
+                    <Badge variant="success" className="bg-accent-sage/15 text-accent-success border-accent-sage/30 w-fit shrink-0">
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                       Settled
                     </Badge>
                   ) : (
-                    <Badge variant="warm" className="bg-accent-ochre/15 text-accent-warning border-accent-ochre/30">
+                    <Badge variant="warm" className="bg-accent-ochre/15 text-accent-warning border-accent-ochre/30 w-fit shrink-0">
+                      <Clock className="w-3.5 h-3.5 mr-1" />
                       Pending Refund
                     </Badge>
                   )}
                 </div>
-                <DialogDescription className="text-xs text-muted-foreground font-mono">
-                  Receipt: {selectedCheckout.receipt_filename}
-                </DialogDescription>
+
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <span>
+                    Submitted by <strong className="text-foreground">{getMemberInfo(selectedCheckout.user_id, selectedCheckout.username).displayName}</strong> ({getMemberInfo(selectedCheckout.user_id, selectedCheckout.username).username})
+                  </span>
+                  <span>&middot;</span>
+                  <span className="font-mono">
+                    {new Date(selectedCheckout.created_at).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </span>
+                  <span>&middot;</span>
+                  <span className="font-semibold text-foreground">
+                    Claimed: €{Number(selectedCheckout.total_claimed_amount || 0).toFixed(2)}
+                    {selectedCheckout.total_receipt_amount != null && (
+                      <span className="text-muted-foreground font-normal"> (Total: €{Number(selectedCheckout.total_receipt_amount).toFixed(2)})</span>
+                    )}
+                  </span>
+                </div>
               </DialogHeader>
 
-              <div className="space-y-4 py-1 text-xs">
-                {/* Buyer & Date Summary */}
-                <div className="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-muted/50 border border-border">
-                  <div className="space-y-0.5">
-                    <span className="text-muted-foreground font-medium">Purchased by</span>
-                    <p className="font-semibold text-foreground">
-                      {getMemberInfo(selectedCheckout.user_id, selectedCheckout.username).displayName}
-                    </p>
+              {/* Body: High Resolution Receipt Preview / Note & Items */}
+              <div className="space-y-4">
+                {/* Note from Buyer if present */}
+                {selectedCheckout.note && (
+                  <div className="p-3 rounded-2xl bg-muted/40 border border-border space-y-1">
+                    <span className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>Note to Admin</span>
+                    </span>
+                    <p className="text-xs text-foreground italic">&ldquo;{selectedCheckout.note}&rdquo;</p>
                   </div>
-                  <div className="space-y-0.5">
-                    <span className="text-muted-foreground font-medium">Date</span>
-                    <p className="font-semibold text-foreground font-mono">
-                      {new Date(selectedCheckout.created_at).toLocaleDateString("en-US", {
+                )}
+
+                {/* High Resolution Image Container or Receiptless placeholder */}
+                {selectedCheckout.receipt_filename ? (
+                  <div className="relative rounded-2xl overflow-hidden border border-border bg-muted/30 p-2 sm:p-3 flex items-center justify-center min-h-[220px]">
+                    <img
+                      src={
+                        selectedCheckout.receipt_filename.startsWith("/")
+                          ? selectedCheckout.receipt_filename
+                          : `/uploads/receipts/${selectedCheckout.receipt_filename}`
+                      }
+                      alt={`Receipt for ${selectedCheckout.store_name || "household purchase"}`}
+                      className="max-h-[75vh] w-auto max-w-full object-contain rounded-md border border-border shadow-xs"
+                    />
+                  </div>
+                ) : (
+                  <div className="p-6 rounded-2xl border border-dashed border-border bg-muted/20 text-center space-y-1.5">
+                    <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
+                      <Receipt className="w-4 h-4" />
+                    </div>
+                    <p className="text-xs font-medium text-foreground">No Receipt Attached</p>
+                    <p className="text-[11px] text-muted-foreground">This purchase was checked out directly without a receipt image.</p>
+                  </div>
+                )}
+
+                {/* Claimed Shopping List Items */}
+                {selectedCheckout.items.length > 0 && (
+                  <div className="space-y-2 p-3.5 rounded-2xl bg-muted/40 border border-border">
+                    <div className="flex items-center justify-between text-xs font-semibold text-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <Package className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>Claimed Items ({selectedCheckout.items.length})</span>
+                      </span>
+                      <span className="font-mono text-[11px] text-muted-foreground">
+                        €{Number(selectedCheckout.total_claimed_amount || 0).toFixed(2)}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {selectedCheckout.items.map((item) => (
+                        <Badge
+                          key={item.id}
+                          variant="secondary"
+                          className="text-xs font-normal bg-card border-border flex items-center gap-1"
+                        >
+                          <span>{item.name}</span>
+                          {item.item_price != null && (
+                            <span className="font-mono text-[10px] text-muted-foreground">
+                              (€{Number(item.item_price).toFixed(2)})
+                            </span>
+                          )}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Refund timestamp if settled */}
+                {selectedCheckout.is_refunded && selectedCheckout.refunded_at && (
+                  <div className="p-3 rounded-2xl bg-accent-sage/10 border border-accent-sage/25 text-accent-success text-xs flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span>
+                      Settled on {new Date(selectedCheckout.refunded_at).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
                       })}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Items Purchased List */}
-                <div className="space-y-2">
-                  <span className="font-semibold text-foreground flex items-center justify-between">
-                    <span>Purchased Items</span>
-                    <span className="text-muted-foreground font-mono font-normal">
-                      {selectedCheckout.items.length} items
-                    </span>
-                  </span>
-
-                  <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
-                    {selectedCheckout.items.map((item, idx) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between p-2 rounded-xl bg-muted/40 border border-border"
-                      >
-                        <span className="text-foreground font-medium">{item.name}</span>
-                        <Badge variant="secondary" className="text-[10px] font-mono">
-                          #{idx + 1}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Refund timestamp if settled */}
-                {selectedCheckout.is_refunded && selectedCheckout.refunded_at && (
-                  <div className="p-3 rounded-2xl bg-accent-sage/10 border border-accent-sage/25 text-accent-success flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 shrink-0" />
-                    <span>
-                      Settled on {new Date(selectedCheckout.refunded_at).toLocaleDateString("en-US")}
                     </span>
                   </div>
                 )}
               </div>
 
-              <DialogFooter className="pt-2 border-t border-border flex flex-col sm:flex-row gap-2">
+              {/* Footer */}
+              <DialogFooter className="pt-3 border-t border-border flex flex-col sm:flex-row gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedCheckout(null)}
+                  className="rounded-xl text-xs h-9 border-border"
+                >
+                  Close
+                </Button>
                 {!selectedCheckout.is_refunded && (
                   <Button
                     type="button"
@@ -419,21 +495,12 @@ export function AdminRefundsSection({
                       handleMarkAsSettled(id);
                     }}
                     disabled={isPending}
-                    className="w-full sm:w-auto text-xs font-semibold rounded-xl gap-1.5 shadow-sm"
+                    className="rounded-xl text-xs font-semibold h-9 px-4 gap-1.5 bg-primary text-primary-foreground shadow-sm"
                   >
                     <Check className="w-3.5 h-3.5" />
                     <span>Mark as Settled</span>
                   </Button>
                 )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedCheckout(null)}
-                  className="w-full sm:w-auto text-xs rounded-xl"
-                >
-                  Close
-                </Button>
               </DialogFooter>
             </>
           )}

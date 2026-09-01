@@ -152,7 +152,10 @@ export function KitchenSpaceView({
   );
   const myCartCount = myCartItems.length;
 
-  const publicGuestUrl = `${baseUrl}/kitchen/view/${publicViewToken}`;
+  const pendingRefundsCount = adminCheckouts.filter((c) => !c.is_refunded).length;
+
+  const origin = typeof window !== "undefined" ? window.location.origin : baseUrl;
+  const publicGuestUrl = origin ? `${origin}/kitchen/view/${publicViewToken}` : `/kitchen/view/${publicViewToken}`;
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -370,10 +373,23 @@ export function KitchenSpaceView({
             <TabsTrigger
               value="refunds"
               aria-label="Purchases & Refunds"
-              className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer"
+              className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer relative"
             >
-              <Receipt className="w-4 h-4 shrink-0" />
+              <div className="relative flex items-center shrink-0">
+                <Receipt className="w-4 h-4" />
+                {pendingRefundsCount > 0 && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 absolute -top-0.5 -right-0.5 shadow-xs md:hidden animate-pulse" />
+                )}
+              </div>
+
               <span className="hidden md:inline">Refunds</span>
+
+              {pendingRefundsCount > 0 && (
+                <span className="hidden md:inline-flex items-center gap-1 ml-1 px-1.5 py-0.2 text-[10px] font-mono font-medium rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                  <span>{pendingRefundsCount}</span>
+                </span>
+              )}
             </TabsTrigger>
           )}
 
