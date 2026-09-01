@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { CopyButton } from "@/components/CopyButton";
 import { logoutAction } from "@/app/actions/auth";
 import { toast } from "sonner";
+import { useI18n } from "@/context/i18n-context";
 
 interface ProfileSettingsProps {
   user: {
@@ -73,6 +74,7 @@ const CULINARY_THEMES: CulinaryTheme[] = [
 export function ProfileSettings({ user }: ProfileSettingsProps) {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
+  const { t } = useI18n();
 
   const [activeTab, setActiveTab] = useState("account");
   const { theme, setTheme } = useTheme();
@@ -120,12 +122,12 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
   const initial = (user.username || "?").charAt(0).toUpperCase();
 
   const handleSavePreferences = () => {
-    toast.success("Preferences updated successfully");
+    toast.success(t("profile.savePreferences") + " ✓");
   };
 
   const handleSaveSecurity = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.info("Password update functionality is coming soon");
+    toast.info(t("profile.passwordUpdateComingSoon"));
   };
 
   return (
@@ -133,13 +135,13 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto mb-6 bg-muted/70 border border-border/80 p-1 rounded-2xl">
           <TabsTrigger value="account" className="rounded-xl text-xs font-semibold">
-            Account
+            {t("profile.tabAccount")}
           </TabsTrigger>
           <TabsTrigger value="preferences" className="rounded-xl text-xs font-semibold">
-            Preferences
+            {t("profile.tabPreferences")}
           </TabsTrigger>
           <TabsTrigger value="security" className="rounded-xl text-xs font-semibold">
-            Security
+            {t("profile.tabSecurity")}
           </TabsTrigger>
         </TabsList>
 
@@ -159,11 +161,11 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                       @{user.username}
                     </h2>
                     <Badge variant="secondary" className="text-[10px]">
-                      Active
+                      {t("profile.activeBadge")}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Registered Kitchen Member
+                    {t("profile.memberRole")}
                   </p>
                 </div>
               </div>
@@ -172,7 +174,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                 <Badge variant="outline" className="text-xs text-muted-foreground font-mono">
                   ID: {user.id.slice(0, 8)}...
                 </Badge>
-                <CopyButton text={user.id} label="Copy Full ID" size="sm" />
+                <CopyButton text={user.id} label={t("profile.copyFullId")} size="sm" />
               </div>
             </div>
 
@@ -180,7 +182,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="profile-username">Username</Label>
+                <Label htmlFor="profile-username">{t("profile.usernameLabel")}</Label>
                 <Input
                   id="profile-username"
                   value={user.username}
@@ -189,12 +191,12 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   className="rounded-xl bg-muted/40 font-mono text-foreground"
                 />
                 <span className="text-[11px] text-muted-foreground block">
-                  Your unique identifier across all kitchens.
+                  {t("profile.usernameDescription")}
                 </span>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="profile-auth-type">Authentication Method</Label>
+                <Label htmlFor="profile-auth-type">{t("profile.authMethodLabel")}</Label>
                 <Input
                   id="profile-auth-type"
                   value="Credentials (Encrypted JWT Session)"
@@ -203,7 +205,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   className="rounded-xl bg-muted/40 font-medium text-foreground"
                 />
                 <span className="text-[11px] text-muted-foreground block">
-                  Managed via NextAuth.js / Auth.js v5.
+                  {t("profile.authMethodDescription")}
                 </span>
               </div>
             </div>
@@ -271,10 +273,10 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
             <CardHeader className="p-0 space-y-1">
               <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
                 <Bell className="w-5 h-5 text-muted-foreground" />
-                <span>Notification Preferences</span>
+                <span>{t("profile.notificationsTitle")}</span>
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                Configure when and how you receive grocery and kitchen status alerts.
+                {t("profile.notificationsSubtitle")}
               </CardDescription>
             </CardHeader>
 
@@ -282,10 +284,10 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
                 <div className="space-y-0.5">
                   <Label htmlFor="notify-pantry" className="text-sm font-medium text-foreground cursor-pointer">
-                    Pantry Restock Alerts
+                    {t("profile.pantryAlerts")}
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Get notified when an item in your kitchen is marked as Empty.
+                    {t("profile.pantryAlertsSub")}
                   </p>
                 </div>
                 <Switch
@@ -298,10 +300,10 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
                 <div className="space-y-0.5">
                   <Label htmlFor="notify-shopping" className="text-sm font-medium text-foreground cursor-pointer">
-                    Shopping Cart &amp; Checkout Updates
+                    {t("profile.shoppingAlerts")}
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Receive confirmation when a roommate checks out groceries.
+                    {t("profile.shoppingAlertsSub")}
                   </p>
                 </div>
                 <Switch
@@ -314,10 +316,10 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
                 <div className="space-y-0.5">
                   <Label htmlFor="notify-members" className="text-sm font-medium text-foreground cursor-pointer">
-                    Member Activity
+                    {t("profile.memberAlerts")}
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Alert when a new member claims an invite link in your kitchen.
+                    {t("profile.memberAlertsSub")}
                   </p>
                 </div>
                 <Switch
@@ -335,10 +337,10 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               <div className="space-y-0.5">
                 <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                   <UtensilsCrossed className="w-5 h-5 text-accent-primary" />
-                  <span>Culinary Color Themes</span>
+                  <span>{t("profile.themesTitle")}</span>
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Choose an artisanal food-inspired palette for your personal kartli workspace.
+                  {t("profile.themesSubtitle")}
                 </p>
               </div>
 
@@ -399,7 +401,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
             <div className="pt-2 flex justify-end">
               <Button onClick={handleSavePreferences} className="rounded-xl font-semibold">
-                Save Preferences
+                {t("profile.savePreferences")}
               </Button>
             </div>
           </Card>
@@ -411,7 +413,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
             <CardHeader className="p-0 space-y-1">
               <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
                 <Key className="w-5 h-5 text-muted-foreground" />
-                <span>Password &amp; Security</span>
+                <span>{t("profile.tabSecurity")}</span>
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
                 Update your credentials or manage active sessions.
@@ -452,7 +454,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
               <div className="pt-2 flex justify-end">
                 <Button type="submit" variant="secondary" className="rounded-xl font-semibold">
-                  Update Password
+                  {t("profile.saveSecurity")}
                 </Button>
               </div>
             </form>
@@ -466,18 +468,18 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   <AlertOctagon className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-foreground">Danger Zone</h4>
+                  <h4 className="text-sm font-bold text-foreground">{t("profile.dangerZone")}</h4>
                   <p className="text-xs text-muted-foreground">
-                    Irreversible actions related to your account sessions.
+                    {t("profile.dangerDescription")}
                   </p>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                 <div className="space-y-0.5">
-                  <span className="text-xs font-semibold text-foreground">Sign Out of This Device</span>
+                  <span className="text-xs font-semibold text-foreground">{t("profile.logoutButton")}</span>
                   <p className="text-[11px] text-muted-foreground">
-                    End your current session and return to the login screen.
+                    {t("profile.dangerDescription")}
                   </p>
                 </div>
                 <Button
@@ -489,29 +491,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   }}
                   className="rounded-xl font-medium"
                 >
-                  Sign Out
-                </Button>
-              </div>
-
-              <Separator className="bg-destructive/20" />
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-0.5">
-                  <span className="text-xs font-semibold text-foreground">Sign Out of All Devices</span>
-                  <p className="text-[11px] text-muted-foreground">
-                    Invalidates active JWT tokens across other browsers.
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    await logoutAction();
-                  }}
-                  className="border-destructive/40 text-destructive hover:bg-destructive/10 rounded-xl font-medium"
-                >
-                  Clear All Sessions
+                  {t("nav.logOut")}
                 </Button>
               </div>
             </div>

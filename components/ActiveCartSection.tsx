@@ -26,6 +26,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useI18n } from "@/context/i18n-context";
 
 interface ActiveCartSectionProps {
   kitchenId: string;
@@ -43,12 +44,13 @@ export function ActiveCartSection({
   onSwitchTab,
 }: ActiveCartSectionProps) {
   const router = useRouter();
+  const { t, lang } = useI18n();
   const [allItems, setAllItems] = useState<ShoppingListItem[]>(items);
   const [isPending, startTransition] = useTransition();
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [isReceiptlessModalOpen, setIsReceiptlessModalOpen] = useState(false);
 
-  const terminology = getSpaceTerminology(spaceType);
+  const terminology = getSpaceTerminology(spaceType, lang);
 
   useEffect(() => {
     setAllItems(items);
@@ -176,7 +178,7 @@ export function ActiveCartSection({
               ) : (
                 <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
               )}
-              <span>Clear Cart</span>
+              <span>{t("cart.clearCart")}</span>
             </Button>
 
             <Button
@@ -186,9 +188,9 @@ export function ActiveCartSection({
               onClick={() => setIsReceiptlessModalOpen(true)}
               disabled={myCartItems.length === 0}
               className="w-full sm:w-auto rounded-xl text-xs font-semibold h-10 sm:h-9 px-3.5 border border-border/80 hover:bg-secondary justify-center text-muted-foreground hover:text-foreground"
-              title="Checkout directly without uploading a receipt"
+              title={t("cart.checkoutWithoutReceipt")}
             >
-              Checkout without Receipt
+              {t("cart.checkoutWithoutReceipt")}
             </Button>
 
             <Button
@@ -198,10 +200,10 @@ export function ActiveCartSection({
               onClick={handleProceedToReceipt}
               disabled={myCartItems.length === 0}
               className="w-full sm:w-auto rounded-xl text-xs font-semibold h-10 sm:h-9 px-4 gap-2 shadow-sm justify-center"
-              title="Proceed to receipt upload"
+              title={t("cart.proceedToReceipt")}
             >
               <Receipt className="w-4 h-4" />
-              <span>Proceed to Receipt Upload</span>
+              <span>{t("cart.proceedToReceipt")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           </div>
@@ -216,10 +218,10 @@ export function ActiveCartSection({
           </div>
           <div className="space-y-1 max-w-sm mx-auto">
             <h3 className="text-sm font-semibold text-foreground">
-              Household cart is currently empty
+              {t("cart.empty")}
             </h3>
             <p className="text-xs text-muted-foreground">
-              Click &ldquo;Put in Cart&rdquo; on any open item in the shopping list to stage it here for checkout.
+              {t("cart.emptySub")}
             </p>
           </div>
           {onSwitchTab && (

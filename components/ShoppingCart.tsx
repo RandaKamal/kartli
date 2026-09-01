@@ -31,6 +31,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useI18n } from "@/context/i18n-context";
 
 interface ShoppingCartProps {
   kitchenId: string;
@@ -50,6 +51,7 @@ export function ShoppingCart({
   onOpenChange: setControlledIsOpen,
 }: ShoppingCartProps) {
   const router = useRouter();
+  const { t, lang } = useI18n();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [allItems, setAllItems] = useState<ShoppingListItem[]>(items);
   const [isPending, startTransition] = useTransition();
@@ -66,7 +68,7 @@ export function ShoppingCart({
     }
   };
 
-  const terminology = getSpaceTerminology(spaceType);
+  const terminology = getSpaceTerminology(spaceType, lang);
 
   useEffect(() => {
     setAllItems(items);
@@ -166,10 +168,10 @@ export function ShoppingCart({
           size="sm"
           onClick={() => setIsOpen(true)}
           className="relative rounded-xl font-medium border-border text-muted-foreground hover:text-foreground transition h-9 px-3"
-          title="Household cart is empty"
+          title={t("cart.empty")}
         >
           <CartIcon className="w-4 h-4 mr-1.5 text-muted-foreground" />
-          <span>Cart</span>
+          <span>{t("cart.title")}</span>
         </Button>
       ) : (
         /* State B: Active Household Cart (items staged by user or roommates) */
@@ -195,7 +197,7 @@ export function ShoppingCart({
           )}
 
           <CartIcon className="w-4 h-4 text-muted-foreground" />
-          <span>Cart</span>
+          <span>{t("cart.title")}</span>
           <span className="text-muted-foreground text-xs">&middot;</span>
           <Badge
             variant="secondary"
@@ -213,10 +215,10 @@ export function ShoppingCart({
             <div className="flex items-center gap-2.5 flex-wrap">
               <CartIcon className="w-5 h-5 text-accent-brand" />
               <DialogTitle className="text-lg font-bold text-foreground">
-                Active Cart
+                {t("cart.activeCart")}
               </DialogTitle>
               <Badge variant="secondary" className="text-xs px-2 py-0.5 font-mono">
-                {myCartItems.length} in your cart
+                {myCartItems.length} {t("cart.myCart")}
               </Badge>
               {otherCartItems.length > 0 && (
                 <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-muted-foreground border-border">
@@ -235,10 +237,10 @@ export function ShoppingCart({
                 <CartIcon className="w-5 h-5" />
               </div>
               <p className="text-sm font-semibold text-foreground">
-                Household cart is empty
+                {t("cart.empty")}
               </p>
               <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                Click &ldquo;Put in Cart&rdquo; on any item in the shopping list to stage it here for checkout.
+                {t("cart.emptySub")}
               </p>
             </div>
           ) : (
@@ -249,10 +251,10 @@ export function ShoppingCart({
                   <div className="flex items-center justify-between text-xs font-semibold text-foreground px-1">
                     <span className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-accent-success" />
-                      <span>Your Staged Items ({myCartItems.length})</span>
+                      <span>{t("cart.yourStagedItems")} ({myCartItems.length})</span>
                     </span>
                     <span className="text-[11px] text-accent-success font-medium">
-                      Ready for checkout
+                      {t("cart.readyToCheckout")}
                     </span>
                   </div>
                   <div className="space-y-2">
@@ -272,19 +274,19 @@ export function ShoppingCart({
                                 variant="outline"
                                 className="text-[9px] px-1.5 py-0 font-medium text-muted-foreground shrink-0"
                               >
-                                Pantry
+                                {t("shoppingList.pantry")}
                               </Badge>
                             ) : (
                               <Badge
                                 variant="secondary"
                                 className="text-[9px] px-1.5 py-0 font-medium shrink-0"
                               >
-                                Custom
+                                {t("shoppingList.custom")}
                               </Badge>
                             )}
                           </div>
                           <p className="text-[11px] text-muted-foreground">
-                            Added by You
+                            {t("cart.stagedByYou")}
                           </p>
                         </div>
 
@@ -298,7 +300,7 @@ export function ShoppingCart({
                           title="Return to shopping list"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
-                          <span>Return to List</span>
+                          <span>{t("cart.returnToList")}</span>
                         </Button>
                       </div>
                     ))}
@@ -306,7 +308,7 @@ export function ShoppingCart({
                 </div>
               ) : (
                 <div className="p-4 rounded-xl border border-dashed border-border text-center text-xs text-muted-foreground">
-                  You have no items in your cart.
+                  {t("cart.noItemsStaged")}
                 </div>
               )}
 
@@ -315,7 +317,7 @@ export function ShoppingCart({
                 <div className="space-y-2 pt-2 border-t border-border">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
                     <Users className="w-3.5 h-3.5" />
-                    <span>Staged by {terminology.memberLabelPlural} ({otherCartItems.length})</span>
+                    <span>{t("cart.otherCarts")} ({otherCartItems.length})</span>
                   </div>
                   <div className="space-y-2 opacity-90">
                     {otherCartItems.map((item) => {
@@ -348,19 +350,19 @@ export function ShoppingCart({
                                   variant="outline"
                                   className="text-[9px] px-1.5 py-0 font-medium text-muted-foreground shrink-0"
                                 >
-                                  Pantry
+                                  {t("shoppingList.pantry")}
                                 </Badge>
                               ) : (
                                 <Badge
                                   variant="secondary"
                                   className="text-[9px] px-1.5 py-0 font-medium shrink-0"
                                 >
-                                  Custom
+                                  {t("shoppingList.custom")}
                                 </Badge>
                               )}
                             </div>
                             <p className="text-[11px] text-muted-foreground">
-                              Added by {attribution}
+                              {t("cart.stagedByOthers", { name: attribution })}
                             </p>
                           </div>
 
@@ -407,7 +409,7 @@ export function ShoppingCart({
               ) : (
                 <Trash2 className="w-3.5 h-3.5" />
               )}
-              <span>Clear Cart</span>
+              <span>{t("cart.clearCart")}</span>
             </Button>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
@@ -422,7 +424,7 @@ export function ShoppingCart({
                 disabled={isPending || myCartItems.length === 0}
                 className="h-9 px-3 text-xs font-medium rounded-xl border border-border/80 hover:bg-secondary text-muted-foreground hover:text-foreground"
               >
-                Checkout without Receipt
+                {t("cart.checkoutWithoutReceipt")}
               </Button>
 
               <Button
@@ -433,7 +435,7 @@ export function ShoppingCart({
                 title="Proceed to receipt upload"
               >
                 <Receipt className="w-4 h-4" />
-                <span>Proceed to Receipt Upload</span>
+                <span>{t("cart.proceedToReceipt")}</span>
                 <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
               </Button>
             </div>

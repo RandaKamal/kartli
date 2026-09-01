@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { logoutAction } from "@/app/actions/auth";
+import { useI18n } from "@/context/i18n-context";
 
 interface UserDropdownProps {
   user: {
@@ -22,6 +23,7 @@ interface UserDropdownProps {
 }
 
 export function UserDropdown({ user }: UserDropdownProps) {
+  const { t } = useI18n();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -52,13 +54,13 @@ export function UserDropdown({ user }: UserDropdownProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel className="font-normal text-xs text-muted-foreground">
-          Signed in as <strong className="text-foreground">@{user.username}</strong>
+          {t("nav.signedInAs", { username: user.username })}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/profile" className="flex items-center gap-2 w-full cursor-pointer">
             <Settings className="w-3.5 h-3.5" />
-            <span>Settings &amp; Profile</span>
+            <span>{t("nav.profile")}</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -73,12 +75,12 @@ export function UserDropdown({ user }: UserDropdownProps) {
           {isLoggingOut ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span>Signing out...</span>
+              <span>{t("nav.signingOut")}</span>
             </>
           ) : (
             <>
               <LogOut className="w-3.5 h-3.5" />
-              <span>Sign out</span>
+              <span>{t("nav.logOut")}</span>
             </>
           )}
         </DropdownMenuItem>

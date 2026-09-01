@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useI18n } from "@/context/i18n-context";
 
 export function AdminPendingInvitesList({
   kitchenId,
@@ -33,10 +34,11 @@ export function AdminPendingInvitesList({
   baseUrl: string;
   spaceType?: KitchenSpaceType;
 }) {
+  const { t, lang } = useI18n();
   const [selectedInvite, setSelectedInvite] = useState<KitchenMemberWithUser | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const terminology = getSpaceTerminology(spaceType);
+  const terminology = getSpaceTerminology(spaceType, lang);
 
   const handleConfirmCancel = () => {
     if (!selectedInvite) return;
@@ -55,7 +57,7 @@ export function AdminPendingInvitesList({
   if (invites.length === 0) {
     return (
       <p className="text-xs text-muted-foreground py-4 text-center">
-        No pending invites. All invited {terminology.memberLabelPlural.toLowerCase()} have claimed their links.
+        {t("members.noPending")}
       </p>
     );
   }
@@ -85,11 +87,13 @@ export function AdminPendingInvitesList({
                       {invite.kitchen_display_name}
                     </span>
                     <Badge variant="outline" className="text-[10px] text-muted-foreground font-mono">
-                      Pending
+                      {t("common.pending")}
                     </Badge>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    Created {new Date(invite.created_at).toLocaleDateString()}
+                    {t("kitchen.created", {
+                      date: new Date(invite.created_at).toLocaleDateString(lang === "de" ? "de-DE" : "en-US"),
+                    })}
                   </span>
                 </div>
               </div>
@@ -101,7 +105,7 @@ export function AdminPendingInvitesList({
                   value={inviteUrl}
                   className="h-8 px-2 text-xs text-muted-foreground font-mono w-40 sm:w-56 select-all rounded-lg"
                 />
-                <CopyButton text={inviteUrl} label="Copy" size="sm" />
+                <CopyButton text={inviteUrl} label={t("common.copy")} size="sm" />
                 <Button
                   type="button"
                   variant="ghost"
@@ -127,7 +131,7 @@ export function AdminPendingInvitesList({
               <div className="p-2.5 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive">
                 <AlertTriangle className="w-5 h-5" />
               </div>
-              <AlertDialogTitle>Revoke {terminology.memberLabel} Invite</AlertDialogTitle>
+              <AlertDialogTitle>{t("members.cancelInvite")}</AlertDialogTitle>
             </div>
             <AlertDialogDescription>
               Are you sure you want to revoke the invite for{" "}
@@ -138,7 +142,7 @@ export function AdminPendingInvitesList({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isPending}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               disabled={isPending}
               onClick={(e) => {
@@ -147,7 +151,7 @@ export function AdminPendingInvitesList({
               }}
             >
               {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>{isPending ? "Revoking..." : "Revoke Invite"}</span>
+              <span>{isPending ? t("common.deleting") : t("members.cancelInvite")}</span>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

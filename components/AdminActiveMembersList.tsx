@@ -28,6 +28,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useI18n } from "@/context/i18n-context";
 
 export function AdminActiveMembersList({
   kitchenId,
@@ -40,10 +41,11 @@ export function AdminActiveMembersList({
   currentUserId: string;
   spaceType?: KitchenSpaceType;
 }) {
+  const { t, lang } = useI18n();
   const [selectedMember, setSelectedMember] = useState<KitchenMemberWithUser | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const terminology = getSpaceTerminology(spaceType);
+  const terminology = getSpaceTerminology(spaceType, lang);
 
   const handleConfirmRemove = () => {
     if (!selectedMember) return;
@@ -65,10 +67,10 @@ export function AdminActiveMembersList({
         <TableHeader>
           <TableRow>
             <TableHead>{terminology.memberLabel}</TableHead>
-            <TableHead>Username</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Joined Date</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>{t("common.username")}</TableHead>
+            <TableHead>{t("common.role")}</TableHead>
+            <TableHead>{t("common.date")}</TableHead>
+            <TableHead className="text-right">{t("common.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -90,7 +92,7 @@ export function AdminActiveMembersList({
                     <div className="flex items-center">
                       <span>{capitalize(member.kitchen_display_name)}</span>
                       {isSelf && (
-                        <span className="ml-2 text-xs text-muted-foreground font-normal">(You)</span>
+                        <span className="ml-2 text-xs text-muted-foreground font-normal">({t("common.you")})</span>
                       )}
                     </div>
                   </div>
@@ -103,12 +105,12 @@ export function AdminActiveMembersList({
                     variant="secondary"
                     className="text-[11px] font-medium"
                   >
-                    {member.role}
+                    {member.role === "ADMIN" ? t("common.admin") : t("common.member")}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground font-mono">
                   {member.joined_at
-                    ? new Date(member.joined_at).toLocaleDateString()
+                    ? new Date(member.joined_at).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")
                     : "—"}
                 </TableCell>
                 <TableCell className="text-right">
@@ -121,7 +123,7 @@ export function AdminActiveMembersList({
                       className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground rounded-lg border-border"
                     >
                       <UserMinus className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
-                      <span>Remove</span>
+                      <span>{t("common.delete")}</span>
                     </Button>
                   ) : isSelf ? (
                     <span className="text-xs text-muted-foreground font-mono italic">Primary</span>
@@ -141,23 +143,16 @@ export function AdminActiveMembersList({
               <div className="p-2.5 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive">
                 <AlertTriangle className="w-5 h-5" />
               </div>
-              <AlertDialogTitle>Remove {terminology.memberLabel}</AlertDialogTitle>
+              <AlertDialogTitle>{t("members.removeTitle")}</AlertDialogTitle>
             </div>
             <AlertDialogDescription>
-              Are you sure you want to remove{" "}
-              <strong className="text-foreground font-semibold">
-                {selectedMember?.kitchen_display_name}
-              </strong>{" "}
-              {selectedMember?.username && (
-                <span className="font-mono text-muted-foreground">
-                  (@{selectedMember.username})
-                </span>
-              )}{" "}
-              from this kitchen? They will lose access immediately.
+              {t("members.removeConfirm", {
+                name: selectedMember?.kitchen_display_name || "",
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isPending}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               disabled={isPending}
               onClick={(e) => {
@@ -166,7 +161,7 @@ export function AdminActiveMembersList({
               }}
             >
               {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>{isPending ? "Removing..." : `Remove ${terminology.memberLabel}`}</span>
+              <span>{isPending ? t("common.deleting") : t("members.removeMember")}</span>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

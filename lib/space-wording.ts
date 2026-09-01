@@ -1,6 +1,64 @@
 export type SpaceType = 'FLATSHARE' | 'FAMILY' | 'OFFICE' | 'NEUTRAL';
 
-export function getSpaceWording(spaceType: SpaceType = 'FLATSHARE') {
+export function getSpaceWording(spaceType: SpaceType = 'FLATSHARE', lang: 'en' | 'de' = 'en') {
+  if (lang === 'de') {
+    switch (spaceType) {
+      case 'FAMILY':
+        return {
+          key: 'FAMILY',
+          badgeLabel: 'Familien-Haushalt',
+          memberTab: 'Familie',
+          membersHeading: 'Familienmitglieder',
+          emptyListHeading: 'Vorratskammer ist voll!',
+          emptyListSub: 'Artikel oben eintragen, wenn etwas im Haushalt ausgeht.',
+          stagedByOthers: 'Von der Familie eingepackt',
+          inviteAction: 'Familienmitglied einladen',
+          inviteDescription: 'Teile den Zugriff mit deinen Kindern, Partner oder Eltern.',
+          invitePlaceholder: 'z. B. Mama, Leo, Sarah',
+        };
+      case 'OFFICE':
+        return {
+          key: 'OFFICE',
+          badgeLabel: 'Büro / Studio',
+          memberTab: 'Team',
+          membersHeading: 'Teammitglieder',
+          emptyListHeading: 'Bürokantine ist voll!',
+          emptyListSub: 'Snacks, Milch oder Kaffee-Nachschub oben eintragen.',
+          stagedByOthers: 'Vom Team eingepackt',
+          inviteAction: 'Teammitglied einladen',
+          inviteDescription: 'Erstelle einen Küchen-Pass für Kollegen oder Mitarbeiter.',
+          invitePlaceholder: 'z. B. Alex (Design), Empfang',
+        };
+      case 'NEUTRAL':
+        return {
+          key: 'NEUTRAL',
+          badgeLabel: 'Gemeinsamer Raum',
+          memberTab: 'Mitglieder',
+          membersHeading: 'Küchenmitglieder',
+          emptyListHeading: 'Alles vorrätig',
+          emptyListSub: 'Artikel erscheinen hier, wenn sie als leer markiert oder hinzugefügt werden.',
+          stagedByOthers: 'Von Mitgliedern eingepackt',
+          inviteAction: 'Mitglied einladen',
+          inviteDescription: 'Füge ein Mitglied hinzu, um einen Einladungslink zu erstellen.',
+          invitePlaceholder: 'z. B. Name des Mitglieds',
+        };
+      case 'FLATSHARE':
+      default:
+        return {
+          key: 'FLATSHARE',
+          badgeLabel: 'WG-Haushalt',
+          memberTab: 'Mitbewohner',
+          membersHeading: 'WG-Mitglieder',
+          emptyListHeading: 'Alles vorrätig!',
+          emptyListSub: 'Leere Grundvorräte markieren oder Snack-Wünsche oben eintragen.',
+          stagedByOthers: 'Von Mitbewohnern eingepackt',
+          inviteAction: 'Neuen Mitbewohner hinzufügen',
+          inviteDescription: 'Erstelle einen schnellen Einladungslink für deinen nächsten Mitbewohner.',
+          invitePlaceholder: 'z. B. Lisa, Finn, Sam',
+        };
+    }
+  }
+
   switch (spaceType) {
     case 'FAMILY':
       return {

@@ -23,24 +23,26 @@ export interface SpaceTerminology {
 
 /**
  * Returns dynamic contextual terminology based on the household/space type.
- * Supports FLATSHARE, FAMILY, OFFICE, and NEUTRAL spaces.
+ * Supports FLATSHARE, FAMILY, OFFICE, and NEUTRAL spaces in English and German.
  */
-export function getSpaceTerminology(spaceType: KitchenSpaceType = "FLATSHARE"): SpaceTerminology {
-  const wording = getSpaceWording(spaceType as SpaceType);
+export function getSpaceTerminology(spaceType: KitchenSpaceType = "FLATSHARE", lang: "en" | "de" = "en"): SpaceTerminology {
+  const wording = getSpaceWording(spaceType as SpaceType, lang);
+  const isDe = lang === "de";
+
   switch (spaceType) {
     case "FAMILY":
       return {
         spaceType: "FAMILY",
-        spaceLabel: "Family",
-        memberLabel: "Family Member",
-        memberLabelPlural: "Family Members",
-        activeMembersTitle: "Active Family Members",
+        spaceLabel: isDe ? "Familie" : "Family",
+        memberLabel: isDe ? "Familienmitglied" : "Family Member",
+        memberLabelPlural: isDe ? "Familienmitglieder" : "Family Members",
+        activeMembersTitle: isDe ? "Aktive Familienmitglieder" : "Active Family Members",
         kitchenMembersTitle: wording.membersHeading,
         inviteCardTitle: wording.inviteAction,
         inviteCardDescription: wording.inviteDescription,
         namePlaceholder: wording.invitePlaceholder,
-        cartRoommateDescription: "Items staged for purchase by family.",
-        cartAttributionFallback: "Family",
+        cartRoommateDescription: isDe ? "Von der Familie zum Kauf vorgemerkt." : "Items staged for purchase by family.",
+        cartAttributionFallback: isDe ? "Familie" : "Family",
         memberTab: wording.memberTab,
         membersHeading: wording.membersHeading,
         stagedByOthers: wording.stagedByOthers,
@@ -51,16 +53,16 @@ export function getSpaceTerminology(spaceType: KitchenSpaceType = "FLATSHARE"): 
     case "OFFICE":
       return {
         spaceType: "OFFICE",
-        spaceLabel: "Office",
-        memberLabel: "Team Member",
-        memberLabelPlural: "Team Members",
-        activeMembersTitle: "Active Team Members",
+        spaceLabel: isDe ? "Büro / Studio" : "Office",
+        memberLabel: isDe ? "Teammitglied" : "Team Member",
+        memberLabelPlural: isDe ? "Teammitglieder" : "Team Members",
+        activeMembersTitle: isDe ? "Aktive Teammitglieder" : "Active Team Members",
         kitchenMembersTitle: wording.membersHeading,
         inviteCardTitle: wording.inviteAction,
         inviteCardDescription: wording.inviteDescription,
         namePlaceholder: wording.invitePlaceholder,
-        cartRoommateDescription: "Items staged for purchase by teammates.",
-        cartAttributionFallback: "Teammate",
+        cartRoommateDescription: isDe ? "Von Teammitgliedern zum Kauf vorgemerkt." : "Items staged for purchase by teammates.",
+        cartAttributionFallback: isDe ? "Teammitglied" : "Teammate",
         memberTab: wording.memberTab,
         membersHeading: wording.membersHeading,
         stagedByOthers: wording.stagedByOthers,
@@ -71,16 +73,16 @@ export function getSpaceTerminology(spaceType: KitchenSpaceType = "FLATSHARE"): 
     case "NEUTRAL":
       return {
         spaceType: "NEUTRAL",
-        spaceLabel: "Neutral",
-        memberLabel: "Member",
-        memberLabelPlural: "Members",
-        activeMembersTitle: "Active Members",
+        spaceLabel: isDe ? "Gemeinschaft" : "Neutral",
+        memberLabel: isDe ? "Mitglied" : "Member",
+        memberLabelPlural: isDe ? "Mitglieder" : "Members",
+        activeMembersTitle: isDe ? "Aktive Mitglieder" : "Active Members",
         kitchenMembersTitle: wording.membersHeading,
         inviteCardTitle: wording.inviteAction,
         inviteCardDescription: wording.inviteDescription,
         namePlaceholder: wording.invitePlaceholder,
-        cartRoommateDescription: "Items staged for purchase by members.",
-        cartAttributionFallback: "Member",
+        cartRoommateDescription: isDe ? "Von Mitgliedern zum Kauf vorgemerkt." : "Items staged for purchase by members.",
+        cartAttributionFallback: isDe ? "Mitglied" : "Member",
         memberTab: wording.memberTab,
         membersHeading: wording.membersHeading,
         stagedByOthers: wording.stagedByOthers,
@@ -92,16 +94,16 @@ export function getSpaceTerminology(spaceType: KitchenSpaceType = "FLATSHARE"): 
     default:
       return {
         spaceType: "FLATSHARE",
-        spaceLabel: "Flatshare",
-        memberLabel: "Roommate",
-        memberLabelPlural: "Roommates",
-        activeMembersTitle: "Active Roommates",
+        spaceLabel: isDe ? "WG-Haushalt" : "Flatshare",
+        memberLabel: isDe ? "Mitbewohner" : "Roommate",
+        memberLabelPlural: isDe ? "Mitbewohner" : "Roommates",
+        activeMembersTitle: isDe ? "Aktive Mitbewohner" : "Active Roommates",
         kitchenMembersTitle: wording.membersHeading,
         inviteCardTitle: wording.inviteAction,
         inviteCardDescription: wording.inviteDescription,
         namePlaceholder: wording.invitePlaceholder,
-        cartRoommateDescription: "Items staged for purchase by roommates.",
-        cartAttributionFallback: "Roommate",
+        cartRoommateDescription: isDe ? "Von Mitbewohnern zum Kauf vorgemerkt." : "Items staged for purchase by roommates.",
+        cartAttributionFallback: isDe ? "Mitbewohner" : "Roommate",
         memberTab: wording.memberTab,
         membersHeading: wording.membersHeading,
         stagedByOthers: wording.stagedByOthers,

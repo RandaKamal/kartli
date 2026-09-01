@@ -67,6 +67,7 @@ import {
 } from "lucide-react";
 import { capitalize } from "@/lib/utils";
 import { toast } from "sonner";
+import { useI18n } from "@/context/i18n-context";
 
 interface KitchenSpaceViewProps {
   kitchen: Kitchen;
@@ -95,6 +96,7 @@ export function KitchenSpaceView({
 }: KitchenSpaceViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t, lang } = useI18n();
 
   const [kitchenName, setKitchenName] = useState(initialKitchen.name);
   const [spaceType, setSpaceType] = useState<KitchenSpaceType>(initialKitchen.space_type || "FLATSHARE");
@@ -115,7 +117,7 @@ export function KitchenSpaceView({
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [, startTransition] = useTransition();
 
-  const terminology = getSpaceTerminology(spaceType);
+  const terminology = getSpaceTerminology(spaceType, lang);
   const isAdmin = membership.role === "ADMIN";
   const validTabs = isAdmin
     ? ["kitchen", "cart", "members", "refunds", "settings"]
@@ -329,17 +331,17 @@ export function KitchenSpaceView({
           {/* Tab 1: Kitchen */}
           <TabsTrigger
             value="kitchen"
-            aria-label="Kitchen"
+            aria-label={t("tabs.kitchen")}
             className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer"
           >
             <UtensilsCrossed className="w-4 h-4 shrink-0" />
-            <span className="hidden md:inline">Kitchen</span>
+            <span className="hidden md:inline">{t("tabs.kitchen")}</span>
           </TabsTrigger>
 
           {/* Tab 2: Cart */}
           <TabsTrigger
             value="cart"
-            aria-label="Cart"
+            aria-label={t("tabs.cart")}
             className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer relative"
           >
             <div className="relative flex items-center shrink-0">
@@ -349,7 +351,7 @@ export function KitchenSpaceView({
               )}
             </div>
 
-            <span className="hidden md:inline">Cart</span>
+            <span className="hidden md:inline">{t("tabs.cart")}</span>
 
             {myCartCount > 0 && (
               <span className="hidden md:inline-flex px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full bg-secondary text-secondary-foreground border border-border">
@@ -372,7 +374,7 @@ export function KitchenSpaceView({
           {isAdmin && (
             <TabsTrigger
               value="refunds"
-              aria-label="Purchases & Refunds"
+              aria-label={t("tabs.refunds")}
               className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer relative"
             >
               <div className="relative flex items-center shrink-0">
@@ -382,7 +384,7 @@ export function KitchenSpaceView({
                 )}
               </div>
 
-              <span className="hidden md:inline">Refunds</span>
+              <span className="hidden md:inline">{t("tabs.refunds")}</span>
 
               {pendingRefundsCount > 0 && (
                 <span className="hidden md:inline-flex items-center gap-1 ml-1 px-1.5 py-0.2 text-[10px] font-mono font-medium rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30">
@@ -396,11 +398,11 @@ export function KitchenSpaceView({
           {/* Tab 5: Settings */}
           <TabsTrigger
             value="settings"
-            aria-label="Settings"
+            aria-label={t("tabs.settings")}
             className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer"
           >
             <Settings className="w-4 h-4 shrink-0" />
-            <span className="hidden md:inline">Settings</span>
+            <span className="hidden md:inline">{t("tabs.settings")}</span>
           </TabsTrigger>
         </TabsList>
 

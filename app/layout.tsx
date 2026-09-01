@@ -9,6 +9,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { cookies } from "next/headers";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { I18nProvider } from "@/context/i18n-context";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { Locale } from "@/locales";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -27,39 +30,42 @@ export default async function RootLayout({
     cookieStore.get("kartli-theme")?.value ||
     cookieStore.get("culinary-theme")?.value ||
     "olive";
+  const initialLang = (cookieStore.get("kartli_lang")?.value as Locale) || "en";
 
   return (
-    <html lang="en" data-theme={culinaryTheme} suppressHydrationWarning>
+    <html lang={initialLang} data-theme={culinaryTheme} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('kartli-theme')||localStorage.getItem('culinary-theme')||(document.cookie.match(/(?:kartli-theme|culinary-theme)=([^;]+)/)||[])[1]||'${culinaryTheme}';document.documentElement.setAttribute('data-theme',t);}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem('kartli-theme')||localStorage.getItem('culinary-theme')||(document.cookie.match(/(?:kartli-theme|culinary-theme)=([^;]+)/)||[])[1]||'${culinaryTheme}';document.documentElement.setAttribute('data-theme',t);var l=(document.cookie.match(/kartli_lang=([^;]+)/)||[])[1]||'${initialLang}';document.documentElement.setAttribute('lang',l);}catch(e){}})()`,
           }}
         />
       </head>
       <body className="bg-background text-foreground min-h-screen flex flex-col antialiased selection:bg-accent-primary/20 selection:text-foreground">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <TooltipProvider delayDuration={200}>
-            <header className="bg-background/85 backdrop-blur-md border-b border-border/70 sticky top-0 z-40">
-              <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-                <Link
-                  href="/"
-                  className="flex items-center gap-2.5 font-bold text-lg text-foreground tracking-tight"
-                >
-                  <span className="w-8 h-8 rounded-xl bg-card border border-border/80 flex items-center justify-center text-xs font-black relative shadow-xs">
-                    <span className="text-foreground">k</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent-brand absolute top-1.5 right-1.5" />
-                  </span>
-                  <span className="tracking-tight text-foreground font-extrabold">kartli</span>
-                </Link>
+        <I18nProvider initialLang={initialLang}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <TooltipProvider delayDuration={200}>
+              <header className="bg-background/85 backdrop-blur-md border-b border-border/70 sticky top-0 z-40">
+                <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+                  <Link
+                    href="/"
+                    className="flex items-center gap-2.5 font-bold text-lg text-foreground tracking-tight"
+                  >
+                    <span className="w-8 h-8 rounded-xl bg-card border border-border/80 flex items-center justify-center text-xs font-black relative shadow-xs">
+                      <span className="text-foreground">k</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent-brand absolute top-1.5 right-1.5" />
+                    </span>
+                    <span className="tracking-tight text-foreground font-extrabold">kartli</span>
+                  </Link>
 
-                <nav className="flex items-center gap-2.5 text-sm">
-                  <ThemeToggle />
+                  <nav className="flex items-center gap-2 text-sm">
+                    <LanguageSwitcher />
+                    <ThemeToggle />
 
                   {session?.user ? (
                     <>
@@ -118,7 +124,8 @@ export default async function RootLayout({
             <Toaster position="top-right" richColors />
           </TooltipProvider>
         </ThemeProvider>
-      </body>
+      </I18nProvider>
+    </body>
     </html>
   );
 }

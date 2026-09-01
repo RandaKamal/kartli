@@ -164,4 +164,3 @@ Open `http://<your-local-ip>:3000` (e.g. `http://192.168.1.100:3000`) on your mo
 ## License
 
 This project is available for personal and noncommercial use under the [PolyForm Noncommercial License](LICENSE).
-

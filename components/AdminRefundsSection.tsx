@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { useI18n } from "@/context/i18n-context";
 
 interface AdminRefundsSectionProps {
   kitchenId: string;
@@ -50,18 +51,19 @@ export function AdminRefundsSection({
   spaceType = "FLATSHARE",
 }: AdminRefundsSectionProps) {
   const router = useRouter();
+  const { t, lang } = useI18n();
   const [checkoutsList, setCheckoutsList] = useState<CheckoutWithDetails[]>(initialCheckouts);
   const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "settled">("all");
   const [selectedCheckout, setSelectedCheckout] = useState<CheckoutWithDetails | null>(null);
   const [settlingId, setSettlingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const terminology = getSpaceTerminology(spaceType);
+  const terminology = getSpaceTerminology(spaceType, lang);
 
   const memberMap = new Map<string, { displayName: string; username: string; initial: string }>();
   members.forEach((m) => {
     if (m.user_id) {
-      const displayName = m.kitchen_display_name ? capitalize(m.kitchen_display_name) : "Member";
+      const displayName = m.kitchen_display_name ? capitalize(m.kitchen_display_name) : t("common.member");
       const initial = (m.kitchen_display_name || "M").charAt(0).toUpperCase();
       const username = m.username ? `@${m.username}` : "@guest";
       memberMap.set(m.user_id, { displayName, username, initial });
@@ -71,7 +73,7 @@ export function AdminRefundsSection({
   const getMemberInfo = (userId: string, usernameFallback?: string | null) => {
     const found = memberMap.get(userId);
     if (found) return found;
-    const name = usernameFallback ? capitalize(usernameFallback) : "Roommate";
+    const name = usernameFallback ? capitalize(usernameFallback) : terminology.memberLabel;
     return {
       displayName: name,
       username: usernameFallback ? `@${usernameFallback}` : "@guest",
@@ -120,14 +122,14 @@ export function AdminRefundsSection({
             <div className="flex items-center gap-2 mb-1">
               <Badge variant="secondary" className="border border-border text-muted-foreground text-[11px] font-medium uppercase tracking-wider gap-1">
                 <Receipt className="w-3 h-3 text-muted-foreground" />
-                <span>ADMIN PURCHASES &amp; REFUNDS</span>
+                <span>{t("refunds.adminTitle")}</span>
               </Badge>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
-              Household Purchases &amp; Refunds
+              {t("refunds.title")}
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Review receipts uploaded by {terminology.memberLabelPlural.toLowerCase()} and mark refunds as settled.
+              {t("refunds.description", { members: terminology.memberLabelPlural.toLowerCase() })}
             </p>
           </div>
 
@@ -142,7 +144,7 @@ export function AdminRefundsSection({
                   : "bg-muted text-muted-foreground border-border hover:text-foreground"
               }`}
             >
-              <span>All</span>
+              <span>{t("refunds.filterAll")}</span>
               <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-full bg-background/50">
                 {checkoutsList.length}
               </span>
@@ -158,7 +160,7 @@ export function AdminRefundsSection({
               }`}
             >
               <Clock className="w-3.5 h-3.5" />
-              <span>Pending</span>
+              <span>{t("refunds.filterPending")}</span>
               <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-full bg-background/50 text-accent-warning">
                 {pendingCheckouts.length}
               </span>
@@ -174,7 +176,7 @@ export function AdminRefundsSection({
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Settled</span>
+              <span>{t("refunds.filterSettled")}</span>
               <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-full bg-background/50 text-accent-success">
                 {settledCheckouts.length}
               </span>
@@ -191,17 +193,8 @@ export function AdminRefundsSection({
           </div>
           <div className="space-y-1">
             <h3 className="text-sm font-semibold text-foreground">
-              {filterStatus === "pending"
-                ? "No pending refunds found"
-                : filterStatus === "settled"
-                ? "No settled purchases recorded yet"
-                : "No purchases recorded yet"}
+              {filterStatus === "pending" ? t("refunds.noPending") : t("refunds.noHistory")}
             </h3>
-            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              {filterStatus === "pending"
-                ? "All member supermarket checkouts and grocery refunds are currently up to date."
-                : "When members purchase items and upload receipts, their checkout logs will appear here."}
-            </p>
           </div>
         </Card>
       ) : (
@@ -237,14 +230,14 @@ export function AdminRefundsSection({
                       <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
                         <Calendar className="w-3 h-3 text-muted-foreground shrink-0" />
                         <span>
-                          {new Date(checkout.created_at).toLocaleDateString("en-US", {
+                          {new Date(checkout.created_at).toLocaleDateString(lang === "de" ? "de-DE" : "en-US", {
                             month: "short",
                             day: "numeric",
                             year: "numeric",
                           })}
                         </span>
                         <span>&middot;</span>
-                        <span>{checkout.items.length} item{checkout.items.length === 1 ? "" : "s"}</span>
+                        <span>{checkout.items.length} {checkout.items.length === 1 ? t("common.item") : t("common.items")}</span>
                       </div>
                     </div>
                   </div>
@@ -292,14 +285,14 @@ export function AdminRefundsSection({
                         className="rounded-xl text-xs font-medium h-8 gap-1.5 border-border hover:bg-secondary"
                       >
                         <Receipt className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>View Receipt</span>
+                        <span>{t("common.viewReceipt")}</span>
                       </Button>
                     ) : (
                       <Badge
                         variant="secondary"
                         className="rounded-xl text-xs font-normal h-8 px-2.5 bg-muted text-muted-foreground border border-border flex items-center justify-center"
                       >
-                        No Receipt
+                        {t("common.noReceipt")}
                       </Badge>
                     )}
 
@@ -307,13 +300,13 @@ export function AdminRefundsSection({
                     {checkout.is_refunded ? (
                       <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border bg-accent-sage/15 text-accent-success border-accent-sage/30">
                         <CheckCircle2 className="w-3.5 h-3.5 text-accent-success" />
-                        <span>Settled</span>
+                        <span>{t("common.settled")}</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border bg-accent-ochre/15 text-accent-warning border-accent-ochre/30">
                           <Clock className="w-3.5 h-3.5 text-accent-warning" />
-                          <span>Pending</span>
+                          <span>{t("common.pending")}</span>
                         </div>
 
                         <Button
@@ -329,7 +322,7 @@ export function AdminRefundsSection({
                           ) : (
                             <Check className="w-3.5 h-3.5" />
                           )}
-                          <span>{isSettling ? "Settling..." : "Mark as Settled"}</span>
+                          <span>{isSettling ? t("refunds.settling") : t("refunds.settle")}</span>
                         </Button>
                       </div>
                     )}
@@ -358,23 +351,26 @@ export function AdminRefundsSection({
                   {selectedCheckout.is_refunded ? (
                     <Badge variant="success" className="bg-accent-sage/15 text-accent-success border-accent-sage/30 w-fit shrink-0">
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      Settled
+                      {t("common.settled")}
                     </Badge>
                   ) : (
                     <Badge variant="warm" className="bg-accent-ochre/15 text-accent-warning border-accent-ochre/30 w-fit shrink-0">
                       <Clock className="w-3.5 h-3.5 mr-1" />
-                      Pending Refund
+                      {t("common.pending")}
                     </Badge>
                   )}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                   <span>
-                    Submitted by <strong className="text-foreground">{getMemberInfo(selectedCheckout.user_id, selectedCheckout.username).displayName}</strong> ({getMemberInfo(selectedCheckout.user_id, selectedCheckout.username).username})
+                    {t("refunds.submittedBy", {
+                      name: getMemberInfo(selectedCheckout.user_id, selectedCheckout.username).displayName,
+                      username: getMemberInfo(selectedCheckout.user_id, selectedCheckout.username).username,
+                    })}
                   </span>
                   <span>&middot;</span>
                   <span className="font-mono">
-                    {new Date(selectedCheckout.created_at).toLocaleDateString("en-US", {
+                    {new Date(selectedCheckout.created_at).toLocaleDateString(lang === "de" ? "de-DE" : "en-US", {
                       month: "short",
                       day: "numeric",
                       year: "numeric",
@@ -382,9 +378,9 @@ export function AdminRefundsSection({
                   </span>
                   <span>&middot;</span>
                   <span className="font-semibold text-foreground">
-                    Claimed: €{Number(selectedCheckout.total_claimed_amount || 0).toFixed(2)}
+                    {t("refunds.claimed")}: €{Number(selectedCheckout.total_claimed_amount || 0).toFixed(2)}
                     {selectedCheckout.total_receipt_amount != null && (
-                      <span className="text-muted-foreground font-normal"> (Total: €{Number(selectedCheckout.total_receipt_amount).toFixed(2)})</span>
+                      <span className="text-muted-foreground font-normal"> ({t("refunds.total")}: €{Number(selectedCheckout.total_receipt_amount).toFixed(2)})</span>
                     )}
                   </span>
                 </div>
@@ -397,7 +393,7 @@ export function AdminRefundsSection({
                   <div className="p-3 rounded-2xl bg-muted/40 border border-border space-y-1">
                     <span className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
                       <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span>Note to Admin</span>
+                      <span>{t("refunds.noteFromBuyer")}</span>
                     </span>
                     <p className="text-xs text-foreground italic">&ldquo;{selectedCheckout.note}&rdquo;</p>
                   </div>
@@ -421,8 +417,8 @@ export function AdminRefundsSection({
                     <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
                       <Receipt className="w-4 h-4" />
                     </div>
-                    <p className="text-xs font-medium text-foreground">No Receipt Attached</p>
-                    <p className="text-[11px] text-muted-foreground">This purchase was checked out directly without a receipt image.</p>
+                    <p className="text-xs font-medium text-foreground">{t("refunds.noReceiptAttached")}</p>
+                    <p className="text-[11px] text-muted-foreground">{t("refunds.noReceiptSub")}</p>
                   </div>
                 )}
 
@@ -432,7 +428,7 @@ export function AdminRefundsSection({
                     <div className="flex items-center justify-between text-xs font-semibold text-foreground">
                       <span className="flex items-center gap-1.5">
                         <Package className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>Claimed Items ({selectedCheckout.items.length})</span>
+                        <span>{t("refunds.claimedItems", { count: selectedCheckout.items.length })}</span>
                       </span>
                       <span className="font-mono text-[11px] text-muted-foreground">
                         €{Number(selectedCheckout.total_claimed_amount || 0).toFixed(2)}
@@ -463,10 +459,12 @@ export function AdminRefundsSection({
                   <div className="p-3 rounded-2xl bg-accent-sage/10 border border-accent-sage/25 text-accent-success text-xs flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 shrink-0" />
                     <span>
-                      Settled on {new Date(selectedCheckout.refunded_at).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
+                      {t("refunds.settledOn", {
+                        date: new Date(selectedCheckout.refunded_at).toLocaleDateString(lang === "de" ? "de-DE" : "en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        }),
                       })}
                     </span>
                   </div>
@@ -482,7 +480,7 @@ export function AdminRefundsSection({
                   onClick={() => setSelectedCheckout(null)}
                   className="rounded-xl text-xs h-9 border-border"
                 >
-                  Close
+                  {t("common.close")}
                 </Button>
                 {!selectedCheckout.is_refunded && (
                   <Button
@@ -498,7 +496,7 @@ export function AdminRefundsSection({
                     className="rounded-xl text-xs font-semibold h-9 px-4 gap-1.5 bg-primary text-primary-foreground shadow-sm"
                   >
                     <Check className="w-3.5 h-3.5" />
-                    <span>Mark as Settled</span>
+                    <span>{t("refunds.settle")}</span>
                   </Button>
                 )}
               </DialogFooter>

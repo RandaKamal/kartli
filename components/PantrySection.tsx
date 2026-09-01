@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useI18n } from "@/context/i18n-context";
 
 export function PantrySection({
   kitchenId,
@@ -40,6 +41,7 @@ export function PantrySection({
   kitchenId: string;
   items: PantryItem[];
 }) {
+  const { t } = useI18n();
   const [pantryItems, setPantryItems] = useState<PantryItem[]>(items);
   const [newItemName, setNewItemName] = useState("");
   const [itemToDelete, setItemToDelete] = useState<PantryItem | null>(null);
@@ -78,9 +80,9 @@ export function PantrySection({
       try {
         await setPantryItemStockAction(kitchenId, item.id, nextValue);
         if (nextValue) {
-          toast.warning(`Marked "${item.name}" as Empty — added to shopping list`);
+          toast.warning(t("pantry.markedEmpty", { name: item.name }));
         } else {
-          toast.success(`Restocked "${item.name}"`);
+          toast.success(t("pantry.restocked", { name: item.name }));
         }
       } catch (err: any) {
         setPantryItems((prev) =>
@@ -120,7 +122,7 @@ export function PantrySection({
         >
           <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
             <Package className="w-4 h-4 text-muted-foreground" />
-            <span>Pantry &amp; Inventory</span>
+            <span>{t("pantry.title")}</span>
             <Badge variant="secondary" className="text-xs font-mono">
               {pantryItems.length}
             </Badge>
@@ -130,7 +132,7 @@ export function PantrySection({
             {outOfStockCount > 0 && (
               <Badge variant="warm" className="gap-1 font-medium text-xs bg-accent-ochre/15 text-accent-warning border-accent-ochre/30">
                 <AlertTriangle className="w-3 h-3 text-accent-warning" />
-                <span>{outOfStockCount} empty</span>
+                <span>{outOfStockCount} {t("pantry.empty")}</span>
               </Badge>
             )}
 
@@ -153,7 +155,7 @@ export function PantrySection({
               type="text"
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
-              placeholder="e.g. Eggs, Milk, Rice, Coffee"
+              placeholder={t("pantry.placeholder")}
               className="flex-1 rounded-xl h-10 bg-background border-border"
             />
             <Button
@@ -163,14 +165,14 @@ export function PantrySection({
               className="rounded-xl h-10 px-4 font-medium shrink-0"
             >
               <Plus className="w-4 h-4" />
-              <span>Add</span>
+              <span>{t("pantry.add")}</span>
             </Button>
           </form>
 
           <div className="divide-y divide-border">
             {pantryItems.length === 0 && (
               <p className="text-xs text-muted-foreground py-4 text-center">
-                No pantry items yet. Add your first item above.
+                {t("pantry.noItems")}
               </p>
             )}
             {pantryItems.map((item) => (
@@ -194,7 +196,7 @@ export function PantrySection({
                       title="Out of stock - on shopping list"
                     >
                       <AlertTriangle className="w-3 h-3 text-accent-warning" />
-                      <span>Empty</span>
+                      <span>{t("common.empty")}</span>
                     </Badge>
                   ) : (
                     <Badge
@@ -203,7 +205,7 @@ export function PantrySection({
                       title="In stock"
                     >
                       <Check className="w-3 h-3 text-accent-success" />
-                      <span>In Stock</span>
+                      <span>{t("pantry.inStock")}</span>
                     </Badge>
                   )}
                 </div>
@@ -225,12 +227,12 @@ export function PantrySection({
                     {item.is_out_of_stock ? (
                       <>
                         <Check className="w-3.5 h-3.5" />
-                        <span>Restock</span>
+                        <span>{t("pantry.restock")}</span>
                       </>
                     ) : (
                       <>
                         <AlertTriangle className="w-3.5 h-3.5 text-accent-warning" />
-                        <span>Mark Empty</span>
+                        <span>{t("pantry.markEmpty")}</span>
                       </>
                     )}
                   </Button>
@@ -262,19 +264,19 @@ export function PantrySection({
               <div className="p-2.5 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive">
                 <Trash2 className="w-5 h-5" />
               </div>
-              <AlertDialogTitle>Delete Pantry Item</AlertDialogTitle>
+              <AlertDialogTitle>{t("pantry.deleteTitle")}</AlertDialogTitle>
             </div>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong className="text-foreground font-semibold">&ldquo;{itemToDelete?.name}&rdquo;</strong> from the pantry?
+              {t("pantry.deleteConfirm", { name: itemToDelete?.name || "" })}
               {itemToDelete?.is_out_of_stock && (
                 <span className="block mt-1 text-accent-warning font-medium">
-                  This will also remove its pending entry from the shopping list.
+                  {t("pantry.deleteConfirmSub")}
                 </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isPending}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               disabled={isPending}
               onClick={(e) => {
@@ -283,7 +285,7 @@ export function PantrySection({
               }}
             >
               {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>{isPending ? "Deleting..." : "Delete Item"}</span>
+              <span>{isPending ? t("common.deleting") : t("pantry.deleteAction")}</span>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

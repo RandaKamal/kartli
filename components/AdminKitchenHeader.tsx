@@ -33,6 +33,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useI18n } from "@/context/i18n-context";
 
 export function AdminKitchenHeader({
   kitchen,
@@ -43,6 +44,7 @@ export function AdminKitchenHeader({
   shoppingListItems: ShoppingListItem[];
   currentUserId: string;
 }) {
+  const { t, lang } = useI18n();
   const [name, setName] = useState(kitchen.name);
   const [spaceType, setSpaceType] = useState<KitchenSpaceType>(kitchen.space_type || "FLATSHARE");
   const [publicViewToken, setPublicViewToken] = useState(kitchen.public_view_token);
@@ -135,7 +137,7 @@ export function AdminKitchenHeader({
           className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition px-1"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Kitchens</span>
+          <span>{t("kitchen.backToKitchens")}</span>
         </Link>
 
         <Card className="border border-border/80 bg-card rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -146,7 +148,9 @@ export function AdminKitchenHeader({
                 <span>ADMIN PANEL</span>
               </Badge>
               <span className="text-xs text-muted-foreground font-mono">
-                Created {new Date(kitchen.created_at).toLocaleDateString()}
+                {t("kitchen.created", {
+                  date: new Date(kitchen.created_at).toLocaleDateString(lang === "de" ? "de-DE" : "en-US"),
+                })}
               </span>
             </div>
 
@@ -171,7 +175,7 @@ export function AdminKitchenHeader({
               className="rounded-lg font-medium text-xs h-8 gap-1.5"
             >
               <Settings className="w-3.5 h-3.5 text-muted-foreground" />
-              <span>Settings</span>
+              <span>{t("tabs.settings")}</span>
             </Button>
           </div>
         </Card>

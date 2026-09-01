@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useI18n } from "@/context/i18n-context";
 
 export function ShoppingListSection({
   kitchenId,
@@ -38,7 +39,8 @@ export function ShoppingListSection({
   spaceType?: KitchenSpaceType;
   onViewCart?: () => void;
 }) {
-  const wording = getSpaceWording(spaceType);
+  const { t, lang } = useI18n();
+  const wording = getSpaceWording(spaceType, lang);
   const [listItems, setListItems] = useState<ShoppingListItem[]>(items);
   const [customItemName, setCustomItemName] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -76,7 +78,7 @@ export function ShoppingListSection({
     startTransition(async () => {
       try {
         await moveToCartAction(kitchenId, item.id);
-        toast.success(`Moved "${item.name}" to cart`);
+        toast.success(t("shoppingList.movedToCart", { name: item.name }));
       } catch (err: any) {
         setListItems((prev) =>
           prev.map((i) => (i.id === item.id ? item : i))
@@ -98,9 +100,9 @@ export function ShoppingListSection({
         await removeShoppingListItemAction(kitchenId, item.id);
         setListItems((prev) => prev.filter((i) => i.id !== item.id));
         if (isCustom) {
-          toast.success(`Deleted "${item.name}" from shopping list`);
+          toast.success(t("shoppingList.deleteFromList", { name: item.name }));
         } else {
-          toast.success(`Removed "${item.name}" from list & restocked in pantry`);
+          toast.success(t("shoppingList.removeAndRestock", { name: item.name }));
         }
       } catch (err: any) {
         toast.error(err.message || "Failed to remove item.");
@@ -123,9 +125,9 @@ export function ShoppingListSection({
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <ShoppingBag className="w-4 h-4 text-muted-foreground" />
-          <h2 className="text-base font-semibold text-foreground">Shopping List</h2>
+          <h2 className="text-base font-semibold text-foreground">{t("shoppingList.title")}</h2>
           <Badge variant="warm" className="text-xs font-mono bg-accent-ochre/15 text-accent-warning border-accent-ochre/30">
-            {openItems.length} needed
+            {t("shoppingList.needed", { count: openItems.length })}
           </Badge>
         </div>
       </div>
@@ -134,7 +136,7 @@ export function ShoppingListSection({
       <form onSubmit={handleAddCustomItem} className="flex gap-2">
         <Input
           type="text"
-          placeholder="Add extra item (e.g. Oat Milk, Coffee)..."
+          placeholder={t("shoppingList.addExtraPlaceholder")}
           value={customItemName}
           onChange={(e) => setCustomItemName(e.target.value)}
           disabled={isPending}
@@ -151,14 +153,14 @@ export function ShoppingListSection({
           ) : (
             <Plus className="w-4 h-4 mr-1" />
           )}
-          <span>Add</span>
+          <span>{t("shoppingList.add")}</span>
         </Button>
       </form>
 
       {/* Needed Items List */}
       <div className="space-y-2">
         <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
-          Needed Items ({openItems.length})
+          {t("shoppingList.neededItems", { count: openItems.length })}
         </div>
 
         {openItems.length === 0 ? (
@@ -186,14 +188,14 @@ export function ShoppingListSection({
                       variant="outline"
                       className="text-[10px] px-1.5 py-0 font-medium text-muted-foreground shrink-0 border-border"
                     >
-                      Pantry
+                      {t("shoppingList.pantry")}
                     </Badge>
                   ) : (
                     <Badge
                       variant="secondary"
                       className="text-[10px] px-1.5 py-0 font-medium shrink-0 bg-secondary text-secondary-foreground"
                     >
-                      Custom
+                      {t("shoppingList.custom")}
                     </Badge>
                   )}
                 </div>
@@ -209,7 +211,7 @@ export function ShoppingListSection({
                     title="Put in shopping cart"
                   >
                     <CartIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span>Put in Cart</span>
+                    <span>{t("shoppingList.putInCart")}</span>
                   </Button>
 
                   <Button
@@ -242,7 +244,10 @@ export function ShoppingListSection({
             <div className="flex items-center gap-2 min-w-0">
               <span className="w-2 h-2 rounded-full bg-accent-success shrink-0 shadow-xs" />
               <span className="text-xs text-muted-foreground font-medium truncate">
-                <strong className="text-foreground font-semibold">{myStagedItemsCount}</strong> {myStagedItemsCount === 1 ? "item" : "items"} staged in your cart
+                {t("shoppingList.myStagedItems", {
+                  count: myStagedItemsCount,
+                  itemWord: myStagedItemsCount === 1 ? t("common.item") : t("common.items"),
+                })}
               </span>
             </div>
 
@@ -261,8 +266,8 @@ export function ShoppingListSection({
               }}
               className="h-7 text-xs text-foreground hover:bg-muted gap-1 px-2.5 shrink-0 rounded-lg font-medium cursor-pointer"
             >
-              <span>View Cart Tab</span>
-              <ArrowRight className="w-3 h-3" />
+              <span>{t("shoppingList.viewCartTab")}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>
@@ -272,7 +277,7 @@ export function ShoppingListSection({
       {resolvedItems.length > 0 && (
         <div className="space-y-2 pt-3 border-t border-border">
           <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
-            <span>Checked Out ({resolvedItems.length})</span>
+            <span>{t("shoppingList.checkedOutHeader", { count: resolvedItems.length })}</span>
           </div>
 
           <div className="divide-y divide-border">
@@ -285,7 +290,7 @@ export function ShoppingListSection({
                   {item.name}
                 </span>
                 <span className="text-muted-foreground shrink-0 text-[11px] font-mono">
-                  Checked out
+                  {t("shoppingList.checkedOut")}
                 </span>
               </div>
             ))}

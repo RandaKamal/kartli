@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/context/i18n-context";
 
 interface ReceiptLine {
   raw_name: string;
@@ -63,6 +64,7 @@ export function ReceiptReviewModal({
   isOpen,
   onOpenChange,
 }: ReceiptReviewModalProps) {
+  const { t } = useI18n();
   const [phase, setPhase] = useState<'upload' | 'scanning' | 'review'>('upload');
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [storeName, setStoreName] = useState('');
@@ -224,9 +226,9 @@ export function ReceiptReviewModal({
       >
         {phase !== 'review' && (
           <DialogHeader>
-            <DialogTitle>Scan Receipt</DialogTitle>
+            <DialogTitle>{t("receiptReview.modalTitle")}</DialogTitle>
             <DialogDescription>
-              Upload a photo of your receipt to automatically match items and calculate your refund.
+              {t("receiptReview.modalDescription")}
             </DialogDescription>
           </DialogHeader>
         )}
@@ -260,8 +262,8 @@ export function ReceiptReviewModal({
             <div className="w-12 h-12 rounded-2xl bg-muted border border-border flex items-center justify-center mx-auto text-muted-foreground mb-4">
               <Upload className="w-6 h-6" />
             </div>
-            <p className="text-sm font-semibold text-foreground">Upload receipt photo</p>
-            <p className="text-xs text-muted-foreground mt-1">Drag &amp; drop or click to browse · JPG, PNG, HEIC</p>
+            <p className="text-sm font-semibold text-foreground">{t("receiptReview.uploadTitle")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("receiptReview.uploadSubtitle")}</p>
           </div>
         )}
 
@@ -270,8 +272,8 @@ export function ReceiptReviewModal({
           <div className="py-12 text-center space-y-4">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto" />
             <div>
-              <p className="text-sm font-semibold text-foreground">Scanning receipt...</p>
-              <p className="text-xs text-muted-foreground mt-1">AI is extracting line items from your receipt</p>
+              <p className="text-sm font-semibold text-foreground">{t("receiptReview.scanningTitle")}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("receiptReview.scanningSubtitle")}</p>
             </div>
           </div>
         )}
@@ -283,7 +285,7 @@ export function ReceiptReviewModal({
             <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0 z-10">
               <div className="flex items-center gap-2 min-w-0">
                 <Receipt className="w-4 h-4 text-accent-brand shrink-0" />
-                <span className="text-sm font-bold text-foreground truncate">Review &amp; Match Receipt</span>
+                <span className="text-sm font-bold text-foreground truncate">{t("receiptReview.reviewTitle")}</span>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <Badge variant="secondary" className="text-xs font-mono">
@@ -337,9 +339,9 @@ export function ReceiptReviewModal({
                 >
                   <div className="flex items-center gap-2">
                     <ImageIcon className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span>Receipt Photo</span>
+                    <span>{t("receiptReview.receiptPhoto")}</span>
                     <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0 text-muted-foreground">
-                      {isMobileReceiptExpanded ? "Tap to collapse" : "Tap to view"}
+                      {isMobileReceiptExpanded ? t("receiptReview.tapToCollapse") : t("receiptReview.tapToView")}
                     </Badge>
                   </div>
                   {isMobileReceiptExpanded ? (
@@ -385,18 +387,18 @@ export function ReceiptReviewModal({
                         value={storeName}
                         onChange={(e) => setStoreName(e.target.value)}
                         className="h-8 text-xs font-semibold bg-transparent border-border/70 rounded-lg max-w-[200px]"
-                        placeholder="Store name"
+                        placeholder={t("receiptReview.storeName")}
                       />
                     </div>
                     <div className="text-right">
-                      <span className="text-[11px] text-muted-foreground">Receipt Total: </span>
+                      <span className="text-[11px] text-muted-foreground">{t("receiptReview.receiptTotal")}: </span>
                       <span className="text-xs font-bold font-mono text-foreground">{scanResult?.totalReceiptAmount.toFixed(2)} €</span>
                     </div>
                   </div>
 
                   {/* Header Hint */}
                   <p className="text-[11px] text-muted-foreground font-medium">
-                    Select the line items to claim for the kitchen household:
+                    {t("receiptReview.selectHint")}
                   </p>
 
                   {/* Line Items List */}
@@ -410,13 +412,13 @@ export function ReceiptReviewModal({
                         <div
                           key={i}
                           className={cn(
-                            "flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-2xl border transition-all text-xs sm:text-sm",
+                            "flex items-center gap-3 p-3 rounded-2xl border transition-all text-sm",
                             state.checked
-                              ? "border-accent-sage/50 bg-accent-sage/5"
-                              : "border-border bg-card/60 opacity-60"
+                              ? "border-accent-sage/40 bg-accent-sage/5 shadow-2xs"
+                              : "border-border/60 bg-muted/20 opacity-55"
                           )}
                         >
-                          {/* Large Touch-Friendly Checkbox */}
+                          {/* Accessible Touch Checkbox */}
                           <button
                             type="button"
                             onClick={() => handleToggleLine(i)}
@@ -438,7 +440,7 @@ export function ReceiptReviewModal({
                             {matchedItem && (
                               <p className="text-[11px] text-accent-success flex items-center gap-1 mt-0.5 font-medium">
                                 <ArrowRight className="w-3 h-3 shrink-0" />
-                                <span>Resolves "{matchedItem.name}"</span>
+                                <span>{t("receiptReview.resolves", { item: matchedItem.name })}</span>
                               </p>
                             )}
                           </div>
@@ -462,7 +464,7 @@ export function ReceiptReviewModal({
                   {/* Optional Note to Admin */}
                   <div className="space-y-1.5 pt-1">
                     <textarea
-                      placeholder="Add a note for the household admin (e.g., 'Weekly grocery split, paid with joint card')..."
+                      placeholder={t("receiptReview.notePlaceholder")}
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
                       rows={3}
@@ -476,11 +478,14 @@ export function ReceiptReviewModal({
                   <div className="space-y-0.5">
                     <div className="flex items-center justify-between sm:justify-start gap-2">
                       <p className="text-xs sm:text-sm font-bold text-foreground">
-                        Claimed for Kitchen: €{claimedAmount.toFixed(2)}
+                        {t("receiptReview.claimedForKitchen", { amount: claimedAmount.toFixed(2) })}
                       </p>
                     </div>
                     <p className="text-[10px] sm:text-[11px] text-muted-foreground">
-                      Total Receipt: €{scanResult?.totalReceiptAmount.toFixed(2)} · Private: €{Math.max(0, (scanResult?.totalReceiptAmount || 0) - claimedAmount).toFixed(2)}
+                      {t("receiptReview.totalReceipt", {
+                        total: scanResult?.totalReceiptAmount.toFixed(2) || "0.00",
+                        private: Math.max(0, (scanResult?.totalReceiptAmount || 0) - claimedAmount).toFixed(2),
+                      })}
                     </p>
                   </div>
 
@@ -494,7 +499,7 @@ export function ReceiptReviewModal({
                       className="flex-1 sm:flex-none rounded-xl text-xs h-9 border-border"
                     >
                       <X className="w-3.5 h-3.5 mr-1" />
-                      Cancel
+                      {t("common.cancel")}
                     </Button>
                     <Button
                       type="button"
@@ -508,7 +513,7 @@ export function ReceiptReviewModal({
                       ) : (
                         <Receipt className="w-3.5 h-3.5" />
                       )}
-                      <span className="truncate">Confirm &amp; Submit Refund Request</span>
+                      <span className="truncate">{t("receiptReview.confirmSubmit")}</span>
                     </Button>
                   </div>
                 </div>
