@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useTransition, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { scanReceiptAction, submitReceiptCheckoutAction, deleteReceiptFileAction } from "@/app/actions/scan-receipt";
 import {
@@ -81,7 +81,11 @@ export function ReceiptReviewModal({
       return;
     }
 
-    setPreviewUrl(URL.createObjectURL(file));
+    // Revoke any previous preview URL before creating a new one
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
     setPhase('scanning');
 
     const formData = new FormData();
@@ -102,11 +106,30 @@ export function ReceiptReviewModal({
         );
         setPhase('review');
       } catch (error: any) {
+        // Revoke preview URL and cleanup file input state on failure
+        setPreviewUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return null;
+        });
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        setScanResult(null);
+        setLineStates([]);
         toast.error(error.message || 'Failed to scan receipt');
         setPhase('upload');
       }
     });
   }, [kitchenId, stagedCartItems]);
+
+  // Cleanup object URL on component unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const claimedAmount = useMemo(() => {
     return lineStates.reduce((sum, line, i) => {
@@ -149,6 +172,9 @@ export function ReceiptReviewModal({
       URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
     }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     setIsZoomed(false);
     setIsMobileReceiptExpanded(false);
     onOpenChange(false);
@@ -190,8 +216,13 @@ export function ReceiptReviewModal({
         setStoreName('');
         setNote('');
         setLineStates([]);
-        if (previewUrl) URL.revokeObjectURL(previewUrl);
-        setPreviewUrl(null);
+        if (previewUrl) {
+          URL.revokeObjectURL(previewUrl);
+          setPreviewUrl(null);
+        }
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
         setIsZoomed(false);
         setIsMobileReceiptExpanded(false);
         onOpenChange(false);

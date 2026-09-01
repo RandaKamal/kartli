@@ -1,6 +1,7 @@
 import { pool } from "@/lib/db";
 import { isUserKitchenAdmin } from "@/lib/kitchen";
 import type { PantryItem, ShoppingListItem, Checkout, CheckoutWithDetails } from "@/types";
+import path from "node:path";
 
 
 /**
@@ -384,7 +385,9 @@ export async function createCheckout(
     totalAmount?: number;
   }
 ): Promise<Checkout> {
-  const cleanFilename = receiptFilename?.trim() || null;
+  const cleanFilename = receiptFilename?.trim()
+    ? `/uploads/receipts/${path.basename(receiptFilename.trim())}`
+    : null;
   const storeName = options?.storeName?.trim() || null;
   const note = options?.note?.trim() || null;
   const totalAmount = options?.totalAmount ?? 0;
