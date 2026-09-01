@@ -74,6 +74,7 @@ export function RegisterForm({
   return (
     <form
       ref={formRef}
+      method="POST"
       onSubmit={handleSubmit}
       className="space-y-4"
     >
@@ -128,9 +129,14 @@ export function RegisterForm({
           <button
             type="button"
             tabIndex={-1}
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition p-1 cursor-pointer"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowPassword((prev) => !prev);
+            }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition p-1 cursor-pointer focus:outline-none"
             title={showPassword ? "Hide password" : "Show password"}
+            aria-label={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
@@ -158,9 +164,14 @@ export function RegisterForm({
           <button
             type="button"
             tabIndex={-1}
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition p-1 cursor-pointer"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowConfirmPassword((prev) => !prev);
+            }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition p-1 cursor-pointer focus:outline-none"
             title={showConfirmPassword ? "Hide password" : "Show password"}
+            aria-label={showConfirmPassword ? "Hide password" : "Show password"}
           >
             {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>

@@ -154,7 +154,8 @@ export function KitchenSpaceView({
 
   const pendingRefundsCount = adminCheckouts.filter((c) => !c.is_refunded).length;
 
-  const publicGuestUrl = `${baseUrl}/kitchen/view/${publicViewToken}`;
+  const origin = typeof window !== "undefined" ? window.location.origin : baseUrl;
+  const publicGuestUrl = origin ? `${origin}/kitchen/view/${publicViewToken}` : `/kitchen/view/${publicViewToken}`;
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);

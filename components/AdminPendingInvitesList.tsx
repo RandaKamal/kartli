@@ -64,7 +64,8 @@ export function AdminPendingInvitesList({
     <>
       <div className="divide-y divide-border">
         {invites.map((invite) => {
-          const inviteUrl = `${baseUrl}/invite/${invite.invite_token}`;
+          const origin = typeof window !== "undefined" ? window.location.origin : baseUrl;
+          const inviteUrl = origin ? `${origin}/invite/${invite.invite_token}` : `/invite/${invite.invite_token}`;
           const initial = (invite.kitchen_display_name || "?").charAt(0).toUpperCase();
 
           return (
