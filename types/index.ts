@@ -157,6 +157,7 @@ export interface ShoppingListItem {
   kitchen_id: string;
   pantry_item_id: string | null;
   name: string;
+  item_price: number | null;
   is_purchased: boolean;
   purchased_by: string | null;
   purchased_by_name?: string | null;
@@ -180,15 +181,33 @@ export interface Checkout {
   id: string;
   kitchen_id: string;
   user_id: string;
+  store_name: string | null;
+  total_claimed_amount: number;
+  total_receipt_amount: number | null;
   receipt_filename: string;
   is_refunded: boolean;
   created_at: Date;
   refunded_at: Date | null;
+  receipt_deleted_at: Date | null;
 }
 
 export interface CheckoutWithDetails extends Checkout {
   username: string | null;
   items: ShoppingListItem[];
+}
+
+export interface ReceiptLine {
+  raw_name: string;
+  price: number;
+  quantity: number;
+  matched_cart_item_id: string | null;
+}
+
+export interface ScanReceiptResult {
+  receiptPath: string;
+  storeName: string;
+  totalReceiptAmount: number;
+  lines: ReceiptLine[];
 }
 
 

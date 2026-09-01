@@ -9,6 +9,7 @@ import {
 import type { ShoppingListItem, KitchenSpaceType } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import { capitalize } from "@/lib/utils";
+import { ReceiptReviewModal } from "@/components/ReceiptReviewModal";
 import {
   ShoppingCart as CartIcon,
   RotateCcw,
@@ -51,6 +52,7 @@ export function ShoppingCart({
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [allItems, setAllItems] = useState<ShoppingListItem[]>(items);
   const [isPending, startTransition] = useTransition();
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
 
   const isControlled = controlledIsOpen !== undefined;
   const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
@@ -148,7 +150,8 @@ export function ShoppingCart({
       toast.error("Your cart is empty.");
       return;
     }
-    toast.info("Receipt upload flow coming up next!");
+    setIsOpen(false);
+    setIsReceiptModalOpen(true);
   };
 
   return (
@@ -419,6 +422,17 @@ export function ShoppingCart({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ReceiptReviewModal
+        kitchenId={kitchenId}
+        stagedCartItems={myCartItems.map((i) => ({
+          id: i.id,
+          name: i.name,
+          pantry_item_id: i.pantry_item_id,
+        }))}
+        isOpen={isReceiptModalOpen}
+        onOpenChange={setIsReceiptModalOpen}
+      />
     </>
   );
 }
