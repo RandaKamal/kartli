@@ -154,7 +154,7 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
   const note = (formData.get("note") as string)?.trim() || null;
   const totalClaimedAmountStr = formData.get("totalClaimedAmount") as string;
   const totalReceiptAmountStr = formData.get("totalReceiptAmount") as string;
-  const receiptPath = (formData.get("receiptPath") as string)?.trim() || null;
+  const rawReceiptPath = (formData.get("receiptPath") as string)?.trim() || null;
   const matchedItemsStr = formData.get("matchedItems") as string;
 
   const totalClaimedAmount = Number(totalClaimedAmountStr) || 0;
@@ -167,12 +167,44 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
 
   const userId = session.user.id;
 
+  // Sanitize receipt path if provided
+  let receiptPath: string | null = null;
+  if (rawReceiptPath) {
+    if (rawReceiptPath.includes("\0")) {
+      throw new Error("Invalid receipt file path.");
+    }
+    const safeName = path.basename(rawReceiptPath);
+    receiptPath = `/uploads/receipts/${safeName}`;
+  }
+
+  // Parse matched items
+  const items: Array<{
+    shopping_list_item_id: string;
+    price?: number | null;
+    pantry_item_id?: string | null;
+  }> = JSON.parse(matchedItemsStr || "[]");
+
+  const itemIds = items.map((i) => i.shopping_list_item_id).filter(Boolean);
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     
+    // Validate that all shopping list items belong to this kitchen and are not already checked out
+    if (itemIds.length > 0) {
+      const { rows: validItems } = await client.query<{ id: string; pantry_item_id: string | null }>(
+        `SELECT id, pantry_item_id FROM shopping_list_items
+         WHERE id = ANY($1::uuid[]) AND kitchen_id = $2 AND checkout_id IS NULL`,
+        [itemIds, kitchenId]
+      );
+
+      if (validItems.length !== itemIds.length) {
+        throw new Error("One or more items do not belong to this kitchen or have already been checked out.");
+      }
+    }
+
     // Insert checkout row with note and receipt data
-    const { rows: checkoutRows } = await client.query(
+    const { rows: checkoutRows } = await client.query<{ id: string }>(
       `INSERT INTO checkouts (kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, NOW())
        RETURNING id`,
@@ -180,17 +212,20 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
     );
     const checkoutId = checkoutRows[0].id;
     
-    // Update each matched shopping list item
-    const items = JSON.parse(matchedItemsStr || '[]');
+    // Update each matched shopping list item enforcing kitchen_id
     for (const item of items) {
-      await client.query(
+      const updateRes = await client.query(
         `UPDATE shopping_list_items
          SET is_purchased = TRUE, checkout_id = $1, item_price = $2, is_guest_staged = FALSE
          WHERE id = $3 AND kitchen_id = $4`,
         [checkoutId, item.price ?? null, item.shopping_list_item_id, kitchenId]
       );
+
+      if ((updateRes.rowCount ?? 0) === 0) {
+        throw new Error(`Failed to update item ${item.shopping_list_item_id} for this kitchen.`);
+      }
       
-      // If tied to a pantry item, restock it
+      // If tied to a pantry item, restock it enforcing kitchen_id
       if (item.pantry_item_id) {
         await client.query(
           `UPDATE pantry_items SET is_out_of_stock = FALSE, updated_at = NOW()
@@ -243,7 +278,7 @@ export async function receiptlessCheckoutAction(formData: FormData) {
   try {
     await client.query("BEGIN");
 
-    // Fetch user's cart items
+    // Fetch user's cart items strictly enforcing kitchen_id and user ownership
     let cartRows: { id: string; pantry_item_id: string | null }[] = [];
     if (itemIds.length > 0) {
       const res = await client.query<{ id: string; pantry_item_id: string | null }>(
@@ -251,6 +286,11 @@ export async function receiptlessCheckoutAction(formData: FormData) {
          WHERE kitchen_id = $1 AND purchased_by = $2 AND is_purchased = TRUE AND checkout_id IS NULL AND id = ANY($3::uuid[])`,
         [kitchenId, userId, itemIds]
       );
+
+      if (res.rows.length !== itemIds.length) {
+        throw new Error("One or more items do not belong to your cart in this kitchen or have already been checked out.");
+      }
+
       cartRows = res.rows;
     } else {
       const res = await client.query<{ id: string; pantry_item_id: string | null }>(
@@ -310,14 +350,38 @@ export async function receiptlessCheckoutAction(formData: FormData) {
   }
 }
 
-export async function deleteReceiptFileAction(receiptPath: string) {
+/**
+ * Safely deletes a receipt file from public/uploads/receipts/.
+ * Protects against path traversal by extracting basename and verifying directory boundaries.
+ */
+export async function deleteReceiptFileAction(rawFilename: string) {
   const session = await auth();
-  if (!session?.user?.id) return;
+  if (!session?.user?.id) {
+    return { success: false, error: "Unauthorized" };
+  }
   
   try {
-    const fullPath = path.join(process.cwd(), 'public', receiptPath);
-    await fs.unlink(fullPath);
-  } catch {
-    // File may not exist, ignore
+    if (!rawFilename || typeof rawFilename !== "string") {
+      return { success: false, error: "Invalid filename" };
+    }
+
+    if (rawFilename.includes("\0")) {
+      throw new Error("Invalid file path");
+    }
+
+    const safeName = path.basename(rawFilename);
+    const targetDir = path.join(process.cwd(), 'public', 'uploads', 'receipts');
+    const targetPath = path.resolve(targetDir, safeName);
+
+    // Strict directory boundary check
+    if (!targetPath.startsWith(targetDir + path.sep)) {
+      throw new Error("Invalid file path: path traversal detected");
+    }
+
+    await fs.unlink(targetPath);
+    return { success: true };
+  } catch (error) {
+    console.error("Safe file delete error:", error);
+    return { success: false };
   }
 }
