@@ -1,6 +1,6 @@
 # Database Schema: kartli Core Architecture
 
-This document outlines the PostgreSQL database schema for **kartli**. It powers email-free credentials authentication (JWT strategy), multi-tenant kitchen management with customizable space contexts (Flatshare, Family, Office, Neutral), tokenized invites, pantry tracking, ad-hoc shopping lists, disposable guest access tokens, and receipt refund workflows.
+This document outlines the PostgreSQL database schema for **kartli**. It powers email-free credentials authentication (JWT strategy), multi-tenant kitchen management with customizable space contexts (Flatshare, Family, Office, Neutral), tokenized invites, pantry tracking, ad-hoc shopping lists, disposable guest access tokens, and AI-assisted receipt refund workflows.
 
 ---
 
@@ -60,11 +60,12 @@ Persistent inventory of shared staples (spices, oil, sponges, cleaning supplies)
 ---
 
 ### `shopping_list_items`
-Active shopping list entries. Supports synced pantry items, free ad-hoc custom items, authenticated member cart staging, and anonymous guest cart reservations.
+Active shopping list entries. Supports synced pantry items, free ad-hoc custom items, authenticated member cart staging, itemized receipt prices, and anonymous guest cart reservations.
 * `id` **(PK, UUID, Default: `gen_random_uuid()`)**: Primary key.
 * `kitchen_id` **(FK -> `kitchens.id`, ON DELETE CASCADE, NOT NULL)**: Associated kitchen.
 * `pantry_item_id` **(FK -> `pantry_items.id`, ON DELETE CASCADE, Nullable)**: Linked pantry item (`NULL` for custom/ad-hoc entries).
 * `name` (VARCHAR(255), NOT NULL): Item name.
+* `item_price` (NUMERIC(10, 2), Nullable): Individual price extracted from matched receipt line item.
 * `is_purchased` (BOOLEAN, Default: `false`, NOT NULL): Checked/purchased status.
 * `purchased_by` **(FK -> `users.id`, ON DELETE SET NULL, Nullable)**: User who staged or completed the purchase (`NULL` for guest-staged items).
 * `is_guest_staged` (BOOLEAN, Default: `false`, NOT NULL): Flag indicating the item is currently reserved in an unauthenticated guest's active cart.
@@ -74,13 +75,17 @@ Active shopping list entries. Supports synced pantry items, free ad-hoc custom i
 ---
 
 ### `checkouts`
-Receipt upload batches for cost reimbursement.
+Receipt upload batches for cost reimbursement with mixed-purchase split tracking.
 * `id` **(PK, UUID, Default: `gen_random_uuid()`)**: Primary key.
 * `kitchen_id` **(FK -> `kitchens.id`, ON DELETE CASCADE, NOT NULL)**: Associated kitchen.
 * `user_id` **(FK -> `users.id`, ON DELETE CASCADE, NOT NULL)**: User requesting the refund.
-* `receipt_filename` (VARCHAR(255), NOT NULL): Stored receipt image path/filename.
+* `store_name` (VARCHAR(255), Nullable): Detected supermarket name (e.g. "Lidl", "Rewe", "Edeka").
+* `total_claimed_amount` (NUMERIC(10, 2), Default: `0.00`, NOT NULL): Total amount claimed specifically for the household.
+* `total_receipt_amount` (NUMERIC(10, 2), Nullable): Overall gross sum on the receipt.
+* `receipt_filename` (VARCHAR(255), NOT NULL): Stored receipt image path/filename (local `/public/uploads` or cloud storage).
 * `is_refunded` (BOOLEAN, Default: `false`, NOT NULL): Admin resolution status.
 * `refunded_at` (TIMESTAMPTZ, Nullable): Timestamp when admin approved and marked as settled.
+* `receipt_deleted_at` (TIMESTAMPTZ, Nullable): Timestamp when receipt image was deleted post-settlement or via TTL.
 * `created_at` (TIMESTAMPTZ, Default: `NOW()`): Upload timestamp.
 
 ---
@@ -101,3 +106,7 @@ Receipt upload batches for cost reimbursement.
 ### Anonymous Guest Cart Staging & Handover
 - Guest check-offs set `is_guest_staged = true` and persist in client cookie `kartli_guest_cart_[kitchenId]`.
 - Claimed automatically by member upon subsequent login.
+
+### Receipt Scanning & Auto-Cleanup
+- OCR reads gross total and matched household lines into `total_claimed_amount` and `shopping_list_items.item_price`.
+- Receipt images are marked with `receipt_deleted_at` upon admin refund confirmation or after 14-day TTL.
