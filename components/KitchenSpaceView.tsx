@@ -420,7 +420,7 @@ export function KitchenSpaceView({
           </div>
 
           {myCheckouts && myCheckouts.length > 0 && (
-            <MyPurchasesSection checkouts={myCheckouts} />
+            <MyPurchasesSection kitchenId={initialKitchen.id} checkouts={myCheckouts} />
           )}
         </TabsContent>
 

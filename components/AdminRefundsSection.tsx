@@ -2,10 +2,11 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { refundCheckoutAction } from "@/app/actions/checkout";
+import { ReceiptExpiryBadge } from "@/components/ReceiptExpiryBadge";
+import { refundCheckoutAction, deleteReceiptForAdminAction } from "@/app/actions/checkout";
 import type { CheckoutWithDetails, KitchenMemberWithUser, KitchenSpaceType } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
-import { capitalize, formatCurrency } from "@/lib/utils";
+import { capitalize, formatCurrency, daysUntilReceiptAutoDelete } from "@/lib/utils";
 import { convertCurrency, refreshExchangeRates } from "@/lib/currency";
 import {
   Receipt,
@@ -22,6 +23,7 @@ import {
   Store,
   ImageIcon,
   MessageSquare,
+  Trash2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +60,7 @@ export function AdminRefundsSection({
   const [selectedCheckout, setSelectedCheckout] = useState<CheckoutWithDetails | null>(null);
   const [settlingId, setSettlingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [deletingReceiptId, setDeletingReceiptId] = useState<string | null>(null);
 
   const terminology = getSpaceTerminology(spaceType);
 
@@ -117,6 +120,28 @@ export function AdminRefundsSection({
       }
     });
   };
+
+  const handleDeleteReceipt = (receiptId: string) => {
+    if (!window.confirm("Remove this receipt from the admin view? This won't delete the member's own copy.")) return;
+    setDeletingReceiptId(receiptId);
+    startTransition(async () => {
+      try {
+        await deleteReceiptForAdminAction(kitchenId, receiptId);
+        setCheckoutsList((prev) =>
+          prev.map((c) => ({ ...c, receipts: c.receipts.filter((r) => r.id !== receiptId) }))
+        );
+        setSelectedCheckout((prev) =>
+          prev ? { ...prev, receipts: prev.receipts.filter((r) => r.id !== receiptId) } : prev
+        );
+        toast.success("Receipt removed from your view.");
+      } catch (err: any) {
+        toast.error(err.message || "Failed to delete receipt.");
+      } finally {
+        setDeletingReceiptId(null);
+      }
+    });
+  };
+
 
   return (
     <div className="space-y-6">
@@ -315,6 +340,13 @@ export function AdminRefundsSection({
                         <Receipt className="w-3.5 h-3.5 text-muted-foreground" />
                         <span>View Receipt{checkout.receipts.length > 1 ? `s (${checkout.receipts.length})` : ""}</span>
                       </Button>
+                    ) : checkout.totalReceiptsEverAttached > 0 ? (
+                      <Badge
+                        variant="secondary"
+                        className="rounded-xl text-xs font-normal h-8 px-2.5 bg-muted text-muted-foreground border border-border flex items-center justify-center"
+                      >
+                        Receipt Deleted
+                      </Badge>
                     ) : (
                       <Badge
                         variant="secondary"
@@ -326,9 +358,14 @@ export function AdminRefundsSection({
 
                     {/* Status Badge & Settle Button */}
                     {checkout.is_refunded ? (
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border bg-accent-sage/15 text-accent-success border-accent-sage/30">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-accent-success" />
-                        <span>Settled</span>
+                      <div className="flex items-center gap-1.5">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border bg-accent-sage/15 text-accent-success border-accent-sage/30">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-accent-success" />
+                          <span>Settled</span>
+                        </div>
+                        {checkout.receipts.length > 0 && checkout.refunded_at && (
+                          <ReceiptExpiryBadge refundedAt={checkout.refunded_at} />
+                        )}
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
@@ -440,6 +477,19 @@ export function AdminRefundsSection({
                   <div className="space-y-3">
                     {selectedCheckout.receipts.map((r) => (
                       <div key={r.id} className="relative rounded-2xl overflow-hidden border border-border bg-muted/30 p-2 sm:p-3 flex items-center justify-center min-h-[220px]">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteReceipt(r.id)}
+                          disabled={deletingReceiptId === r.id}
+                          aria-label="Delete this receipt"
+                          className="absolute top-2 right-2 z-10 p-1.5 rounded-lg bg-card/90 border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40 transition shadow-sm cursor-pointer disabled:opacity-50"
+                        >
+                          {deletingReceiptId === r.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
+                        </button>
                         <img
                           src={r.receipt_filename}
                           alt={`Receipt for ${selectedCheckout.store_name || "household purchase"}`}
@@ -504,15 +554,20 @@ export function AdminRefundsSection({
 
                 {/* Refund timestamp if settled */}
                 {selectedCheckout.is_refunded && selectedCheckout.refunded_at && (
-                  <div className="p-3 rounded-2xl bg-accent-sage/10 border border-accent-sage/25 text-accent-success text-xs flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 shrink-0" />
-                    <span>
-                      Settled on {new Date(selectedCheckout.refunded_at).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
+                  <div className="p-3 rounded-2xl bg-accent-sage/10 border border-accent-sage/25 text-accent-success text-xs flex items-center justify-between gap-2 flex-wrap">
+                    <span className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                      <span>
+                        Settled on {new Date(selectedCheckout.refunded_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </span>
                     </span>
+                    {selectedCheckout.receipts.length > 0 && (
+                      <ReceiptExpiryBadge refundedAt={selectedCheckout.refunded_at} />
+                    )}
                   </div>
                 )}
               </div>

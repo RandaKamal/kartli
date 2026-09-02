@@ -8,6 +8,7 @@ import {
   getKitchenCheckouts,
   getUserCheckouts,
   refundCheckout,
+  deleteReceiptForSide,
 } from "@/lib/pantry";
 import type { Checkout, CheckoutWithDetails } from "@/types";
 
@@ -55,4 +56,18 @@ export async function refundCheckoutAction(kitchenId: string, checkoutId: string
   const result = await refundCheckout(kitchenId, checkoutId, session.user.id);
   revalidateKitchen(kitchenId);
   return result;
+}
+
+export async function deleteReceiptForAdminAction(kitchenId: string, receiptId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("You must be logged in.");
+  await deleteReceiptForSide(kitchenId, receiptId, session.user.id, "admin");
+  revalidateKitchen(kitchenId);
+}
+
+export async function deleteReceiptForMemberAction(kitchenId: string, receiptId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("You must be logged in.");
+  await deleteReceiptForSide(kitchenId, receiptId, session.user.id, "member");
+  revalidateKitchen(kitchenId);
 }

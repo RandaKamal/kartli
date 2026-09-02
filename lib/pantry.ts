@@ -450,7 +450,11 @@ export async function createCheckout(
   }
 }
 
-async function attachItems(checkouts: (Checkout & { username: string | null })[]): Promise<CheckoutWithDetails[]> {
+async function attachItems(
+  checkouts: (Checkout & { username: string | null })[],
+  viewerSide: "admin" | "member"
+): Promise<CheckoutWithDetails[]> {
+  const deletedColumn = viewerSide === "admin" ? "deleted_by_admin_at" : "deleted_by_member_at";
   const results: CheckoutWithDetails[] = [];
   for (const checkout of checkouts) {
     const { rows: itemRows } = await pool.query<ShoppingListItem>(
@@ -460,16 +464,26 @@ async function attachItems(checkouts: (Checkout & { username: string | null })[]
       [checkout.id]
     );
 
-    const { rows: receiptRows } = await pool.query<CheckoutReceipt>(
-      `SELECT id, checkout_id, receipt_filename, created_at
+    const { rows: allReceiptRows } = await pool.query<CheckoutReceipt>(
+      `SELECT id, checkout_id, receipt_filename, created_at, deleted_by_admin_at, deleted_by_member_at
        FROM checkout_receipts WHERE checkout_id = $1 ORDER BY created_at ASC`,
       [checkout.id]
     );
 
-    results.push({ ...checkout, items: itemRows, receipts: receiptRows });
+    const visibleReceipts = allReceiptRows.filter(
+      (r) => r.receipt_filename !== null && r[deletedColumn as "deleted_by_admin_at" | "deleted_by_member_at"] === null
+    );
+
+    results.push({
+      ...checkout,
+      items: itemRows,
+      receipts: visibleReceipts,
+      totalReceiptsEverAttached: allReceiptRows.length,
+    });
   }
   return results;
 }
+
 
 
 /** Admin view: all checkouts in a kitchen, newest first, with buyer + items. */
@@ -480,7 +494,7 @@ export async function getKitchenCheckouts(kitchenId: string): Promise<CheckoutWi
      WHERE c.kitchen_id = $1 ORDER BY c.created_at DESC`,
     [kitchenId]
   );
-  return attachItems(rows);
+  return attachItems(rows, "admin");
 }
 
 /** A single user's own checkout history within a kitchen. */
@@ -491,7 +505,7 @@ export async function getUserCheckouts(kitchenId: string, userId: string): Promi
      WHERE c.kitchen_id = $1 AND c.user_id = $2 ORDER BY c.created_at DESC`,
     [kitchenId, userId]
   );
-  return attachItems(rows);
+  return attachItems(rows, "member");
 }
 
 /** Admin action: marks a checkout as refunded. Logic is a stub — flips a flag only. */
@@ -516,6 +530,63 @@ export async function refundCheckout(
   }
   return rows[0];
 }
+
+/**
+ * Deletes a receipt on behalf of ONE side only (admin or member).
+ * The underlying Blob file is only actually removed once BOTH sides
+ * have deleted it (or the 30-day cron runs) — until then it just
+ * disappears from the requesting side's own view.
+ */
+export async function deleteReceiptForSide(
+  kitchenId: string,
+  receiptId: string,
+  userId: string,
+  side: "admin" | "member"
+): Promise<void> {
+  const { rows } = await pool.query<{
+    id: string;
+    receipt_filename: string | null;
+    deleted_by_admin_at: Date | null;
+    deleted_by_member_at: Date | null;
+    checkout_user_id: string;
+    checkout_kitchen_id: string;
+  }>(
+    `SELECT cr.id, cr.receipt_filename, cr.deleted_by_admin_at, cr.deleted_by_member_at,
+            c.user_id AS checkout_user_id, c.kitchen_id AS checkout_kitchen_id
+     FROM checkout_receipts cr
+     JOIN checkouts c ON cr.checkout_id = c.id
+     WHERE cr.id = $1`,
+    [receiptId]
+  );
+  if (rows.length === 0) throw new Error("Receipt not found.");
+  const receipt = rows[0];
+  if (receipt.checkout_kitchen_id !== kitchenId) {
+    throw new Error("Receipt does not belong to this kitchen.");
+  }
+
+  if (side === "admin") {
+    const isAdmin = await isUserKitchenAdmin(kitchenId, userId);
+    if (!isAdmin) throw new Error("Unauthorized: Only kitchen admins can remove this.");
+  } else if (receipt.checkout_user_id !== userId) {
+    throw new Error("Unauthorized: This is not your purchase.");
+  }
+
+  const column = side === "admin" ? "deleted_by_admin_at" : "deleted_by_member_at";
+  await pool.query(`UPDATE checkout_receipts SET ${column} = NOW() WHERE id = $1`, [receiptId]);
+
+  const otherSideAlreadyDeleted =
+    side === "admin" ? receipt.deleted_by_member_at !== null : receipt.deleted_by_admin_at !== null;
+
+  if (otherSideAlreadyDeleted && receipt.receipt_filename) {
+    try {
+      await del(receipt.receipt_filename);
+    } catch {
+      // already gone — fine
+    }
+    await pool.query(`UPDATE checkout_receipts SET receipt_filename = NULL WHERE id = $1`, [receiptId]);
+  }
+}
+
 
 /**
  * Atomically transfers guest-staged shopping list items to a logged-in user's active cart.
