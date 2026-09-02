@@ -48,7 +48,7 @@ export default async function RootLayout({
             <header className="bg-background/85 backdrop-blur-md border-b border-border/70 sticky top-0 z-40">
               <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
                 <Link
-                  href="/"
+                  href={session?.user ? "/dashboard" : "/"}
                   className="flex items-center gap-2.5 font-bold text-lg text-foreground tracking-tight"
                 >
                   <span className="w-8 h-8 rounded-xl bg-card border border-border/80 flex items-center justify-center text-xs font-black relative shadow-xs">
@@ -58,11 +58,15 @@ export default async function RootLayout({
                   <span className="tracking-tight text-foreground font-extrabold">kartli</span>
                 </Link>
 
-                <nav className="flex items-center gap-2.5 text-sm">
+                <nav className="flex items-center gap-2 text-sm">
                   <ThemeToggle />
 
                   {session?.user ? (
                     <>
+                      <Button asChild size="sm" variant="ghost" className="rounded-xl font-medium text-xs hidden sm:inline-flex">
+                        <Link href="/dashboard">Dashboard</Link>
+                      </Button>
+
                       <Button asChild size="sm" variant="default" className="rounded-xl font-medium shadow-sm">
                         <Link href="/kitchen/new" className="flex items-center gap-1.5">
                           <Plus className="w-3.5 h-3.5" />

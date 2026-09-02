@@ -256,6 +256,7 @@ export async function leaveKitchenAction(kitchenId: string): Promise<{ success: 
 
   await leaveKitchenDb(kitchenId, session.user.id);
   revalidatePath("/");
+  revalidatePath("/dashboard");
   revalidatePath(`/kitchen/${kitchenId}`);
   return { success: true };
 }

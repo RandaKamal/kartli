@@ -131,7 +131,7 @@ export function AdminKitchenHeader({
     <>
       <div className="space-y-4">
         <Link
-          href="/"
+          href="/dashboard"
           className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition px-1"
         >
           <ArrowLeft className="w-3.5 h-3.5" />

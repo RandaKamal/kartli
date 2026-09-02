@@ -19,7 +19,7 @@ export default async function NewKitchenPage() {
   return (
     <div className="max-w-xl mx-auto my-8 space-y-6">
       <Link
-        href="/"
+        href="/dashboard"
         className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition px-1"
       >
         <ArrowLeft className="w-3.5 h-3.5" />

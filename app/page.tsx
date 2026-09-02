@@ -1,44 +1,33 @@
 import Link from "next/link";
 import { auth } from "@/auth";
-import { getUserKitchens } from "@/lib/kitchen";
 import {
   Plus,
   ArrowRight,
-  ExternalLink,
   UtensilsCrossed,
   Sparkles,
   Receipt,
   ShoppingCart,
   Shield,
   Zap,
-  Globe,
   Palette,
-  Users,
   Home,
   Heart,
   Briefcase,
   Layers,
   CheckCircle2,
   Mail,
-  Cpu,
   Coins,
   QrCode,
   ScanLine,
   Check,
-  ChevronRight,
-  Coffee,
   Package,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { capitalize } from "@/lib/utils";
 
 export default async function HomePage() {
   const session = await auth();
-  const userKitchens = session?.user?.id
-    ? await getUserKitchens(session.user.id)
-    : [];
 
   return (
     <div className="space-y-20 sm:space-y-28 pb-16">
@@ -72,15 +61,15 @@ export default async function HomePage() {
           {session?.user ? (
             <>
               <Button asChild size="lg" className="rounded-2xl font-bold shadow-md h-12 px-6 text-sm gap-2">
-                <Link href={userKitchens.length > 0 ? `/kitchen/${userKitchens[0].kitchen.id}` : "/kitchen/new"}>
-                  <span>Go to My Kitchens</span>
+                <Link href="/dashboard">
+                  <span>Go to Dashboard</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="rounded-2xl font-semibold h-12 px-5 text-sm gap-2 border-border/80 hover:bg-muted/50">
                 <Link href="/kitchen/new">
                   <Plus className="w-4 h-4" />
-                  <span>Create Another Space</span>
+                  <span>Create New Space</span>
                 </Link>
               </Button>
             </>
@@ -94,7 +83,7 @@ export default async function HomePage() {
               </Button>
               <Button asChild variant="outline" size="lg" className="rounded-2xl font-semibold h-12 px-5 text-sm gap-2 border-border/80 hover:bg-muted/50">
                 <Link href="/login">
-                  <span>Sign In to Account</span>
+                  <span>Sign In</span>
                 </Link>
               </Button>
             </>
@@ -198,7 +187,7 @@ export default async function HomePage() {
                   <p className="font-semibold text-foreground">Rewe Supermarkt</p>
                   <p className="text-muted-foreground text-[11px]">7 items scanned · €18.40 claimed</p>
                   <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-accent-sage/15 text-accent-success border border-accent-sage/30 text-[10px] font-semibold">
-                    <CheckCircle2 className="w-3 h-3" />
+                    <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Settled with 1 click</span>
                   </div>
                 </div>
@@ -208,112 +197,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 2. AUTHENTICATED USER'S KITCHENS (IF LOGGED IN) */}
-      {session?.user && (
-        <section className="space-y-6 max-w-5xl mx-auto border-t border-border/70 pt-12">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
-                <span>Welcome back, {capitalize(session.user.username)}</span>
-              </h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Quickly jump back into your active kitchen workspaces.
-              </p>
-            </div>
-            <Button asChild size="sm" className="rounded-xl shadow-xs font-semibold self-start sm:self-auto">
-              <Link href="/kitchen/new" className="flex items-center gap-1.5">
-                <Plus className="w-4 h-4" />
-                <span>Create New Space</span>
-              </Link>
-            </Button>
-          </div>
-
-          {userKitchens.length === 0 ? (
-            <Card className="border-dashed border-border bg-card/60 p-8 text-center space-y-3 rounded-2xl">
-              <div className="w-10 h-10 rounded-xl bg-muted border border-border flex items-center justify-center text-muted-foreground mx-auto">
-                <UtensilsCrossed className="w-5 h-5 text-muted-foreground" />
-              </div>
-              <p className="text-sm font-semibold text-foreground">You don&apos;t have any active kitchens yet.</p>
-              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                Create your first kitchen workspace or join an existing flatshare using an invite link.
-              </p>
-              <div className="pt-2">
-                <Button asChild size="sm" className="rounded-xl font-semibold">
-                  <Link href="/kitchen/new">Create Your First Kitchen</Link>
-                </Button>
-              </div>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {userKitchens.map(({ kitchen, membership }) => {
-                const isAdmin = membership.role === "ADMIN";
-                const targetUrl = `/kitchen/${kitchen.id}`;
-
-                return (
-                  <Card
-                    key={kitchen.id}
-                    className="relative border border-border bg-card flex flex-col justify-between rounded-2xl p-5 hover:border-primary/50 transition-all group overflow-hidden shadow-xs hover:shadow-md"
-                  >
-                    <Link
-                      href={targetUrl}
-                      className="absolute inset-0 z-0 rounded-2xl focus:outline-none focus:ring-2 focus:ring-accent-brand"
-                      aria-label={`Open ${kitchen.name}`}
-                    />
-
-                    <div className="space-y-3 relative z-0 pointer-events-none">
-                      <div className="flex items-center justify-between">
-                        <Badge
-                          variant={isAdmin ? "accent" : "secondary"}
-                          className="font-medium text-[10px] uppercase tracking-wider"
-                        >
-                          {membership.role}
-                        </Badge>
-                        <span className="text-[11px] text-muted-foreground font-mono">
-                          {new Date(kitchen.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-
-                      <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
-                        {kitchen.name}
-                      </h3>
-
-                      <p className="text-xs text-muted-foreground">
-                        Display Name: <strong className="text-foreground">{capitalize(membership.kitchen_display_name)}</strong>
-                      </p>
-                    </div>
-
-                    <div className="pt-4 border-t border-border/70 mt-4 flex items-center justify-between relative z-0 pointer-events-none">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                        <span>Open Dashboard</span>
-                        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
-                      </span>
-
-                      <div className="pointer-events-auto relative z-10">
-                        <Button
-                          asChild
-                          variant="secondary"
-                          size="sm"
-                          className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground rounded-lg border border-border/70 gap-1"
-                        >
-                          <Link
-                            href={`/kitchen/view/${kitchen.public_view_token}`}
-                            title="Public Supermarket Guest Link"
-                          >
-                            <span>Guest Link</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </Link>
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* 3. DYNAMIC SPACES SHOWCASE (THE 4 PRESETS) */}
+      {/* 2. DYNAMIC SPACES SHOWCASE (THE 4 PRESETS) */}
       <section className="space-y-8 max-w-5xl mx-auto">
         <div className="text-center space-y-2 max-w-2xl mx-auto">
           <Badge variant="secondary" className="text-xs font-semibold uppercase tracking-wider">
@@ -323,7 +207,7 @@ export default async function HomePage() {
             One engine. Tailored for how you live together.
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground">
-            kartli dynamically reconfigures its UI, wording, and member permissions based on your household type.
+            kartli dynamically adapts its labels and terminology to fit your living situation.
           </p>
         </div>
 
@@ -335,12 +219,12 @@ export default async function HomePage() {
             </div>
             <div>
               <h3 className="text-base font-bold text-foreground">Flatshare (WG)</h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                Roommates split essentials like oat milk, olive oil, and detergent without petty arguments.
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                Roommates coordinating shared essentials like oat milk, oil, and detergent without messy group chats.
               </p>
             </div>
             <div className="pt-2 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
-              &ldquo;Roommates&rdquo; &middot; Shared Cart Split
+              &ldquo;Roommates&rdquo; &bull; Shared Cart
             </div>
           </Card>
 
@@ -351,12 +235,12 @@ export default async function HomePage() {
             </div>
             <div>
               <h3 className="text-base font-bold text-foreground">Family Home</h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                Kids request snacks and lunchbox staples; parents approve and check out effortlessly.
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                A central grocery board for busy households. Keep track of what is running low before heading to the store.
               </p>
             </div>
             <div className="pt-2 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
-              &ldquo;Family Members&rdquo; &middot; Household Stock
+              &ldquo;Family Members&rdquo; &bull; Household List
             </div>
           </Card>
 
@@ -367,12 +251,12 @@ export default async function HomePage() {
             </div>
             <div>
               <h3 className="text-base font-bold text-foreground">Studio &amp; Office</h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                Coffee bar restocks, tea varieties, and studio snacks refunded directly to team members.
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                Team spaces managing shared coffee beans, fruit baskets, and meeting snacks with quick refund tracking.
               </p>
             </div>
             <div className="pt-2 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
-              &ldquo;Team Members&rdquo; &middot; Expense Reimbursement
+              &ldquo;Team Members&rdquo; &bull; Shared Expenses
             </div>
           </Card>
 
@@ -382,19 +266,19 @@ export default async function HomePage() {
               <Layers className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-foreground">Neutral Shared Space</h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                Coliving, community gardens, or co-working spaces with clean, unbranded inventory control.
+              <h3 className="text-base font-bold text-foreground">Neutral Space</h3>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                Coliving, shared studios, or community hubs needing simple, unbranded communal inventory.
               </p>
             </div>
             <div className="pt-2 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
-              &ldquo;Members&rdquo; &middot; General Inventory
+              &ldquo;Members&rdquo; &bull; Shared Pantry
             </div>
           </Card>
         </div>
       </section>
 
-      {/* 4. CORE CAPABILITIES BENTO GRID */}
+      {/* 3. CORE CAPABILITIES BENTO GRID */}
       <section className="space-y-8 max-w-5xl mx-auto">
         <div className="text-center space-y-2 max-w-2xl mx-auto">
           <Badge variant="secondary" className="text-xs font-semibold uppercase tracking-wider">
@@ -477,7 +361,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 5. AI SCANNER DEEP DIVE */}
+      {/* 4. AI SCANNER DEEP DIVE */}
       <section className="border border-border/80 bg-gradient-to-b from-card to-muted/20 rounded-3xl p-6 sm:p-10 max-w-5xl mx-auto space-y-8">
         <div className="max-w-2xl space-y-2">
           <Badge variant="secondary" className="text-xs font-semibold uppercase tracking-wider bg-accent-primary/10 text-accent-primary border-accent-primary/20">
@@ -518,72 +402,70 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 6. SETUP SUPPORT & HELP SECTION */}
+      {/* 5. SETUP HELP & DIRECT CONTACT SECTION */}
       <section className="space-y-6 max-w-4xl mx-auto text-center">
         <div className="space-y-2">
           <Badge variant="secondary" className="text-xs font-semibold uppercase tracking-wider">
-            Community &amp; Setup Support
+            Setup &amp; Feedback
           </Badge>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-            Need help deploying or configuring your space?
+            Setting up kartli for your space?
           </h2>
-          <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-            Whether you are self-hosting on Docker, configuring Neon Postgres, or need assistance setting up your household, reach out to the core engineering team directly.
+          <p className="text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            kartli is currently in active development. If you are setting up a dorm, shared flat, or community space and want a walkthrough, run into a snag, or have feedback, reach out to us directly.
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left max-w-2xl mx-auto pt-2">
-          {/* Dev Card 1: Colin */}
-          <Card className="border border-border bg-card rounded-2xl p-5 space-y-4 shadow-xs">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-secondary border border-border flex items-center justify-center text-sm font-bold text-foreground">
-                C
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-foreground">Colin</h4>
-                <p className="text-xs text-muted-foreground">Core Architecture &amp; Backend</p>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Assistance with PostgreSQL migrations, Auth.js session handling, and Docker deployments.
-            </p>
-            <Button asChild variant="outline" size="sm" className="w-full rounded-xl text-xs gap-1.5 border-border hover:bg-secondary">
-              <a href="mailto:contact-colin@example.com">
-                <Mail className="w-3.5 h-3.5 text-muted-foreground" />
-                <span>contact-colin@example.com</span>
-              </a>
-            </Button>
-          </Card>
-
-          {/* Dev Card 2: Randa */}
-          <Card className="border border-border bg-card rounded-2xl p-5 space-y-4 shadow-xs">
+          {/* Dev Card 1: Randa */}
+          <Card className="border border-border bg-card rounded-2xl p-5 space-y-3.5 shadow-xs">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-secondary border border-border flex items-center justify-center text-sm font-bold text-foreground">
                 R
               </div>
               <div>
                 <h4 className="text-sm font-bold text-foreground">Randa</h4>
-                <p className="text-xs text-muted-foreground">Frontend UX &amp; AI Workflows</p>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Guidance on Gemini Vision OCR prompt tuning, Tailwind design tokens, and space presets.
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Happy to help you configure your space, brainstorm workflows, or walk you through onboarding.
             </p>
             <Button asChild variant="outline" size="sm" className="w-full rounded-xl text-xs gap-1.5 border-border hover:bg-secondary">
               <a href="mailto:contact-randa@example.com">
                 <Mail className="w-3.5 h-3.5 text-muted-foreground" />
-                <span>contact-randa@example.com</span>
+                <span>Email Randa</span>
+              </a>
+            </Button>
+          </Card>
+
+          {/* Dev Card 2: Colin */}
+          <Card className="border border-border bg-card rounded-2xl p-5 space-y-3.5 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-secondary border border-border flex items-center justify-center text-sm font-bold text-foreground">
+                C
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-foreground">Colin</h4>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Reach out for help getting your household set up, troubleshooting, or sharing feature ideas.
+            </p>
+            <Button asChild variant="outline" size="sm" className="w-full rounded-xl text-xs gap-1.5 border-border hover:bg-secondary">
+              <a href="mailto:contact-colin@example.com">
+                <Mail className="w-3.5 h-3.5 text-muted-foreground" />
+                <span>Email Colin</span>
               </a>
             </Button>
           </Card>
         </div>
 
         <p className="text-xs text-muted-foreground pt-1">
-          Community support is free, open source, and privacy-first.
+          Direct support from the creators &mdash; free and friendly.
         </p>
       </section>
 
-      {/* 7. BOTTOM CALL TO ACTION BANNER */}
+      {/* 6. BOTTOM CALL TO ACTION BANNER */}
       <section className="relative overflow-hidden border border-border/80 bg-gradient-to-r from-card via-card to-muted/40 rounded-3xl p-8 sm:p-12 text-center max-w-4xl mx-auto space-y-5 shadow-xl">
         <div className="space-y-2 max-w-lg mx-auto">
           <h2 className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight">
@@ -597,8 +479,8 @@ export default async function HomePage() {
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
           {session?.user ? (
             <Button asChild size="lg" className="rounded-2xl font-bold shadow-md px-6 text-sm gap-2">
-              <Link href={userKitchens.length > 0 ? `/kitchen/${userKitchens[0].kitchen.id}` : "/kitchen/new"}>
-                <span>Go to My Kitchens</span>
+              <Link href="/dashboard">
+                <span>Go to Dashboard</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </Button>
@@ -622,5 +504,6 @@ export default async function HomePage() {
     </div>
   );
 }
+
 
 
