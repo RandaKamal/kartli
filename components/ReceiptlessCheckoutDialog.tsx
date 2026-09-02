@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingBag, Loader2, Check, Store, DollarSign, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
+import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 
 interface StagedCartItem {
   id: string;
@@ -176,10 +177,11 @@ export function ReceiptlessCheckoutDialog({
                 aria-label="Currency"
                 disabled={isPending}
               >
-                <option value="EUR">EUR</option>
-                <option value="CHF">CHF</option>
-                <option value="USD">USD</option>
-                <option value="GBP">GBP</option>
+                {SUPPORTED_CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.code}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

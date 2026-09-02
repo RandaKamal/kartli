@@ -57,6 +57,7 @@ export default async function KitchenPage({
       myCheckouts={myCheckouts}
       adminCheckouts={adminCheckouts}
       currentUserId={session.user.id}
+      userPreferredCurrency={session.user.preferred_currency || "EUR"}
       baseUrl={baseUrl}
       initialTab={initialTab}
     />

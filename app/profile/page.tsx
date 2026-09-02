@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { ProfileSettings } from "@/components/ProfileSettings";
-
+import { getUserById } from "@/lib/auth-service";
 import { Suspense } from "react";
 
 export default async function ProfilePage() {
@@ -12,6 +12,9 @@ export default async function ProfilePage() {
   if (!session?.user) {
     redirect("/login?callbackUrl=/profile");
   }
+
+  const dbUser = await getUserById(session.user.id);
+  const preferredCurrency = dbUser?.preferred_currency || session.user.preferred_currency || "EUR";
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -30,7 +33,7 @@ export default async function ProfilePage() {
             Settings &amp; Profile
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage your account credentials, notifications, and theme preferences.
+            Manage your account credentials, notifications, preferred currency, and theme preferences.
           </p>
         </div>
       </div>
@@ -40,6 +43,7 @@ export default async function ProfilePage() {
           user={{
             id: session.user.id,
             username: session.user.username,
+            preferred_currency: preferredCurrency,
           }}
         />
       </Suspense>

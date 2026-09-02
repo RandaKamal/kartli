@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn, formatCurrency } from "@/lib/utils";
+import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 
 interface ReceiptLine {
   raw_name: string;
@@ -431,10 +432,11 @@ export function ReceiptReviewModal({
                         className="h-8 text-xs font-semibold bg-card border border-border/70 rounded-lg px-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shrink-0"
                         aria-label="Currency"
                       >
-                        <option value="EUR">EUR</option>
-                        <option value="CHF">CHF</option>
-                        <option value="USD">USD</option>
-                        <option value="GBP">GBP</option>
+                        {SUPPORTED_CURRENCIES.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.code}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="text-right">

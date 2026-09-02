@@ -191,7 +191,9 @@ export async function getShoppingListItems(kitchenId: string): Promise<ShoppingL
     FROM shopping_list_items sli
     LEFT JOIN users u ON sli.purchased_by = u.id
     LEFT JOIN kitchen_members km ON km.kitchen_id = sli.kitchen_id AND km.user_id = sli.purchased_by
+    LEFT JOIN checkouts c ON sli.checkout_id = c.id
     WHERE sli.kitchen_id = $1
+      AND (sli.checkout_id IS NULL OR c.created_at >= NOW() - INTERVAL '24 hours' OR sli.created_at >= NOW() - INTERVAL '24 hours')
     ORDER BY (sli.is_purchased OR sli.is_guest_staged) ASC, sli.created_at ASC
   `;
   const { rows } = await pool.query<ShoppingListItem>(sql, [kitchenId]);

@@ -16,6 +16,8 @@ import {
   Plus,
   ShoppingBag,
   ArrowRight,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +43,7 @@ export function ShoppingListSection({
   const wording = getSpaceWording(spaceType);
   const [listItems, setListItems] = useState<ShoppingListItem[]>(items);
   const [customItemName, setCustomItemName] = useState("");
+  const [showCheckedOut, setShowCheckedOut] = useState(true);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -273,23 +276,34 @@ export function ShoppingListSection({
         <div className="space-y-2 pt-3 border-t border-border">
           <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
             <span>Checked Out ({resolvedItems.length})</span>
+            <button
+              type="button"
+              onClick={() => setShowCheckedOut((prev) => !prev)}
+              className="text-[11px] font-medium normal-case tracking-normal text-muted-foreground hover:text-foreground transition cursor-pointer flex items-center gap-1 py-0.5 px-1.5 rounded-lg hover:bg-muted"
+              aria-label={showCheckedOut ? "Hide checked out items" : "Show checked out items"}
+            >
+              <span>{showCheckedOut ? "Hide" : "Show"}</span>
+              {showCheckedOut ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
           </div>
 
-          <div className="divide-y divide-border">
-            {resolvedItems.map((item) => (
-              <div
-                key={item.id}
-                className="py-2 flex items-center justify-between gap-3 text-xs opacity-60 px-2"
-              >
-                <span className="font-medium line-through truncate text-muted-foreground">
-                  {item.name}
-                </span>
-                <span className="text-muted-foreground shrink-0 text-[11px] font-mono">
-                  Checked out
-                </span>
-              </div>
-            ))}
-          </div>
+          {showCheckedOut && (
+            <div className="divide-y divide-border animate-in fade-in-50 duration-200">
+              {resolvedItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="py-2 flex items-center justify-between gap-3 text-xs opacity-60 px-2"
+                >
+                  <span className="font-medium line-through truncate text-muted-foreground">
+                    {item.name}
+                  </span>
+                  <span className="text-muted-foreground shrink-0 text-[11px] font-mono">
+                    Checked out
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </Card>

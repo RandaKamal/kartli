@@ -17,6 +17,7 @@ export interface DbUser {
   id: string;
   username: string;
   password_hash: string;
+  preferred_currency?: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -223,11 +224,13 @@ declare module "next-auth" {
     user: {
       id: string;
       username: string;
+      preferred_currency?: string;
     } & DefaultSession["user"];
   }
 
   interface User {
     id?: string;
     username?: string;
+    preferred_currency?: string;
   }
 }

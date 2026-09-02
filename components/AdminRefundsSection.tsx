@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { refundCheckoutAction } from "@/app/actions/checkout";
 import type { CheckoutWithDetails, KitchenMemberWithUser, KitchenSpaceType } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import { capitalize, formatCurrency } from "@/lib/utils";
+import { convertCurrency, refreshExchangeRates } from "@/lib/currency";
 import {
   Receipt,
   CheckCircle2,
@@ -41,6 +42,7 @@ interface AdminRefundsSectionProps {
   checkouts: CheckoutWithDetails[];
   members: KitchenMemberWithUser[];
   spaceType?: KitchenSpaceType;
+  adminPreferredCurrency?: string;
 }
 
 export function AdminRefundsSection({
@@ -48,15 +50,20 @@ export function AdminRefundsSection({
   checkouts: initialCheckouts,
   members,
   spaceType = "FLATSHARE",
+  adminPreferredCurrency = "EUR",
 }: AdminRefundsSectionProps) {
   const router = useRouter();
   const [checkoutsList, setCheckoutsList] = useState<CheckoutWithDetails[]>(initialCheckouts);
-  const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "settled">("all");
+  const [filterStatus, setFilterStatus] = useState<"pending" | "all" | "settled">("pending");
   const [selectedCheckout, setSelectedCheckout] = useState<CheckoutWithDetails | null>(null);
   const [settlingId, setSettlingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const terminology = getSpaceTerminology(spaceType);
+
+  useEffect(() => {
+    refreshExchangeRates();
+  }, []);
 
   const memberMap = new Map<string, { displayName: string; username: string; initial: string }>();
   members.forEach((m) => {
@@ -246,7 +253,14 @@ export function AdminRefundsSection({
                         <span>&middot;</span>
                         <span>{checkout.items.length} item{checkout.items.length === 1 ? "" : "s"}</span>
                         <span>&middot;</span>
-                        <span className="font-semibold text-foreground">{formatCurrency(checkout.total_claimed_amount, checkout.currency)}</span>
+                        <span className="font-semibold text-foreground">
+                          {formatCurrency(checkout.total_claimed_amount, checkout.currency)}
+                          {checkout.currency && adminPreferredCurrency && checkout.currency.toUpperCase() !== adminPreferredCurrency.toUpperCase() && (
+                            <span className="text-muted-foreground font-normal ml-1 text-[11px]">
+                              (approx. {formatCurrency(convertCurrency(Number(checkout.total_claimed_amount), checkout.currency, adminPreferredCurrency), adminPreferredCurrency)})
+                            </span>
+                          )}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -385,8 +399,19 @@ export function AdminRefundsSection({
                   <span>&middot;</span>
                   <span className="font-semibold text-foreground">
                     Claimed: {formatCurrency(selectedCheckout.total_claimed_amount || 0, selectedCheckout.currency)}
+                    {selectedCheckout.currency && adminPreferredCurrency && selectedCheckout.currency.toUpperCase() !== adminPreferredCurrency.toUpperCase() && (
+                      <span className="text-muted-foreground font-normal ml-1">
+                        (approx. {formatCurrency(convertCurrency(Number(selectedCheckout.total_claimed_amount || 0), selectedCheckout.currency, adminPreferredCurrency), adminPreferredCurrency)})
+                      </span>
+                    )}
                     {selectedCheckout.total_receipt_amount != null && (
-                      <span className="text-muted-foreground font-normal"> (Total: {formatCurrency(selectedCheckout.total_receipt_amount, selectedCheckout.currency)})</span>
+                      <span className="text-muted-foreground font-normal">
+                        {" "} (Total: {formatCurrency(selectedCheckout.total_receipt_amount, selectedCheckout.currency)}
+                        {selectedCheckout.currency && adminPreferredCurrency && selectedCheckout.currency.toUpperCase() !== adminPreferredCurrency.toUpperCase() && (
+                          <span> / approx. {formatCurrency(convertCurrency(Number(selectedCheckout.total_receipt_amount), selectedCheckout.currency, adminPreferredCurrency), adminPreferredCurrency)}</span>
+                        )}
+                        )
+                      </span>
                     )}
                   </span>
                 </div>
@@ -438,24 +463,36 @@ export function AdminRefundsSection({
                       </span>
                       <span className="font-mono text-[11px] text-muted-foreground">
                         {formatCurrency(selectedCheckout.total_claimed_amount || 0, selectedCheckout.currency)}
+                        {selectedCheckout.currency && adminPreferredCurrency && selectedCheckout.currency.toUpperCase() !== adminPreferredCurrency.toUpperCase() && (
+                          <span className="ml-1">
+                            (approx. {formatCurrency(convertCurrency(Number(selectedCheckout.total_claimed_amount || 0), selectedCheckout.currency, adminPreferredCurrency), adminPreferredCurrency)})
+                          </span>
+                        )}
                       </span>
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {selectedCheckout.items.map((item) => (
-                        <Badge
-                          key={item.id}
-                          variant="secondary"
-                          className="text-xs font-normal bg-card border-border flex items-center gap-1"
-                        >
-                          <span>{item.name}</span>
-                          {item.item_price != null && (
-                            <span className="font-mono text-[10px] text-muted-foreground">
-                              ({formatCurrency(item.item_price, item.currency || selectedCheckout.currency)})
-                            </span>
-                          )}
-                        </Badge>
-                      ))}
+                      {selectedCheckout.items.map((item) => {
+                        const itemCurrency = item.currency || selectedCheckout.currency || "EUR";
+                        const showConversion = item.item_price != null && adminPreferredCurrency && itemCurrency.toUpperCase() !== adminPreferredCurrency.toUpperCase();
+                        return (
+                          <Badge
+                            key={item.id}
+                            variant="secondary"
+                            className="text-xs font-normal bg-card border-border flex items-center gap-1"
+                          >
+                            <span>{item.name}</span>
+                            {item.item_price != null && (
+                              <span className="font-mono text-[10px] text-muted-foreground">
+                                ({formatCurrency(item.item_price, itemCurrency)}
+                                {showConversion && (
+                                  <span> &asymp; {formatCurrency(convertCurrency(Number(item.item_price), itemCurrency, adminPreferredCurrency), adminPreferredCurrency)}</span>
+                                )})
+                              </span>
+                            )}
+                          </Badge>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
