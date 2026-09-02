@@ -398,7 +398,7 @@ export function CheckoutDialog({
                 </DialogTitle>
               </div>
               <DialogDescription className="text-xs text-muted-foreground">
-                Mark your staged cart items as purchased, with or without a receipt photo.
+                Review your order, then complete checkout.
               </DialogDescription>
             </DialogHeader>
 
@@ -421,7 +421,7 @@ export function CheckoutDialog({
 
               {itemsNeedingDecision.length > 0 && (
                 <div className="p-2.5 rounded-xl bg-accent-ochre/10 border border-accent-ochre/30 text-[11px] text-accent-warning">
-                  {itemsNeedingDecision.length} item{itemsNeedingDecision.length === 1 ? "" : "s"} not matched to a receipt ({itemsNeedingDecision.map((c) => c.name).join(", ")}) — no proof yet that {itemsNeedingDecision.length === 1 ? "it was" : "they were"} bought.
+                  {itemsNeedingDecision.length} item{itemsNeedingDecision.length === 1 ? "" : "s"} not matched to a receipt ({itemsNeedingDecision.map((c) => c.name).join(", ")})
                 </div>
               )}
 
@@ -448,15 +448,29 @@ export function CheckoutDialog({
                       </p>
                     </div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setPhase("review")}
-                    className="text-xs h-8 rounded-lg shrink-0"
-                  >
-                    Edit Match
-                  </Button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPhase("review")}
+                      className="text-xs h-8 rounded-lg"
+                    >
+                      Edit Match
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={handleDiscardReceipt}
+                      disabled={isPending}
+                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg h-8 w-8"
+                      title="Remove this receipt"
+                      aria-label="Remove receipt"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <button
@@ -477,7 +491,7 @@ export function CheckoutDialog({
               <div className="space-y-1.5">
                 <Label htmlFor="checkout-store" className="text-xs font-medium text-foreground flex items-center gap-1.5">
                   <Store className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Store / Merchant Name (Optional)</span>
+                  <span>Store</span>
                 </Label>
                 <Input
                   id="checkout-store"
@@ -493,7 +507,7 @@ export function CheckoutDialog({
               <div className="space-y-1.5">
                 <Label htmlFor="checkout-amount" className="text-xs font-medium text-foreground flex items-center gap-1.5">
                   <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Total Amount Claimed (€) (Optional)</span>
+                  <span>Total (€) *</span>
                 </Label>
                 <Input
                   id="checkout-amount"
@@ -511,7 +525,7 @@ export function CheckoutDialog({
               <div className="space-y-1.5">
                 <Label htmlFor="checkout-note" className="text-xs font-medium text-foreground flex items-center gap-1.5">
                   <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Note to Admin (Optional)</span>
+                  <span>Note to Admin</span>
                 </Label>
                 <textarea
                   id="checkout-note"
@@ -632,7 +646,6 @@ export function CheckoutDialog({
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto" />
             <div>
               <p className="text-sm font-semibold text-foreground">Scanning receipt...</p>
-              <p className="text-xs text-muted-foreground mt-1">AI is extracting line items from your receipt</p>
             </div>
           </div>
         )}
@@ -715,7 +728,7 @@ export function CheckoutDialog({
 
                   {unresolvedItems.length > 0 && (
                     <div className="p-2.5 rounded-xl bg-accent-ochre/10 border border-accent-ochre/30 text-[11px] text-accent-warning">
-                      {unresolvedItems.length} item{unresolvedItems.length === 1 ? "" : "s"} not matched ({unresolvedItems.map((c) => c.name).join(", ")}) will stay in your personal cart for next time.
+                      {unresolvedItems.length} item{unresolvedItems.length === 1 ? "" : "s"} not matched ({unresolvedItems.map((c) => c.name).join(", ")})
                     </div>
                   )}
 
@@ -775,7 +788,7 @@ export function CheckoutDialog({
                       Claimed for Kitchen: €{claimedAmount.toFixed(2)}
                     </p>
                     <p className="text-[10px] sm:text-[11px] text-muted-foreground">
-                      Total Receipt: €{scanResult?.totalReceiptAmount.toFixed(2)} · Private: €{Math.max(0, (scanResult?.totalReceiptAmount || 0) - claimedAmount).toFixed(2)}
+                      Total Receipt: €{scanResult?.totalReceiptAmount.toFixed(2)}
                     </p>
                   </div>
 

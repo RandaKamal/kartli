@@ -136,11 +136,8 @@ export function ActiveCartSection({
                 </Badge>
               </div>
               <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight">
-                Active Household Cart
+                Your Cart
               </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                {terminology.cartRoommateDescription}
-              </p>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full sm:w-auto shrink-0">
@@ -216,18 +213,15 @@ export function ActiveCartSection({
                   className="text-[11px] font-mono bg-muted text-foreground border-border gap-1"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-accent-success shadow-[0_0_6px_rgba(129,178,154,0.5)]" />
-                  <span>{myCartItems.length} in your cart</span>
+                  <span>{myCartItems.length} item{myCartItems.length === 1 ? "" : "s"}</span>
                 </Badge>
               )}
             </div>
 
             <div>
               <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground leading-tight">
-                Active Household Cart
+                Your Cart
               </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                {terminology.cartRoommateDescription}
-              </p>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">

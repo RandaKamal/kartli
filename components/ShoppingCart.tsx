@@ -215,7 +215,7 @@ export function ShoppingCart({
                 Active Cart
               </DialogTitle>
               <Badge variant="secondary" className="text-xs px-2 py-0.5 font-mono">
-                {myCartItems.length} in your cart
+                {myCartItems.length} item{myCartItems.length === 1 ? "" : "s"}
               </Badge>
               {otherCartItems.length > 0 && (
                 <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-muted-foreground border-border">
@@ -223,9 +223,6 @@ export function ShoppingCart({
                 </Badge>
               )}
             </div>
-            <DialogDescription className="text-xs sm:text-sm text-muted-foreground mt-1">
-              {terminology.cartRoommateDescription}
-            </DialogDescription>
           </DialogHeader>
 
           {isEmpty ? (
