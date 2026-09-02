@@ -5,8 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getUserMembership } from "@/lib/kitchen";
 import { pool } from "@/lib/db";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import fs from "node:fs/promises";
-import path from "node:path";
+import { put, del } from "@vercel/blob";
 import crypto from "node:crypto";
 
 export async function scanReceiptAction(formData: FormData) {
@@ -30,18 +29,21 @@ export async function scanReceiptAction(formData: FormData) {
     throw new Error("GEMINI_API_KEY is not configured.");
   }
 
-  let filepath: string | null = null;
+  let uploadedUrl: string | null = null;
   try {
     const ext = file.name.split('.').pop() || 'jpg';
-    const filename = `${crypto.randomUUID()}-${Date.now()}.${ext}`;
-    const dir = path.join(process.cwd(), 'public', 'uploads', 'receipts');
-    await fs.mkdir(dir, { recursive: true });
-    filepath = path.join(dir, filename);
+    const filename = `receipts/${crypto.randomUUID()}-${Date.now()}.${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
-    await fs.writeFile(filepath, buffer);
+    const mimeType = file.type || 'image/jpeg';
+
+    const blob = await put(filename, buffer, {
+      access: 'public',
+      contentType: mimeType,
+    });
+    uploadedUrl = blob.url;
 
     const base64 = buffer.toString('base64');
-    const mimeType = file.type || 'image/jpeg';
+
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
@@ -108,7 +110,7 @@ IMPORTANT: Return ONLY the JSON object, no markdown, no code fences, no extra te
     const currency = rawCurrency.length === 3 ? rawCurrency : 'EUR';
 
     return {
-      receiptPath: `/uploads/receipts/${filename}`,
+      receiptPath: uploadedUrl,
       storeName: parsed.store_name || 'Supermarket',
       currency,
       totalReceiptAmount: Number(parsed.total_receipt_amount) || 0,
@@ -121,9 +123,9 @@ IMPORTANT: Return ONLY the JSON object, no markdown, no code fences, no extra te
     };
 
   } catch (error: any) {
-    if (filepath) {
+    if (uploadedUrl) {
       try {
-        await fs.unlink(filepath);
+        await del(uploadedUrl);
       } catch {
         // ignore cleanup error
       }
@@ -177,9 +179,9 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
   const userId = session.user.id;
 
   const rawReceiptPaths: string[] = JSON.parse(rawReceiptPathsStr || "[]");
-  const receiptPaths = rawReceiptPaths
-    .filter((p) => typeof p === "string" && p && !p.includes("\0"))
-    .map((p) => `/uploads/receipts/${path.basename(p)}`);
+  const receiptPaths = rawReceiptPaths.filter(
+    (p) => typeof p === "string" && p.startsWith("https://") && p.includes(".blob.vercel-storage.com/")
+  );
 
   const items: Array<{
     shopping_list_item_id: string;
@@ -372,37 +374,24 @@ export async function receiptlessCheckoutAction(formData: FormData) {
 }
 
 /**
- * Safely deletes a receipt file from public/uploads/receipts/.
- * Protects against path traversal by extracting basename and verifying directory boundaries.
+ * Deletes a receipt from Vercel Blob storage.
+ * Only allows deleting URLs that actually belong to your Blob store.
  */
-export async function deleteReceiptFileAction(rawFilename: string) {
+export async function deleteReceiptFileAction(rawUrl: string) {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, error: "Unauthorized" };
   }
-  
+
   try {
-    if (!rawFilename || typeof rawFilename !== "string") {
-      return { success: false, error: "Invalid filename" };
+    if (!rawUrl || typeof rawUrl !== "string" || !rawUrl.includes(".blob.vercel-storage.com/")) {
+      return { success: false, error: "Invalid receipt URL" };
     }
 
-    if (rawFilename.includes("\0")) {
-      throw new Error("Invalid file path");
-    }
-
-    const safeName = path.basename(rawFilename);
-    const targetDir = path.join(process.cwd(), 'public', 'uploads', 'receipts');
-    const targetPath = path.resolve(targetDir, safeName);
-
-    // Strict directory boundary check
-    if (!targetPath.startsWith(targetDir + path.sep)) {
-      throw new Error("Invalid file path: path traversal detected");
-    }
-
-    await fs.unlink(targetPath);
+    await del(rawUrl);
     return { success: true };
   } catch (error) {
-    console.error("Safe file delete error:", error);
+    console.error("Blob delete error:", error);
     return { success: false };
   }
 }

@@ -695,4 +695,36 @@ export async function unstageGuestItem(
   }
 }
 
+import { del } from "@vercel/blob";
+
+/**
+ * Deletes receipt files (from Vercel Blob) for checkouts refunded 30+ days ago,
+ * across every kitchen. Meant to run on a schedule (Vercel Cron), not per-request.
+ */
+export async function cleanupAllExpiredReceipts(): Promise<number> {
+  const { rows } = await pool.query<{ id: string; receipt_filename: string }>(
+    `SELECT cr.id, cr.receipt_filename
+     FROM checkout_receipts cr
+     JOIN checkouts c ON cr.checkout_id = c.id
+     WHERE c.is_refunded = TRUE
+       AND c.refunded_at < NOW() - INTERVAL '30 days'
+       AND cr.receipt_filename IS NOT NULL`
+  );
+
+  for (const row of rows) {
+    try {
+      await del(row.receipt_filename);
+    } catch {
+      // already gone — fine
+    }
+    await pool.query(
+      `UPDATE checkout_receipts SET receipt_filename = NULL WHERE id = $1`,
+      [row.id]
+    );
+  }
+
+  return rows.length;
+}
+
+
 

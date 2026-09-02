@@ -441,7 +441,7 @@ export function AdminRefundsSection({
                     {selectedCheckout.receipts.map((r) => (
                       <div key={r.id} className="relative rounded-2xl overflow-hidden border border-border bg-muted/30 p-2 sm:p-3 flex items-center justify-center min-h-[220px]">
                         <img
-                          src={r.receipt_filename.startsWith("/") ? r.receipt_filename : `/uploads/receipts/${r.receipt_filename}`}
+                          src={r.receipt_filename}
                           alt={`Receipt for ${selectedCheckout.store_name || "household purchase"}`}
                           className="max-h-[75vh] w-auto max-w-full object-contain rounded-md border border-border shadow-xs"
                         />
