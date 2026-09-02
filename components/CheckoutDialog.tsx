@@ -36,6 +36,7 @@ import {
   DollarSign,
   MessageSquare,
   ShoppingBag,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -74,13 +75,15 @@ export function CheckoutDialog({
   onOpenChange,
 }: CheckoutDialogProps) {
   const router = useRouter();
-  const [phase, setPhase] = useState<"form" | "scanning" | "review">("form");
+  const [phase, setPhase] = useState<"form" | "scanning" | "review" | "confirm-unmatched">("form");
   const [storeName, setStoreName] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
   const [note, setNote] = useState("");
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [lineStates, setLineStates] = useState<Array<{ checked: boolean; price: number }>>([]);
   const [lineMatches, setLineMatches] = useState<Array<string | null>>([]);
+  const [noReceiptDecisions, setNoReceiptDecisions] = useState<Record<string, "return" | "forgot">>({});
+  const [noReceiptPrices, setNoReceiptPrices] = useState<Record<string, number>>({});
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isMobileReceiptExpanded, setIsMobileReceiptExpanded] = useState(false);
@@ -95,6 +98,8 @@ export function CheckoutDialog({
     setScanResult(null);
     setLineStates([]);
     setLineMatches([]);
+    setNoReceiptDecisions({});
+    setNoReceiptPrices({});
     setPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
       return null;
@@ -153,7 +158,6 @@ export function CheckoutDialog({
           toast.error(error.message || "Failed to scan receipt");
           setPhase("form");
         }
-
       });
     },
     [kitchenId, stagedCartItems]
@@ -170,11 +174,15 @@ export function CheckoutDialog({
 
   const unresolvedItems = useMemo(() => {
     const matchedIds = new Set(
-        lineMatches.filter((id, i) => id && lineStates[i]?.checked)
+      lineMatches.filter((id, i) => id && lineStates[i]?.checked)
     );
     return stagedCartItems.filter((c) => !matchedIds.has(c.id));
   }, [lineMatches, lineStates, stagedCartItems]);
 
+  // Unified across both tracks: no receipt at all = every item counts as unmatched.
+  const itemsNeedingDecision = useMemo(() => {
+    return scanResult ? unresolvedItems : stagedCartItems;
+  }, [scanResult, unresolvedItems, stagedCartItems]);
 
   const handleToggleLine = useCallback((index: number) => {
     setLineStates((prev) => {
@@ -195,23 +203,30 @@ export function CheckoutDialog({
 
   const handleMatchChange = useCallback((index: number, cartItemId: string | null) => {
     setLineMatches((prev) => {
-        const next = [...prev];
-        next[index] = cartItemId;
-        return next;
+      const next = [...prev];
+      next[index] = cartItemId;
+      return next;
     });
     setLineStates((prev) => {
-        const next = [...prev];
-        next[index] = { ...next[index], checked: cartItemId !== null };
-        return next;
+      const next = [...prev];
+      next[index] = { ...next[index], checked: cartItemId !== null };
+      return next;
     });
   }, []);
 
-    const handleContinueToDetails = () => {
+  const handleNoReceiptDecision = useCallback((itemId: string, decision: "return" | "forgot") => {
+    setNoReceiptDecisions((prev) => ({ ...prev, [itemId]: decision }));
+  }, []);
+
+  const handleNoReceiptPriceChange = useCallback((itemId: string, value: string) => {
+    const num = parseFloat(value);
+    setNoReceiptPrices((prev) => ({ ...prev, [itemId]: isNaN(num) ? 0 : num }));
+  }, []);
+
+  const handleContinueToDetails = () => {
     setTotalAmount(claimedAmount.toFixed(2));
     setPhase("form");
-    };
-
-
+  };
 
   const handleDiscardReceipt = useCallback(() => {
     if (scanResult?.receiptPath) {
@@ -253,82 +268,115 @@ export function CheckoutDialog({
     [handleClose, onOpenChange]
   );
 
+  const attemptSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (stagedCartItems.length === 0) {
+      toast.error("Your cart is empty.");
+      return;
+    }
 
-const handleFormSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
-  if (stagedCartItems.length === 0) {
-    toast.error("Your cart is empty.");
-    return;
-  }
+    if (itemsNeedingDecision.length > 0) {
+      setNoReceiptDecisions({});
+      setNoReceiptPrices({});
+      setPhase("confirm-unmatched");
+      return;
+    }
 
-  if (scanResult) {
-    // Receipt was scanned & matched — submit as a refund request
-    const matchedItems = scanResult.lines
-      .map((line, i) => {
-        const matchedId = lineMatches[i];
-        if (lineStates[i]?.checked && matchedId) {
-          const cartItem = stagedCartItems.find((c) => c.id === matchedId);
-          return {
-            shopping_list_item_id: matchedId,
-            price: lineStates[i].price,
-            pantry_item_id: cartItem?.pantry_item_id || null,
-          };
+    finalizeCheckout();
+  };
+
+  const finalizeCheckout = () => {
+    if (scanResult) {
+      // Receipt was scanned & matched — submit as a refund request
+      const matchedItems: Array<{ shopping_list_item_id: string; price: number; pantry_item_id: string | null }> = scanResult.lines
+        .map((line, i) => {
+          const matchedId = lineMatches[i];
+          if (lineStates[i]?.checked && matchedId) {
+            const cartItem = stagedCartItems.find((c) => c.id === matchedId);
+            return {
+              shopping_list_item_id: matchedId,
+              price: lineStates[i].price,
+              pantry_item_id: cartItem?.pantry_item_id || null,
+            };
+          }
+          return null;
+        })
+        .filter((item): item is { shopping_list_item_id: string; price: number; pantry_item_id: string | null } => item !== null);
+
+      // Items the user confirmed as "forgot receipt" — bought, just unproven
+      let forgotTotal = 0;
+      for (const item of itemsNeedingDecision) {
+        if (noReceiptDecisions[item.id] === "forgot") {
+          const price = noReceiptPrices[item.id] || 0;
+          forgotTotal += price;
+          matchedItems.push({
+            shopping_list_item_id: item.id,
+            price,
+            pantry_item_id: item.pantry_item_id,
+          });
         }
-        return null;
-      })
-      .filter(Boolean);
-
-    const formData = new FormData();
-    formData.append("kitchenId", kitchenId);
-    formData.append("receiptPath", scanResult.receiptPath);
-    formData.append("storeName", storeName.trim());
-    formData.append("note", note.trim());
-    formData.append("totalReceiptAmount", scanResult.totalReceiptAmount.toString());
-    formData.append("totalClaimedAmount", (parseFloat(totalAmount) || 0).toString());
-    formData.append("matchedItems", JSON.stringify(matchedItems));
-
-    startTransition(async () => {
-      try {
-        await submitReceiptCheckoutAction(formData);
-        const claimedNum = parseFloat(totalAmount) || 0;
-        toast.success(`Refund request of €${claimedNum.toFixed(2)} submitted to kitchen admin.`);
-        router.refresh();
-        resetAll();
-        onOpenChange(false);
-      } catch (error: any) {
-        toast.error(error.message || "Failed to submit refund request");
       }
-    });
-  } else {
-    // No receipt — direct checkout, unchanged
-    const formData = new FormData();
-    formData.append("kitchenId", kitchenId);
-    formData.append("storeName", storeName.trim());
-    formData.append("totalAmount", totalAmount ? parseFloat(totalAmount).toString() : "0");
-    formData.append("note", note.trim());
-    formData.append("itemIds", JSON.stringify(stagedCartItems.map((i) => i.id)));
 
-    startTransition(async () => {
-      try {
-        const result = await receiptlessCheckoutAction(formData);
-        if (result.success) {
-          const claimedNum = parseFloat(totalAmount) || 0;
-          toast.success(
-            claimedNum > 0
-              ? `Checkout recorded! €${claimedNum.toFixed(2)} refund requested.`
-              : "Items checked out and marked as purchased!"
-          );
+      const formData = new FormData();
+      formData.append("kitchenId", kitchenId);
+      formData.append("receiptPath", scanResult.receiptPath);
+      formData.append("storeName", storeName.trim());
+      formData.append("note", note.trim());
+      formData.append("totalReceiptAmount", scanResult.totalReceiptAmount.toString());
+      formData.append("totalClaimedAmount", ((parseFloat(totalAmount) || 0) + forgotTotal).toString());
+      formData.append("matchedItems", JSON.stringify(matchedItems));
+
+      startTransition(async () => {
+        try {
+          await submitReceiptCheckoutAction(formData);
+          const claimedNum = (parseFloat(totalAmount) || 0) + forgotTotal;
+          toast.success(`Refund request of €${claimedNum.toFixed(2)} submitted to kitchen admin.`);
           router.refresh();
           resetAll();
           onOpenChange(false);
+        } catch (error: any) {
+          toast.error(error.message || "Failed to submit refund request");
         }
-      } catch (error: any) {
-        toast.error(error.message || "Failed to complete checkout.");
-      }
-    });
-  }
-};
+      });
+    } else {
+      // No receipt — only items explicitly confirmed as "Forgot Receipt" get checked out
+      const confirmedItemIds = stagedCartItems
+        .filter((item) => noReceiptDecisions[item.id] === "forgot")
+        .map((item) => item.id);
 
+      if (confirmedItemIds.length === 0) {
+        toast.error("Nothing to check out — every item was returned to the cart.");
+        setPhase("form");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("kitchenId", kitchenId);
+      formData.append("storeName", storeName.trim());
+      formData.append("totalAmount", totalAmount ? parseFloat(totalAmount).toString() : "0");
+      formData.append("note", note.trim());
+      formData.append("itemIds", JSON.stringify(confirmedItemIds));
+
+      startTransition(async () => {
+        try {
+          const result = await receiptlessCheckoutAction(formData);
+          if (result.success) {
+            const claimedNum = parseFloat(totalAmount) || 0;
+            toast.success(
+              claimedNum > 0
+                ? `Checkout recorded! €${claimedNum.toFixed(2)} refund requested.`
+                : "Items checked out and marked as purchased!"
+            );
+            router.refresh();
+            resetAll();
+            onOpenChange(false);
+          }
+        } catch (error: any) {
+          toast.error(error.message || "Failed to complete checkout.");
+        }
+      });
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -354,7 +402,7 @@ const handleFormSubmit = (e: React.FormEvent) => {
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleFormSubmit} className="space-y-4">
+            <form onSubmit={attemptSubmit} className="space-y-4">
               <div className="space-y-2 p-3.5 rounded-2xl bg-muted/40 border border-border">
                 <div className="flex items-center justify-between text-xs font-semibold text-foreground">
                   <span>Items to Checkout</span>
@@ -370,6 +418,12 @@ const handleFormSubmit = (e: React.FormEvent) => {
                   ))}
                 </div>
               </div>
+
+              {itemsNeedingDecision.length > 0 && (
+                <div className="p-2.5 rounded-xl bg-accent-ochre/10 border border-accent-ochre/30 text-[11px] text-accent-warning">
+                  {itemsNeedingDecision.length} item{itemsNeedingDecision.length === 1 ? "" : "s"} not matched to a receipt ({itemsNeedingDecision.map((c) => c.name).join(", ")}) — no proof yet that {itemsNeedingDecision.length === 1 ? "it was" : "they were"} bought.
+                </div>
+              )}
 
               <input
                 ref={fileInputRef}
@@ -419,7 +473,6 @@ const handleFormSubmit = (e: React.FormEvent) => {
                   </div>
                 </button>
               )}
-
 
               <div className="space-y-1.5">
                 <Label htmlFor="checkout-store" className="text-xs font-medium text-foreground flex items-center gap-1.5">
@@ -481,6 +534,96 @@ const handleFormSubmit = (e: React.FormEvent) => {
                 </Button>
               </DialogFooter>
             </form>
+          </>
+        )}
+
+        {phase === "confirm-unmatched" && (
+          <>
+            <DialogHeader className="space-y-1.5 text-left">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-accent-warning" />
+                <DialogTitle className="text-base sm:text-lg font-bold text-foreground">
+                  {scanResult ? "Some Items Have No Receipt Proof" : "You're Checking Out Without a Receipt"}
+                </DialogTitle>
+              </div>
+              <DialogDescription className="text-xs text-muted-foreground">
+                {scanResult
+                  ? "These items weren't matched to a line on your receipt. Choose what to do with each one."
+                  : "You're about to check out without uploading a receipt. Choose what to do with each item below."}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+              {itemsNeedingDecision.map((item) => {
+                const decision = noReceiptDecisions[item.id];
+                return (
+                  <div key={item.id} className="p-3 rounded-2xl border border-border bg-muted/30 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-foreground truncate">{item.name}</span>
+                      {decision && (
+                        <Badge
+                          variant={decision === "forgot" ? "warm" : "secondary"}
+                          className="text-[10px] shrink-0"
+                        >
+                          {decision === "forgot" ? "Marked as Bought" : "Returned to Cart"}
+                        </Badge>
+                      )}
+                    </div>
+
+                    {scanResult && decision === "forgot" && (
+                      <div className="flex items-center gap-1.5">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={noReceiptPrices[item.id] ?? ""}
+                          onChange={(e) => handleNoReceiptPriceChange(item.id, e.target.value)}
+                          className="h-8 text-xs font-mono rounded-lg border-border bg-transparent flex-1"
+                        />
+                        <span className="text-xs text-muted-foreground">€</span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant={decision === "return" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleNoReceiptDecision(item.id, "return")}
+                        className="flex-1 h-8 text-xs rounded-lg"
+                      >
+                        Return to Cart
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={decision === "forgot" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleNoReceiptDecision(item.id, "forgot")}
+                        className="flex-1 h-8 text-xs rounded-lg"
+                      >
+                        Forgot Receipt
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <DialogFooter className="pt-2 border-t border-border flex flex-col sm:flex-row gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => setPhase("form")} disabled={isPending} className="rounded-xl text-xs h-9 border-border">
+                Back
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={finalizeCheckout}
+                disabled={isPending || itemsNeedingDecision.some((item) => !noReceiptDecisions[item.id])}
+                className="rounded-xl text-xs font-semibold h-9 px-4 gap-1.5 bg-primary text-primary-foreground shadow-sm"
+              >
+                {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                <span>Confirm &amp; Checkout</span>
+              </Button>
+            </DialogFooter>
           </>
         )}
 
@@ -609,7 +752,6 @@ const handleFormSubmit = (e: React.FormEvent) => {
                               ))}
                             </select>
                           </div>
-
 
                           <div className="flex items-center gap-1 shrink-0">
                             <Input
