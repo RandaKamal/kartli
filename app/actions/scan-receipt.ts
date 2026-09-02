@@ -5,8 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getUserMembership } from "@/lib/kitchen";
 import { pool } from "@/lib/db";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import fs from "node:fs/promises";
-import path from "node:path";
+import { put, del } from "@vercel/blob";
 import crypto from "node:crypto";
 
 export async function scanReceiptAction(formData: FormData) {
@@ -30,18 +29,21 @@ export async function scanReceiptAction(formData: FormData) {
     throw new Error("GEMINI_API_KEY is not configured.");
   }
 
-  let filepath: string | null = null;
+  let uploadedUrl: string | null = null;
   try {
     const ext = file.name.split('.').pop() || 'jpg';
-    const filename = `${crypto.randomUUID()}-${Date.now()}.${ext}`;
-    const dir = path.join(process.cwd(), 'public', 'uploads', 'receipts');
-    await fs.mkdir(dir, { recursive: true });
-    filepath = path.join(dir, filename);
+    const filename = `receipts/${crypto.randomUUID()}-${Date.now()}.${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
-    await fs.writeFile(filepath, buffer);
+    const mimeType = file.type || 'image/jpeg';
+
+    const blob = await put(filename, buffer, {
+      access: 'public',
+      contentType: mimeType,
+    });
+    uploadedUrl = blob.url;
 
     const base64 = buffer.toString('base64');
-    const mimeType = file.type || 'image/jpeg';
+
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
@@ -53,16 +55,19 @@ export async function scanReceiptAction(formData: FormData) {
     
     const stagedItems = JSON.parse(stagedCartItemsStr || '[]');
     
-    const prompt = `You are a receipt OCR extraction assistant. Extract all line items from this supermarket receipt (typically German/European receipts like Rewe, Lidl, Aldi, Edeka, DM).
+    const prompt = `You are a receipt OCR extraction assistant. Extract all line items from this supermarket receipt.
+
+Inspect receipt text for currency symbols or abbreviations (e.g., "CHF", "EUR", "USD", "GBP", "€", "$", "£", "Fr."). Return a standard 3-letter uppercase ISO code in the "currency" field. Default to "EUR" if ambiguous or not explicitly specified.
 
 Return a JSON object with this exact structure:
 {
   "store_name": "<store name as printed, e.g. Lidl, Rewe, or Supermarket if unclear>",
-  "total_receipt_amount": <number, the overall gross receipt total in EUR>,
+  "currency": "<ISO code: 'EUR', 'CHF', 'USD', 'GBP', etc. Default 'EUR'>",
+  "total_receipt_amount": <number, the overall gross receipt total>,
   "lines": [
     {
       "raw_name": "<text as printed on receipt>",
-      "price": <number, EUR price for this line>,
+      "price": <number, price for this line>,
       "quantity": <number, default 1>,
       "matched_cart_item_id": <string or null>
     }
@@ -101,9 +106,13 @@ IMPORTANT: Return ONLY the JSON object, no markdown, no code fences, no extra te
       throw new Error("Could not parse the receipt data returned by AI. Please try again with a clearer picture.");
     }
 
+    const rawCurrency = (parsed.currency || 'EUR').toString().trim().toUpperCase();
+    const currency = rawCurrency.length === 3 ? rawCurrency : 'EUR';
+
     return {
-      receiptPath: `/uploads/receipts/${filename}`,
+      receiptPath: uploadedUrl,
       storeName: parsed.store_name || 'Supermarket',
+      currency,
       totalReceiptAmount: Number(parsed.total_receipt_amount) || 0,
       lines: (parsed.lines || []).map((line: any) => ({
         raw_name: line.raw_name || '',
@@ -114,9 +123,9 @@ IMPORTANT: Return ONLY the JSON object, no markdown, no code fences, no extra te
     };
 
   } catch (error: any) {
-    if (filepath) {
+    if (uploadedUrl) {
       try {
-        await fs.unlink(filepath);
+        await del(uploadedUrl);
       } catch {
         // ignore cleanup error
       }
@@ -152,9 +161,11 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
   const kitchenId = formData.get("kitchenId") as string;
   const storeName = (formData.get("storeName") as string)?.trim() || null;
   const note = (formData.get("note") as string)?.trim() || null;
+  const rawCurrency = (formData.get("currency") as string)?.trim().toUpperCase() || "EUR";
+  const currency = rawCurrency.length === 3 ? rawCurrency : "EUR";
   const totalClaimedAmountStr = formData.get("totalClaimedAmount") as string;
   const totalReceiptAmountStr = formData.get("totalReceiptAmount") as string;
-  const rawReceiptPath = (formData.get("receiptPath") as string)?.trim() || null;
+  const rawReceiptPathsStr = formData.get("receiptPaths") as string;
   const matchedItemsStr = formData.get("matchedItems") as string;
 
   const totalClaimedAmount = Number(totalClaimedAmountStr) || 0;
@@ -167,17 +178,11 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
 
   const userId = session.user.id;
 
-  // Sanitize receipt path if provided
-  let receiptPath: string | null = null;
-  if (rawReceiptPath) {
-    if (rawReceiptPath.includes("\0")) {
-      throw new Error("Invalid receipt file path.");
-    }
-    const safeName = path.basename(rawReceiptPath);
-    receiptPath = `/uploads/receipts/${safeName}`;
-  }
+  const rawReceiptPaths: string[] = JSON.parse(rawReceiptPathsStr || "[]");
+  const receiptPaths = rawReceiptPaths.filter(
+    (p) => typeof p === "string" && p.startsWith("https://") && p.includes(".blob.vercel-storage.com/")
+  );
 
-  // Parse matched items
   const items: Array<{
     shopping_list_item_id: string;
     price?: number | null;
@@ -189,8 +194,7 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    
-    // Validate that all shopping list items belong to this kitchen and are not already checked out
+
     if (itemIds.length > 0) {
       const { rows: validItems } = await client.query<{ id: string; pantry_item_id: string | null }>(
         `SELECT id, pantry_item_id 
@@ -208,35 +212,40 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
       }
     }
 
-    // Insert checkout row with note and receipt data
     const { rows: checkoutRows } = await client.query<{ id: string }>(
-      `INSERT INTO checkouts (kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, NOW())
+      `INSERT INTO checkouts (kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, currency, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NULL, FALSE, $7, NOW())
        RETURNING id`,
-      [kitchenId, userId, storeName, note, totalClaimedAmount, totalReceiptAmount, receiptPath]
+      [kitchenId, userId, storeName, note, totalClaimedAmount, totalReceiptAmount, currency]
     );
     const checkoutId = checkoutRows[0].id;
-    
-    // Update each matched shopping list item enforcing kitchen_id
+
+    for (const filename of receiptPaths) {
+      await client.query(
+        `INSERT INTO checkout_receipts (checkout_id, receipt_filename) VALUES ($1, $2)`,
+        [checkoutId, filename]
+      );
+    }
+
     for (const item of items) {
       const updateResult = await client.query(
         `UPDATE shopping_list_items
          SET is_purchased = TRUE, 
              checkout_id = $1, 
              item_price = $2, 
+             currency = $3,
              is_guest_staged = FALSE
-         WHERE id = $3 
-           AND kitchen_id = $4
-           AND purchased_by = $5
+         WHERE id = $4 
+           AND kitchen_id = $5
+           AND purchased_by = $6
            AND checkout_id IS NULL`,
-        [checkoutId, item.price ?? null, item.shopping_list_item_id, kitchenId, session.user.id]
+        [checkoutId, item.price ?? null, currency, item.shopping_list_item_id, kitchenId, session.user.id]
       );
 
       if (updateResult.rowCount === 0) {
         throw new Error(`Item ${item.shopping_list_item_id} could not be updated or was already processed.`);
       }
-      
-      // If tied to a pantry item, restock it enforcing kitchen_id
+
       if (item.pantry_item_id) {
         await client.query(
           `UPDATE pantry_items SET is_out_of_stock = FALSE, updated_at = NOW()
@@ -245,14 +254,14 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
         );
       }
     }
-    
+
     await client.query('COMMIT');
-    
+
     revalidatePath(`/kitchen/${kitchenId}`);
     revalidatePath(`/kitchen/${kitchenId}/member`);
     revalidatePath(`/kitchen/${kitchenId}/admin`);
-    
-    return { success: true, checkoutId, totalClaimedAmount };
+
+    return { success: true, checkoutId, totalClaimedAmount, currency };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -260,6 +269,7 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
     client.release();
   }
 }
+
 
 /**
  * Direct checkout without receipt upload.
@@ -272,6 +282,8 @@ export async function receiptlessCheckoutAction(formData: FormData) {
   const kitchenId = formData.get("kitchenId") as string;
   const storeName = (formData.get("storeName") as string)?.trim() || null;
   const note = (formData.get("note") as string)?.trim() || null;
+  const rawCurrency = (formData.get("currency") as string)?.trim().toUpperCase() || "EUR";
+  const currency = rawCurrency.length === 3 ? rawCurrency : "EUR";
   const totalAmountStr = formData.get("totalAmount") as string;
   const itemIdsStr = formData.get("itemIds") as string;
 
@@ -318,19 +330,19 @@ export async function receiptlessCheckoutAction(formData: FormData) {
 
     // Insert checkout row with NULL receipt_filename
     const { rows: checkoutRows } = await client.query<{ id: string }>(
-      `INSERT INTO checkouts (kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, created_at)
-       VALUES ($1, $2, $3, $4, $5, NULL, NULL, FALSE, NOW())
+      `INSERT INTO checkouts (kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, currency, created_at)
+       VALUES ($1, $2, $3, $4, $5, NULL, NULL, FALSE, $6, NOW())
        RETURNING id`,
-      [kitchenId, userId, storeName, note, totalAmount]
+      [kitchenId, userId, storeName, note, totalAmount, currency]
     );
     const checkoutId = checkoutRows[0].id;
 
     const checkoutItemIds = cartRows.map((i) => i.id);
     await client.query(
       `UPDATE shopping_list_items
-       SET is_purchased = TRUE, checkout_id = $1, is_guest_staged = FALSE
-       WHERE id = ANY($2::uuid[]) AND kitchen_id = $3`,
-      [checkoutId, checkoutItemIds, kitchenId]
+       SET is_purchased = TRUE, checkout_id = $1, currency = $2, is_guest_staged = FALSE
+       WHERE id = ANY($3::uuid[]) AND kitchen_id = $4`,
+      [checkoutId, currency, checkoutItemIds, kitchenId]
     );
 
     // Restock any linked pantry items
@@ -362,37 +374,24 @@ export async function receiptlessCheckoutAction(formData: FormData) {
 }
 
 /**
- * Safely deletes a receipt file from public/uploads/receipts/.
- * Protects against path traversal by extracting basename and verifying directory boundaries.
+ * Deletes a receipt from Vercel Blob storage.
+ * Only allows deleting URLs that actually belong to your Blob store.
  */
-export async function deleteReceiptFileAction(rawFilename: string) {
+export async function deleteReceiptFileAction(rawUrl: string) {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, error: "Unauthorized" };
   }
-  
+
   try {
-    if (!rawFilename || typeof rawFilename !== "string") {
-      return { success: false, error: "Invalid filename" };
+    if (!rawUrl || typeof rawUrl !== "string" || !rawUrl.includes(".blob.vercel-storage.com/")) {
+      return { success: false, error: "Invalid receipt URL" };
     }
 
-    if (rawFilename.includes("\0")) {
-      throw new Error("Invalid file path");
-    }
-
-    const safeName = path.basename(rawFilename);
-    const targetDir = path.join(process.cwd(), 'public', 'uploads', 'receipts');
-    const targetPath = path.resolve(targetDir, safeName);
-
-    // Strict directory boundary check
-    if (!targetPath.startsWith(targetDir + path.sep)) {
-      throw new Error("Invalid file path: path traversal detected");
-    }
-
-    await fs.unlink(targetPath);
+    await del(rawUrl);
     return { success: true };
   } catch (error) {
-    console.error("Safe file delete error:", error);
+    console.error("Blob delete error:", error);
     return { success: false };
   }
 }

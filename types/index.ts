@@ -17,6 +17,7 @@ export interface DbUser {
   id: string;
   username: string;
   password_hash: string;
+  preferred_currency?: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -158,6 +159,7 @@ export interface ShoppingListItem {
   pantry_item_id: string | null;
   name: string;
   item_price: number | null;
+  currency?: string;
   is_purchased: boolean;
   purchased_by: string | null;
   purchased_by_name?: string | null;
@@ -187,6 +189,7 @@ export interface Checkout {
   total_receipt_amount: number | null;
   receipt_filename: string | null;
   is_refunded: boolean;
+  currency?: string;
   created_at: Date;
   refunded_at: Date | null;
   receipt_deleted_at: Date | null;
@@ -195,7 +198,19 @@ export interface Checkout {
 export interface CheckoutWithDetails extends Checkout {
   username: string | null;
   items: ShoppingListItem[];
+  receipts: CheckoutReceipt[];
+  totalReceiptsEverAttached: number;
 }
+
+export interface CheckoutReceipt {
+  id: string;
+  checkout_id: string;
+  receipt_filename: string;
+  created_at: Date;
+  deleted_by_admin_at: Date | null;
+  deleted_by_member_at: Date | null;
+}
+
 
 export interface ReceiptLine {
   raw_name: string;
@@ -207,6 +222,7 @@ export interface ReceiptLine {
 export interface ScanReceiptResult {
   receiptPath: string;
   storeName: string;
+  currency: string;
   totalReceiptAmount: number;
   lines: ReceiptLine[];
 }
@@ -220,11 +236,13 @@ declare module "next-auth" {
     user: {
       id: string;
       username: string;
+      preferred_currency?: string;
     } & DefaultSession["user"];
   }
 
   interface User {
     id?: string;
     username?: string;
+    preferred_currency?: string;
   }
 }

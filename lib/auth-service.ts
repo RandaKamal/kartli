@@ -62,14 +62,14 @@ export async function registerUser(input: RegisterUserInput): Promise<DbUser> {
 export async function verifyUserCredentials(
   username: string,
   password: string
-): Promise<{ id: string; username: string } | null> {
+): Promise<{ id: string; username: string; preferred_currency: string } | null> {
   const cleanUsername = username?.trim();
   if (!cleanUsername || !password) {
     return null;
   }
 
   const sql = `
-    SELECT id, username, password_hash
+    SELECT id, username, password_hash, preferred_currency
     FROM users
     WHERE LOWER(username) = LOWER($1)
     LIMIT 1
@@ -78,6 +78,7 @@ export async function verifyUserCredentials(
     id: string;
     username: string;
     password_hash: string;
+    preferred_currency?: string | null;
   }>(sql, [cleanUsername]);
 
   if (rows.length === 0) {
@@ -93,6 +94,7 @@ export async function verifyUserCredentials(
   return {
     id: user.id,
     username: user.username,
+    preferred_currency: user.preferred_currency || "EUR",
   };
 }
 
@@ -107,7 +109,7 @@ export async function getUserByUsername(username: string): Promise<DbUser | null
   if (!cleanUsername) return null;
 
   const sql = `
-    SELECT id, username, password_hash, created_at, updated_at
+    SELECT id, username, password_hash, preferred_currency, created_at, updated_at
     FROM users
     WHERE LOWER(username) = LOWER($1)
   `;
@@ -123,7 +125,7 @@ export async function getUserByUsername(username: string): Promise<DbUser | null
  */
 export async function getUserById(id: string): Promise<DbUser | null> {
   const sql = `
-    SELECT id, username, password_hash, created_at, updated_at
+    SELECT id, username, password_hash, preferred_currency, created_at, updated_at
     FROM users
     WHERE id = $1
   `;

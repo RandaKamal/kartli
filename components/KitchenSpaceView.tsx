@@ -77,6 +77,7 @@ interface KitchenSpaceViewProps {
   myCheckouts: CheckoutWithDetails[];
   adminCheckouts?: CheckoutWithDetails[];
   currentUserId: string;
+  userPreferredCurrency?: string;
   baseUrl: string;
   initialTab?: string;
 }
@@ -90,6 +91,7 @@ export function KitchenSpaceView({
   myCheckouts,
   adminCheckouts = [],
   currentUserId,
+  userPreferredCurrency = "EUR",
   baseUrl,
   initialTab = "kitchen",
 }: KitchenSpaceViewProps) {
@@ -418,7 +420,7 @@ export function KitchenSpaceView({
           </div>
 
           {myCheckouts && myCheckouts.length > 0 && (
-            <MyPurchasesSection checkouts={myCheckouts} />
+            <MyPurchasesSection kitchenId={initialKitchen.id} checkouts={myCheckouts} />
           )}
         </TabsContent>
 
@@ -593,6 +595,7 @@ export function KitchenSpaceView({
               checkouts={adminCheckouts}
               members={initialMembers}
               spaceType={spaceType}
+              adminPreferredCurrency={userPreferredCurrency}
             />
           </TabsContent>
         )}

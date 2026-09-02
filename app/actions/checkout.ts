@@ -8,6 +8,7 @@ import {
   getKitchenCheckouts,
   getUserCheckouts,
   refundCheckout,
+  deleteReceiptForSide,
 } from "@/lib/pantry";
 import type { Checkout, CheckoutWithDetails } from "@/types";
 
@@ -28,7 +29,7 @@ function revalidateKitchen(kitchenId: string) {
 export async function checkoutAction(
   kitchenId: string,
   receiptFilename?: string | null,
-  options?: { storeName?: string | null; note?: string | null; totalAmount?: number }
+  options?: { storeName?: string | null; note?: string | null; totalAmount?: number; currency?: string }
 ): Promise<Checkout> {
   const userId = await requireMembership(kitchenId);
   const checkout = await createCheckout(kitchenId, userId, receiptFilename, options);
@@ -55,4 +56,18 @@ export async function refundCheckoutAction(kitchenId: string, checkoutId: string
   const result = await refundCheckout(kitchenId, checkoutId, session.user.id);
   revalidateKitchen(kitchenId);
   return result;
+}
+
+export async function deleteReceiptForAdminAction(kitchenId: string, receiptId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("You must be logged in.");
+  await deleteReceiptForSide(kitchenId, receiptId, session.user.id, "admin");
+  revalidateKitchen(kitchenId);
+}
+
+export async function deleteReceiptForMemberAction(kitchenId: string, receiptId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("You must be logged in.");
+  await deleteReceiptForSide(kitchenId, receiptId, session.user.id, "member");
+  revalidateKitchen(kitchenId);
 }

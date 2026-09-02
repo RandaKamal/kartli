@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { refundCheckoutAction } from "@/app/actions/checkout";
+import { ReceiptExpiryBadge } from "@/components/ReceiptExpiryBadge";
+import { refundCheckoutAction, deleteReceiptForAdminAction } from "@/app/actions/checkout";
 import type { CheckoutWithDetails, KitchenMemberWithUser, KitchenSpaceType } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
-import { capitalize } from "@/lib/utils";
+import { capitalize, formatCurrency, daysUntilReceiptAutoDelete } from "@/lib/utils";
+import { convertCurrency, refreshExchangeRates } from "@/lib/currency";
 import {
   Receipt,
   CheckCircle2,
@@ -21,6 +23,7 @@ import {
   Store,
   ImageIcon,
   MessageSquare,
+  Trash2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +44,7 @@ interface AdminRefundsSectionProps {
   checkouts: CheckoutWithDetails[];
   members: KitchenMemberWithUser[];
   spaceType?: KitchenSpaceType;
+  adminPreferredCurrency?: string;
 }
 
 export function AdminRefundsSection({
@@ -48,15 +52,21 @@ export function AdminRefundsSection({
   checkouts: initialCheckouts,
   members,
   spaceType = "FLATSHARE",
+  adminPreferredCurrency = "EUR",
 }: AdminRefundsSectionProps) {
   const router = useRouter();
   const [checkoutsList, setCheckoutsList] = useState<CheckoutWithDetails[]>(initialCheckouts);
-  const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "settled">("all");
+  const [filterStatus, setFilterStatus] = useState<"pending" | "all" | "settled">("pending");
   const [selectedCheckout, setSelectedCheckout] = useState<CheckoutWithDetails | null>(null);
   const [settlingId, setSettlingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [deletingReceiptId, setDeletingReceiptId] = useState<string | null>(null);
 
   const terminology = getSpaceTerminology(spaceType);
+
+  useEffect(() => {
+    refreshExchangeRates();
+  }, []);
 
   const memberMap = new Map<string, { displayName: string; username: string; initial: string }>();
   members.forEach((m) => {
@@ -110,6 +120,28 @@ export function AdminRefundsSection({
       }
     });
   };
+
+  const handleDeleteReceipt = (receiptId: string) => {
+    if (!window.confirm("Remove this receipt from the admin view? This won't delete the member's own copy.")) return;
+    setDeletingReceiptId(receiptId);
+    startTransition(async () => {
+      try {
+        await deleteReceiptForAdminAction(kitchenId, receiptId);
+        setCheckoutsList((prev) =>
+          prev.map((c) => ({ ...c, receipts: c.receipts.filter((r) => r.id !== receiptId) }))
+        );
+        setSelectedCheckout((prev) =>
+          prev ? { ...prev, receipts: prev.receipts.filter((r) => r.id !== receiptId) } : prev
+        );
+        toast.success("Receipt removed from your view.");
+      } catch (err: any) {
+        toast.error(err.message || "Failed to delete receipt.");
+      } finally {
+        setDeletingReceiptId(null);
+      }
+    });
+  };
+
 
   return (
     <div className="space-y-6">
@@ -245,6 +277,15 @@ export function AdminRefundsSection({
                         </span>
                         <span>&middot;</span>
                         <span>{checkout.items.length} item{checkout.items.length === 1 ? "" : "s"}</span>
+                        <span>&middot;</span>
+                        <span className="font-semibold text-foreground">
+                          {formatCurrency(checkout.total_claimed_amount, checkout.currency)}
+                          {checkout.currency && adminPreferredCurrency && checkout.currency.toUpperCase() !== adminPreferredCurrency.toUpperCase() && (
+                            <span className="text-muted-foreground font-normal ml-1 text-[11px]">
+                              (approx. {formatCurrency(convertCurrency(Number(checkout.total_claimed_amount), checkout.currency, adminPreferredCurrency), adminPreferredCurrency)})
+                            </span>
+                          )}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -282,8 +323,13 @@ export function AdminRefundsSection({
 
                   {/* Receipt & Action Group */}
                   <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-border">
-                    {/* View Receipt or No Receipt Badge */}
-                    {checkout.receipt_filename ? (
+                    <Badge
+                      variant="secondary"
+                      className="text-xs font-mono font-bold px-2.5 h-8 rounded-xl bg-muted text-foreground border border-border flex items-center"
+                    >
+                      €{Number(checkout.total_claimed_amount || 0).toFixed(2)}
+                    </Badge>                    
+                    {checkout.receipts.length > 0 ? (
                       <Button
                         type="button"
                         variant="outline"
@@ -292,8 +338,15 @@ export function AdminRefundsSection({
                         className="rounded-xl text-xs font-medium h-8 gap-1.5 border-border hover:bg-secondary"
                       >
                         <Receipt className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>View Receipt</span>
+                        <span>View Receipt{checkout.receipts.length > 1 ? `s (${checkout.receipts.length})` : ""}</span>
                       </Button>
+                    ) : checkout.totalReceiptsEverAttached > 0 ? (
+                      <Badge
+                        variant="secondary"
+                        className="rounded-xl text-xs font-normal h-8 px-2.5 bg-muted text-muted-foreground border border-border flex items-center justify-center"
+                      >
+                        Receipt Deleted
+                      </Badge>
                     ) : (
                       <Badge
                         variant="secondary"
@@ -305,9 +358,14 @@ export function AdminRefundsSection({
 
                     {/* Status Badge & Settle Button */}
                     {checkout.is_refunded ? (
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border bg-accent-sage/15 text-accent-success border-accent-sage/30">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-accent-success" />
-                        <span>Settled</span>
+                      <div className="flex items-center gap-1.5">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border bg-accent-sage/15 text-accent-success border-accent-sage/30">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-accent-success" />
+                          <span>Settled</span>
+                        </div>
+                        {checkout.receipts.length > 0 && checkout.refunded_at && (
+                          <ReceiptExpiryBadge refundedAt={checkout.refunded_at} />
+                        )}
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
@@ -382,9 +440,20 @@ export function AdminRefundsSection({
                   </span>
                   <span>&middot;</span>
                   <span className="font-semibold text-foreground">
-                    Claimed: €{Number(selectedCheckout.total_claimed_amount || 0).toFixed(2)}
+                    Claimed: {formatCurrency(selectedCheckout.total_claimed_amount || 0, selectedCheckout.currency)}
+                    {selectedCheckout.currency && adminPreferredCurrency && selectedCheckout.currency.toUpperCase() !== adminPreferredCurrency.toUpperCase() && (
+                      <span className="text-muted-foreground font-normal ml-1">
+                        (approx. {formatCurrency(convertCurrency(Number(selectedCheckout.total_claimed_amount || 0), selectedCheckout.currency, adminPreferredCurrency), adminPreferredCurrency)})
+                      </span>
+                    )}
                     {selectedCheckout.total_receipt_amount != null && (
-                      <span className="text-muted-foreground font-normal"> (Total: €{Number(selectedCheckout.total_receipt_amount).toFixed(2)})</span>
+                      <span className="text-muted-foreground font-normal">
+                        {" "} (Total: {formatCurrency(selectedCheckout.total_receipt_amount, selectedCheckout.currency)}
+                        {selectedCheckout.currency && adminPreferredCurrency && selectedCheckout.currency.toUpperCase() !== adminPreferredCurrency.toUpperCase() && (
+                          <span> / approx. {formatCurrency(convertCurrency(Number(selectedCheckout.total_receipt_amount), selectedCheckout.currency, adminPreferredCurrency), adminPreferredCurrency)}</span>
+                        )}
+                        )
+                      </span>
                     )}
                   </span>
                 </div>
@@ -403,18 +472,31 @@ export function AdminRefundsSection({
                   </div>
                 )}
 
-                {/* High Resolution Image Container or Receiptless placeholder */}
-                {selectedCheckout.receipt_filename ? (
-                  <div className="relative rounded-2xl overflow-hidden border border-border bg-muted/30 p-2 sm:p-3 flex items-center justify-center min-h-[220px]">
-                    <img
-                      src={
-                        selectedCheckout.receipt_filename.startsWith("/")
-                          ? selectedCheckout.receipt_filename
-                          : `/uploads/receipts/${selectedCheckout.receipt_filename}`
-                      }
-                      alt={`Receipt for ${selectedCheckout.store_name || "household purchase"}`}
-                      className="max-h-[75vh] w-auto max-w-full object-contain rounded-md border border-border shadow-xs"
-                    />
+                {/* Receipt Images or Receiptless placeholder */}
+                {selectedCheckout.receipts.length > 0 ? (
+                  <div className="space-y-3">
+                    {selectedCheckout.receipts.map((r) => (
+                      <div key={r.id} className="relative rounded-2xl overflow-hidden border border-border bg-muted/30 p-2 sm:p-3 flex items-center justify-center min-h-[220px]">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteReceipt(r.id)}
+                          disabled={deletingReceiptId === r.id}
+                          aria-label="Delete this receipt"
+                          className="absolute top-2 right-2 z-10 p-1.5 rounded-lg bg-card/90 border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40 transition shadow-sm cursor-pointer disabled:opacity-50"
+                        >
+                          {deletingReceiptId === r.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                        <img
+                          src={r.receipt_filename}
+                          alt={`Receipt for ${selectedCheckout.store_name || "household purchase"}`}
+                          className="max-h-[75vh] w-auto max-w-full object-contain rounded-md border border-border shadow-xs"
+                        />
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div className="p-6 rounded-2xl border border-dashed border-border bg-muted/20 text-center space-y-1.5">
@@ -435,40 +517,57 @@ export function AdminRefundsSection({
                         <span>Claimed Items ({selectedCheckout.items.length})</span>
                       </span>
                       <span className="font-mono text-[11px] text-muted-foreground">
-                        €{Number(selectedCheckout.total_claimed_amount || 0).toFixed(2)}
+                        {formatCurrency(selectedCheckout.total_claimed_amount || 0, selectedCheckout.currency)}
+                        {selectedCheckout.currency && adminPreferredCurrency && selectedCheckout.currency.toUpperCase() !== adminPreferredCurrency.toUpperCase() && (
+                          <span className="ml-1">
+                            (approx. {formatCurrency(convertCurrency(Number(selectedCheckout.total_claimed_amount || 0), selectedCheckout.currency, adminPreferredCurrency), adminPreferredCurrency)})
+                          </span>
+                        )}
                       </span>
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {selectedCheckout.items.map((item) => (
-                        <Badge
-                          key={item.id}
-                          variant="secondary"
-                          className="text-xs font-normal bg-card border-border flex items-center gap-1"
-                        >
-                          <span>{item.name}</span>
-                          {item.item_price != null && (
-                            <span className="font-mono text-[10px] text-muted-foreground">
-                              (€{Number(item.item_price).toFixed(2)})
-                            </span>
-                          )}
-                        </Badge>
-                      ))}
+                      {selectedCheckout.items.map((item) => {
+                        const itemCurrency = item.currency || selectedCheckout.currency || "EUR";
+                        const showConversion = item.item_price != null && adminPreferredCurrency && itemCurrency.toUpperCase() !== adminPreferredCurrency.toUpperCase();
+                        return (
+                          <Badge
+                            key={item.id}
+                            variant="secondary"
+                            className="text-xs font-normal bg-card border-border flex items-center gap-1"
+                          >
+                            <span>{item.name}</span>
+                            {item.item_price != null && (
+                              <span className="font-mono text-[10px] text-muted-foreground">
+                                ({formatCurrency(item.item_price, itemCurrency)}
+                                {showConversion && (
+                                  <span> &asymp; {formatCurrency(convertCurrency(Number(item.item_price), itemCurrency, adminPreferredCurrency), adminPreferredCurrency)}</span>
+                                )})
+                              </span>
+                            )}
+                          </Badge>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
 
                 {/* Refund timestamp if settled */}
                 {selectedCheckout.is_refunded && selectedCheckout.refunded_at && (
-                  <div className="p-3 rounded-2xl bg-accent-sage/10 border border-accent-sage/25 text-accent-success text-xs flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 shrink-0" />
-                    <span>
-                      Settled on {new Date(selectedCheckout.refunded_at).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
+                  <div className="p-3 rounded-2xl bg-accent-sage/10 border border-accent-sage/25 text-accent-success text-xs flex items-center justify-between gap-2 flex-wrap">
+                    <span className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                      <span>
+                        Settled on {new Date(selectedCheckout.refunded_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </span>
                     </span>
+                    {selectedCheckout.receipts.length > 0 && (
+                      <ReceiptExpiryBadge refundedAt={selectedCheckout.refunded_at} />
+                    )}
                   </div>
                 )}
               </div>

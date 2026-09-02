@@ -40,15 +40,20 @@ export const authConfig: NextAuthConfig = {
           id: verified.id,
           username: verified.username,
           name: verified.username,
+          preferred_currency: verified.preferred_currency || "EUR",
         };
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.username = (user as any).username || user.name;
+        token.preferred_currency = (user as any).preferred_currency || "EUR";
+      }
+      if (trigger === "update" && session?.preferred_currency) {
+        token.preferred_currency = session.preferred_currency;
       }
       return token;
     },
@@ -56,6 +61,7 @@ export const authConfig: NextAuthConfig = {
       if (session.user) {
         session.user.id = (token.id || token.sub) as string;
         session.user.username = (token.username as string) || session.user.name || "";
+        session.user.preferred_currency = (token.preferred_currency as string) || "EUR";
       }
       return session;
     },
