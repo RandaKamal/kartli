@@ -1,20 +1,18 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ReceiptExpiryBadge } from "@/components/ReceiptExpiryBadge";
 import { refundCheckoutAction, deleteReceiptForAdminAction } from "@/app/actions/checkout";
 import type { CheckoutWithDetails, KitchenMemberWithUser, KitchenSpaceType } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import { capitalize, formatCurrency, daysUntilReceiptAutoDelete } from "@/lib/utils";
-import { convertCurrency, refreshExchangeRates } from "@/lib/currency";
 import {
   Receipt,
   CheckCircle2,
   Clock,
   ExternalLink,
   Calendar,
-  DollarSign,
   User,
   Shield,
   Loader2,
@@ -44,7 +42,6 @@ interface AdminRefundsSectionProps {
   checkouts: CheckoutWithDetails[];
   members: KitchenMemberWithUser[];
   spaceType?: KitchenSpaceType;
-  adminPreferredCurrency?: string;
 }
 
 export function AdminRefundsSection({
@@ -52,7 +49,6 @@ export function AdminRefundsSection({
   checkouts: initialCheckouts,
   members,
   spaceType = "FLATSHARE",
-  adminPreferredCurrency = "EUR",
 }: AdminRefundsSectionProps) {
   const router = useRouter();
   const [checkoutsList, setCheckoutsList] = useState<CheckoutWithDetails[]>(initialCheckouts);
@@ -63,10 +59,6 @@ export function AdminRefundsSection({
   const [deletingReceiptId, setDeletingReceiptId] = useState<string | null>(null);
 
   const terminology = getSpaceTerminology(spaceType);
-
-  useEffect(() => {
-    refreshExchangeRates();
-  }, []);
 
   const memberMap = new Map<string, { displayName: string; username: string; initial: string }>();
   members.forEach((m) => {
@@ -248,118 +240,109 @@ export function AdminRefundsSection({
                 className="border border-border bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm hover:border-border transition"
               >
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  {/* Member & Date Column */}
-                  <div className="flex items-start sm:items-center gap-3.5 min-w-0 sm:min-w-[260px]">
-                    <Avatar className="h-10 w-10 border border-border shrink-0">
+                  {/* Left Column: User & Context */}
+                  <div className="flex items-start gap-3.5 min-w-0 lg:w-72 shrink-0">
+                    <Avatar className="h-10 w-10 border border-border shrink-0 mt-0.5 sm:mt-0">
                       <AvatarFallback className="bg-secondary text-xs font-bold text-foreground">
                         {memberInfo.initial}
                       </AvatarFallback>
                     </Avatar>
 
-                    <div className="min-w-0 space-y-0.5">
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-semibold text-sm text-foreground truncate">
                           {memberInfo.displayName}
                         </span>
-                        <Badge variant="secondary" className="text-[10px] font-mono px-1.5 py-0">
+                        <span className="text-[11px] font-mono text-muted-foreground">
                           {memberInfo.username}
-                        </Badge>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-                        <Calendar className="w-3 h-3 text-muted-foreground shrink-0" />
-                        <span>
-                          {new Date(checkout.created_at).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </span>
-                        <span>&middot;</span>
-                        <span>{checkout.items.length} item{checkout.items.length === 1 ? "" : "s"}</span>
-                        <span>&middot;</span>
-                        <span className="font-semibold text-foreground">
-                          {formatCurrency(checkout.total_claimed_amount, checkout.currency)}
-                          {checkout.currency && adminPreferredCurrency && checkout.currency.toUpperCase() !== adminPreferredCurrency.toUpperCase() && (
-                            <span className="text-muted-foreground font-normal ml-1 text-[11px]">
-                              (approx. {formatCurrency(convertCurrency(Number(checkout.total_claimed_amount), checkout.currency, adminPreferredCurrency), adminPreferredCurrency)})
-                            </span>
-                          )}
                         </span>
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Staged Items Badge Pills & Note */}
-                  <div className="flex-1 min-w-0 space-y-1.5">
-                    <div className="flex flex-wrap gap-1.5 items-center">
-                      {checkout.items.slice(0, 4).map((item) => (
-                        <Badge
-                          key={item.id}
-                          variant="secondary"
-                          className="text-xs font-normal bg-secondary text-secondary-foreground border-border"
-                        >
-                          {item.name}
-                        </Badge>
-                      ))}
-                      {checkout.items.length > 4 && (
-                        <Badge
-                          variant="outline"
-                          className="text-xs text-muted-foreground font-mono"
-                        >
-                          +{checkout.items.length - 4} more
-                        </Badge>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-muted-foreground shrink-0" />
+                          <span>
+                            {new Date(checkout.created_at).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </div>
+                        <span>&middot;</span>
+                        <span>{checkout.items.length} {checkout.items.length === 1 ? "item" : "items"}</span>
+                      </div>
+
+                      {/* Optional Note Snippet */}
+                      {checkout.note && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground italic pt-0.5">
+                          <MessageSquare className="w-3 h-3 text-muted-foreground/70 shrink-0 not-italic" />
+                          <span className="truncate max-w-[220px]">&ldquo;{checkout.note}&rdquo;</span>
+                        </div>
                       )}
                     </div>
-
-                    {/* Note to Admin Pill */}
-                    {checkout.note && (
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground italic bg-muted/40 px-2.5 py-1 rounded-xl border border-border/60 w-fit">
-                        <MessageSquare className="w-3 h-3 text-muted-foreground shrink-0 not-italic" />
-                        <span>&ldquo;{checkout.note}&rdquo;</span>
-                      </div>
-                    )}
                   </div>
 
-                  {/* Receipt & Action Group */}
-                  <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-border">
-                    <Badge
-                      variant="secondary"
-                      className="text-xs font-mono font-bold px-2.5 h-8 rounded-xl bg-muted text-foreground border border-border flex items-center"
-                    >
-                      €{Number(checkout.total_claimed_amount || 0).toFixed(2)}
-                    </Badge>                    
+                  {/* Middle Column: Purchased Items */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap gap-1.5 items-center">
+                      {checkout.items.slice(0, 3).map((item) => (
+                        <span
+                          key={item.id}
+                          className="px-2 py-0.5 text-xs rounded-md bg-muted text-muted-foreground truncate max-w-[180px]"
+                        >
+                          {item.name}
+                        </span>
+                      ))}
+                      {checkout.items.length > 3 && (
+                        <span className="px-1.5 py-0.5 text-xs text-muted-foreground font-mono">
+                          +{checkout.items.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Financials & Settlement Action */}
+                  <div className="flex items-center justify-between lg:justify-end gap-4 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-border">
+                    {/* Amount */}
+                    <div className="text-left lg:text-right shrink-0">
+                      <span className="text-base font-semibold text-foreground tracking-tight">
+                        {formatCurrency(checkout.total_claimed_amount, checkout.currency)}
+                      </span>
+                    </div>
+
+                    {/* Receipt Action / Indicator */}
                     {checkout.receipts.length > 0 ? (
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={() => setSelectedCheckout(checkout)}
-                        className="rounded-xl text-xs font-medium h-8 gap-1.5 border-border hover:bg-secondary"
+                        className="rounded-xl text-xs font-medium h-8 px-2.5 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-muted"
                       >
-                        <Receipt className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>View Receipt{checkout.receipts.length > 1 ? `s (${checkout.receipts.length})` : ""}</span>
+                        <Receipt className="w-3.5 h-3.5" />
+                        <span>View{checkout.receipts.length > 1 ? ` (${checkout.receipts.length})` : ""}</span>
                       </Button>
                     ) : checkout.totalReceiptsEverAttached > 0 ? (
-                      <Badge
-                        variant="secondary"
-                        className="rounded-xl text-xs font-normal h-8 px-2.5 bg-muted text-muted-foreground border border-border flex items-center justify-center"
+                      <div
+                        className="p-1.5 text-muted-foreground/50"
+                        title="Receipt previously deleted"
                       >
-                        Receipt Deleted
-                      </Badge>
+                        <Receipt className="w-3.5 h-3.5 line-through opacity-40" />
+                      </div>
                     ) : (
-                      <Badge
-                        variant="secondary"
-                        className="rounded-xl text-xs font-normal h-8 px-2.5 bg-muted text-muted-foreground border border-border flex items-center justify-center"
+                      <div
+                        className="p-1.5 text-muted-foreground/30"
+                        title="No receipt attached"
                       >
-                        No Receipt
-                      </Badge>
+                        <Receipt className="w-3.5 h-3.5 opacity-30" />
+                      </div>
                     )}
 
-                    {/* Status Badge & Settle Button */}
+                    {/* Status Badge & Settle Action */}
                     {checkout.is_refunded ? (
                       <div className="flex items-center gap-1.5">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border bg-accent-sage/15 text-accent-success border-accent-sage/30">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border bg-accent-sage/15 text-accent-success border-accent-sage/30">
                           <CheckCircle2 className="w-3.5 h-3.5 text-accent-success" />
                           <span>Settled</span>
                         </div>
@@ -369,25 +352,25 @@ export function AdminRefundsSection({
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border bg-accent-ochre/15 text-accent-warning border-accent-ochre/30">
-                          <Clock className="w-3.5 h-3.5 text-accent-warning" />
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border bg-accent-ochre/15 text-accent-warning border-accent-ochre/30">
+                          <span className="w-1.5 h-1.5 rounded-full bg-accent-warning shrink-0" />
                           <span>Pending</span>
                         </div>
 
                         <Button
                           type="button"
-                          variant="default"
+                          variant="success"
                           size="sm"
                           onClick={() => handleMarkAsSettled(checkout.id)}
                           disabled={isPending}
-                          className="rounded-xl text-xs font-semibold h-8 px-3 shadow-sm gap-1.5"
+                          className="rounded-xl text-xs font-semibold h-8 px-3 shadow-xs gap-1.5"
                         >
                           {isSettling ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : (
                             <Check className="w-3.5 h-3.5" />
                           )}
-                          <span>{isSettling ? "Settling..." : "Mark as Settled"}</span>
+                          <span>{isSettling ? "Settling..." : "Settle"}</span>
                         </Button>
                       </div>
                     )}
@@ -441,18 +424,9 @@ export function AdminRefundsSection({
                   <span>&middot;</span>
                   <span className="font-semibold text-foreground">
                     Claimed: {formatCurrency(selectedCheckout.total_claimed_amount || 0, selectedCheckout.currency)}
-                    {selectedCheckout.currency && adminPreferredCurrency && selectedCheckout.currency.toUpperCase() !== adminPreferredCurrency.toUpperCase() && (
-                      <span className="text-muted-foreground font-normal ml-1">
-                        (approx. {formatCurrency(convertCurrency(Number(selectedCheckout.total_claimed_amount || 0), selectedCheckout.currency, adminPreferredCurrency), adminPreferredCurrency)})
-                      </span>
-                    )}
                     {selectedCheckout.total_receipt_amount != null && (
                       <span className="text-muted-foreground font-normal">
-                        {" "} (Total: {formatCurrency(selectedCheckout.total_receipt_amount, selectedCheckout.currency)}
-                        {selectedCheckout.currency && adminPreferredCurrency && selectedCheckout.currency.toUpperCase() !== adminPreferredCurrency.toUpperCase() && (
-                          <span> / approx. {formatCurrency(convertCurrency(Number(selectedCheckout.total_receipt_amount), selectedCheckout.currency, adminPreferredCurrency), adminPreferredCurrency)}</span>
-                        )}
-                        )
+                        {" "} (Total: {formatCurrency(selectedCheckout.total_receipt_amount, selectedCheckout.currency)})
                       </span>
                     )}
                   </span>
@@ -518,36 +492,24 @@ export function AdminRefundsSection({
                       </span>
                       <span className="font-mono text-[11px] text-muted-foreground">
                         {formatCurrency(selectedCheckout.total_claimed_amount || 0, selectedCheckout.currency)}
-                        {selectedCheckout.currency && adminPreferredCurrency && selectedCheckout.currency.toUpperCase() !== adminPreferredCurrency.toUpperCase() && (
-                          <span className="ml-1">
-                            (approx. {formatCurrency(convertCurrency(Number(selectedCheckout.total_claimed_amount || 0), selectedCheckout.currency, adminPreferredCurrency), adminPreferredCurrency)})
-                          </span>
-                        )}
                       </span>
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {selectedCheckout.items.map((item) => {
-                        const itemCurrency = item.currency || selectedCheckout.currency || "EUR";
-                        const showConversion = item.item_price != null && adminPreferredCurrency && itemCurrency.toUpperCase() !== adminPreferredCurrency.toUpperCase();
-                        return (
-                          <Badge
-                            key={item.id}
-                            variant="secondary"
-                            className="text-xs font-normal bg-card border-border flex items-center gap-1"
-                          >
-                            <span>{item.name}</span>
-                            {item.item_price != null && (
-                              <span className="font-mono text-[10px] text-muted-foreground">
-                                ({formatCurrency(item.item_price, itemCurrency)}
-                                {showConversion && (
-                                  <span> &asymp; {formatCurrency(convertCurrency(Number(item.item_price), itemCurrency, adminPreferredCurrency), adminPreferredCurrency)}</span>
-                                )})
-                              </span>
-                            )}
-                          </Badge>
-                        );
-                      })}
+                      {selectedCheckout.items.map((item) => (
+                        <Badge
+                          key={item.id}
+                          variant="secondary"
+                          className="text-xs font-normal bg-card border-border flex items-center gap-1"
+                        >
+                          <span>{item.name}</span>
+                          {item.item_price != null && (
+                            <span className="font-mono text-[10px] text-muted-foreground">
+                              ({formatCurrency(item.item_price, item.currency || selectedCheckout.currency)})
+                            </span>
+                          )}
+                        </Badge>
+                      ))}
                     </div>
                   </div>
                 )}

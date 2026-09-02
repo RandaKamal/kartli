@@ -77,6 +77,7 @@ interface KitchenSpaceViewProps {
   myCheckouts: CheckoutWithDetails[];
   adminCheckouts?: CheckoutWithDetails[];
   currentUserId: string;
+  preferredCurrency?: string;
   userPreferredCurrency?: string;
   baseUrl: string;
   initialTab?: string;
@@ -91,6 +92,7 @@ export function KitchenSpaceView({
   myCheckouts,
   adminCheckouts = [],
   currentUserId,
+  preferredCurrency,
   userPreferredCurrency = "EUR",
   baseUrl,
   initialTab = "kitchen",
@@ -408,7 +410,7 @@ export function KitchenSpaceView({
 
         {/* Tab 1: Kitchen (Daily Core) */}
         <TabsContent value="kitchen" className="space-y-6 animate-in fade-in-50">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             <PantrySection kitchenId={initialKitchen.id} items={pantryItems} />
             <ShoppingListSection
               kitchenId={initialKitchen.id}
@@ -595,7 +597,6 @@ export function KitchenSpaceView({
               checkouts={adminCheckouts}
               members={initialMembers}
               spaceType={spaceType}
-              adminPreferredCurrency={userPreferredCurrency}
             />
           </TabsContent>
         )}

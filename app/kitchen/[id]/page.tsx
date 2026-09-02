@@ -47,6 +47,8 @@ export default async function KitchenPage({
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const initialTab = resolvedSearchParams?.tab || "kitchen";
 
+  const preferredCurrency = session.user.preferred_currency || "EUR";
+
   return (
     <KitchenSpaceView
       kitchen={kitchen}
@@ -57,7 +59,8 @@ export default async function KitchenPage({
       myCheckouts={myCheckouts}
       adminCheckouts={adminCheckouts}
       currentUserId={session.user.id}
-      userPreferredCurrency={session.user.preferred_currency || "EUR"}
+      preferredCurrency={preferredCurrency}
+      userPreferredCurrency={preferredCurrency}
       baseUrl={baseUrl}
       initialTab={initialTab}
     />

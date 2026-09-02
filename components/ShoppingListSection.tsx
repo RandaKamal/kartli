@@ -43,7 +43,8 @@ export function ShoppingListSection({
   const wording = getSpaceWording(spaceType);
   const [listItems, setListItems] = useState<ShoppingListItem[]>(items);
   const [customItemName, setCustomItemName] = useState("");
-  const [showCheckedOut, setShowCheckedOut] = useState(true);
+  const [showCheckedOut, setShowCheckedOut] = useState(false);
+  const [clearedCheckedOut, setClearedCheckedOut] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -119,7 +120,9 @@ export function ShoppingListSection({
       !i.checkout_id &&
       i.purchased_by === currentUserId
   ).length;
+  // Strictly limit resolved/checked out items to the last 3 items to avoid vertical imbalance
   const resolvedItems = listItems.filter((i) => !!i.checkout_id);
+  const recentCheckedOutItems = resolvedItems.slice(-3).reverse();
 
   return (
     <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-5">
@@ -271,33 +274,48 @@ export function ShoppingListSection({
         </div>
       )}
 
-      {/* Resolved / Checked out items */}
-      {resolvedItems.length > 0 && (
+      {/* Resolved / Recently checked out items (strictly max 3) */}
+      {!clearedCheckedOut && recentCheckedOutItems.length > 0 && (
         <div className="space-y-2 pt-3 border-t border-border">
           <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
-            <span>Checked Out ({resolvedItems.length})</span>
-            <button
-              type="button"
-              onClick={() => setShowCheckedOut((prev) => !prev)}
-              className="text-[11px] font-medium normal-case tracking-normal text-muted-foreground hover:text-foreground transition cursor-pointer flex items-center gap-1 py-0.5 px-1.5 rounded-lg hover:bg-muted"
-              aria-label={showCheckedOut ? "Hide checked out items" : "Show checked out items"}
-            >
-              <span>{showCheckedOut ? "Hide" : "Show"}</span>
-              {showCheckedOut ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            </button>
+            <span className="flex items-center gap-1.5">
+              <span>Recently Checked Out</span>
+              <Badge variant="outline" className="text-[10px] px-1 py-0 font-mono font-normal">
+                {recentCheckedOutItems.length}
+              </Badge>
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setClearedCheckedOut(true)}
+                className="text-[11px] font-medium normal-case tracking-normal text-muted-foreground hover:text-foreground transition cursor-pointer py-0.5 px-1.5 rounded-lg hover:bg-muted"
+                aria-label="Clear recent checked out list from view"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCheckedOut((prev) => !prev)}
+                className="text-[11px] font-medium normal-case tracking-normal text-muted-foreground hover:text-foreground transition cursor-pointer flex items-center gap-1 py-0.5 px-1.5 rounded-lg hover:bg-muted"
+                aria-label={showCheckedOut ? "Hide recent checked out items" : "Show recent checked out items"}
+              >
+                <span>{showCheckedOut ? "Hide" : "Show"}</span>
+                {showCheckedOut ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            </div>
           </div>
 
           {showCheckedOut && (
             <div className="divide-y divide-border animate-in fade-in-50 duration-200">
-              {resolvedItems.map((item) => (
+              {recentCheckedOutItems.map((item) => (
                 <div
                   key={item.id}
-                  className="py-2 flex items-center justify-between gap-3 text-xs opacity-60 px-2"
+                  className="py-1.5 flex items-center justify-between gap-3 text-xs opacity-60 px-2"
                 >
                   <span className="font-medium line-through truncate text-muted-foreground">
                     {item.name}
                   </span>
-                  <span className="text-muted-foreground shrink-0 text-[11px] font-mono">
+                  <span className="text-muted-foreground shrink-0 text-[10px] font-mono">
                     Checked out
                   </span>
                 </div>
