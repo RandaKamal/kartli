@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { getUserMembership, isUserKitchenAdmin } from "@/lib/kitchen";
+import { pool } from "@/lib/db";
 import {
   createCheckout,
   getKitchenCheckouts,
@@ -21,9 +22,19 @@ async function requireMembership(kitchenId: string): Promise<string> {
 }
 
 function revalidateKitchen(kitchenId: string) {
-  revalidatePath(`/kitchen/${kitchenId}/member`);
-  revalidatePath(`/kitchen/${kitchenId}/admin`);
-  revalidatePath(`/kitchen/${kitchenId}/admin/purchases`);
+  revalidatePath(`/kitchen/${kitchenId}`);
+}
+
+export async function getPendingRefundsCountAction(kitchenId: string): Promise<number> {
+  const session = await auth();
+  if (!session?.user?.id) return 0;
+  const isAdmin = await isUserKitchenAdmin(kitchenId, session.user.id);
+  if (!isAdmin) return 0;
+  const { rows } = await pool.query<{ count: string }>(
+    `SELECT COUNT(*) AS count FROM checkouts WHERE kitchen_id = $1 AND is_refunded = FALSE`,
+    [kitchenId]
+  );
+  return parseInt(rows[0]?.count || "0", 10);
 }
 
 export async function checkoutAction(

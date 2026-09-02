@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useOptimistic } from "react";
 import {
   addPantryItemAction,
   setPantryItemStockAction,
@@ -33,36 +33,51 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
+interface PantrySectionProps {
+  kitchenId: string;
+  items: PantryItem[];
+  onItemEmptied?: (item: PantryItem) => void;
+  onItemRestocked?: (itemId: string) => void;
+  onItemDeleted?: (itemId: string) => void;
+  onItemAdded?: (item: PantryItem) => void;
+}
+
 export function PantrySection({
   kitchenId,
   items,
-}: {
-  kitchenId: string;
-  items: PantryItem[];
-}) {
-  const [pantryItems, setPantryItems] = useState<PantryItem[]>(items);
+  onItemEmptied,
+  onItemRestocked,
+  onItemDeleted,
+  onItemAdded,
+}: PantrySectionProps) {
+  const [optimisticItems, setOptimisticItems] = useOptimistic(
+    items,
+    (state: PantryItem[], update: { id: string; is_out_of_stock: boolean }) =>
+      state.map((p) => (p.id === update.id ? { ...p, is_out_of_stock: update.is_out_of_stock } : p))
+  );
   const [newItemName, setNewItemName] = useState("");
   const [itemToDelete, setItemToDelete] = useState<PantryItem | null>(null);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
-
-  useEffect(() => {
-    setPantryItems(items);
-  }, [items]);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [, startTransition] = useTransition();
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     const name = newItemName.trim();
     if (!name) return;
 
+    setIsAdding(true);
     startTransition(async () => {
       try {
         const item = await addPantryItemAction(kitchenId, name);
-        setPantryItems((prev) => [...prev, item].sort((a, b) => a.name.localeCompare(b.name)));
+        onItemAdded?.(item);
         setNewItemName("");
         toast.success(`Added "${name}" to pantry`);
       } catch (err: any) {
         toast.error(err.message || "Failed to add item.");
+      } finally {
+        setIsAdding(false);
       }
     });
   };
@@ -70,11 +85,16 @@ export function PantrySection({
   const handleToggleStock = (item: PantryItem) => {
     const nextValue = !item.is_out_of_stock;
 
-    setPantryItems((prev) =>
-      prev.map((p) => (p.id === item.id ? { ...p, is_out_of_stock: nextValue } : p))
-    );
-
+    // Instant optimistic update on local badge and memory list (0ms perceived latency)
     startTransition(async () => {
+      setOptimisticItems({ id: item.id, is_out_of_stock: nextValue });
+
+      if (nextValue) {
+        onItemEmptied?.(item);
+      } else {
+        onItemRestocked?.(item.id);
+      }
+
       try {
         await setPantryItemStockAction(kitchenId, item.id, nextValue);
         if (nextValue) {
@@ -83,9 +103,12 @@ export function PantrySection({
           toast.success(`Restocked "${item.name}"`);
         }
       } catch (err: any) {
-        setPantryItems((prev) =>
-          prev.map((p) => (p.id === item.id ? { ...p, is_out_of_stock: item.is_out_of_stock } : p))
-        );
+        // Rollback state on error
+        if (nextValue) {
+          onItemRestocked?.(item.id);
+        } else {
+          onItemEmptied?.(item);
+        }
         toast.error(err.message || "Failed to update stock status.");
       }
     });
@@ -96,19 +119,22 @@ export function PantrySection({
     const itemId = itemToDelete.id;
     const itemName = itemToDelete.name;
 
+    setIsDeleting(true);
     startTransition(async () => {
       try {
         await deletePantryItemAction(kitchenId, itemId);
-        setPantryItems((prev) => prev.filter((p) => p.id !== itemId));
+        onItemDeleted?.(itemId);
         setItemToDelete(null);
         toast.success(`Deleted "${itemName}" from pantry`);
       } catch (err: any) {
         toast.error(err.message || "Failed to delete item.");
+      } finally {
+        setIsDeleting(false);
       }
     });
   };
 
-  const outOfStockCount = pantryItems.filter((i) => i.is_out_of_stock).length;
+  const outOfStockCount = optimisticItems.filter((i) => i.is_out_of_stock).length;
 
   return (
     <>
@@ -122,7 +148,7 @@ export function PantrySection({
             <Package className="w-4 h-4 text-muted-foreground" />
             <span>Pantry &amp; Inventory</span>
             <Badge variant="secondary" className="text-xs font-mono">
-              {pantryItems.length}
+              {optimisticItems.length}
             </Badge>
           </h2>
 
@@ -159,21 +185,21 @@ export function PantrySection({
             <Button
               type="submit"
               variant="secondary"
-              disabled={isPending || !newItemName.trim()}
+              disabled={isAdding || !newItemName.trim()}
               className="rounded-xl h-10 px-4 font-medium shrink-0"
             >
-              <Plus className="w-4 h-4" />
+              {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               <span>Add</span>
             </Button>
           </form>
 
           <div className="divide-y divide-border">
-            {pantryItems.length === 0 && (
+            {optimisticItems.length === 0 && (
               <p className="text-xs text-muted-foreground py-4 text-center">
                 No pantry items yet. Add your first item above.
               </p>
             )}
-            {pantryItems.map((item) => (
+            {optimisticItems.map((item) => (
               <div
                 key={item.id}
                 className="py-3 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition"
@@ -214,13 +240,12 @@ export function PantrySection({
                     variant={item.is_out_of_stock ? "success" : "secondary"}
                     size="sm"
                     onClick={() => handleToggleStock(item)}
-                    disabled={isPending}
                     title={
                       item.is_out_of_stock
                         ? "Restock item (removes from shopping list)"
                         : "Mark as empty (adds to shopping list)"
                     }
-                    className="h-8 px-3 rounded-lg text-xs font-semibold"
+                    className="h-8 px-3 rounded-lg text-xs font-semibold cursor-pointer"
                   >
                     {item.is_out_of_stock ? (
                       <>
@@ -240,8 +265,7 @@ export function PantrySection({
                     variant="ghost"
                     size="icon-sm"
                     onClick={() => setItemToDelete(item)}
-                    disabled={isPending}
-                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
                     title="Delete item from pantry"
                     aria-label={`Delete ${item.name}`}
                   >
@@ -274,16 +298,16 @@ export function PantrySection({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={isPending}
+              disabled={isDeleting}
               onClick={(e) => {
                 e.preventDefault();
                 handleConfirmDelete();
               }}
             >
-              {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>{isPending ? "Deleting..." : "Delete Item"}</span>
+              {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>{isDeleting ? "Deleting..." : "Delete Item"}</span>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

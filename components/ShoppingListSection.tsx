@@ -1,17 +1,20 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useOptimistic } from "react";
 import {
   addCustomShoppingItemAction,
   moveToCartAction,
+  returnToShoppingListAction,
   removeShoppingListItemAction,
 } from "@/app/actions/pantry";
 import type { ShoppingListItem, KitchenSpaceType } from "@/types";
 import { getSpaceWording } from "@/lib/space-wording";
+import { cn } from "@/lib/utils";
 import {
   ShoppingCart as CartIcon,
   Trash2,
   CheckCheck,
+  Check,
   Loader2,
   Plus,
   ShoppingBag,
@@ -25,6 +28,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
+interface ShoppingListSectionProps {
+  kitchenId: string;
+  items: ShoppingListItem[];
+  currentUserId?: string;
+  isAdmin?: boolean;
+  spaceType?: KitchenSpaceType;
+  onViewCart?: () => void;
+  onItemMovedToCart?: (item: ShoppingListItem) => void;
+  onItemReturnedToList?: (item: ShoppingListItem) => void;
+  onItemRemoved?: (item: ShoppingListItem) => void;
+  onItemAdded?: (item: ShoppingListItem) => void;
+}
+
+type OptimisticUpdate =
+  | { type: "UPDATE"; id: string; changes: Partial<ShoppingListItem> }
+  | { type: "REMOVE"; id: string };
+
 export function ShoppingListSection({
   kitchenId,
   items,
@@ -32,59 +52,133 @@ export function ShoppingListSection({
   isAdmin = false,
   spaceType = "FLATSHARE",
   onViewCart,
-}: {
-  kitchenId: string;
-  items: ShoppingListItem[];
-  currentUserId?: string;
-  isAdmin?: boolean;
-  spaceType?: KitchenSpaceType;
-  onViewCart?: () => void;
-}) {
+  onItemMovedToCart,
+  onItemReturnedToList,
+  onItemRemoved,
+  onItemAdded,
+}: ShoppingListSectionProps) {
   const wording = getSpaceWording(spaceType);
-  const [listItems, setListItems] = useState<ShoppingListItem[]>(items);
+  const [optimisticListItems, setOptimisticListItems] = useOptimistic(
+    items,
+    (state: ShoppingListItem[], update: OptimisticUpdate) => {
+      switch (update.type) {
+        case "UPDATE":
+          return state.map((item) =>
+            item.id === update.id ? { ...item, ...update.changes } : item
+          );
+        case "REMOVE":
+          return state.filter((item) => item.id !== update.id);
+        default:
+          return state;
+      }
+    }
+  );
   const [customItemName, setCustomItemName] = useState("");
   const [showCheckedOut, setShowCheckedOut] = useState(false);
   const [clearedCheckedOut, setClearedCheckedOut] = useState(false);
-  const [isPending, startTransition] = useTransition();
-
-  useEffect(() => {
-    setListItems(items);
-  }, [items]);
+  const [isAdding, setIsAdding] = useState(false);
+  const [checkedVisualIds, setCheckedVisualIds] = useState<Set<string>>(new Set());
+  const [, startTransition] = useTransition();
 
   const handleAddCustomItem = (e: React.FormEvent) => {
     e.preventDefault();
     const name = customItemName.trim();
     if (!name) return;
 
+    setIsAdding(true);
     startTransition(async () => {
       try {
         const newItem = await addCustomShoppingItemAction(kitchenId, name);
-        setListItems((prev) => [...prev, newItem]);
+        onItemAdded?.(newItem);
         setCustomItemName("");
         toast.success(`Added "${name}" to shopping list`);
       } catch (err: any) {
         toast.error(err.message || "Failed to add item.");
+      } finally {
+        setIsAdding(false);
       }
     });
   };
 
-  const handleMoveToCart = (item: ShoppingListItem) => {
-    setListItems((prev) =>
-      prev.map((i) =>
-        i.id === item.id
-          ? { ...i, is_purchased: true, purchased_by: currentUserId || null, is_guest_staged: false }
-          : i
-      )
-    );
+  const handleToggleCheckmark = (item: ShoppingListItem) => {
+    const isCurrentlyPurchased = item.is_purchased || checkedVisualIds.has(item.id);
+    const nextPurchased = !isCurrentlyPurchased;
 
+    if (nextPurchased) {
+      // Immediately mark as checked and strikethrough in UI (0ms feedback)
+      setCheckedVisualIds((prev) => new Set(prev).add(item.id));
+
+      startTransition(async () => {
+        setOptimisticListItems({
+          type: "UPDATE",
+          id: item.id,
+          changes: { is_purchased: true, purchased_by: currentUserId || null, is_guest_staged: false },
+        });
+        onItemMovedToCart?.(item);
+
+        // Keep strikethrough visible briefly so user sees the completed checkmark before moving to cart
+        setTimeout(() => {
+          setCheckedVisualIds((prev) => {
+            const next = new Set(prev);
+            next.delete(item.id);
+            return next;
+          });
+        }, 500);
+
+        try {
+          await moveToCartAction(kitchenId, item.id);
+          toast.success(`Moved "${item.name}" to cart`);
+        } catch (err: any) {
+          setCheckedVisualIds((prev) => {
+            const next = new Set(prev);
+            next.delete(item.id);
+            return next;
+          });
+          onItemReturnedToList?.(item);
+          toast.error(err.message || "Failed to put item in cart.");
+        }
+      });
+    } else {
+      // Uncheck / return to needed list
+      setCheckedVisualIds((prev) => {
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
+
+      startTransition(async () => {
+        setOptimisticListItems({
+          type: "UPDATE",
+          id: item.id,
+          changes: { is_purchased: false, purchased_by: null, is_guest_staged: false },
+        });
+        onItemReturnedToList?.(item);
+
+        try {
+          await returnToShoppingListAction(kitchenId, item.id);
+          toast.success(`Returned "${item.name}" to shopping list`);
+        } catch (err: any) {
+          onItemMovedToCart?.(item);
+          toast.error(err.message || "Failed to return item to list.");
+        }
+      });
+    }
+  };
+
+  const handleMoveToCart = (item: ShoppingListItem) => {
     startTransition(async () => {
+      setOptimisticListItems({
+        type: "UPDATE",
+        id: item.id,
+        changes: { is_purchased: true, purchased_by: currentUserId || null, is_guest_staged: false },
+      });
+      onItemMovedToCart?.(item);
+
       try {
         await moveToCartAction(kitchenId, item.id);
         toast.success(`Moved "${item.name}" to cart`);
       } catch (err: any) {
-        setListItems((prev) =>
-          prev.map((i) => (i.id === item.id ? item : i))
-        );
+        onItemReturnedToList?.(item);
         toast.error(err.message || "Failed to put item in cart.");
       }
     });
@@ -97,31 +191,38 @@ export function ShoppingListSection({
     }
 
     const isCustom = !item.pantry_item_id;
+
     startTransition(async () => {
+      setOptimisticListItems({ type: "REMOVE", id: item.id });
+      onItemRemoved?.(item);
+
       try {
         await removeShoppingListItemAction(kitchenId, item.id);
-        setListItems((prev) => prev.filter((i) => i.id !== item.id));
         if (isCustom) {
           toast.success(`Deleted "${item.name}" from shopping list`);
         } else {
           toast.success(`Removed "${item.name}" from list & restocked in pantry`);
         }
       } catch (err: any) {
+        onItemReturnedToList?.(item);
         toast.error(err.message || "Failed to remove item.");
       }
     });
   };
 
-  const openItems = listItems.filter((i) => !i.is_purchased && !i.is_guest_staged);
-  const myStagedItemsCount = listItems.filter(
+  const openItems = optimisticListItems.filter(
+    (i) => (!i.is_purchased && !i.is_guest_staged) || checkedVisualIds.has(i.id)
+  );
+  const myStagedItemsCount = optimisticListItems.filter(
     (i) =>
       i.is_purchased &&
       !i.is_guest_staged &&
       !i.checkout_id &&
-      i.purchased_by === currentUserId
+      i.purchased_by === currentUserId &&
+      !checkedVisualIds.has(i.id)
   ).length;
   // Strictly limit resolved/checked out items to the last 3 items to avoid vertical imbalance
-  const resolvedItems = listItems.filter((i) => !!i.checkout_id);
+  const resolvedItems = optimisticListItems.filter((i) => !!i.checkout_id);
   const recentCheckedOutItems = resolvedItems.slice(-3).reverse();
 
   return (
@@ -143,16 +244,16 @@ export function ShoppingListSection({
           placeholder="Add extra item (e.g. Oat Milk, Coffee)..."
           value={customItemName}
           onChange={(e) => setCustomItemName(e.target.value)}
-          disabled={isPending}
+          disabled={isAdding}
           className="text-sm h-9 rounded-xl bg-background border-border text-foreground"
         />
         <Button
           type="submit"
-          disabled={isPending || !customItemName.trim()}
+          disabled={isAdding || !customItemName.trim()}
           size="sm"
           className="h-9 px-3 shrink-0 rounded-xl"
         >
-          {isPending ? (
+          {isAdding ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
             <Plus className="w-4 h-4 mr-1" />
@@ -177,66 +278,94 @@ export function ShoppingListSection({
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {openItems.map((item) => (
-              <div
-                key={item.id}
-                className="py-2.5 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition"
-              >
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <span className="w-2 h-2 rounded-full bg-accent-warning shrink-0" />
-                  <span className="font-medium text-foreground truncate">
-                    {item.name}
-                  </span>
-                  {item.pantry_item_id ? (
-                    <Badge
+            {openItems.map((item) => {
+              const isChecked = item.is_purchased || checkedVisualIds.has(item.id);
+              return (
+                <div
+                  key={item.id}
+                  className="py-2.5 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={isChecked}
+                      onClick={() => handleToggleCheckmark(item)}
+                      className={cn(
+                        "w-5 h-5 rounded-md border flex items-center justify-center transition-all cursor-pointer shrink-0",
+                        isChecked
+                          ? "bg-accent-success text-white border-accent-success shadow-xs"
+                          : "border-border hover:border-accent-success/80 hover:bg-accent-success/10"
+                      )}
+                      title={isChecked ? "Checked (staged in cart)" : "Check off item"}
+                    >
+                      {isChecked ? (
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      ) : (
+                        <span className="w-2 h-2 rounded-full bg-accent-warning" />
+                      )}
+                    </button>
+
+                    <span
+                      className={cn(
+                        "font-medium truncate transition-all",
+                        isChecked
+                          ? "text-muted-foreground line-through decoration-muted-foreground/50"
+                          : "text-foreground"
+                      )}
+                    >
+                      {item.name}
+                    </span>
+
+                    {item.pantry_item_id ? (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] px-1.5 py-0 font-medium text-muted-foreground shrink-0 border-border"
+                      >
+                        Pantry
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] px-1.5 py-0 font-medium shrink-0 bg-secondary text-secondary-foreground"
+                      >
+                        Custom
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      type="button"
                       variant="outline"
-                      className="text-[10px] px-1.5 py-0 font-medium text-muted-foreground shrink-0 border-border"
+                      size="sm"
+                      onClick={() => handleMoveToCart(item)}
+                      className="h-8 px-2.5 text-xs font-medium border-border hover:bg-secondary rounded-lg gap-1.5 cursor-pointer"
+                      title="Put in shopping cart"
                     >
-                      Pantry
-                    </Badge>
-                  ) : (
-                    <Badge
-                      variant="secondary"
-                      className="text-[10px] px-1.5 py-0 font-medium shrink-0 bg-secondary text-secondary-foreground"
+                      <CartIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>Put in Cart</span>
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => handleRemove(item)}
+                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
+                      title={
+                        item.pantry_item_id
+                          ? "Remove from list and mark in-stock"
+                          : "Delete item"
+                      }
+                      aria-label={`Remove ${item.name}`}
                     >
-                      Custom
-                    </Badge>
-                  )}
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleMoveToCart(item)}
-                    disabled={isPending}
-                    className="h-8 px-2.5 text-xs font-medium border-border hover:bg-secondary rounded-lg gap-1.5"
-                    title="Put in shopping cart"
-                  >
-                    <CartIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span>Put in Cart</span>
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => handleRemove(item)}
-                    disabled={isPending}
-                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
-                    title={
-                      item.pantry_item_id
-                        ? "Remove from list and mark in-stock"
-                        : "Delete item"
-                    }
-                    aria-label={`Remove ${item.name}`}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

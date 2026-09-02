@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ReceiptExpiryBadge } from "@/components/ReceiptExpiryBadge";
-import { refundCheckoutAction, deleteReceiptForAdminAction } from "@/app/actions/checkout";
+import { refundCheckoutAction, deleteReceiptForAdminAction, getKitchenCheckoutsAction } from "@/app/actions/checkout";
+import { getKitchenMembersAction } from "@/app/actions/kitchen";
 import type { CheckoutWithDetails, KitchenMemberWithUser, KitchenSpaceType } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import { capitalize, formatCurrency, daysUntilReceiptAutoDelete } from "@/lib/utils";
@@ -26,6 +27,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -37,11 +39,37 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 
+export function AdminRefundsSkeleton() {
+  return (
+    <div className="space-y-6">
+      <Card className="border border-border bg-card rounded-3xl p-6 shadow-sm space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-48 rounded-lg" />
+            <Skeleton className="h-4 w-72 rounded-md" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-20 rounded-xl" />
+            <Skeleton className="h-9 w-20 rounded-xl" />
+            <Skeleton className="h-9 w-20 rounded-xl" />
+          </div>
+        </div>
+        <div className="space-y-3 pt-2">
+          <Skeleton className="h-20 w-full rounded-2xl" />
+          <Skeleton className="h-20 w-full rounded-2xl" />
+          <Skeleton className="h-20 w-full rounded-2xl" />
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 interface AdminRefundsSectionProps {
   kitchenId: string;
-  checkouts: CheckoutWithDetails[];
-  members: KitchenMemberWithUser[];
+  checkouts?: CheckoutWithDetails[];
+  members?: KitchenMemberWithUser[];
   spaceType?: KitchenSpaceType;
+  onCheckoutsLoaded?: (checkouts: CheckoutWithDetails[]) => void;
 }
 
 export function AdminRefundsSection({
@@ -49,19 +77,59 @@ export function AdminRefundsSection({
   checkouts: initialCheckouts,
   members,
   spaceType = "FLATSHARE",
+  onCheckoutsLoaded,
 }: AdminRefundsSectionProps) {
   const router = useRouter();
-  const [checkoutsList, setCheckoutsList] = useState<CheckoutWithDetails[]>(initialCheckouts);
+  const [isLoading, setIsLoading] = useState(
+    initialCheckouts === undefined || members === undefined
+  );
+  const [checkoutsList, setCheckoutsList] = useState<CheckoutWithDetails[]>(initialCheckouts || []);
+  const [membersList, setMembersList] = useState<KitchenMemberWithUser[]>(members || []);
   const [filterStatus, setFilterStatus] = useState<"pending" | "all" | "settled">("pending");
   const [selectedCheckout, setSelectedCheckout] = useState<CheckoutWithDetails | null>(null);
   const [settlingId, setSettlingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [deletingReceiptId, setDeletingReceiptId] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (initialCheckouts !== undefined && members !== undefined) {
+      setCheckoutsList(initialCheckouts);
+      setMembersList(members);
+      setIsLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    setIsLoading(true);
+
+    const promises: [Promise<CheckoutWithDetails[]>, Promise<KitchenMemberWithUser[]>] = [
+      initialCheckouts !== undefined ? Promise.resolve(initialCheckouts) : getKitchenCheckoutsAction(kitchenId),
+      members !== undefined ? Promise.resolve(members) : getKitchenMembersAction(kitchenId),
+    ];
+
+    Promise.all(promises)
+      .then(([chk, mem]) => {
+        if (isMounted) {
+          setCheckoutsList(chk);
+          setMembersList(mem);
+          setIsLoading(false);
+          onCheckoutsLoaded?.(chk);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load admin refunds data:", err);
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [kitchenId, initialCheckouts, members]);
+
   const terminology = getSpaceTerminology(spaceType);
 
   const memberMap = new Map<string, { displayName: string; username: string; initial: string }>();
-  members.forEach((m) => {
+  membersList.forEach((m) => {
     if (m.user_id) {
       const displayName = m.kitchen_display_name ? capitalize(m.kitchen_display_name) : "Member";
       const initial = (m.kitchen_display_name || "M").charAt(0).toUpperCase();
@@ -69,6 +137,10 @@ export function AdminRefundsSection({
       memberMap.set(m.user_id, { displayName, username, initial });
     }
   });
+
+  if (isLoading) {
+    return <AdminRefundsSkeleton />;
+  }
 
   const getMemberInfo = (userId: string, usernameFallback?: string | null) => {
     const found = memberMap.get(userId);

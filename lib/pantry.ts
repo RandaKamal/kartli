@@ -454,34 +454,59 @@ async function attachItems(
   checkouts: (Checkout & { username: string | null })[],
   viewerSide: "admin" | "member"
 ): Promise<CheckoutWithDetails[]> {
+  if (checkouts.length === 0) return [];
+
   const deletedColumn = viewerSide === "admin" ? "deleted_by_admin_at" : "deleted_by_member_at";
-  const results: CheckoutWithDetails[] = [];
-  for (const checkout of checkouts) {
-    const { rows: itemRows } = await pool.query<ShoppingListItem>(
+  const checkoutIds = checkouts.map((c) => c.id);
+
+  const [itemsRes, receiptsRes] = await Promise.all([
+    pool.query<ShoppingListItem>(
       `SELECT id, kitchen_id, pantry_item_id, name, item_price, currency, is_purchased, purchased_by, is_guest_staged, checkout_id, created_at
-       FROM shopping_list_items WHERE checkout_id = $1
+       FROM shopping_list_items
+       WHERE checkout_id = ANY($1::uuid[])
        ORDER BY created_at ASC`,
-      [checkout.id]
-    );
-
-    const { rows: allReceiptRows } = await pool.query<CheckoutReceipt>(
+      [checkoutIds]
+    ),
+    pool.query<CheckoutReceipt>(
       `SELECT id, checkout_id, receipt_filename, created_at, deleted_by_admin_at, deleted_by_member_at
-       FROM checkout_receipts WHERE checkout_id = $1 ORDER BY created_at ASC`,
-      [checkout.id]
-    );
+       FROM checkout_receipts
+       WHERE checkout_id = ANY($1::uuid[])
+       ORDER BY created_at ASC`,
+      [checkoutIds]
+    ),
+  ]);
 
-    const visibleReceipts = allReceiptRows.filter(
-      (r) => r.receipt_filename !== null && r[deletedColumn as "deleted_by_admin_at" | "deleted_by_member_at"] === null
-    );
-
-    results.push({
-      ...checkout,
-      items: itemRows,
-      receipts: visibleReceipts,
-      totalReceiptsEverAttached: allReceiptRows.length,
-    });
+  const itemsByCheckout = new Map<string, ShoppingListItem[]>();
+  for (const item of itemsRes.rows) {
+    if (item.checkout_id) {
+      const list = itemsByCheckout.get(item.checkout_id) || [];
+      list.push(item);
+      itemsByCheckout.set(item.checkout_id, list);
+    }
   }
-  return results;
+
+  const receiptsByCheckout = new Map<string, { visible: CheckoutReceipt[]; total: number }>();
+  for (const receipt of receiptsRes.rows) {
+    const entry = receiptsByCheckout.get(receipt.checkout_id) || { visible: [], total: 0 };
+    entry.total += 1;
+    if (
+      receipt.receipt_filename !== null &&
+      receipt[deletedColumn as "deleted_by_admin_at" | "deleted_by_member_at"] === null
+    ) {
+      entry.visible.push(receipt);
+    }
+    receiptsByCheckout.set(receipt.checkout_id, entry);
+  }
+
+  return checkouts.map((checkout) => {
+    const rInfo = receiptsByCheckout.get(checkout.id);
+    return {
+      ...checkout,
+      items: itemsByCheckout.get(checkout.id) || [],
+      receipts: rInfo ? rInfo.visible : [],
+      totalReceiptsEverAttached: rInfo ? rInfo.total : 0,
+    };
+  });
 }
 
 

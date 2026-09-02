@@ -139,6 +139,8 @@ export async function removeKitchenMemberAction(
 export async function getKitchenMembersAction(
   kitchenId: string
 ): Promise<KitchenMemberWithUser[]> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("You must be logged in.");
   return await getKitchenMembersWithUsers(kitchenId);
 }
 

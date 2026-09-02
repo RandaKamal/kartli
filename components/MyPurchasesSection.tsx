@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import type { CheckoutWithDetails } from "@/types";
 import { formatCurrency, daysUntilReceiptAutoDelete } from "@/lib/utils";
-import { deleteReceiptForMemberAction } from "@/app/actions/checkout";
+import { deleteReceiptForMemberAction, getMyCheckoutsAction } from "@/app/actions/checkout";
 import { Receipt, CheckCircle2, Clock, ChevronDown, ChevronUp, Trash2, Loader2 } from "lucide-react";
 import { ReceiptExpiryBadge } from "@/components/ReceiptExpiryBadge";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -18,18 +19,62 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
+export function MyPurchasesSkeleton() {
+  return (
+    <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Skeleton className="w-4 h-4 rounded" />
+          <Skeleton className="h-5 w-28 rounded-md" />
+          <Skeleton className="h-4 w-6 rounded-full" />
+        </div>
+        <Skeleton className="w-4 h-4 rounded" />
+      </div>
+    </Card>
+  );
+}
+
 export function MyPurchasesSection({
   kitchenId,
   checkouts: initialCheckouts,
 }: {
   kitchenId: string;
-  checkouts: CheckoutWithDetails[];
+  checkouts?: CheckoutWithDetails[];
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [checkoutsList, setCheckoutsList] = useState<CheckoutWithDetails[]>(initialCheckouts);
+  const [hasFetched, setHasFetched] = useState(initialCheckouts !== undefined);
+  const [isLoading, setIsLoading] = useState(false);
+  const [checkoutsList, setCheckoutsList] = useState<CheckoutWithDetails[]>(initialCheckouts || []);
   const [selectedCheckout, setSelectedCheckout] = useState<CheckoutWithDetails | null>(null);
   const [deletingReceiptId, setDeletingReceiptId] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (initialCheckouts !== undefined) {
+      setCheckoutsList(initialCheckouts);
+      setHasFetched(true);
+      setIsLoading(false);
+    }
+  }, [initialCheckouts]);
+
+  const handleToggleExpand = () => {
+    const nextExpanded = !isExpanded;
+    setIsExpanded(nextExpanded);
+
+    if (nextExpanded && !hasFetched) {
+      setIsLoading(true);
+      getMyCheckoutsAction(kitchenId)
+        .then((data) => {
+          setCheckoutsList(data);
+          setHasFetched(true);
+          setIsLoading(false);
+        })
+        .catch((err) => {
+          console.error("Failed to load user purchases:", err);
+          setIsLoading(false);
+        });
+    }
+  };
 
   const handleDeleteReceipt = (receiptId: string) => {
     if (!window.confirm("Remove this receipt from your view? This won't delete the admin's copy.")) return;
@@ -56,7 +101,7 @@ export function MyPurchasesSection({
     <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-3 transition-all">
       <button
         type="button"
-        onClick={() => setIsExpanded((prev) => !prev)}
+        onClick={handleToggleExpand}
         className="w-full flex items-center justify-between gap-2 text-left cursor-pointer group focus:outline-none"
         aria-expanded={isExpanded}
         aria-label={isExpanded ? "Collapse purchases history" : "Expand purchases history"}
@@ -66,9 +111,11 @@ export function MyPurchasesSection({
           <h2 className="text-base font-semibold text-foreground group-hover:text-foreground transition">
             My Purchases
           </h2>
-          <Badge variant="secondary" className="text-xs font-mono">
-            {checkoutsList.length}
-          </Badge>
+          {hasFetched && (
+            <Badge variant="secondary" className="text-xs font-mono">
+              {checkoutsList.length}
+            </Badge>
+          )}
         </div>
 
         <div className="p-1 rounded-lg text-muted-foreground group-hover:text-foreground group-hover:bg-muted transition">
@@ -78,7 +125,12 @@ export function MyPurchasesSection({
 
       {isExpanded && (
         <div className="pt-2 animate-in fade-in-50 duration-200">
-          {checkoutsList.length === 0 ? (
+          {isLoading ? (
+            <div className="space-y-3 py-2">
+              <Skeleton className="h-12 w-full rounded-xl" />
+              <Skeleton className="h-12 w-full rounded-xl" />
+            </div>
+          ) : checkoutsList.length === 0 ? (
             <p className="text-xs text-muted-foreground py-2 text-center">Nothing checked out yet.</p>
           ) : (
             <div className="divide-y divide-border">

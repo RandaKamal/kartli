@@ -12,8 +12,23 @@ declare global {
 }
 
 function getConnectionString(): string | undefined {
-  const url = process.env.DATABASE_URL;
+  let url = process.env.DATABASE_URL;
   if (!url) return undefined;
+
+  // Ensure Neon pooled endpoint (-pooler) is used for serverless connection pooling
+  if (url.includes(".neon.tech") && !url.includes("-pooler")) {
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname.includes(".neon.tech") && !parsed.hostname.includes("-pooler")) {
+        const parts = parsed.hostname.split(".");
+        parts[0] = `${parts[0]}-pooler`;
+        parsed.hostname = parts.join(".");
+        url = parsed.toString();
+      }
+    } catch {
+      url = url.replace(/(ep-[a-zA-Z0-9-]+)(\.[a-zA-Z0-9.-]*neon\.tech)/, "$1-pooler$2");
+    }
+  }
 
   // Add uselibpqcompat=true when sslmode=require is present to satisfy pg-connection-string libpq compatibility
   if (url.includes("sslmode=require") && !url.includes("uselibpqcompat=true")) {
@@ -30,6 +45,8 @@ function createPool(): Pool {
     connectionTimeoutMillis: 10000,
     idleTimeoutMillis: 30000,
     max: 10,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000,
   });
 
   // Attach error handler to idle clients to prevent crashing the Node process with uncaught exceptions

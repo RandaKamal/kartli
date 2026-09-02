@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type {
@@ -13,15 +13,16 @@ import type {
   KitchenSpaceType,
 } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
-import { updateKitchenSettings, regeneratePublicViewToken, addMemberAction, leaveKitchenAction } from "@/app/actions/kitchen";
+import { updateKitchenSettings, regeneratePublicViewToken, addMemberAction, leaveKitchenAction, getKitchenMembersAction } from "@/app/actions/kitchen";
+import { getPendingRefundsCountAction } from "@/app/actions/checkout";
 import { PantrySection } from "@/components/PantrySection";
 import { ShoppingListSection } from "@/components/ShoppingListSection";
 import { ShoppingCart } from "@/components/ShoppingCart";
 import { CopyButton } from "@/components/CopyButton";
 import { AdminActiveMembersList } from "@/components/AdminActiveMembersList";
 import { AdminPendingInvitesList } from "@/components/AdminPendingInvitesList";
-import { MyPurchasesSection } from "@/components/MyPurchasesSection";
-import { AdminRefundsSection } from "@/components/AdminRefundsSection";
+import { MyPurchasesSection, MyPurchasesSkeleton } from "@/components/MyPurchasesSection";
+import { AdminRefundsSection, AdminRefundsSkeleton } from "@/components/AdminRefundsSection";
 import { ActiveCartSection } from "@/components/ActiveCartSection";
 import { GuestCartHandoverListener } from "@/components/GuestCartHandoverListener";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -32,6 +33,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,13 +70,50 @@ import {
 import { capitalize } from "@/lib/utils";
 import { toast } from "sonner";
 
+export function MembersSkeleton() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-pulse">
+      <div className="lg:col-span-2 space-y-6">
+        <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-6 w-36 rounded-md" />
+            <Skeleton className="h-5 w-6 rounded-full" />
+          </div>
+          <div className="space-y-3 pt-2">
+            <Skeleton className="h-12 w-full rounded-xl" />
+            <Skeleton className="h-12 w-full rounded-xl" />
+            <Skeleton className="h-12 w-full rounded-xl" />
+          </div>
+        </Card>
+        <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-6 w-36 rounded-md" />
+            <Skeleton className="h-5 w-6 rounded-full" />
+          </div>
+          <div className="space-y-3 pt-2">
+            <Skeleton className="h-12 w-full rounded-xl" />
+          </div>
+        </Card>
+      </div>
+      <div>
+        <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+          <Skeleton className="h-6 w-32 rounded-md" />
+          <Skeleton className="h-4 w-48 rounded-md" />
+          <Skeleton className="h-10 w-full rounded-xl" />
+          <Skeleton className="h-10 w-full rounded-xl" />
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 interface KitchenSpaceViewProps {
   kitchen: Kitchen;
   membership: KitchenMember;
-  members: KitchenMemberWithUser[];
+  members?: KitchenMemberWithUser[];
   pantryItems: PantryItem[];
   shoppingListItems: ShoppingListItem[];
-  myCheckouts: CheckoutWithDetails[];
+  myCheckouts?: CheckoutWithDetails[];
   adminCheckouts?: CheckoutWithDetails[];
   currentUserId: string;
   preferredCurrency?: string;
@@ -90,7 +129,7 @@ export function KitchenSpaceView({
   pantryItems,
   shoppingListItems,
   myCheckouts,
-  adminCheckouts = [],
+  adminCheckouts,
   currentUserId,
   preferredCurrency,
   userPreferredCurrency = "EUR",
@@ -103,6 +142,20 @@ export function KitchenSpaceView({
   const [kitchenName, setKitchenName] = useState(initialKitchen.name);
   const [spaceType, setSpaceType] = useState<KitchenSpaceType>(initialKitchen.space_type || "FLATSHARE");
   const [publicViewToken, setPublicViewToken] = useState(initialKitchen.public_view_token);
+
+  // Synchronized optimistic state for pantry and shopping list items
+  const [localPantryItems, setLocalPantryItems] = useState<PantryItem[]>(pantryItems);
+  const [localShoppingListItems, setLocalShoppingListItems] = useState<ShoppingListItem[]>(shoppingListItems);
+
+  // Lazy tab state for members and checkouts
+  const [members, setMembers] = useState<KitchenMemberWithUser[]>(initialMembers || []);
+  const [isMembersLoading, setIsMembersLoading] = useState(initialMembers === undefined);
+  const [pendingRefundsCount, setPendingRefundsCount] = useState<number>(() => {
+    if (adminCheckouts) {
+      return adminCheckouts.filter((c) => !c.is_refunded).length;
+    }
+    return 0;
+  });
 
   // Settings form drafts
   const [draftName, setDraftName] = useState(initialKitchen.name);
@@ -148,15 +201,130 @@ export function KitchenSpaceView({
     setPublicViewToken(initialKitchen.public_view_token);
   }, [initialKitchen.name, initialKitchen.space_type, initialKitchen.public_view_token]);
 
-  const activeMembers = initialMembers.filter((m) => m.joined_at !== null);
-  const pendingInvites = initialMembers.filter((m) => m.joined_at === null && m.invite_token !== null);
+  useEffect(() => {
+    setLocalPantryItems(pantryItems);
+  }, [pantryItems]);
 
-  const myCartItems = shoppingListItems.filter(
+  useEffect(() => {
+    setLocalShoppingListItems(shoppingListItems);
+  }, [shoppingListItems]);
+
+  useEffect(() => {
+    if (initialMembers !== undefined) {
+      setMembers(initialMembers);
+      setIsMembersLoading(false);
+      return;
+    }
+
+    if (activeTab === "members" || activeTab === "refunds") {
+      let isMounted = true;
+      setIsMembersLoading(true);
+      getKitchenMembersAction(initialKitchen.id)
+        .then((data) => {
+          if (isMounted) {
+            setMembers(data);
+            setIsMembersLoading(false);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to load members:", err);
+          if (isMounted) setIsMembersLoading(false);
+        });
+
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [activeTab, initialKitchen.id, initialMembers]);
+
+  useEffect(() => {
+    if (isAdmin && !adminCheckouts) {
+      getPendingRefundsCountAction(initialKitchen.id)
+        .then((count) => setPendingRefundsCount(count))
+        .catch(() => {});
+    }
+  }, [isAdmin, initialKitchen.id, adminCheckouts]);
+
+  // Optimistic event handlers
+  const handlePantryItemEmptied = (item: PantryItem) => {
+    setLocalPantryItems((prev) =>
+      prev.map((p) => (p.id === item.id ? { ...p, is_out_of_stock: true } : p))
+    );
+    setLocalShoppingListItems((prev) => {
+      const exists = prev.some((i) => i.pantry_item_id === item.id && !i.is_purchased);
+      if (exists) return prev;
+      const newItem: ShoppingListItem = {
+        id: `temp-${item.id}-${Date.now()}`,
+        kitchen_id: initialKitchen.id,
+        pantry_item_id: item.id,
+        name: item.name,
+        item_price: null,
+        currency: "EUR",
+        is_purchased: false,
+        purchased_by: null,
+        is_guest_staged: false,
+        checkout_id: null,
+        created_at: new Date(),
+      };
+      return [newItem, ...prev];
+    });
+  };
+
+  const handlePantryItemRestocked = (itemId: string) => {
+    setLocalPantryItems((prev) =>
+      prev.map((p) => (p.id === itemId ? { ...p, is_out_of_stock: false } : p))
+    );
+    setLocalShoppingListItems((prev) =>
+      prev.filter((i) => !(i.pantry_item_id === itemId && !i.is_purchased))
+    );
+  };
+
+  const handleItemMovedToCart = (item: ShoppingListItem) => {
+    setLocalShoppingListItems((prev) =>
+      prev.map((i) =>
+        i.id === item.id
+          ? { ...i, is_purchased: true, purchased_by: currentUserId, is_guest_staged: false }
+          : i
+      )
+    );
+    if (item.pantry_item_id) {
+      setLocalPantryItems((prev) =>
+        prev.map((p) => (p.id === item.pantry_item_id ? { ...p, is_out_of_stock: false } : p))
+      );
+    }
+  };
+
+  const handleItemReturnedToList = (item: ShoppingListItem) => {
+    setLocalShoppingListItems((prev) =>
+      prev.map((i) =>
+        i.id === item.id
+          ? { ...i, is_purchased: false, purchased_by: null, is_guest_staged: false }
+          : i
+      )
+    );
+    if (item.pantry_item_id) {
+      setLocalPantryItems((prev) =>
+        prev.map((p) => (p.id === item.pantry_item_id ? { ...p, is_out_of_stock: true } : p))
+      );
+    }
+  };
+
+  const handleItemRemoved = (item: ShoppingListItem) => {
+    setLocalShoppingListItems((prev) => prev.filter((i) => i.id !== item.id));
+    if (item.pantry_item_id) {
+      setLocalPantryItems((prev) =>
+        prev.map((p) => (p.id === item.pantry_item_id ? { ...p, is_out_of_stock: false } : p))
+      );
+    }
+  };
+
+  const activeMembers = members.filter((m) => m.joined_at !== null);
+  const pendingInvites = members.filter((m) => m.joined_at === null && m.invite_token !== null);
+
+  const myCartItems = localShoppingListItems.filter(
     (i) => i.is_purchased && !i.is_guest_staged && !i.checkout_id && i.purchased_by === currentUserId
   );
   const myCartCount = myCartItems.length;
-
-  const pendingRefundsCount = adminCheckouts.filter((c) => !c.is_refunded).length;
 
   const origin = typeof window !== "undefined" ? window.location.origin : baseUrl;
   const publicGuestUrl = origin ? `${origin}/kitchen/view/${publicViewToken}` : `/kitchen/view/${publicViewToken}`;
@@ -228,6 +396,7 @@ export function KitchenSpaceView({
       try {
         const res = await addMemberAction(initialKitchen.id, name);
         setInviteMemberName("");
+        setMembers((prev) => [...prev, { ...res.member, username: null }]);
         toast.success(`Invite generated for ${res.member.kitchen_display_name}!`);
         router.refresh();
       } catch (err: any) {
@@ -411,26 +580,46 @@ export function KitchenSpaceView({
         {/* Tab 1: Kitchen (Daily Core) */}
         <TabsContent value="kitchen" className="space-y-6 animate-in fade-in-50">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            <PantrySection kitchenId={initialKitchen.id} items={pantryItems} />
+            <PantrySection
+              kitchenId={initialKitchen.id}
+              items={localPantryItems}
+              onItemEmptied={handlePantryItemEmptied}
+              onItemRestocked={handlePantryItemRestocked}
+              onItemAdded={(item) =>
+                setLocalPantryItems((prev) =>
+                  [...prev, item].sort((a, b) => a.name.localeCompare(b.name))
+                )
+              }
+              onItemDeleted={(itemId) =>
+                setLocalPantryItems((prev) => prev.filter((p) => p.id !== itemId))
+              }
+            />
             <ShoppingListSection
               kitchenId={initialKitchen.id}
-              items={shoppingListItems}
+              items={localShoppingListItems}
               currentUserId={currentUserId}
               isAdmin={isAdmin}
+              spaceType={spaceType}
               onViewCart={() => handleTabChange("cart")}
+              onItemMovedToCart={handleItemMovedToCart}
+              onItemReturnedToList={handleItemReturnedToList}
+              onItemRemoved={handleItemRemoved}
+              onItemAdded={(item) =>
+                setLocalShoppingListItems((prev) => [item, ...prev])
+              }
             />
           </div>
 
-          {myCheckouts && myCheckouts.length > 0 && (
+          <Suspense fallback={<MyPurchasesSkeleton />}>
             <MyPurchasesSection kitchenId={initialKitchen.id} checkouts={myCheckouts} />
-          )}
+          </Suspense>
         </TabsContent>
 
         {/* Tab 2: Cart (Full Workspace) */}
         <TabsContent value="cart" className="space-y-6 animate-in fade-in-50">
           <ActiveCartSection
             kitchenId={initialKitchen.id}
-            items={shoppingListItems}
+            items={localShoppingListItems}
             currentUserId={currentUserId}
             spaceType={spaceType}
             onSwitchTab={handleTabChange}
@@ -439,8 +628,11 @@ export function KitchenSpaceView({
 
         {/* Tab 3: Members (Dynamic Label based on space_type) */}
         <TabsContent value="members" className="space-y-6 animate-in fade-in-50">
-          {isAdmin ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {activeTab === "members" && (
+            isMembersLoading ? (
+              <MembersSkeleton />
+            ) : isAdmin ? (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left 2 Cols: Active members & Pending invites */}
               <div className="lg:col-span-2 space-y-6">
                 <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
@@ -586,18 +778,26 @@ export function KitchenSpaceView({
                 </div>
               </Card>
             </div>
-          )}
+          )
+        )}
         </TabsContent>
 
         {/* Tab 4: Admin Refunds (Visible only to Admin) */}
         {isAdmin && (
           <TabsContent value="refunds" className="space-y-6 animate-in fade-in-50">
-            <AdminRefundsSection
-              kitchenId={initialKitchen.id}
-              checkouts={adminCheckouts}
-              members={initialMembers}
-              spaceType={spaceType}
-            />
+            {activeTab === "refunds" && (
+              <Suspense fallback={<AdminRefundsSkeleton />}>
+                <AdminRefundsSection
+                  kitchenId={initialKitchen.id}
+                  checkouts={adminCheckouts}
+                  members={members}
+                  spaceType={spaceType}
+                  onCheckoutsLoaded={(loaded) => {
+                    setPendingRefundsCount(loaded.filter((c) => !c.is_refunded).length);
+                  }}
+                />
+              </Suspense>
+            )}
           </TabsContent>
         )}
 

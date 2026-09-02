@@ -4,9 +4,8 @@ import { headers } from "next/headers";
 import {
   getKitchenById,
   getUserMembership,
-  getKitchenMembersWithUsers,
 } from "@/lib/kitchen";
-import { getPantryItems, getShoppingListItems, getUserCheckouts, getKitchenCheckouts } from "@/lib/pantry";
+import { getPantryItems, getShoppingListItems } from "@/lib/pantry";
 import { KitchenSpaceView } from "@/components/KitchenSpaceView";
 
 export default async function KitchenPage({
@@ -16,35 +15,37 @@ export default async function KitchenPage({
   params: Promise<{ id: string }>;
   searchParams?: Promise<{ tab?: string }>;
 }) {
-  const { id } = await params;
-  const session = await auth();
+  const [{ id }, session, headerList, resolvedSearchParams] = await Promise.all([
+    params,
+    auth(),
+    headers(),
+    searchParams ? searchParams : Promise.resolve(undefined),
+  ]);
 
   if (!session?.user?.id) {
     redirect(`/login?callbackUrl=/kitchen/${id}`);
   }
 
-  const membership = await getUserMembership(id, session.user.id);
+  // Concurrent execution of all primary data queries via Promise.all
+  const [membership, kitchen, pantryItems, shoppingListItems] = await Promise.all([
+    getUserMembership(id, session.user.id),
+    getKitchenById(id),
+    getPantryItems(id),
+    getShoppingListItems(id),
+  ]);
+
   if (!membership) {
     redirect("/");
   }
 
-  const kitchen = await getKitchenById(id);
   if (!kitchen) {
     notFound();
   }
 
-  const members = await getKitchenMembersWithUsers(id);
-  const pantryItems = await getPantryItems(id);
-  const shoppingListItems = await getShoppingListItems(id);
-  const myCheckouts = await getUserCheckouts(id, session.user.id);
-  const adminCheckouts = membership.role === "ADMIN" ? await getKitchenCheckouts(id) : [];
-
-  const headerList = await headers();
   const host = headerList.get("x-forwarded-host") || headerList.get("host") || "";
   const protocol = headerList.get("x-forwarded-proto") || "http";
   const baseUrl = host ? `${protocol}://${host}` : "";
 
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const initialTab = resolvedSearchParams?.tab || "kitchen";
 
   const preferredCurrency = session.user.preferred_currency || "EUR";
@@ -53,11 +54,8 @@ export default async function KitchenPage({
     <KitchenSpaceView
       kitchen={kitchen}
       membership={membership}
-      members={members}
       pantryItems={pantryItems}
       shoppingListItems={shoppingListItems}
-      myCheckouts={myCheckouts}
-      adminCheckouts={adminCheckouts}
       currentUserId={session.user.id}
       preferredCurrency={preferredCurrency}
       userPreferredCurrency={preferredCurrency}
