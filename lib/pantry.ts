@@ -1,6 +1,6 @@
 import { pool } from "@/lib/db";
 import { isUserKitchenAdmin } from "@/lib/kitchen";
-import type { PantryItem, ShoppingListItem, Checkout, CheckoutWithDetails } from "@/types";
+import type { PantryItem, ShoppingListItem, Checkout, CheckoutWithDetails, CheckoutReceipt } from "@/types";
 import path from "node:path";
 
 
@@ -459,10 +459,18 @@ async function attachItems(checkouts: (Checkout & { username: string | null })[]
        ORDER BY created_at ASC`,
       [checkout.id]
     );
-    results.push({ ...checkout, items: itemRows });
+
+    const { rows: receiptRows } = await pool.query<CheckoutReceipt>(
+      `SELECT id, checkout_id, receipt_filename, created_at
+       FROM checkout_receipts WHERE checkout_id = $1 ORDER BY created_at ASC`,
+      [checkout.id]
+    );
+
+    results.push({ ...checkout, items: itemRows, receipts: receiptRows });
   }
   return results;
 }
+
 
 /** Admin view: all checkouts in a kitchen, newest first, with buyer + items. */
 export async function getKitchenCheckouts(kitchenId: string): Promise<CheckoutWithDetails[]> {

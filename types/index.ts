@@ -198,6 +198,14 @@ export interface Checkout {
 export interface CheckoutWithDetails extends Checkout {
   username: string | null;
   items: ShoppingListItem[];
+    receipts: CheckoutReceipt[];
+}
+
+  export interface CheckoutReceipt {
+  id: string;
+  checkout_id: string;
+  receipt_filename: string;
+  created_at: Date;
 }
 
 export interface ReceiptLine {

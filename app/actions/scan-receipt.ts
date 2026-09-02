@@ -163,7 +163,7 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
   const currency = rawCurrency.length === 3 ? rawCurrency : "EUR";
   const totalClaimedAmountStr = formData.get("totalClaimedAmount") as string;
   const totalReceiptAmountStr = formData.get("totalReceiptAmount") as string;
-  const rawReceiptPath = (formData.get("receiptPath") as string)?.trim() || null;
+  const rawReceiptPathsStr = formData.get("receiptPaths") as string;
   const matchedItemsStr = formData.get("matchedItems") as string;
 
   const totalClaimedAmount = Number(totalClaimedAmountStr) || 0;
@@ -176,17 +176,11 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
 
   const userId = session.user.id;
 
-  // Sanitize receipt path if provided
-  let receiptPath: string | null = null;
-  if (rawReceiptPath) {
-    if (rawReceiptPath.includes("\0")) {
-      throw new Error("Invalid receipt file path.");
-    }
-    const safeName = path.basename(rawReceiptPath);
-    receiptPath = `/uploads/receipts/${safeName}`;
-  }
+  const rawReceiptPaths: string[] = JSON.parse(rawReceiptPathsStr || "[]");
+  const receiptPaths = rawReceiptPaths
+    .filter((p) => typeof p === "string" && p && !p.includes("\0"))
+    .map((p) => `/uploads/receipts/${path.basename(p)}`);
 
-  // Parse matched items
   const items: Array<{
     shopping_list_item_id: string;
     price?: number | null;
@@ -198,8 +192,7 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    
-    // Validate that all shopping list items belong to this kitchen and are not already checked out
+
     if (itemIds.length > 0) {
       const { rows: validItems } = await client.query<{ id: string; pantry_item_id: string | null }>(
         `SELECT id, pantry_item_id 
@@ -217,16 +210,21 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
       }
     }
 
-    // Insert checkout row with note and receipt data
     const { rows: checkoutRows } = await client.query<{ id: string }>(
       `INSERT INTO checkouts (kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, currency, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, $8, NOW())
+       VALUES ($1, $2, $3, $4, $5, $6, NULL, FALSE, $7, NOW())
        RETURNING id`,
-      [kitchenId, userId, storeName, note, totalClaimedAmount, totalReceiptAmount, receiptPath, currency]
+      [kitchenId, userId, storeName, note, totalClaimedAmount, totalReceiptAmount, currency]
     );
     const checkoutId = checkoutRows[0].id;
-    
-    // Update each matched shopping list item enforcing kitchen_id
+
+    for (const filename of receiptPaths) {
+      await client.query(
+        `INSERT INTO checkout_receipts (checkout_id, receipt_filename) VALUES ($1, $2)`,
+        [checkoutId, filename]
+      );
+    }
+
     for (const item of items) {
       const updateResult = await client.query(
         `UPDATE shopping_list_items
@@ -245,8 +243,7 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
       if (updateResult.rowCount === 0) {
         throw new Error(`Item ${item.shopping_list_item_id} could not be updated or was already processed.`);
       }
-      
-      // If tied to a pantry item, restock it enforcing kitchen_id
+
       if (item.pantry_item_id) {
         await client.query(
           `UPDATE pantry_items SET is_out_of_stock = FALSE, updated_at = NOW()
@@ -255,13 +252,13 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
         );
       }
     }
-    
+
     await client.query('COMMIT');
-    
+
     revalidatePath(`/kitchen/${kitchenId}`);
     revalidatePath(`/kitchen/${kitchenId}/member`);
     revalidatePath(`/kitchen/${kitchenId}/admin`);
-    
+
     return { success: true, checkoutId, totalClaimedAmount, currency };
   } catch (error) {
     await client.query('ROLLBACK');
@@ -270,6 +267,7 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
     client.release();
   }
 }
+
 
 /**
  * Direct checkout without receipt upload.

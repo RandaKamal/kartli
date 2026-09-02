@@ -37,6 +37,8 @@ import {
   MessageSquare,
   ShoppingBag,
   AlertTriangle,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -48,11 +50,14 @@ interface ReceiptLine {
   matched_cart_item_id: string | null;
 }
 
-interface ScanResult {
+interface ScannedReceipt {
   receiptPath: string;
   storeName: string;
   totalReceiptAmount: number;
   lines: ReceiptLine[];
+  lineStates: Array<{ checked: boolean; price: number }>;
+  lineMatches: Array<string | null>;
+  previewUrl: string | null;
 }
 
 interface StagedCartItem {
@@ -79,12 +84,10 @@ export function CheckoutDialog({
   const [storeName, setStoreName] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
   const [note, setNote] = useState("");
-  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
-  const [lineStates, setLineStates] = useState<Array<{ checked: boolean; price: number }>>([]);
-  const [lineMatches, setLineMatches] = useState<Array<string | null>>([]);
+  const [receipts, setReceipts] = useState<ScannedReceipt[]>([]);
+  const [reviewingIndex, setReviewingIndex] = useState<number | null>(null);
   const [noReceiptDecisions, setNoReceiptDecisions] = useState<Record<string, "return" | "forgot">>({});
   const [noReceiptPrices, setNoReceiptPrices] = useState<Record<string, number>>({});
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isMobileReceiptExpanded, setIsMobileReceiptExpanded] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -95,15 +98,15 @@ export function CheckoutDialog({
     setStoreName("");
     setTotalAmount("");
     setNote("");
-    setScanResult(null);
-    setLineStates([]);
-    setLineMatches([]);
+    setReceipts((prev) => {
+      prev.forEach((r) => {
+        if (r.previewUrl) URL.revokeObjectURL(r.previewUrl);
+      });
+      return [];
+    });
+    setReviewingIndex(null);
     setNoReceiptDecisions({});
     setNoReceiptPrices({});
-    setPreviewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return null;
-    });
     if (fileInputRef.current) fileInputRef.current.value = "";
     setIsZoomed(false);
     setIsMobileReceiptExpanded(false);
@@ -111,9 +114,12 @@ export function CheckoutDialog({
 
   useEffect(() => {
     return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      receipts.forEach((r) => {
+        if (r.previewUrl) URL.revokeObjectURL(r.previewUrl);
+      });
     };
-  }, [previewUrl]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleFileSelect = useCallback(
     (file: File) => {
@@ -122,10 +128,7 @@ export function CheckoutDialog({
         return;
       }
 
-      setPreviewUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return URL.createObjectURL(file);
-      });
+      const previewUrl = URL.createObjectURL(file);
       setPhase("scanning");
 
       const formData = new FormData();
@@ -136,25 +139,28 @@ export function CheckoutDialog({
       startTransition(async () => {
         try {
           const result = await scanReceiptAction(formData);
-          setScanResult(result);
-          setStoreName((prev) => prev || result.storeName);
-          setLineStates(
-            result.lines.map((line: ReceiptLine) => ({
+          const newReceipt: ScannedReceipt = {
+            receiptPath: result.receiptPath,
+            storeName: result.storeName,
+            totalReceiptAmount: result.totalReceiptAmount,
+            lines: result.lines,
+            lineStates: result.lines.map((line: ReceiptLine) => ({
               checked: line.matched_cart_item_id !== null,
               price: line.price,
-            }))
-          );
-          setLineMatches(result.lines.map((line: ReceiptLine) => line.matched_cart_item_id));
+            })),
+            lineMatches: result.lines.map((line: ReceiptLine) => line.matched_cart_item_id),
+            previewUrl,
+          };
+          setStoreName((prev) => prev || result.storeName);
+          setReceipts((prev) => {
+            const next = [...prev, newReceipt];
+            setReviewingIndex(next.length - 1);
+            return next;
+          });
           setPhase("review");
         } catch (error: any) {
-          setPreviewUrl((prev) => {
-            if (prev) URL.revokeObjectURL(prev);
-            return null;
-          });
+          URL.revokeObjectURL(previewUrl);
           if (fileInputRef.current) fileInputRef.current.value = "";
-          setScanResult(null);
-          setLineStates([]);
-          setLineMatches([]);
           toast.error(error.message || "Failed to scan receipt");
           setPhase("form");
         }
@@ -164,52 +170,77 @@ export function CheckoutDialog({
   );
 
   const claimedAmount = useMemo(() => {
-    return lineStates.reduce((sum, line, i) => {
-      if (line.checked && scanResult) {
-        return sum + line.price * (scanResult.lines[i]?.quantity || 1);
-      }
-      return sum;
+    return receipts.reduce((total, receipt) => {
+      return (
+        total +
+        receipt.lineStates.reduce((sum, line, i) => {
+          if (line.checked) return sum + line.price * (receipt.lines[i]?.quantity || 1);
+          return sum;
+        }, 0)
+      );
     }, 0);
-  }, [lineStates, scanResult]);
+  }, [receipts]);
+
+  const totalReceiptAmount = useMemo(() => {
+    return receipts.reduce((sum, r) => sum + r.totalReceiptAmount, 0);
+  }, [receipts]);
+
+  const matchedCartItemIds = useMemo(() => {
+    const seen = new Set<string>();
+    for (const receipt of receipts) {
+      receipt.lineMatches.forEach((id, i) => {
+        if (id && receipt.lineStates[i]?.checked && !seen.has(id)) {
+          seen.add(id);
+        }
+      });
+    }
+    return seen;
+  }, [receipts]);
 
   const unresolvedItems = useMemo(() => {
-    const matchedIds = new Set(
-      lineMatches.filter((id, i) => id && lineStates[i]?.checked)
-    );
-    return stagedCartItems.filter((c) => !matchedIds.has(c.id));
-  }, [lineMatches, lineStates, stagedCartItems]);
+    return stagedCartItems.filter((c) => !matchedCartItemIds.has(c.id));
+  }, [stagedCartItems, matchedCartItemIds]);
 
-  // Unified across both tracks: no receipt at all = every item counts as unmatched.
   const itemsNeedingDecision = useMemo(() => {
-    return scanResult ? unresolvedItems : stagedCartItems;
-  }, [scanResult, unresolvedItems, stagedCartItems]);
+    return receipts.length > 0 ? unresolvedItems : stagedCartItems;
+  }, [receipts.length, unresolvedItems, stagedCartItems]);
 
-  const handleToggleLine = useCallback((index: number) => {
-    setLineStates((prev) => {
+  const handleToggleLine = useCallback((receiptIdx: number, lineIdx: number) => {
+    setReceipts((prev) => {
       const next = [...prev];
-      next[index] = { ...next[index], checked: !next[index].checked };
+      const receipt = { ...next[receiptIdx] };
+      const lineStates = [...receipt.lineStates];
+      lineStates[lineIdx] = { ...lineStates[lineIdx], checked: !lineStates[lineIdx].checked };
+      receipt.lineStates = lineStates;
+      next[receiptIdx] = receipt;
       return next;
     });
   }, []);
 
-  const handlePriceChange = useCallback((index: number, value: string) => {
+  const handlePriceChange = useCallback((receiptIdx: number, lineIdx: number, value: string) => {
     const num = parseFloat(value);
-    setLineStates((prev) => {
+    setReceipts((prev) => {
       const next = [...prev];
-      next[index] = { ...next[index], price: isNaN(num) ? 0 : num };
+      const receipt = { ...next[receiptIdx] };
+      const lineStates = [...receipt.lineStates];
+      lineStates[lineIdx] = { ...lineStates[lineIdx], price: isNaN(num) ? 0 : num };
+      receipt.lineStates = lineStates;
+      next[receiptIdx] = receipt;
       return next;
     });
   }, []);
 
-  const handleMatchChange = useCallback((index: number, cartItemId: string | null) => {
-    setLineMatches((prev) => {
+  const handleMatchChange = useCallback((receiptIdx: number, lineIdx: number, cartItemId: string | null) => {
+    setReceipts((prev) => {
       const next = [...prev];
-      next[index] = cartItemId;
-      return next;
-    });
-    setLineStates((prev) => {
-      const next = [...prev];
-      next[index] = { ...next[index], checked: cartItemId !== null };
+      const receipt = { ...next[receiptIdx] };
+      const lineMatches = [...receipt.lineMatches];
+      lineMatches[lineIdx] = cartItemId;
+      const lineStates = [...receipt.lineStates];
+      lineStates[lineIdx] = { ...lineStates[lineIdx], checked: cartItemId !== null };
+      receipt.lineMatches = lineMatches;
+      receipt.lineStates = lineStates;
+      next[receiptIdx] = receipt;
       return next;
     });
   }, []);
@@ -225,37 +256,38 @@ export function CheckoutDialog({
 
   const handleContinueToDetails = () => {
     setTotalAmount(claimedAmount.toFixed(2));
+    setReviewingIndex(null);
     setPhase("form");
   };
 
-  const handleDiscardReceipt = useCallback(() => {
-    if (scanResult?.receiptPath) {
+  const handleRemoveReceipt = useCallback(
+    (index: number) => {
+      const receipt = receipts[index];
+      if (!receipt) return;
+
       startTransition(async () => {
-        await deleteReceiptFileAction(scanResult.receiptPath);
+        await deleteReceiptFileAction(receipt.receiptPath);
       });
-    }
-    setPhase("form");
-    setScanResult(null);
-    setLineStates([]);
-    setLineMatches([]);
-    setPreviewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return null;
-    });
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    setIsZoomed(false);
-    setIsMobileReceiptExpanded(false);
-  }, [scanResult]);
+
+      if (receipt.previewUrl) URL.revokeObjectURL(receipt.previewUrl);
+
+      setReceipts((prev) => prev.filter((_, i) => i !== index));
+      setReviewingIndex(null);
+      setPhase("form");
+      toast.success("Receipt removed. Any matched items are unmatched again.");
+    },
+    [receipts]
+  );
 
   const handleClose = useCallback(() => {
-    if (scanResult?.receiptPath) {
+    receipts.forEach((r) => {
       startTransition(async () => {
-        await deleteReceiptFileAction(scanResult.receiptPath);
+        await deleteReceiptFileAction(r.receiptPath);
       });
-    }
+    });
     resetAll();
     onOpenChange(false);
-  }, [scanResult, resetAll, onOpenChange]);
+  }, [receipts, resetAll, onOpenChange]);
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -286,27 +318,27 @@ export function CheckoutDialog({
   };
 
   const finalizeCheckout = () => {
-    if (scanResult) {
-      // Receipt was scanned & matched — submit as a refund request
-      const matchedItems: Array<{ shopping_list_item_id: string; price: number; pantry_item_id: string | null }> = scanResult.lines
-        .map((line, i) => {
-          const matchedId = lineMatches[i];
-          if (lineStates[i]?.checked && matchedId) {
-            const cartItem = stagedCartItems.find((c) => c.id === matchedId);
-            return {
-              shopping_list_item_id: matchedId,
-              price: lineStates[i].price,
-              pantry_item_id: cartItem?.pantry_item_id || null,
-            };
-          }
-          return null;
-        })
-        .filter((item): item is { shopping_list_item_id: string; price: number; pantry_item_id: string | null } => item !== null);
+    if (receipts.length > 0) {
+      const matchedItems: Array<{ shopping_list_item_id: string; price: number; pantry_item_id: string | null }> = [];
+      const seen = new Set<string>();
 
-      // Items the user confirmed as "forgot receipt" — bought, just unproven
+      for (const receipt of receipts) {
+        receipt.lineMatches.forEach((matchedId, i) => {
+          if (matchedId && receipt.lineStates[i]?.checked && !seen.has(matchedId)) {
+            seen.add(matchedId);
+            const cartItem = stagedCartItems.find((c) => c.id === matchedId);
+            matchedItems.push({
+              shopping_list_item_id: matchedId,
+              price: receipt.lineStates[i].price,
+              pantry_item_id: cartItem?.pantry_item_id || null,
+            });
+          }
+        });
+      }
+
       let forgotTotal = 0;
       for (const item of itemsNeedingDecision) {
-        if (noReceiptDecisions[item.id] === "forgot") {
+        if (noReceiptDecisions[item.id] === "forgot" && !seen.has(item.id)) {
           const price = noReceiptPrices[item.id] || 0;
           forgotTotal += price;
           matchedItems.push({
@@ -319,10 +351,10 @@ export function CheckoutDialog({
 
       const formData = new FormData();
       formData.append("kitchenId", kitchenId);
-      formData.append("receiptPath", scanResult.receiptPath);
+      formData.append("receiptPaths", JSON.stringify(receipts.map((r) => r.receiptPath)));
       formData.append("storeName", storeName.trim());
       formData.append("note", note.trim());
-      formData.append("totalReceiptAmount", scanResult.totalReceiptAmount.toString());
+      formData.append("totalReceiptAmount", totalReceiptAmount.toString());
       formData.append("totalClaimedAmount", ((parseFloat(totalAmount) || 0) + forgotTotal).toString());
       formData.append("matchedItems", JSON.stringify(matchedItems));
 
@@ -339,7 +371,6 @@ export function CheckoutDialog({
         }
       });
     } else {
-      // No receipt — only items explicitly confirmed as "Forgot Receipt" get checked out
       const confirmedItemIds = stagedCartItems
         .filter((item) => noReceiptDecisions[item.id] === "forgot")
         .map((item) => item.id);
@@ -377,6 +408,8 @@ export function CheckoutDialog({
       });
     }
   };
+
+  const current = reviewingIndex !== null ? receipts[reviewingIndex] : null;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -435,58 +468,68 @@ export function CheckoutDialog({
                   if (f) handleFileSelect(f);
                 }}
               />
-              {scanResult ? (
-                <div className="w-full flex items-center justify-between gap-2.5 p-3 rounded-2xl border border-border bg-muted/30">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-xl bg-muted border border-border flex items-center justify-center text-accent-success shrink-0">
-                      <Receipt className="w-4 h-4" />
+
+              {receipts.length > 0 && (
+                <div className="space-y-1.5">
+                  {receipts.map((r, i) => (
+                    <div key={r.receiptPath} className="w-full flex items-center justify-between gap-2.5 p-3 rounded-2xl border border-border bg-muted/30">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-muted border border-border flex items-center justify-center text-accent-success shrink-0">
+                          <Receipt className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-foreground truncate">{r.storeName || "Receipt"}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            Total: €{r.totalReceiptAmount.toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setReviewingIndex(i);
+                            setPhase("review");
+                          }}
+                          className="text-xs h-8 rounded-lg"
+                        >
+                          Edit Match
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => handleRemoveReceipt(i)}
+                          disabled={isPending}
+                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg h-8 w-8"
+                          title="Remove this receipt"
+                          aria-label="Remove receipt"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-foreground truncate">Receipt attached</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        Receipt total: €{scanResult.totalReceiptAmount.toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setPhase("review")}
-                      className="text-xs h-8 rounded-lg"
-                    >
-                      Edit Match
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={handleDiscardReceipt}
-                      disabled={isPending}
-                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg h-8 w-8"
-                      title="Remove this receipt"
-                      aria-label="Remove receipt"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
+                  ))}
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full flex items-center gap-2.5 p-3 rounded-2xl border-2 border-dashed border-border hover:border-muted-foreground/50 hover:bg-muted/30 transition-all text-left"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-muted border border-border flex items-center justify-center text-muted-foreground shrink-0">
-                    <Upload className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-foreground">Upload receipt (optional)</p>
-                    <p className="text-[11px] text-muted-foreground">Let AI extract items &amp; prices automatically</p>
-                  </div>
-                </button>
               )}
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full flex items-center gap-2.5 p-3 rounded-2xl border-2 border-dashed border-border hover:border-muted-foreground/50 hover:bg-muted/30 transition-all text-left"
+              >
+                <div className="w-8 h-8 rounded-xl bg-muted border border-border flex items-center justify-center text-muted-foreground shrink-0">
+                  {receipts.length > 0 ? <Plus className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-foreground">
+                    {receipts.length > 0 ? "Add Another Receipt" : "Upload receipt (optional)"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">Let AI extract items &amp; prices automatically</p>
+                </div>
+              </button>
 
               <div className="space-y-1.5">
                 <Label htmlFor="checkout-store" className="text-xs font-medium text-foreground flex items-center gap-1.5">
@@ -544,7 +587,7 @@ export function CheckoutDialog({
                 </Button>
                 <Button type="submit" size="sm" disabled={isPending || stagedCartItems.length === 0} className="rounded-xl text-xs font-semibold h-9 px-4 gap-1.5 bg-primary text-primary-foreground shadow-sm">
                   {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                  <span>{scanResult ? "Submit Refund Request" : "Checkout"}</span>
+                  <span>{receipts.length > 0 ? "Submit Refund Request" : "Checkout"}</span>
                 </Button>
               </DialogFooter>
             </form>
@@ -557,12 +600,12 @@ export function CheckoutDialog({
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-accent-warning" />
                 <DialogTitle className="text-base sm:text-lg font-bold text-foreground">
-                  {scanResult ? "Some Items Have No Receipt Proof" : "You're Checking Out Without a Receipt"}
+                  {receipts.length > 0 ? "Some Items Have No Receipt Proof" : "You're Checking Out Without a Receipt"}
                 </DialogTitle>
               </div>
               <DialogDescription className="text-xs text-muted-foreground">
-                {scanResult
-                  ? "These items weren't matched to a line on your receipt. Choose what to do with each one."
+                {receipts.length > 0
+                  ? "These items weren't matched to a line on any of your receipts. Choose what to do with each one."
                   : "You're about to check out without uploading a receipt. Choose what to do with each item below."}
               </DialogDescription>
             </DialogHeader>
@@ -584,7 +627,7 @@ export function CheckoutDialog({
                       )}
                     </div>
 
-                    {scanResult && decision === "forgot" && (
+                    {receipts.length > 0 && decision === "forgot" && (
                       <div className="flex items-center gap-1.5">
                         <Input
                           type="number"
@@ -650,18 +693,20 @@ export function CheckoutDialog({
           </div>
         )}
 
-        {phase === "review" && (
+        {phase === "review" && current && reviewingIndex !== null && (
           <div className="flex flex-col h-full w-full overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0 z-10">
               <div className="flex items-center gap-2 min-w-0">
                 <Receipt className="w-4 h-4 text-accent-brand shrink-0" />
-                <span className="text-sm font-bold text-foreground truncate">Review &amp; Match Receipt</span>
+                <span className="text-sm font-bold text-foreground truncate">
+                  Review &amp; Match Receipt{receipts.length > 1 ? ` (${reviewingIndex + 1} of ${receipts.length})` : ""}
+                </span>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <Badge variant="secondary" className="text-xs font-mono">
-                  {scanResult?.totalReceiptAmount.toFixed(2)} €
+                  {current.totalReceiptAmount.toFixed(2)} €
                 </Badge>
-                <button type="button" onClick={handleClose} disabled={isPending} aria-label="Close dialog" className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer">
+                <button type="button" onClick={handleContinueToDetails} disabled={isPending} aria-label="Close dialog" className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -670,9 +715,9 @@ export function CheckoutDialog({
             <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
               <div className="hidden md:flex md:w-2/5 shrink-0 border-r border-border bg-muted/20 p-4 flex-col items-center justify-center relative overflow-hidden">
                 <div className="relative rounded-2xl overflow-hidden border border-border bg-muted/30 h-full w-full flex items-center justify-center">
-                  {previewUrl && (
+                  {current.previewUrl && (
                     <img
-                      src={previewUrl}
+                      src={current.previewUrl}
                       alt="Receipt"
                       className={cn("transition-transform duration-200 max-h-[75vh] w-auto object-contain cursor-pointer", isZoomed ? "scale-150 cursor-zoom-out" : "cursor-zoom-in")}
                       onClick={() => setIsZoomed(!isZoomed)}
@@ -696,11 +741,11 @@ export function CheckoutDialog({
                   {isMobileReceiptExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
                 </button>
 
-                {isMobileReceiptExpanded && previewUrl && (
+                {isMobileReceiptExpanded && current.previewUrl && (
                   <div className="p-3 pt-0 flex flex-col items-center justify-center animate-in fade-in-50 duration-200">
                     <div className="relative rounded-xl overflow-hidden border border-border bg-muted/50 max-h-[35vh] w-full flex items-center justify-center">
                       <img
-                        src={previewUrl}
+                        src={current.previewUrl}
                         alt="Receipt Preview"
                         className={cn("transition-transform duration-200 max-h-[35vh] w-auto object-contain cursor-pointer", isZoomed ? "scale-150" : "")}
                         onClick={() => setIsZoomed(!isZoomed)}
@@ -718,17 +763,17 @@ export function CheckoutDialog({
                   <div className="flex items-center justify-between gap-2.5 flex-wrap p-2.5 rounded-2xl bg-muted/30 border border-border/70">
                     <div className="flex items-center gap-2 text-xs text-foreground font-medium">
                       <Store className="w-4 h-4 text-muted-foreground shrink-0" />
-                      <span>{scanResult?.storeName || "Unknown store"}</span>
+                      <span>{current.storeName || "Unknown store"}</span>
                     </div>
                     <div className="text-right">
                       <span className="text-[11px] text-muted-foreground">Receipt Total: </span>
-                      <span className="text-xs font-bold font-mono text-foreground">{scanResult?.totalReceiptAmount.toFixed(2)} €</span>
+                      <span className="text-xs font-bold font-mono text-foreground">{current.totalReceiptAmount.toFixed(2)} €</span>
                     </div>
                   </div>
 
                   {unresolvedItems.length > 0 && (
                     <div className="p-2.5 rounded-xl bg-accent-ochre/10 border border-accent-ochre/30 text-[11px] text-accent-warning">
-                      {unresolvedItems.length} item{unresolvedItems.length === 1 ? "" : "s"} not matched ({unresolvedItems.map((c) => c.name).join(", ")})
+                      {unresolvedItems.length} item{unresolvedItems.length === 1 ? "" : "s"} not matched to any receipt ({unresolvedItems.map((c) => c.name).join(", ")})
                     </div>
                   )}
 
@@ -737,14 +782,14 @@ export function CheckoutDialog({
                   </p>
 
                   <div className="space-y-2">
-                    {scanResult?.lines.map((line, i) => {
-                      const state = lineStates[i];
+                    {current.lines.map((line, i) => {
+                      const state = current.lineStates[i];
                       if (!state) return null;
-                      const matchedItem = stagedCartItems.find((c) => c.id === line.matched_cart_item_id);
+                      const matchedItem = stagedCartItems.find((c) => c.id === current.lineMatches[i]);
 
                       return (
                         <div key={i} className={cn("flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-2xl border transition-all text-xs sm:text-sm", state.checked ? "border-accent-sage/50 bg-accent-sage/5" : "border-border bg-card/60 opacity-60")}>
-                          <button type="button" onClick={() => handleToggleLine(i)} className={cn("w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer", state.checked ? "bg-accent-success border-accent-success text-white" : "border-border hover:border-muted-foreground")}>
+                          <button type="button" onClick={() => handleToggleLine(reviewingIndex, i)} className={cn("w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer", state.checked ? "bg-accent-success border-accent-success text-white" : "border-border hover:border-muted-foreground")}>
                             {state.checked && <Check className="w-3.5 h-3.5" />}
                           </button>
 
@@ -753,8 +798,8 @@ export function CheckoutDialog({
                               {line.quantity > 1 ? `${line.quantity}x ` : ""}{line.raw_name}
                             </p>
                             <select
-                              value={lineMatches[i] ?? ""}
-                              onChange={(e) => handleMatchChange(i, e.target.value || null)}
+                              value={current.lineMatches[i] ?? ""}
+                              onChange={(e) => handleMatchChange(reviewingIndex, i, e.target.value || null)}
                               className="text-[11px] bg-transparent border border-border/70 rounded-lg px-1.5 py-0.5 text-foreground max-w-full"
                             >
                               <option value="">— Not matched —</option>
@@ -771,7 +816,7 @@ export function CheckoutDialog({
                               type="number"
                               step="0.01"
                               value={state.price === 0 ? "" : state.price}
-                              onChange={(e) => handlePriceChange(i, e.target.value)}
+                              onChange={(e) => handlePriceChange(reviewingIndex, i, e.target.value)}
                               className="w-18 sm:w-20 h-7 text-xs text-right font-mono bg-transparent border-border/70 rounded-lg"
                             />
                             <span className="text-xs text-muted-foreground">€</span>
@@ -788,14 +833,14 @@ export function CheckoutDialog({
                       Claimed for Kitchen: €{claimedAmount.toFixed(2)}
                     </p>
                     <p className="text-[10px] sm:text-[11px] text-muted-foreground">
-                      Total Receipt: €{scanResult?.totalReceiptAmount.toFixed(2)}
+                      Total Receipts: €{totalReceiptAmount.toFixed(2)}
                     </p>
                   </div>
 
                   <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <Button type="button" variant="outline" size="sm" onClick={handleDiscardReceipt} disabled={isPending} className="flex-1 sm:flex-none rounded-xl text-xs h-9 border-border">
-                      <X className="w-3.5 h-3.5 mr-1" />
-                      Discard Receipt
+                    <Button type="button" variant="outline" size="sm" onClick={() => handleRemoveReceipt(reviewingIndex)} disabled={isPending} className="flex-1 sm:flex-none rounded-xl text-xs h-9 border-border">
+                      <Trash2 className="w-3.5 h-3.5 mr-1" />
+                      Discard This Receipt
                     </Button>
                     <Button type="button" size="sm" onClick={handleContinueToDetails} disabled={isPending || claimedAmount === 0} className="flex-1 sm:flex-none rounded-xl text-xs font-semibold h-9 px-3.5 gap-1.5 bg-primary text-primary-foreground shadow-sm">
                       <ArrowRight className="w-3.5 h-3.5" />

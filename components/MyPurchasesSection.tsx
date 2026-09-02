@@ -49,6 +49,7 @@ export function MyPurchasesSection({ checkouts }: { checkouts: CheckoutWithDetai
                     )}
                     <p className="text-xs text-muted-foreground font-mono mt-0.5">
                       {new Date(checkout.created_at).toLocaleDateString("en-US")} &middot; {formatCurrency(checkout.total_claimed_amount, checkout.currency)}
+                      {checkout.receipts.length > 0 && ` · ${checkout.receipts.length} receipt${checkout.receipts.length === 1 ? "" : "s"}`}
                     </p>
                   </div>
 

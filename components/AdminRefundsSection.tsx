@@ -304,8 +304,7 @@ export function AdminRefundsSection({
                     >
                       €{Number(checkout.total_claimed_amount || 0).toFixed(2)}
                     </Badge>                    
-                    {/* View Receipt or No Receipt Badge */}
-                    {checkout.receipt_filename ? (
+                    {checkout.receipts.length > 0 ? (
                       <Button
                         type="button"
                         variant="outline"
@@ -314,7 +313,7 @@ export function AdminRefundsSection({
                         className="rounded-xl text-xs font-medium h-8 gap-1.5 border-border hover:bg-secondary"
                       >
                         <Receipt className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>View Receipt</span>
+                        <span>View Receipt{checkout.receipts.length > 1 ? `s (${checkout.receipts.length})` : ""}</span>
                       </Button>
                     ) : (
                       <Badge
@@ -436,18 +435,18 @@ export function AdminRefundsSection({
                   </div>
                 )}
 
-                {/* High Resolution Image Container or Receiptless placeholder */}
-                {selectedCheckout.receipt_filename ? (
-                  <div className="relative rounded-2xl overflow-hidden border border-border bg-muted/30 p-2 sm:p-3 flex items-center justify-center min-h-[220px]">
-                    <img
-                      src={
-                        selectedCheckout.receipt_filename.startsWith("/")
-                          ? selectedCheckout.receipt_filename
-                          : `/uploads/receipts/${selectedCheckout.receipt_filename}`
-                      }
-                      alt={`Receipt for ${selectedCheckout.store_name || "household purchase"}`}
-                      className="max-h-[75vh] w-auto max-w-full object-contain rounded-md border border-border shadow-xs"
-                    />
+                {/* Receipt Images or Receiptless placeholder */}
+                {selectedCheckout.receipts.length > 0 ? (
+                  <div className="space-y-3">
+                    {selectedCheckout.receipts.map((r) => (
+                      <div key={r.id} className="relative rounded-2xl overflow-hidden border border-border bg-muted/30 p-2 sm:p-3 flex items-center justify-center min-h-[220px]">
+                        <img
+                          src={r.receipt_filename.startsWith("/") ? r.receipt_filename : `/uploads/receipts/${r.receipt_filename}`}
+                          alt={`Receipt for ${selectedCheckout.store_name || "household purchase"}`}
+                          className="max-h-[75vh] w-auto max-w-full object-contain rounded-md border border-border shadow-xs"
+                        />
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div className="p-6 rounded-2xl border border-dashed border-border bg-muted/20 text-center space-y-1.5">
