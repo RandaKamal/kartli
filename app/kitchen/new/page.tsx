@@ -72,6 +72,59 @@ export default async function NewKitchenPage() {
               </span>
             </div>
 
+            {/* Space Type Selector */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Space Type &amp; Wording Preset
+              </Label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                <label className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/60 cursor-pointer transition text-center space-y-1 has-checked:border-primary has-checked:bg-primary/5 has-checked:ring-1 has-checked:ring-primary/30">
+                  <input
+                    type="radio"
+                    name="spaceType"
+                    value="FLATSHARE"
+                    defaultChecked
+                    className="sr-only"
+                  />
+                  <span className="text-xs font-bold text-foreground">Flatshare</span>
+                  <span className="text-[10px] text-muted-foreground">Roommates</span>
+                </label>
+
+                <label className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/60 cursor-pointer transition text-center space-y-1 has-checked:border-primary has-checked:bg-primary/5 has-checked:ring-1 has-checked:ring-primary/30">
+                  <input
+                    type="radio"
+                    name="spaceType"
+                    value="FAMILY"
+                    className="sr-only"
+                  />
+                  <span className="text-xs font-bold text-foreground">Family</span>
+                  <span className="text-[10px] text-muted-foreground">Household</span>
+                </label>
+
+                <label className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/60 cursor-pointer transition text-center space-y-1 has-checked:border-primary has-checked:bg-primary/5 has-checked:ring-1 has-checked:ring-primary/30">
+                  <input
+                    type="radio"
+                    name="spaceType"
+                    value="OFFICE"
+                    className="sr-only"
+                  />
+                  <span className="text-xs font-bold text-foreground">Office</span>
+                  <span className="text-[10px] text-muted-foreground">Team</span>
+                </label>
+
+                <label className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border/80 bg-card hover:border-primary/60 cursor-pointer transition text-center space-y-1 has-checked:border-primary has-checked:bg-primary/5 has-checked:ring-1 has-checked:ring-primary/30">
+                  <input
+                    type="radio"
+                    name="spaceType"
+                    value="NEUTRAL"
+                    className="sr-only"
+                  />
+                  <span className="text-xs font-bold text-foreground">Neutral</span>
+                  <span className="text-[10px] text-muted-foreground">Members</span>
+                </label>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="kitchen-members">
                 Members to Invite (One name per line)
@@ -79,7 +132,7 @@ export default async function NewKitchenPage() {
               <textarea
                 id="kitchen-members"
                 name="members"
-                rows={4}
+                rows={3}
                 placeholder={"Sarah\nFelix\nAlex"}
                 className="flex w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-transparent transition-colors"
               />
@@ -90,10 +143,10 @@ export default async function NewKitchenPage() {
 
             <div className="pt-4 border-t border-border flex items-center justify-end gap-3">
               <Button asChild variant="ghost" size="sm" className="rounded-xl text-muted-foreground hover:text-foreground">
-                <Link href="/">Cancel</Link>
+                <Link href="/dashboard">Cancel</Link>
               </Button>
               <Button type="submit" size="default" className="rounded-xl font-semibold shadow-sm">
-                Create Kitchen &amp; Get Invites →
+                Create Space &amp; Get Invites →
               </Button>
             </div>
           </form>

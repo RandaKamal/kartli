@@ -476,6 +476,77 @@ export async function getUserKitchens(userId: string): Promise<
   }));
 }
 
+export interface UserKitchenWithStats {
+  kitchen: Kitchen;
+  membership: KitchenMember;
+  memberCount: number;
+  neededItemCount: number;
+  sampleNeededItems: string[];
+}
+
+/**
+ * Fetches all kitchens where the user is an active member along with summary stats.
+ */
+export async function getUserKitchensWithStats(userId: string): Promise<UserKitchenWithStats[]> {
+  const sql = `
+    SELECT
+      k.id AS k_id,
+      k.name AS k_name,
+      k.space_type AS k_space_type,
+      k.public_view_token AS k_public_view_token,
+      k.created_at AS k_created_at,
+      k.updated_at AS k_updated_at,
+      m.id AS m_id,
+      m.kitchen_id AS m_kitchen_id,
+      m.user_id AS m_user_id,
+      m.kitchen_display_name AS m_kitchen_display_name,
+      m.role AS m_role,
+      m.invite_token AS m_invite_token,
+      m.joined_at AS m_joined_at,
+      m.created_at AS m_created_at,
+      (SELECT COUNT(*)::int FROM kitchen_members km2 WHERE km2.kitchen_id = k.id AND km2.joined_at IS NOT NULL) AS member_count,
+      (SELECT COUNT(*)::int FROM shopping_list_items sli WHERE sli.kitchen_id = k.id AND sli.is_purchased = false) AS needed_count,
+      COALESCE((
+        SELECT ARRAY_AGG(sub.name)
+        FROM (
+          SELECT name FROM shopping_list_items
+          WHERE kitchen_id = k.id AND is_purchased = false
+          ORDER BY created_at ASC
+          LIMIT 4
+        ) sub
+      ), ARRAY[]::TEXT[]) AS sample_needed_items
+    FROM kitchens k
+    JOIN kitchen_members m ON k.id = m.kitchen_id
+    WHERE m.user_id = $1 AND m.joined_at IS NOT NULL
+    ORDER BY m.created_at ASC
+  `;
+  const { rows } = await pool.query(sql, [userId]);
+
+  return rows.map((row) => ({
+    kitchen: {
+      id: row.k_id,
+      name: row.k_name,
+      space_type: row.k_space_type || "FLATSHARE",
+      public_view_token: row.k_public_view_token,
+      created_at: row.k_created_at,
+      updated_at: row.k_updated_at,
+    },
+    membership: {
+      id: row.m_id,
+      kitchen_id: row.m_kitchen_id,
+      user_id: row.m_user_id,
+      kitchen_display_name: row.m_kitchen_display_name,
+      role: row.m_role,
+      invite_token: row.m_invite_token,
+      joined_at: row.m_joined_at,
+      created_at: row.m_created_at,
+    },
+    memberCount: Number(row.member_count) || 1,
+    neededItemCount: Number(row.needed_count) || 0,
+    sampleNeededItems: Array.isArray(row.sample_needed_items) ? row.sample_needed_items : [],
+  }));
+}
+
 /**
  * Updates a kitchen's display name (Admin only action).
  */
