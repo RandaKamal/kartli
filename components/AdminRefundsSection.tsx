@@ -298,6 +298,12 @@ export function AdminRefundsSection({
 
                   {/* Receipt & Action Group */}
                   <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-border">
+                    <Badge
+                      variant="secondary"
+                      className="text-xs font-mono font-bold px-2.5 h-8 rounded-xl bg-muted text-foreground border border-border flex items-center"
+                    >
+                      €{Number(checkout.total_claimed_amount || 0).toFixed(2)}
+                    </Badge>                    
                     {/* View Receipt or No Receipt Badge */}
                     {checkout.receipt_filename ? (
                       <Button

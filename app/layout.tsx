@@ -10,6 +10,7 @@ import { cookies } from "next/headers";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import "./globals.css";
+import Script from "next/script";
 
 export const metadata: Metadata = {
   title: "kartli - Shared Kitchens",
