@@ -180,6 +180,8 @@ export async function getShoppingListItems(kitchenId: string): Promise<ShoppingL
       sli.kitchen_id,
       sli.pantry_item_id,
       sli.name,
+      sli.item_price,
+      sli.currency,
       sli.is_purchased,
       sli.purchased_by,
       sli.is_guest_staged,
@@ -383,6 +385,7 @@ export async function createCheckout(
     storeName?: string | null;
     note?: string | null;
     totalAmount?: number;
+    currency?: string;
   }
 ): Promise<Checkout> {
   const cleanFilename = receiptFilename?.trim()
@@ -391,6 +394,8 @@ export async function createCheckout(
   const storeName = options?.storeName?.trim() || null;
   const note = options?.note?.trim() || null;
   const totalAmount = options?.totalAmount ?? 0;
+  const rawCurrency = (options?.currency || "EUR").trim().toUpperCase();
+  const currency = rawCurrency.length === 3 ? rawCurrency : "EUR";
 
   const client = await pool.connect();
   try {
@@ -406,17 +411,17 @@ export async function createCheckout(
     }
 
     const { rows: checkoutRows } = await client.query<Checkout>(
-      `INSERT INTO checkouts (kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, created_at)
-       VALUES ($1, $2, $3, $4, $5, NULL, $6, FALSE, NOW())
-       RETURNING id, kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, created_at, refunded_at, receipt_deleted_at`,
-      [kitchenId, userId, storeName, note, totalAmount, cleanFilename]
+      `INSERT INTO checkouts (kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, currency, created_at)
+       VALUES ($1, $2, $3, $4, $5, NULL, $6, FALSE, $7, NOW())
+       RETURNING id, kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, currency, created_at, refunded_at, receipt_deleted_at`,
+      [kitchenId, userId, storeName, note, totalAmount, cleanFilename, currency]
     );
     const checkout = checkoutRows[0];
 
     await client.query(
-      `UPDATE shopping_list_items SET checkout_id = $1, is_guest_staged = FALSE
-       WHERE kitchen_id = $2 AND purchased_by = $3 AND is_purchased = TRUE AND checkout_id IS NULL`,
-      [checkout.id, kitchenId, userId]
+      `UPDATE shopping_list_items SET checkout_id = $1, currency = $2, is_guest_staged = FALSE
+       WHERE kitchen_id = $3 AND purchased_by = $4 AND is_purchased = TRUE AND checkout_id IS NULL`,
+      [checkout.id, currency, kitchenId, userId]
     );
 
     // Restock any linked pantry items
@@ -447,7 +452,7 @@ async function attachItems(checkouts: (Checkout & { username: string | null })[]
   const results: CheckoutWithDetails[] = [];
   for (const checkout of checkouts) {
     const { rows: itemRows } = await pool.query<ShoppingListItem>(
-      `SELECT id, kitchen_id, pantry_item_id, name, item_price, is_purchased, purchased_by, is_guest_staged, checkout_id, created_at
+      `SELECT id, kitchen_id, pantry_item_id, name, item_price, currency, is_purchased, purchased_by, is_guest_staged, checkout_id, created_at
        FROM shopping_list_items WHERE checkout_id = $1
        ORDER BY created_at ASC`,
       [checkout.id]
@@ -460,7 +465,7 @@ async function attachItems(checkouts: (Checkout & { username: string | null })[]
 /** Admin view: all checkouts in a kitchen, newest first, with buyer + items. */
 export async function getKitchenCheckouts(kitchenId: string): Promise<CheckoutWithDetails[]> {
   const { rows } = await pool.query<Checkout & { username: string | null }>(
-    `SELECT c.id, c.kitchen_id, c.user_id, c.store_name, c.note, c.total_claimed_amount, c.total_receipt_amount, c.receipt_filename, c.is_refunded, c.created_at, c.refunded_at, c.receipt_deleted_at, u.username
+    `SELECT c.id, c.kitchen_id, c.user_id, c.store_name, c.note, c.total_claimed_amount, c.total_receipt_amount, c.receipt_filename, c.is_refunded, c.currency, c.created_at, c.refunded_at, c.receipt_deleted_at, u.username
      FROM checkouts c LEFT JOIN users u ON c.user_id = u.id
      WHERE c.kitchen_id = $1 ORDER BY c.created_at DESC`,
     [kitchenId]
@@ -471,7 +476,7 @@ export async function getKitchenCheckouts(kitchenId: string): Promise<CheckoutWi
 /** A single user's own checkout history within a kitchen. */
 export async function getUserCheckouts(kitchenId: string, userId: string): Promise<CheckoutWithDetails[]> {
   const { rows } = await pool.query<Checkout & { username: string | null }>(
-    `SELECT c.id, c.kitchen_id, c.user_id, c.store_name, c.note, c.total_claimed_amount, c.total_receipt_amount, c.receipt_filename, c.is_refunded, c.created_at, c.refunded_at, c.receipt_deleted_at, u.username
+    `SELECT c.id, c.kitchen_id, c.user_id, c.store_name, c.note, c.total_claimed_amount, c.total_receipt_amount, c.receipt_filename, c.is_refunded, c.currency, c.created_at, c.refunded_at, c.receipt_deleted_at, u.username
      FROM checkouts c LEFT JOIN users u ON c.user_id = u.id
      WHERE c.kitchen_id = $1 AND c.user_id = $2 ORDER BY c.created_at DESC`,
     [kitchenId, userId]

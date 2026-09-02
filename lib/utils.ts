@@ -16,3 +16,12 @@ export function capitalize(str?: string | null): string {
     .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : ""))
     .join(" ");
 }
+
+export function formatCurrency(amount: number | string, currency = 'EUR') {
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: currency || 'EUR',
+  }).format(isNaN(num) ? 0 : num);
+}
+

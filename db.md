@@ -20,6 +20,7 @@ Stores registered user credentials and account timestamps.
 * `password_hash` (TEXT, NOT NULL): Bcrypt-hashed password.
 * `created_at` (TIMESTAMPTZ, Default: `NOW()`): Account creation timestamp.
 * `updated_at` (TIMESTAMPTZ, Default: `NOW()`): Last update timestamp.
+* `preferred_currency` (VARCHAR(3), Default: 'EUR', NOT NULL): ISO-4217 Currency Code (e.g. 'EUR', 'CHF', 'USD', 'GBP') for display and auto-conversion.
 
 ---
 
@@ -71,6 +72,7 @@ Active shopping list entries. Supports synced pantry items, free ad-hoc custom i
 * `is_guest_staged` (BOOLEAN, Default: `false`, NOT NULL): Flag indicating the item is currently reserved in an unauthenticated guest's active cart.
 * `checkout_id` **(FK -> `checkouts.id`, ON DELETE SET NULL, Nullable)**: Associated refund/receipt batch.
 * `created_at` (TIMESTAMPTZ, Default: `NOW()`): Entry creation timestamp.
+* `currency` (VARCHAR(3), Default: 'EUR', NOT NULL): ISO-4217 Currency Code (e.g. 'EUR', 'CHF', 'USD', 'GBP').
 
 ---
 
@@ -88,6 +90,7 @@ Receipt upload batches and manual checkouts for cost reimbursement.
 * `refunded_at` (TIMESTAMPTZ, Nullable): Timestamp when admin settled the refund.
 * `receipt_deleted_at` (TIMESTAMPTZ, Nullable): Timestamp when receipt image was deleted.
 * `created_at` (TIMESTAMPTZ, Default: `NOW()`): Checkout creation timestamp.
+* `currency` (VARCHAR(3), Default: 'EUR', NOT NULL): ISO-4217 Currency Code (e.g. 'EUR', 'CHF', 'USD', 'GBP').
 
 ---
 

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { refundCheckoutAction } from "@/app/actions/checkout";
 import type { CheckoutWithDetails, KitchenMemberWithUser, KitchenSpaceType } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
-import { capitalize } from "@/lib/utils";
+import { capitalize, formatCurrency } from "@/lib/utils";
 import {
   Receipt,
   CheckCircle2,
@@ -245,6 +245,8 @@ export function AdminRefundsSection({
                         </span>
                         <span>&middot;</span>
                         <span>{checkout.items.length} item{checkout.items.length === 1 ? "" : "s"}</span>
+                        <span>&middot;</span>
+                        <span className="font-semibold text-foreground">{formatCurrency(checkout.total_claimed_amount, checkout.currency)}</span>
                       </div>
                     </div>
                   </div>
@@ -382,9 +384,9 @@ export function AdminRefundsSection({
                   </span>
                   <span>&middot;</span>
                   <span className="font-semibold text-foreground">
-                    Claimed: €{Number(selectedCheckout.total_claimed_amount || 0).toFixed(2)}
+                    Claimed: {formatCurrency(selectedCheckout.total_claimed_amount || 0, selectedCheckout.currency)}
                     {selectedCheckout.total_receipt_amount != null && (
-                      <span className="text-muted-foreground font-normal"> (Total: €{Number(selectedCheckout.total_receipt_amount).toFixed(2)})</span>
+                      <span className="text-muted-foreground font-normal"> (Total: {formatCurrency(selectedCheckout.total_receipt_amount, selectedCheckout.currency)})</span>
                     )}
                   </span>
                 </div>
@@ -435,7 +437,7 @@ export function AdminRefundsSection({
                         <span>Claimed Items ({selectedCheckout.items.length})</span>
                       </span>
                       <span className="font-mono text-[11px] text-muted-foreground">
-                        €{Number(selectedCheckout.total_claimed_amount || 0).toFixed(2)}
+                        {formatCurrency(selectedCheckout.total_claimed_amount || 0, selectedCheckout.currency)}
                       </span>
                     </div>
 
@@ -449,7 +451,7 @@ export function AdminRefundsSection({
                           <span>{item.name}</span>
                           {item.item_price != null && (
                             <span className="font-mono text-[10px] text-muted-foreground">
-                              (€{Number(item.item_price).toFixed(2)})
+                              ({formatCurrency(item.item_price, item.currency || selectedCheckout.currency)})
                             </span>
                           )}
                         </Badge>

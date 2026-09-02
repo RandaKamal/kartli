@@ -53,16 +53,19 @@ export async function scanReceiptAction(formData: FormData) {
     
     const stagedItems = JSON.parse(stagedCartItemsStr || '[]');
     
-    const prompt = `You are a receipt OCR extraction assistant. Extract all line items from this supermarket receipt (typically German/European receipts like Rewe, Lidl, Aldi, Edeka, DM).
+    const prompt = `You are a receipt OCR extraction assistant. Extract all line items from this supermarket receipt.
+
+Inspect receipt text for currency symbols or abbreviations (e.g., "CHF", "EUR", "USD", "GBP", "€", "$", "£", "Fr."). Return a standard 3-letter uppercase ISO code in the "currency" field. Default to "EUR" if ambiguous or not explicitly specified.
 
 Return a JSON object with this exact structure:
 {
   "store_name": "<store name as printed, e.g. Lidl, Rewe, or Supermarket if unclear>",
-  "total_receipt_amount": <number, the overall gross receipt total in EUR>,
+  "currency": "<ISO code: 'EUR', 'CHF', 'USD', 'GBP', etc. Default 'EUR'>",
+  "total_receipt_amount": <number, the overall gross receipt total>,
   "lines": [
     {
       "raw_name": "<text as printed on receipt>",
-      "price": <number, EUR price for this line>,
+      "price": <number, price for this line>,
       "quantity": <number, default 1>,
       "matched_cart_item_id": <string or null>
     }
@@ -101,9 +104,13 @@ IMPORTANT: Return ONLY the JSON object, no markdown, no code fences, no extra te
       throw new Error("Could not parse the receipt data returned by AI. Please try again with a clearer picture.");
     }
 
+    const rawCurrency = (parsed.currency || 'EUR').toString().trim().toUpperCase();
+    const currency = rawCurrency.length === 3 ? rawCurrency : 'EUR';
+
     return {
       receiptPath: `/uploads/receipts/${filename}`,
       storeName: parsed.store_name || 'Supermarket',
+      currency,
       totalReceiptAmount: Number(parsed.total_receipt_amount) || 0,
       lines: (parsed.lines || []).map((line: any) => ({
         raw_name: line.raw_name || '',
@@ -152,6 +159,8 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
   const kitchenId = formData.get("kitchenId") as string;
   const storeName = (formData.get("storeName") as string)?.trim() || null;
   const note = (formData.get("note") as string)?.trim() || null;
+  const rawCurrency = (formData.get("currency") as string)?.trim().toUpperCase() || "EUR";
+  const currency = rawCurrency.length === 3 ? rawCurrency : "EUR";
   const totalClaimedAmountStr = formData.get("totalClaimedAmount") as string;
   const totalReceiptAmountStr = formData.get("totalReceiptAmount") as string;
   const rawReceiptPath = (formData.get("receiptPath") as string)?.trim() || null;
@@ -210,10 +219,10 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
 
     // Insert checkout row with note and receipt data
     const { rows: checkoutRows } = await client.query<{ id: string }>(
-      `INSERT INTO checkouts (kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, NOW())
+      `INSERT INTO checkouts (kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, currency, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, $8, NOW())
        RETURNING id`,
-      [kitchenId, userId, storeName, note, totalClaimedAmount, totalReceiptAmount, receiptPath]
+      [kitchenId, userId, storeName, note, totalClaimedAmount, totalReceiptAmount, receiptPath, currency]
     );
     const checkoutId = checkoutRows[0].id;
     
@@ -224,12 +233,13 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
          SET is_purchased = TRUE, 
              checkout_id = $1, 
              item_price = $2, 
+             currency = $3,
              is_guest_staged = FALSE
-         WHERE id = $3 
-           AND kitchen_id = $4
-           AND purchased_by = $5
+         WHERE id = $4 
+           AND kitchen_id = $5
+           AND purchased_by = $6
            AND checkout_id IS NULL`,
-        [checkoutId, item.price ?? null, item.shopping_list_item_id, kitchenId, session.user.id]
+        [checkoutId, item.price ?? null, currency, item.shopping_list_item_id, kitchenId, session.user.id]
       );
 
       if (updateResult.rowCount === 0) {
@@ -252,7 +262,7 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
     revalidatePath(`/kitchen/${kitchenId}/member`);
     revalidatePath(`/kitchen/${kitchenId}/admin`);
     
-    return { success: true, checkoutId, totalClaimedAmount };
+    return { success: true, checkoutId, totalClaimedAmount, currency };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -272,6 +282,8 @@ export async function receiptlessCheckoutAction(formData: FormData) {
   const kitchenId = formData.get("kitchenId") as string;
   const storeName = (formData.get("storeName") as string)?.trim() || null;
   const note = (formData.get("note") as string)?.trim() || null;
+  const rawCurrency = (formData.get("currency") as string)?.trim().toUpperCase() || "EUR";
+  const currency = rawCurrency.length === 3 ? rawCurrency : "EUR";
   const totalAmountStr = formData.get("totalAmount") as string;
   const itemIdsStr = formData.get("itemIds") as string;
 
@@ -318,19 +330,19 @@ export async function receiptlessCheckoutAction(formData: FormData) {
 
     // Insert checkout row with NULL receipt_filename
     const { rows: checkoutRows } = await client.query<{ id: string }>(
-      `INSERT INTO checkouts (kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, created_at)
-       VALUES ($1, $2, $3, $4, $5, NULL, NULL, FALSE, NOW())
+      `INSERT INTO checkouts (kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, currency, created_at)
+       VALUES ($1, $2, $3, $4, $5, NULL, NULL, FALSE, $6, NOW())
        RETURNING id`,
-      [kitchenId, userId, storeName, note, totalAmount]
+      [kitchenId, userId, storeName, note, totalAmount, currency]
     );
     const checkoutId = checkoutRows[0].id;
 
     const checkoutItemIds = cartRows.map((i) => i.id);
     await client.query(
       `UPDATE shopping_list_items
-       SET is_purchased = TRUE, checkout_id = $1, is_guest_staged = FALSE
-       WHERE id = ANY($2::uuid[]) AND kitchen_id = $3`,
-      [checkoutId, checkoutItemIds, kitchenId]
+       SET is_purchased = TRUE, checkout_id = $1, currency = $2, is_guest_staged = FALSE
+       WHERE id = ANY($3::uuid[]) AND kitchen_id = $4`,
+      [checkoutId, currency, checkoutItemIds, kitchenId]
     );
 
     // Restock any linked pantry items

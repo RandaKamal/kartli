@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { refundCheckoutAction } from "@/app/actions/checkout";
 import type { CheckoutWithDetails } from "@/types";
+import { formatCurrency } from "@/lib/utils";
 import { Receipt, RotateCcw, Loader2, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,7 +55,7 @@ export function AdminCheckoutsList({
                 <div>
                   <p className="text-sm font-semibold text-foreground">@{checkout.username || "unknown"}</p>
                   <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                    {new Date(checkout.created_at).toLocaleDateString("en-US")} &middot; {checkout.items.length} item{checkout.items.length === 1 ? "" : "s"}
+                    {new Date(checkout.created_at).toLocaleDateString("en-US")} &middot; {checkout.items.length} item{checkout.items.length === 1 ? "" : "s"} &middot; {formatCurrency(checkout.total_claimed_amount, checkout.currency)}
                   </p>
                 </div>
 
@@ -103,8 +104,13 @@ export function AdminCheckoutsList({
 
               <div className="flex flex-wrap gap-1.5">
                 {checkout.items.map((item) => (
-                  <Badge key={item.id} variant="secondary" className="text-xs font-normal">
-                    {item.name}
+                  <Badge key={item.id} variant="secondary" className="text-xs font-normal flex items-center gap-1">
+                    <span>{item.name}</span>
+                    {item.item_price != null && (
+                      <span className="font-mono text-[10px] text-muted-foreground">
+                        ({formatCurrency(item.item_price, item.currency || checkout.currency)})
+                      </span>
+                    )}
                   </Badge>
                 ))}
               </div>
@@ -123,7 +129,7 @@ export function AdminCheckoutsList({
                   {selectedCheckout.store_name || "Supermarket Receipt"}
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  Submitted by @{selectedCheckout.username || "unknown"} on {new Date(selectedCheckout.created_at).toLocaleDateString("en-US")}
+                  Submitted by @{selectedCheckout.username || "unknown"} on {new Date(selectedCheckout.created_at).toLocaleDateString("en-US")} &middot; Claimed: {formatCurrency(selectedCheckout.total_claimed_amount, selectedCheckout.currency)}
                 </DialogDescription>
               </DialogHeader>
 

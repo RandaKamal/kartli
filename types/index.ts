@@ -158,6 +158,7 @@ export interface ShoppingListItem {
   pantry_item_id: string | null;
   name: string;
   item_price: number | null;
+  currency?: string;
   is_purchased: boolean;
   purchased_by: string | null;
   purchased_by_name?: string | null;
@@ -187,6 +188,7 @@ export interface Checkout {
   total_receipt_amount: number | null;
   receipt_filename: string | null;
   is_refunded: boolean;
+  currency?: string;
   created_at: Date;
   refunded_at: Date | null;
   receipt_deleted_at: Date | null;
@@ -207,6 +209,7 @@ export interface ReceiptLine {
 export interface ScanReceiptResult {
   receiptPath: string;
   storeName: string;
+  currency: string;
   totalReceiptAmount: number;
   lines: ReceiptLine[];
 }

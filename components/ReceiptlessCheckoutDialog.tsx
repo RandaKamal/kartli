@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingBag, Loader2, Check, Store, DollarSign, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/utils";
 
 interface StagedCartItem {
   id: string;
@@ -40,12 +41,14 @@ export function ReceiptlessCheckoutDialog({
   const router = useRouter();
   const [storeName, setStoreName] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
+  const [currency, setCurrency] = useState("EUR");
   const [note, setNote] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const resetForm = useCallback(() => {
     setStoreName("");
     setTotalAmount("");
+    setCurrency("EUR");
     setNote("");
   }, []);
 
@@ -70,6 +73,7 @@ export function ReceiptlessCheckoutDialog({
     formData.append("kitchenId", kitchenId);
     formData.append("storeName", storeName.trim());
     formData.append("totalAmount", totalAmount ? parseFloat(totalAmount).toString() : "0");
+    formData.append("currency", currency);
     formData.append("note", note.trim());
     formData.append("itemIds", JSON.stringify(stagedCartItems.map((i) => i.id)));
 
@@ -79,7 +83,7 @@ export function ReceiptlessCheckoutDialog({
         if (result.success) {
           const claimedNum = parseFloat(totalAmount) || 0;
           if (claimedNum > 0) {
-            toast.success(`Checkout recorded! €${claimedNum.toFixed(2)} refund requested.`);
+            toast.success(`Checkout recorded! ${formatCurrency(claimedNum, currency)} refund requested.`);
           } else {
             toast.success("Items checked out and marked as purchased!");
           }
@@ -147,23 +151,37 @@ export function ReceiptlessCheckoutDialog({
             />
           </div>
 
-          {/* Total Amount Input */}
+          {/* Total Amount Input with Compact Currency Selector */}
           <div className="space-y-1.5">
             <Label htmlFor="receiptless-amount" className="text-xs font-medium text-foreground flex items-center gap-1.5">
               <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
-              <span>Total Amount Claimed (€) (Optional)</span>
+              <span>Total Amount Claimed (Optional)</span>
             </Label>
-            <Input
-              id="receiptless-amount"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="0.00"
-              value={totalAmount}
-              onChange={(e) => setTotalAmount(e.target.value)}
-              className="h-9 text-xs font-mono rounded-xl border-border bg-transparent"
-              disabled={isPending}
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                id="receiptless-amount"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={totalAmount}
+                onChange={(e) => setTotalAmount(e.target.value)}
+                className="h-9 text-xs font-mono rounded-xl border-border bg-transparent flex-1"
+                disabled={isPending}
+              />
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="h-9 text-xs font-semibold bg-card border border-border rounded-xl px-2.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shrink-0"
+                aria-label="Currency"
+                disabled={isPending}
+              >
+                <option value="EUR">EUR</option>
+                <option value="CHF">CHF</option>
+                <option value="USD">USD</option>
+                <option value="GBP">GBP</option>
+              </select>
+            </div>
           </div>
 
           {/* Note to Admin Textarea */}

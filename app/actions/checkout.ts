@@ -28,7 +28,7 @@ function revalidateKitchen(kitchenId: string) {
 export async function checkoutAction(
   kitchenId: string,
   receiptFilename?: string | null,
-  options?: { storeName?: string | null; note?: string | null; totalAmount?: number }
+  options?: { storeName?: string | null; note?: string | null; totalAmount?: number; currency?: string }
 ): Promise<Checkout> {
   const userId = await requireMembership(kitchenId);
   const checkout = await createCheckout(kitchenId, userId, receiptFilename, options);

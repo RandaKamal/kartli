@@ -28,7 +28,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 interface ReceiptLine {
   raw_name: string;
@@ -40,6 +40,7 @@ interface ReceiptLine {
 interface ScanResult {
   receiptPath: string;
   storeName: string;
+  currency: string;
   totalReceiptAmount: number;
   lines: ReceiptLine[];
 }
@@ -66,6 +67,7 @@ export function ReceiptReviewModal({
   const [phase, setPhase] = useState<'upload' | 'scanning' | 'review'>('upload');
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [storeName, setStoreName] = useState('');
+  const [currency, setCurrency] = useState('EUR');
   const [note, setNote] = useState('');
   const [lineStates, setLineStates] = useState<Array<{ checked: boolean; price: number }>>([]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -98,6 +100,7 @@ export function ReceiptReviewModal({
         const result = await scanReceiptAction(formData);
         setScanResult(result);
         setStoreName(result.storeName);
+        setCurrency(result.currency || 'EUR');
         setLineStates(
           result.lines.map((line: ReceiptLine) => ({
             checked: line.matched_cart_item_id !== null,
@@ -115,6 +118,7 @@ export function ReceiptReviewModal({
           fileInputRef.current.value = '';
         }
         setScanResult(null);
+        setCurrency('EUR');
         setLineStates([]);
         toast.error(error.message || 'Failed to scan receipt');
         setPhase('upload');
@@ -166,6 +170,7 @@ export function ReceiptReviewModal({
     setPhase('upload');
     setScanResult(null);
     setStoreName('');
+    setCurrency('EUR');
     setNote('');
     setLineStates([]);
     if (previewUrl) {
@@ -201,6 +206,7 @@ export function ReceiptReviewModal({
     formData.append('kitchenId', kitchenId);
     formData.append('receiptPath', scanResult.receiptPath);
     formData.append('storeName', storeName);
+    formData.append('currency', currency);
     formData.append('note', note.trim());
     formData.append('totalReceiptAmount', scanResult.totalReceiptAmount.toString());
     formData.append('totalClaimedAmount', claimedAmount.toString());
@@ -209,11 +215,12 @@ export function ReceiptReviewModal({
     startTransition(async () => {
       try {
         await submitReceiptCheckoutAction(formData);
-        toast.success(`Refund request of €${claimedAmount.toFixed(2)} submitted to kitchen admin.`);
+        toast.success(`Refund request of ${formatCurrency(claimedAmount, currency)} submitted to kitchen admin.`);
         router.refresh();
         setPhase('upload');
         setScanResult(null);
         setStoreName('');
+        setCurrency('EUR');
         setNote('');
         setLineStates([]);
         if (previewUrl) {
@@ -230,7 +237,7 @@ export function ReceiptReviewModal({
         toast.error(error.message || 'Failed to submit refund request');
       }
     });
-  }, [scanResult, lineStates, stagedCartItems, kitchenId, storeName, note, claimedAmount, previewUrl, router, onOpenChange]);
+  }, [scanResult, lineStates, stagedCartItems, kitchenId, storeName, currency, note, claimedAmount, previewUrl, router, onOpenChange]);
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -318,7 +325,7 @@ export function ReceiptReviewModal({
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <Badge variant="secondary" className="text-xs font-mono">
-                  {scanResult?.totalReceiptAmount.toFixed(2)} €
+                  {formatCurrency(scanResult?.totalReceiptAmount || 0, currency)}
                 </Badge>
                 <button
                   type="button"
@@ -408,20 +415,31 @@ export function ReceiptReviewModal({
               <div className="flex-1 flex flex-col min-h-0 min-w-0 md:w-3/5 overflow-hidden">
                 {/* Scrollable List Body with Touch Support */}
                 <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 touch-pan-y overscroll-contain">
-                  {/* Store Name & Receipt Total Row */}
+                  {/* Store Name, Currency Selector & Receipt Total Row */}
                   <div className="flex items-center justify-between gap-2.5 flex-wrap p-2.5 rounded-2xl bg-muted/30 border border-border/70">
                     <div className="flex items-center gap-2 flex-1 min-w-[160px]">
                       <Store className="w-4 h-4 text-muted-foreground shrink-0" />
                       <Input
                         value={storeName}
                         onChange={(e) => setStoreName(e.target.value)}
-                        className="h-8 text-xs font-semibold bg-transparent border-border/70 rounded-lg max-w-[200px]"
+                        className="h-8 text-xs font-semibold bg-transparent border-border/70 rounded-lg max-w-[160px] sm:max-w-[180px]"
                         placeholder="Store name"
                       />
+                      <select
+                        value={currency}
+                        onChange={(e) => setCurrency(e.target.value)}
+                        className="h-8 text-xs font-semibold bg-card border border-border/70 rounded-lg px-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shrink-0"
+                        aria-label="Currency"
+                      >
+                        <option value="EUR">EUR</option>
+                        <option value="CHF">CHF</option>
+                        <option value="USD">USD</option>
+                        <option value="GBP">GBP</option>
+                      </select>
                     </div>
                     <div className="text-right">
                       <span className="text-[11px] text-muted-foreground">Receipt Total: </span>
-                      <span className="text-xs font-bold font-mono text-foreground">{scanResult?.totalReceiptAmount.toFixed(2)} €</span>
+                      <span className="text-xs font-bold font-mono text-foreground">{formatCurrency(scanResult?.totalReceiptAmount || 0, currency)}</span>
                     </div>
                   </div>
 
@@ -475,7 +493,7 @@ export function ReceiptReviewModal({
                           </div>
 
                           {/* Price Input */}
-                          <div className="flex items-center gap-1 shrink-0">
+                          <div className="flex items-center gap-1.5 shrink-0">
                             <Input
                               type="number"
                               step="0.01"
@@ -483,7 +501,7 @@ export function ReceiptReviewModal({
                               onChange={(e) => handlePriceChange(i, e.target.value)}
                               className="w-18 sm:w-20 h-7 text-xs text-right font-mono bg-transparent border-border/70 rounded-lg"
                             />
-                            <span className="text-xs text-muted-foreground">€</span>
+                            <span className="text-xs text-muted-foreground font-mono font-medium">{currency}</span>
                           </div>
                         </div>
                       );
@@ -507,11 +525,11 @@ export function ReceiptReviewModal({
                   <div className="space-y-0.5">
                     <div className="flex items-center justify-between sm:justify-start gap-2">
                       <p className="text-xs sm:text-sm font-bold text-foreground">
-                        Claimed for Kitchen: €{claimedAmount.toFixed(2)}
+                        Claimed for Kitchen: {formatCurrency(claimedAmount, currency)}
                       </p>
                     </div>
                     <p className="text-[10px] sm:text-[11px] text-muted-foreground">
-                      Total Receipt: €{scanResult?.totalReceiptAmount.toFixed(2)} · Private: €{Math.max(0, (scanResult?.totalReceiptAmount || 0) - claimedAmount).toFixed(2)}
+                      Total Receipt: {formatCurrency(scanResult?.totalReceiptAmount || 0, currency)} · Private: {formatCurrency(Math.max(0, (scanResult?.totalReceiptAmount || 0) - claimedAmount), currency)}
                     </p>
                   </div>
 

@@ -1,4 +1,5 @@
 import type { CheckoutWithDetails } from "@/types";
+import { formatCurrency } from "@/lib/utils";
 import { Receipt, CheckCircle2, Clock } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,9 @@ export function MyPurchasesSection({ checkouts }: { checkouts: CheckoutWithDetai
                 {checkout.note && (
                   <p className="text-xs text-muted-foreground italic">&ldquo;{checkout.note}&rdquo;</p>
                 )}
-                <p className="text-xs text-muted-foreground font-mono mt-0.5">{new Date(checkout.created_at).toLocaleDateString("en-US")}</p>
+                <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                  {new Date(checkout.created_at).toLocaleDateString("en-US")} &middot; {formatCurrency(checkout.total_claimed_amount, checkout.currency)}
+                </p>
               </div>
 
               {checkout.is_refunded ? (
