@@ -289,6 +289,12 @@ export function CheckoutDialog({
     onOpenChange(false);
   }, [receipts, resetAll, onOpenChange]);
 
+  const handleSaveDraft = useCallback(() => {
+    onOpenChange(false);
+    toast.success("Draft saved — reopen Checkout to continue where you left off.");
+  }, [onOpenChange]);
+
+
   const handleOpenChange = useCallback(
     (open: boolean) => {
       if (!open) {
@@ -584,6 +590,9 @@ export function CheckoutDialog({
               <DialogFooter className="pt-2 border-t border-border flex flex-col sm:flex-row gap-2">
                 <Button type="button" variant="outline" size="sm" onClick={handleClose} disabled={isPending} className="rounded-xl text-xs h-9 border-border">
                   Cancel
+                </Button>
+                <Button type="button" variant="secondary" size="sm" onClick={handleSaveDraft} disabled={isPending} className="rounded-xl text-xs font-semibold h-9 border-border">
+                  Save
                 </Button>
                 <Button type="submit" size="sm" disabled={isPending || stagedCartItems.length === 0} className="rounded-xl text-xs font-semibold h-9 px-4 gap-1.5 bg-primary text-primary-foreground shadow-sm">
                   {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
