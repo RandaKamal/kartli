@@ -431,70 +431,60 @@ export function KitchenSpaceView({
     <div className="space-y-6 pb-28 sm:pb-8">
       <GuestCartHandoverListener kitchenId={initialKitchen.id} />
 
-      {/* Top Breadcrumb & Header */}
-      <div className="space-y-4">
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition px-1"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Kitchens</span>
-        </Link>
+      {/* Sleek Single-Row Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+        {/* Left Side: Back Navigation & Kitchen Title */}
+        <div className="flex items-center gap-3 min-w-0">
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-xl border border-border/60 sm:border-white/10 bg-muted/40 sm:bg-zinc-900/60 hover:bg-muted sm:hover:bg-zinc-800 text-muted-foreground hover:text-foreground shrink-0 transition-colors"
+            title="Back to Kitchens"
+            aria-label="Back to Kitchens"
+          >
+            <Link href="/dashboard">
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+          </Button>
 
-        {/* Compact Header Card */}
-        <Card className="border border-border bg-card rounded-3xl p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
-          <div className="space-y-1.5 min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge
-                variant="secondary"
-                className="bg-muted text-foreground border border-border font-medium text-[10px] tracking-wider uppercase"
-              >
-                {isAdmin ? "ADMIN" : "MEMBER"}
-              </Badge>
-              <Badge
-                variant="secondary"
-                className="bg-muted text-foreground border border-border font-medium text-[10px] uppercase"
-              >
-                {terminology.spaceLabel} SPACE
-              </Badge>
-              <span className="text-xs text-muted-foreground font-mono">
-                Created {new Date(initialKitchen.created_at).toLocaleDateString()}
-              </span>
-            </div>
-
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight truncate">
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-white truncate">
               {kitchenName}
             </h1>
-
-            <p className="text-xs text-muted-foreground">
-              Display Name: <strong className="text-foreground">{capitalize(membership.kitchen_display_name)}</strong>
-              {isAdmin ? " (Admin)" : ""}
-            </p>
-          </div>
-
-          {/* Right Header Toolbar Actions: Sleek Guest Link Pill Bar */}
-          <div className="flex items-center bg-muted/60 border border-border rounded-2xl p-1 gap-1 shadow-xs shrink-0 self-start md:self-center">
-            <div className="flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 text-xs text-foreground">
-              <Share2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <span className="font-semibold text-xs tracking-tight">Guest Link</span>
-            </div>
-            <div className="flex items-center gap-0.5 border-l border-border/80 pl-1">
-              <CopyButton text={publicGuestUrl} label="Copy" size="sm" />
-              <Button
-                asChild
-                variant="ghost"
-                size="icon-sm"
-                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80"
-                title="Open guest view in new tab"
-                aria-label="Open guest view in new tab"
+            {isAdmin && (
+              <Badge
+                variant="secondary"
+                className="bg-zinc-800 text-zinc-300 border border-white/10 font-medium text-[10px] tracking-wider uppercase px-2 py-0.5 rounded-md shrink-0"
               >
-                <Link href={publicGuestUrl} target="_blank">
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </Link>
-              </Button>
-            </div>
+                Admin
+              </Badge>
+            )}
           </div>
-        </Card>
+        </div>
+
+        {/* Right Side: Share Actions */}
+        <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+          <CopyButton
+            text={publicGuestUrl}
+            label="Guest Link"
+            size="sm"
+            variant="outline"
+            className="h-9 px-3 text-xs font-medium rounded-xl border-border/60 sm:border-white/10 bg-muted/40 sm:bg-zinc-900/60 hover:bg-muted sm:hover:bg-zinc-800 text-foreground sm:text-zinc-200 transition-colors"
+          />
+          <Button
+            asChild
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 rounded-xl border border-border/60 sm:border-white/10 bg-muted/40 sm:bg-zinc-900/60 hover:bg-muted sm:hover:bg-zinc-800 text-muted-foreground hover:text-foreground shrink-0 transition-colors"
+            title="Open guest view in new tab"
+            aria-label="Open guest view in new tab"
+          >
+            <Link href={publicGuestUrl} target="_blank">
+              <ExternalLink className="w-4 h-4" />
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Responsive Navigation System */}

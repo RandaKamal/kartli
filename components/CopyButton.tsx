@@ -5,6 +5,7 @@ import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export function CopyButton({
   text,
@@ -12,12 +13,14 @@ export function CopyButton({
   size = "sm",
   variant = "secondary",
   iconOnly = false,
+  className,
 }: {
   text: string;
   label?: string;
   size?: "default" | "sm" | "icon" | "icon-sm";
   variant?: "default" | "secondary" | "outline" | "ghost";
   iconOnly?: boolean;
+  className?: string;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -42,7 +45,7 @@ export function CopyButton({
             size={size === "icon-sm" ? "icon-sm" : "icon"}
             variant={copied ? "default" : variant}
             onClick={handleCopy}
-            className="transition-colors shrink-0"
+            className={cn("transition-colors shrink-0", className)}
             aria-label={label}
           >
             {copied ? (
@@ -65,7 +68,7 @@ export function CopyButton({
       size="sm"
       variant={copied ? "default" : variant}
       onClick={handleCopy}
-      className="inline-flex items-center gap-1.5 rounded-lg text-xs font-semibold transition"
+      className={cn("inline-flex items-center gap-1.5 rounded-lg text-xs font-semibold transition", className)}
     >
       {copied ? (
         <>
