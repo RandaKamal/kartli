@@ -2,17 +2,17 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { registerUserAction } from "@/app/actions/auth";
-import { Eye, EyeOff, Check, X, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Eye, EyeOff, Check, X, Loader2, User, Lock, ArrowRight } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export function RegisterForm({
   callbackUrl,
+  inviteToken,
   initialError,
 }: {
   callbackUrl?: string;
+  inviteToken?: string;
   initialError?: string;
 }) {
   const [password, setPassword] = useState("");
@@ -81,6 +81,9 @@ export function RegisterForm({
       {callbackUrl && (
         <input type="hidden" name="callbackUrl" value={callbackUrl} />
       )}
+      {inviteToken && (
+        <input type="hidden" name="inviteToken" value={inviteToken} />
+      )}
 
       {error && (
         <div className="p-3 bg-destructive/10 border border-destructive/30 text-destructive text-xs rounded-xl text-center font-medium animate-in fade-in-50">
@@ -88,32 +91,42 @@ export function RegisterForm({
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label htmlFor="reg-username">
+      <div className="space-y-1.5">
+        <Label
+          htmlFor="reg-username"
+          className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground mb-1 block"
+        >
           Username
         </Label>
-        <Input
-          id="reg-username"
-          type="text"
-          name="username"
-          required
-          autoComplete="username"
-          minLength={2}
-          onKeyDown={handleKeyDown}
-          placeholder="e.g. sarah_miller"
-          className="rounded-xl"
-        />
-        <span className="text-[11px] text-muted-foreground block">
+        <div className="h-11 bg-secondary/30 border border-border/80 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 rounded-xl transition-all flex items-center px-3.5 gap-2.5">
+          <User className="w-4 h-4 text-muted-foreground/70 shrink-0 pointer-events-none" />
+          <input
+            id="reg-username"
+            type="text"
+            name="username"
+            required
+            autoComplete="username"
+            minLength={2}
+            onKeyDown={handleKeyDown}
+            placeholder="alex@baker-street"
+            className="w-full h-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/50 p-0"
+          />
+        </div>
+        <span className="text-[11px] text-muted-foreground/70 block pt-0.5">
           Used to log into your account. Must be unique.
         </span>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="reg-password">
+      <div className="space-y-1.5">
+        <Label
+          htmlFor="reg-password"
+          className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground mb-1 block"
+        >
           Password
         </Label>
-        <div className="relative">
-          <Input
+        <div className="h-11 bg-secondary/30 border border-border/80 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 rounded-xl transition-all flex items-center px-3.5 gap-2.5">
+          <Lock className="w-4 h-4 text-muted-foreground/70 shrink-0 pointer-events-none" />
+          <input
             id="reg-password"
             type={showPassword ? "text" : "password"}
             name="password"
@@ -123,8 +136,8 @@ export function RegisterForm({
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
             onKeyDown={handleKeyDown}
-            placeholder="At least 6 characters"
-            className="rounded-xl pr-11"
+            placeholder="••••••••"
+            className="w-full h-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/50 p-0"
           />
           <button
             type="button"
@@ -134,7 +147,7 @@ export function RegisterForm({
               e.stopPropagation();
               setShowPassword((prev) => !prev);
             }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition p-1 cursor-pointer focus:outline-none"
+            className="text-muted-foreground/70 hover:text-foreground transition p-1 cursor-pointer focus:outline-none shrink-0"
             title={showPassword ? "Hide password" : "Show password"}
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
@@ -143,12 +156,16 @@ export function RegisterForm({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="reg-confirmPassword">
+      <div className="space-y-1.5">
+        <Label
+          htmlFor="reg-confirmPassword"
+          className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground mb-1 block"
+        >
           Confirm Password
         </Label>
-        <div className="relative">
-          <Input
+        <div className="h-11 bg-secondary/30 border border-border/80 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 rounded-xl transition-all flex items-center px-3.5 gap-2.5">
+          <Lock className="w-4 h-4 text-muted-foreground/70 shrink-0 pointer-events-none" />
+          <input
             id="reg-confirmPassword"
             type={showConfirmPassword ? "text" : "password"}
             name="confirmPassword"
@@ -158,8 +175,8 @@ export function RegisterForm({
             onChange={(e) => setConfirmPassword(e.target.value)}
             autoComplete="new-password"
             onKeyDown={handleKeyDown}
-            placeholder="Re-enter your password"
-            className="rounded-xl pr-11"
+            placeholder="••••••••"
+            className="w-full h-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/50 p-0"
           />
           <button
             type="button"
@@ -169,7 +186,7 @@ export function RegisterForm({
               e.stopPropagation();
               setShowConfirmPassword((prev) => !prev);
             }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition p-1 cursor-pointer focus:outline-none"
+            className="text-muted-foreground/70 hover:text-foreground transition p-1 cursor-pointer focus:outline-none shrink-0"
             title={showConfirmPassword ? "Hide password" : "Show password"}
             aria-label={showConfirmPassword ? "Hide password" : "Show password"}
           >
@@ -179,13 +196,13 @@ export function RegisterForm({
 
         {/* Live Validation Indicator with Accent Tokens */}
         {confirmPassword.length > 0 && (
-          <div className="mt-1.5 flex items-center gap-1.5 text-xs">
+          <div className="mt-1 flex items-center gap-1.5 text-xs">
             {isMatching ? (
-              <span className="text-emerald-700 dark:text-emerald-300 flex items-center gap-1 font-medium animate-in fade-in">
+              <span className="text-emerald-400 flex items-center gap-1 font-medium animate-in fade-in">
                 <Check className="w-3.5 h-3.5" /> Passwords match
               </span>
             ) : (
-              <span className="text-destructive flex items-center gap-1 font-medium animate-in fade-in">
+              <span className="text-rose-400 flex items-center gap-1 font-medium animate-in fade-in">
                 <X className="w-3.5 h-3.5" /> Passwords do not match
               </span>
             )}
@@ -193,14 +210,23 @@ export function RegisterForm({
         )}
       </div>
 
-      <Button
+      <button
         type="submit"
         disabled={isPending || isMismatch}
-        className="w-full h-11 rounded-xl font-semibold mt-2"
+        className="h-11 w-full bg-white text-zinc-950 font-semibold rounded-xl hover:bg-zinc-200 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-[0_0_25px_-5px_rgba(255,255,255,0.2)] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mt-2"
       >
-        {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-        <span>{isPending ? "Creating Account..." : "Create Account"}</span>
-      </Button>
+        {isPending ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Creating Account...</span>
+          </>
+        ) : (
+          <>
+            <span>Start Your Kitchen</span>
+            <ArrowRight className="w-4 h-4" />
+          </>
+        )}
+      </button>
     </form>
   );
 }

@@ -49,16 +49,16 @@ interface CulinaryTheme {
 
 const CULINARY_THEMES: CulinaryTheme[] = [
   {
-    id: "saffron",
-    name: "Saffron Citrus",
-    subtitle: "Warm Mediterranean",
-    colors: ["#e9c46a", "#90be6d", "#f4a261"],
-  },
-  {
     id: "truffle",
     name: "Black Truffle",
     subtitle: "Minimalist High-Contrast Luxury",
     colors: ["#f4f4f5", "#34d399", "#fbbf24"],
+  },
+  {
+    id: "saffron",
+    name: "Saffron Citrus",
+    subtitle: "Warm Mediterranean",
+    colors: ["#e9c46a", "#90be6d", "#f4a261"],
   },
   {
     id: "plum",
@@ -80,7 +80,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
   const [activeTab, setActiveTab] = useState("account");
   const { theme, setTheme } = useTheme();
-  const [culinaryTheme, setCulinaryTheme] = useState<string>("saffron");
+  const [culinaryTheme, setCulinaryTheme] = useState<string>("truffle");
   const [preferredCurrency, setPreferredCurrency] = useState<string>(user.preferred_currency || "EUR");
   const [notifyPantry, setNotifyPantry] = useState(true);
   const [notifyShopping, setNotifyShopping] = useState(true);
@@ -104,23 +104,26 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
         document.documentElement.getAttribute("data-theme") ||
         localStorage.getItem("kartli-theme") ||
         localStorage.getItem("culinary-theme") ||
-        "saffron";
-      setCulinaryTheme(active);
+        localStorage.getItem("theme") ||
+        "truffle";
+      setCulinaryTheme(active === "black-truffle" ? "truffle" : active);
     }
   }, []);
 
   const handleCulinaryThemeChange = (themeKey: string) => {
-    setCulinaryTheme(themeKey);
+    const normalizedKey = themeKey === "black-truffle" ? "truffle" : themeKey;
+    setCulinaryTheme(normalizedKey);
     if (typeof document !== "undefined") {
-      document.documentElement.dataset.theme = themeKey;
-      document.documentElement.setAttribute("data-theme", themeKey);
-      localStorage.setItem("kartli-theme", themeKey);
-      localStorage.setItem("culinary-theme", themeKey);
-      document.cookie = `kartli-theme=${themeKey}; path=/; max-age=31536000; SameSite=Lax`;
-      document.cookie = `culinary-theme=${themeKey}; path=/; max-age=31536000; SameSite=Lax`;
+      document.documentElement.dataset.theme = normalizedKey;
+      document.documentElement.setAttribute("data-theme", normalizedKey);
+      localStorage.setItem("kartli-theme", normalizedKey);
+      localStorage.setItem("culinary-theme", normalizedKey);
+      localStorage.setItem("theme", normalizedKey);
+      document.cookie = `kartli-theme=${normalizedKey}; path=/; max-age=31536000; SameSite=Lax`;
+      document.cookie = `culinary-theme=${normalizedKey}; path=/; max-age=31536000; SameSite=Lax`;
     }
-    const selected = CULINARY_THEMES.find((t) => t.id === themeKey);
-    toast.success(`Theme updated to ${selected?.name || themeKey}`);
+    const selected = CULINARY_THEMES.find((t) => t.id === normalizedKey);
+    toast.success(`Theme updated to ${selected?.name || normalizedKey}`);
   };
 
   const initial = (user.username || "?").charAt(0).toUpperCase();

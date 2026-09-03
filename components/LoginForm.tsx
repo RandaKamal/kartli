@@ -2,17 +2,17 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { loginUserAction } from "@/app/actions/auth";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Eye, EyeOff, Loader2, User, Lock, ArrowRight } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export function LoginForm({
   callbackUrl,
+  inviteToken,
   initialError,
 }: {
   callbackUrl?: string;
+  inviteToken?: string;
   initialError?: string;
 }) {
   const [showPassword, setShowPassword] = useState(false);
@@ -69,6 +69,9 @@ export function LoginForm({
       {callbackUrl && (
         <input type="hidden" name="callbackUrl" value={callbackUrl} />
       )}
+      {inviteToken && (
+        <input type="hidden" name="inviteToken" value={inviteToken} />
+      )}
 
       {error && (
         <div className="p-3 bg-destructive/10 border border-destructive/30 text-destructive text-xs rounded-xl text-center font-medium animate-in fade-in-50">
@@ -76,28 +79,40 @@ export function LoginForm({
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label htmlFor="login-username">
+      <div className="space-y-1.5">
+        <Label
+          htmlFor="login-username"
+          className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground mb-1 block"
+        >
           Username
         </Label>
-        <Input
-          id="login-username"
-          type="text"
-          name="username"
-          required
-          autoComplete="username"
-          onKeyDown={handleKeyDown}
-          placeholder="e.g. alex"
-          className="rounded-xl"
-        />
+        <div className="h-11 bg-secondary/30 border border-border/80 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 rounded-xl transition-all flex items-center px-3.5 gap-2.5">
+          <User className="w-4 h-4 text-muted-foreground/70 shrink-0 pointer-events-none" />
+          <input
+            id="login-username"
+            type="text"
+            name="username"
+            required
+            autoComplete="username"
+            onKeyDown={handleKeyDown}
+            placeholder="alex@baker-street"
+            className="w-full h-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/50 p-0"
+          />
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="login-password">
-          Password
-        </Label>
-        <div className="relative">
-          <Input
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <Label
+            htmlFor="login-password"
+            className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground mb-1 block"
+          >
+            Password
+          </Label>
+        </div>
+        <div className="h-11 bg-secondary/30 border border-border/80 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 rounded-xl transition-all flex items-center px-3.5 gap-2.5">
+          <Lock className="w-4 h-4 text-muted-foreground/70 shrink-0 pointer-events-none" />
+          <input
             id="login-password"
             type={showPassword ? "text" : "password"}
             name="password"
@@ -105,7 +120,7 @@ export function LoginForm({
             autoComplete="current-password"
             onKeyDown={handleKeyDown}
             placeholder="••••••••"
-            className="rounded-xl pr-11"
+            className="w-full h-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/50 p-0"
           />
           <button
             type="button"
@@ -115,7 +130,7 @@ export function LoginForm({
               e.stopPropagation();
               setShowPassword((prev) => !prev);
             }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition p-1 cursor-pointer focus:outline-none"
+            className="text-muted-foreground/70 hover:text-foreground transition p-1 cursor-pointer focus:outline-none shrink-0"
             title={showPassword ? "Hide password" : "Show password"}
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
@@ -124,14 +139,23 @@ export function LoginForm({
         </div>
       </div>
 
-      <Button
+      <button
         type="submit"
         disabled={isPending}
-        className="w-full h-11 rounded-xl font-semibold mt-2"
+        className="h-11 w-full bg-white text-zinc-950 font-semibold rounded-xl hover:bg-zinc-200 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-[0_0_25px_-5px_rgba(255,255,255,0.2)] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mt-2"
       >
-        {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-        <span>{isPending ? "Signing In..." : "Sign In"}</span>
-      </Button>
+        {isPending ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Signing In...</span>
+          </>
+        ) : (
+          <>
+            <span>Sign In</span>
+            <ArrowRight className="w-4 h-4" />
+          </>
+        )}
+      </button>
     </form>
   );
 }

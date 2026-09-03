@@ -27,21 +27,21 @@ export default async function RootLayout({
   const culinaryTheme =
     cookieStore.get("kartli-theme")?.value ||
     cookieStore.get("culinary-theme")?.value ||
-    "olive";
+    "truffle";
 
   return (
     <html lang="en" data-theme={culinaryTheme} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('kartli-theme')||localStorage.getItem('culinary-theme')||(document.cookie.match(/(?:kartli-theme|culinary-theme)=([^;]+)/)||[])[1]||'${culinaryTheme}';document.documentElement.setAttribute('data-theme',t);}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem('kartli-theme')||localStorage.getItem('culinary-theme')||localStorage.getItem('theme')||(document.cookie.match(/(?:kartli-theme|culinary-theme)=([^;]+)/)||[])[1]||'${culinaryTheme}';if(t==='black-truffle')t='truffle';document.documentElement.setAttribute('data-theme',t);}catch(e){}})()`,
           }}
         />
       </head>
       <body className="bg-background text-foreground min-h-screen flex flex-col antialiased selection:bg-accent-primary/20 selection:text-foreground">
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
         >

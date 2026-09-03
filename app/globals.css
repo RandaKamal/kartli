@@ -59,9 +59,92 @@
 
 @layer base {
   /* ==========================================
-     Theme 1: Saffron Citrus (Default)
+     Theme 1: Black Truffle (Default)
      ========================================== */
   :root,
+  :root[data-theme='truffle'],
+  :root[data-theme='black-truffle'],
+  .theme-black-truffle {
+    --accent-primary: #18181b;
+    --accent-success: #34d399;
+    --accent-warning: #fbbf24;
+    --accent-brand: #18181b;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    --background: #ffffff;
+    --foreground: #09090b;
+
+    --card: #ffffff;
+    --card-foreground: #09090b;
+
+    --popover: #ffffff;
+    --popover-foreground: #09090b;
+
+    --primary: #09090b;
+    --primary-foreground: #ffffff;
+
+    --secondary: #f4f4f5;
+    --secondary-foreground: #09090b;
+
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+
+    --accent: #f4f4f5;
+    --accent-foreground: #09090b;
+
+    --border: #e4e4e7;
+    --input: #e4e4e7;
+    --ring: #18181b;
+
+    --radius: 1rem;
+
+    color-scheme: light;
+  }
+
+  .dark,
+  .dark[data-theme='truffle'],
+  .dark[data-theme='black-truffle'],
+  .dark.theme-black-truffle {
+    --accent-primary: #f4f4f5;
+    --accent-success: #34d399;
+    --accent-warning: #fbbf24;
+    --accent-brand: #f4f4f5;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    /* Base Dark: #000000, Card: #0d0d10, Border: #222226 */
+    --background: #000000;
+    --foreground: #f4f4f5;
+
+    --card: #0d0d10;
+    --card-foreground: #f4f4f5;
+
+    --popover: #0d0d10;
+    --popover-foreground: #f4f4f5;
+
+    --primary: #f4f4f5;
+    --primary-foreground: #000000;
+
+    --secondary: #18181b;
+    --secondary-foreground: #f4f4f5;
+
+    --muted: #18181b;
+    --muted-foreground: #a1a1aa;
+
+    --accent: #18181b;
+    --accent-foreground: #f4f4f5;
+
+    --border: #222226;
+    --input: #222226;
+    --ring: #f4f4f5;
+
+    color-scheme: dark;
+  }
+
+  /* ==========================================
+     Theme 2: Saffron Citrus (Warm Mediterranean)
+     ========================================== */
   :root[data-theme='saffron'],
   :root[data-theme='olive'] {
     --accent-primary: #e9c46a;
@@ -101,7 +184,6 @@
     color-scheme: light;
   }
 
-  .dark,
   .dark[data-theme='saffron'],
   .dark[data-theme='olive'] {
     --accent-primary: #e9c46a;
@@ -136,82 +218,6 @@
     --border: #27272a;
     --input: #27272a;
     --ring: #e9c46a;
-
-    color-scheme: dark;
-  }
-
-  /* ==========================================
-     Theme 2: Black Truffle
-     ========================================== */
-  :root[data-theme='truffle'] {
-    --accent-primary: #18181b;
-    --accent-success: #34d399;
-    --accent-warning: #fbbf24;
-    --accent-brand: #18181b;
-    --destructive: #ef4444;
-    --destructive-foreground: #ffffff;
-
-    --background: #ffffff;
-    --foreground: #09090b;
-
-    --card: #ffffff;
-    --card-foreground: #09090b;
-
-    --popover: #ffffff;
-    --popover-foreground: #09090b;
-
-    --primary: #09090b;
-    --primary-foreground: #ffffff;
-
-    --secondary: #f4f4f5;
-    --secondary-foreground: #09090b;
-
-    --muted: #f4f4f5;
-    --muted-foreground: #71717a;
-
-    --accent: #f4f4f5;
-    --accent-foreground: #09090b;
-
-    --border: #e4e4e7;
-    --input: #e4e4e7;
-    --ring: #18181b;
-
-    color-scheme: light;
-  }
-
-  .dark[data-theme='truffle'] {
-    --accent-primary: #f4f4f5;
-    --accent-success: #34d399;
-    --accent-warning: #fbbf24;
-    --accent-brand: #f4f4f5;
-    --destructive: #ef4444;
-    --destructive-foreground: #ffffff;
-
-    /* Base Dark: #000000, Card: #0d0d10, Border: #222226 */
-    --background: #000000;
-    --foreground: #f4f4f5;
-
-    --card: #0d0d10;
-    --card-foreground: #f4f4f5;
-
-    --popover: #0d0d10;
-    --popover-foreground: #f4f4f5;
-
-    --primary: #f4f4f5;
-    --primary-foreground: #000000;
-
-    --secondary: #18181b;
-    --secondary-foreground: #f4f4f5;
-
-    --muted: #18181b;
-    --muted-foreground: #a1a1aa;
-
-    --accent: #18181b;
-    --accent-foreground: #f4f4f5;
-
-    --border: #222226;
-    --input: #222226;
-    --ring: #f4f4f5;
 
     color-scheme: dark;
   }
