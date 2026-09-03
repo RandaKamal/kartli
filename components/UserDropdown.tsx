@@ -35,7 +35,7 @@ export function UserDropdown({ user }: UserDropdownProps) {
   };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="secondary"
