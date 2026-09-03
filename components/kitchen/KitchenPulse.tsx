@@ -3,18 +3,25 @@
 import { useState, useEffect, useRef } from "react";
 import type { KitchenPulseStats } from "@/lib/actions/stats";
 import { getKitchenStats } from "@/lib/actions/stats";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Activity,
-  Download,
+  CreditCard,
+  Package,
+  Store,
+  Flame,
   TrendingDown,
   TrendingUp,
   Minus,
+  Timer,
+  AlertTriangle,
+  Download,
   RefreshCw,
+  UserCheck,
+  Target,
   ChevronDown,
   ChevronUp,
   Sparkles,
@@ -31,11 +38,11 @@ interface KitchenPulseProps {
 
 export function KitchenPulseSkeleton() {
   return (
-    <div className="w-full space-y-4 animate-pulse">
+    <div className="w-full space-y-6 animate-pulse">
       {/* Header Skeleton */}
       <div className="flex items-center justify-between gap-4 pb-1 border-b border-border/40">
         <div className="flex items-center gap-2">
-          <Skeleton className="h-8 w-24 rounded-xl" />
+          <Skeleton className="h-7 w-24 rounded-xl" />
           <Skeleton className="h-5 w-28 rounded-md" />
         </div>
         <div className="flex items-center gap-2">
@@ -45,34 +52,54 @@ export function KitchenPulseSkeleton() {
         </div>
       </div>
 
-      {/* Hero 2-Col Skeleton */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="border border-border bg-card rounded-2xl p-5 shadow-xs space-y-3">
-          <Skeleton className="h-3 w-20 rounded" />
-          <Skeleton className="h-8 w-36 rounded-lg" />
+      {/* Hero 2-Column Grid Skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-5 w-36 rounded-md" />
+            <Skeleton className="h-5 w-24 rounded-full" />
+          </div>
+          <Skeleton className="h-10 w-44 rounded-lg" />
+          <Skeleton className="h-9 w-full rounded-xl" />
         </Card>
-        <Card className="border border-border bg-card rounded-2xl p-5 shadow-xs space-y-3">
-          <Skeleton className="h-3 w-24 rounded" />
-          <Skeleton className="h-8 w-20 rounded-lg" />
-          <Skeleton className="h-1.5 w-full rounded" />
+
+        <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-5 w-32 rounded-md" />
+            <Skeleton className="h-5 w-20 rounded-full" />
+          </div>
+          <Skeleton className="h-10 w-24 rounded-lg" />
+          <Skeleton className="h-2 w-full rounded-full" />
+          <Skeleton className="h-9 w-full rounded-xl" />
         </Card>
       </div>
 
-      {/* Vitals Bento Skeleton */}
-      <Card className="border border-border bg-card rounded-2xl p-5 shadow-xs">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Skeleton className="h-12 w-full rounded-lg" />
-          <Skeleton className="h-12 w-full rounded-lg" />
-          <Skeleton className="h-12 w-full rounded-lg" />
-        </div>
-      </Card>
+      {/* Secondary 2-Column Grid Skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-5 w-44 rounded-md" />
+            <Skeleton className="h-5 w-16 rounded-full" />
+          </div>
+          <div className="space-y-3 pt-2">
+            <Skeleton className="h-8 w-full rounded-xl" />
+            <Skeleton className="h-8 w-full rounded-xl" />
+            <Skeleton className="h-8 w-full rounded-xl" />
+          </div>
+        </Card>
 
-      {/* Distribution Skeleton */}
-      <Card className="border border-border bg-card rounded-2xl p-5 shadow-xs space-y-3">
-        <Skeleton className="h-4 w-36 rounded" />
-        <Skeleton className="h-6 w-full rounded-lg" />
-        <Skeleton className="h-6 w-full rounded-lg" />
-      </Card>
+        <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-5 w-44 rounded-md" />
+            <Skeleton className="h-5 w-14 rounded-full" />
+          </div>
+          <div className="space-y-2 pt-2">
+            <Skeleton className="h-9 w-full rounded-xl" />
+            <Skeleton className="h-9 w-full rounded-xl" />
+            <Skeleton className="h-9 w-full rounded-xl" />
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -158,7 +185,7 @@ export function KitchenPulse({
 
   if (!stats) {
     return (
-      <Card className="border border-border bg-card rounded-2xl p-6 text-center shadow-xs">
+      <Card className="border border-border bg-card rounded-3xl p-6 text-center shadow-sm">
         <p className="text-xs text-muted-foreground">Unable to load pulse analytics.</p>
         <Button
           variant="outline"
@@ -198,12 +225,24 @@ export function KitchenPulse({
 
   const attentionDeadStock = deadStockItems.length > 0 ? deadStockItems[0] : null;
 
+  // Distinct category soft progress colors matching Pantry styling
+  const categoryBarColors = [
+    "bg-emerald-400",
+    "bg-violet-400",
+    "bg-amber-400",
+    "bg-sky-400",
+    "bg-rose-400",
+    "bg-teal-400",
+  ];
+
   return (
-    <div className="w-full space-y-4 animate-in fade-in-50 duration-200">
-      {/* 1. Header Area: Clean title, month pill, segmented control, icon actions */}
+    <div className="w-full space-y-6 animate-in fade-in-50 duration-200">
+      {/* Header Area: Icon title, month pill, segmented control, icon actions */}
       <div className="flex items-center justify-between gap-3 pb-1 border-b border-border/40">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-bold text-foreground tracking-tight">Pulse</h2>
+          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+            <span>Pulse</span>
+          </h2>
           <Badge
             variant="secondary"
             className="bg-muted text-muted-foreground text-[10px] font-mono uppercase px-2 py-0.5 rounded-md"
@@ -212,13 +251,13 @@ export function KitchenPulse({
           </Badge>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           {/* Segmented Control: [ Kitchen | My Impact ] */}
-          <div className="inline-flex bg-muted/80 border border-border p-0.5 rounded-xl h-9 shadow-xs">
+          <div className="inline-flex bg-muted/80 border border-border p-1 rounded-2xl h-10 shadow-xs">
             <button
               type="button"
               onClick={() => setActiveView("kitchen")}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+              className={`px-3 py-1 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-150 ${
                 activeView === "kitchen"
                   ? "bg-card text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -231,7 +270,7 @@ export function KitchenPulse({
             <button
               type="button"
               onClick={() => setActiveView("personal")}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-all flex items-center gap-1 ${
+              className={`px-3 py-1 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-150 flex items-center gap-1.5 ${
                 activeView === "personal"
                   ? "bg-card text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -240,7 +279,7 @@ export function KitchenPulse({
             >
               <span>My Impact</span>
               {userSpendSharePercentage > 0 && (
-                <span className="text-[10px] font-mono text-accent-primary">
+                <span className="px-1.5 py-0.2 text-[10px] font-mono rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
                   {userSpendSharePercentage}%
                 </span>
               )}
@@ -268,7 +307,7 @@ export function KitchenPulse({
             onClick={handleExport}
             disabled={isExporting}
             className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted border-border"
-            title="Export pulse summary"
+            title="Export summary snapshot"
           >
             <Download className="w-3.5 h-3.5" />
           </Button>
@@ -277,311 +316,390 @@ export function KitchenPulse({
 
       {/* Empty State */}
       {!hasData ? (
-        <Card className="border border-border bg-card rounded-2xl p-8 text-center shadow-xs space-y-2">
-          <div className="w-10 h-10 mx-auto rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
+        <Card className="border border-border bg-card rounded-3xl p-8 text-center shadow-sm space-y-2">
+          <div className="w-10 h-10 mx-auto rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
             <Sparkles className="w-5 h-5" />
           </div>
-          <h3 className="text-sm font-semibold text-foreground">No purchases this month</h3>
-          <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-            Metrics and inventory vitals will populate as receipts and checkouts are logged.
+          <h3 className="text-base font-semibold text-foreground">No purchases this month</h3>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            Metrics and inventory health will populate as receipts and checkouts are logged.
           </p>
         </Card>
       ) : (
         <>
           {/* TAB 1: Kitchen Overview */}
           {activeView === "kitchen" && (
-            <div className="space-y-4 animate-in fade-in-50 duration-200">
-              {/* Hero Row: 2-Column Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Left: Total Spent */}
-                <Card className="border border-border bg-card rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-2">
-                  <span className="text-xs font-medium text-muted-foreground">Total Spent</span>
+            <div className="space-y-6 animate-in fade-in-50 duration-200">
+              {/* Top Hero Grid: 2-Column (matches Pantry & Shopping List grid) */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                {/* Card 1: Monthly Spend & Vitals */}
+                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+                  {/* Card Header Pattern */}
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-muted-foreground" />
+                      <span>Monthly Spend</span>
+                    </h2>
+                    <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border">
+                      {monthLabel}
+                    </Badge>
+                  </div>
 
-                  <div className="flex items-baseline gap-3 flex-wrap">
-                    <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight font-mono">
+                  {/* Hero Metric & Trend Indicator */}
+                  <div className="flex items-baseline gap-3 flex-wrap pt-1">
+                    <span className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight font-mono">
                       {formatCurrency(totalSpendCurrentMonth, currency)}
                     </span>
 
                     {spendTrendDirection === "down" && (
-                      <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-emerald-500 font-mono">
-                        <TrendingDown className="w-3.5 h-3.5" />
+                      <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono gap-1">
+                        <TrendingDown className="w-3 h-3 text-emerald-400" />
                         <span>-{spendTrendPercentage}% vs last month</span>
-                      </span>
+                      </Badge>
                     )}
 
                     {spendTrendDirection === "up" && (
-                      <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-amber-500 font-mono">
-                        <TrendingUp className="w-3.5 h-3.5" />
+                      <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-mono gap-1">
+                        <TrendingUp className="w-3 h-3 text-amber-400" />
                         <span>+{spendTrendPercentage}% vs last month</span>
-                      </span>
+                      </Badge>
                     )}
 
                     {spendTrendDirection === "flat" && (
-                      <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground font-mono">
+                      <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border gap-1">
                         <Minus className="w-3 h-3" />
                         <span>0% vs last month</span>
-                      </span>
+                      </Badge>
                     )}
 
                     {spendTrendDirection === "new" && (
-                      <span className="text-xs text-accent-primary font-mono">
+                      <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono">
                         First month
-                      </span>
+                      </Badge>
                     )}
+                  </div>
+
+                  {/* Bottom Mini-Row: 2 Compact Inline Stats */}
+                  <div className="p-3 rounded-2xl bg-muted/40 border border-border/80 flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <span>Avg. Ticket:</span>
+                      <span className="font-mono font-bold text-foreground">
+                        {formatCurrency(vitals.averageBasketSize, currency)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-bold text-foreground">{totalReceiptsCount}</span>
+                      <span>{totalReceiptsCount === 1 ? "receipt logged" : "receipts logged"}</span>
+                    </div>
                   </div>
                 </Card>
 
-                {/* Right: Pantry Health */}
-                <Card className="border border-border bg-card rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">Pantry Health</span>
-                    <span className="text-xs font-mono text-muted-foreground">
-                      {pantryStockRatio.inStock} in stock · {pantryStockRatio.outOfStock} needed
-                    </span>
+                {/* Card 2: Pantry & Supply Health */}
+                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+                  {/* Card Header Pattern */}
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                      <Package className="w-4 h-4 text-muted-foreground" />
+                      <span>Pantry Health</span>
+                    </h2>
+
+                    {pantryStockRatio.outOfStock > 0 ? (
+                      <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-medium gap-1">
+                        <AlertTriangle className="w-3 h-3 text-amber-400" />
+                        <span>{pantryStockRatio.outOfStock} needed</span>
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-medium">
+                        All in stock
+                      </Badge>
+                    )}
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="text-2xl sm:text-3xl font-extrabold text-foreground font-mono">
-                      {pantryStockRatio.inStockPercentage}%
+                  {/* Metric & Progress Bar */}
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-3xl sm:text-4xl font-extrabold text-foreground font-mono">
+                        {pantryStockRatio.inStockPercentage}%
+                      </span>
+                      <span className="text-xs font-mono text-muted-foreground">
+                        {pantryStockRatio.inStock} in stock · {pantryStockRatio.outOfStock} needed
+                      </span>
                     </div>
 
-                    <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-accent-primary rounded-full transition-all duration-500"
+                        className="h-full bg-emerald-400 rounded-full transition-all duration-500"
                         style={{ width: `${pantryStockRatio.inStockPercentage}%` }}
                       />
+                    </div>
+                  </div>
+
+                  {/* Inline Highlights: Restock Speed & Attention Item */}
+                  <div className="p-3 rounded-2xl bg-muted/40 border border-border/80 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <Timer className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Restock Speed:</span>
+                      <span className="font-mono font-bold text-foreground">
+                        {vitals.compactRestockLatency || "—"}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">avg.</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <span>Attention:</span>
+                      <span className="font-medium text-foreground truncate max-w-[100px]">
+                        {attentionDeadStock ? attentionDeadStock.name : "None"}
+                      </span>
+                      {attentionDeadStock ? (
+                        <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-mono px-1.5 py-0">
+                          {attentionDeadStock.idleDays}d idle
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono px-1.5 py-0">
+                          Active
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </Card>
               </div>
 
-              {/* Vitals Row: Single 3-Column Bento Card */}
-              <Card className="border border-border bg-card rounded-2xl shadow-xs overflow-hidden">
-                <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border/60">
-                  {/* Metric 1: Avg. Ticket */}
-                  <div className="p-4 sm:p-5 space-y-1">
-                    <span className="text-xs font-medium text-muted-foreground block">
-                      Avg. Ticket
-                    </span>
-                    <div className="text-xl sm:text-2xl font-bold text-foreground font-mono">
-                      {formatCurrency(vitals.averageBasketSize, currency)}
-                    </div>
-                    <span className="text-[11px] text-muted-foreground font-mono block">
-                      {totalReceiptsCount} {totalReceiptsCount === 1 ? "receipt" : "receipts"}
-                    </span>
+              {/* Secondary Grid: 2-Column (matches Pantry & Shopping List grid) */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                {/* Card 3: Spending Distribution */}
+                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+                  {/* Card Header Pattern */}
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                      <Store className="w-4 h-4 text-muted-foreground" />
+                      <span>Top Merchants &amp; Categories</span>
+                    </h2>
+                    <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border">
+                      {visibleStores.length} visible
+                    </Badge>
                   </div>
 
-                  {/* Metric 2: Restock Speed (Compact, No Overflow) */}
-                  <div className="p-4 sm:p-5 space-y-1">
-                    <span className="text-xs font-medium text-muted-foreground block">
-                      Restock Speed
-                    </span>
-                    <div className="text-xl sm:text-2xl font-bold text-foreground font-mono">
-                      {vitals.compactRestockLatency || "—"}
-                    </div>
-                    <span className="text-[11px] text-muted-foreground block">
-                      Avg. restock time
-                    </span>
-                  </div>
-
-                  {/* Metric 3: Idle Stock */}
-                  <div className="p-4 sm:p-5 space-y-1 min-w-0">
-                    <span className="text-xs font-medium text-muted-foreground block">
-                      Idle Stock
-                    </span>
-                    <div className="text-xl sm:text-2xl font-bold text-foreground truncate" title={attentionDeadStock ? attentionDeadStock.name : "None"}>
-                      {attentionDeadStock ? attentionDeadStock.name : "None"}
-                    </div>
-                    <span className="text-[11px] text-muted-foreground font-mono block">
-                      {attentionDeadStock ? `${attentionDeadStock.idleDays}d inactive` : "Pantry in motion"}
-                    </span>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Spending Distribution Card */}
-              <Card className="border border-border bg-card rounded-2xl p-5 shadow-xs space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">
-                    Spending Distribution
-                  </h3>
-                  <span className="text-[11px] font-mono text-muted-foreground">
-                    {categoryBreakdown.length} {categoryBreakdown.length === 1 ? "bucket" : "buckets"}
-                  </span>
-                </div>
-
-                {categoryBreakdown.length === 0 ? (
-                  <p className="text-xs text-muted-foreground py-2 text-center">
-                    No store spending categorized yet.
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {visibleStores.map((store) => (
-                      <div key={store.name} className="space-y-1.5">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-medium text-foreground truncate max-w-[55%]">
-                            {store.name}
-                          </span>
-                          <span className="font-mono text-muted-foreground shrink-0">
-                            {formatCurrency(store.amount, currency)}{" "}
-                            <span className="text-foreground/80 font-bold ml-1">
-                              {store.percentage}%
+                  {categoryBreakdown.length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-4 text-center">
+                      No merchant spending recorded yet this month.
+                    </p>
+                  ) : (
+                    <div className="space-y-3.5 pt-1">
+                      {visibleStores.map((store, index) => (
+                        <div key={store.name} className="space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium text-foreground truncate max-w-[55%]">
+                              {store.name}
                             </span>
-                          </span>
-                        </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="font-mono text-muted-foreground">
+                                {formatCurrency(store.amount, currency)}
+                              </span>
+                              <Badge
+                                variant="secondary"
+                                className="text-[10px] font-mono bg-muted text-foreground border border-border px-1.5 py-0"
+                              >
+                                {store.percentage}%
+                              </Badge>
+                            </div>
+                          </div>
 
-                        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-accent-primary/80 rounded-full transition-all duration-500"
-                            style={{ width: `${Math.max(store.percentage, 2)}%` }}
-                          />
+                          {/* Distinct Soft Category Color Progress Bar */}
+                          <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className={cn(
+                                "h-full rounded-full transition-all duration-500",
+                                categoryBarColors[index % categoryBarColors.length]
+                              )}
+                              style={{ width: `${Math.max(store.percentage, 2)}%` }}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
 
-                    {categoryBreakdown.length > 4 && (
-                      <div className="pt-1 text-center">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShowAllStores(!showAllStores)}
-                          className="rounded-xl text-xs text-muted-foreground hover:text-foreground h-7 gap-1 cursor-pointer"
-                        >
-                          {showAllStores ? (
-                            <>
-                              <ChevronUp className="w-3.5 h-3.5" />
-                              <span>Show Top 4</span>
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="w-3.5 h-3.5" />
-                              <span>Show All {categoryBreakdown.length}</span>
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    )}
+                      {categoryBreakdown.length > 4 && (
+                        <div className="pt-1 text-center">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowAllStores(!showAllStores)}
+                            className="rounded-xl text-xs text-muted-foreground hover:text-foreground h-8 gap-1 cursor-pointer"
+                          >
+                            {showAllStores ? (
+                              <>
+                                <ChevronUp className="w-3.5 h-3.5" />
+                                <span>Show Top 4</span>
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown className="w-3.5 h-3.5" />
+                                <span>Show All {categoryBreakdown.length}</span>
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Card>
+
+                {/* Card 4: Activity & Most Needed / Circulated Supplies */}
+                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+                  {/* Card Header Pattern */}
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                      <Flame className="w-4 h-4 text-muted-foreground" />
+                      <span>Top Circulated Supplies</span>
+                    </h2>
+                    <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border">
+                      Top {allTopItems.length}
+                    </Badge>
                   </div>
-                )}
-              </Card>
+
+                  {allTopItems.length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-4 text-center">
+                      No supplies checked out yet this month.
+                    </p>
+                  ) : (
+                    /* Itemized Compact Row List matching Pantry / Needed styling */
+                    <div className="divide-y divide-border">
+                      {allTopItems.map((item, index) => (
+                        <div
+                          key={item.name}
+                          className="py-2.5 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <span className="text-xs font-mono text-muted-foreground w-4">
+                              #{index + 1}
+                            </span>
+                            <span className="font-medium text-foreground truncate">
+                              {item.name}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-xs text-muted-foreground">Restocked</span>
+                            <Badge
+                              variant="secondary"
+                              className="text-xs font-mono bg-muted text-foreground border border-border px-2 py-0.5"
+                            >
+                              {item.count}×
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              </div>
             </div>
           )}
 
           {/* TAB 2: My Impact */}
           {activeView === "personal" && (
-            <div className="space-y-4 animate-in fade-in-50 duration-200">
-              {/* Hero Card: 2-Column Split */}
-              <Card className="border border-border bg-card rounded-2xl p-5 shadow-xs">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
-                  {/* Left: Your Contribution */}
-                  <div className="space-y-1">
-                    <span className="text-xs font-medium text-muted-foreground block">
-                      Your Contribution
-                    </span>
-                    <div className="text-2xl sm:text-3xl font-extrabold text-foreground font-mono">
-                      {formatCurrency(userSpend, currency)}
-                    </div>
+            <div className="space-y-6 animate-in fade-in-50 duration-200">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                {/* Personal Card 1: Contribution & Share */}
+                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                      <UserCheck className="w-4 h-4 text-muted-foreground" />
+                      <span>Personal Contribution</span>
+                    </h2>
+                    <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-medium">
+                      {userSpendSharePercentage}% share
+                    </Badge>
                   </div>
 
-                  {/* Right: Your Share */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-muted-foreground">Your Share</span>
-                      <span className="font-mono font-bold text-accent-primary">
-                        {userSpendSharePercentage}% of kitchen spend
-                      </span>
-                    </div>
+                  <div className="space-y-2 pt-1">
+                    <span className="text-3xl sm:text-4xl font-extrabold text-foreground font-mono">
+                      {formatCurrency(userSpend, currency)}
+                    </span>
 
-                    <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-accent-primary rounded-full transition-all duration-500"
+                        className="h-full bg-emerald-400 rounded-full transition-all duration-500"
                         style={{ width: `${Math.max(userSpendSharePercentage, 2)}%` }}
                       />
                     </div>
                   </div>
-                </div>
-              </Card>
 
-              {/* Personal Vitals: 3-Column Compact Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Box 1: Receipts Logged */}
-                <Card className="border border-border bg-card rounded-2xl p-4 shadow-xs space-y-1">
-                  <span className="text-xs font-medium text-muted-foreground block">
-                    Receipts Logged
-                  </span>
-                  <div className="text-xl sm:text-2xl font-bold text-foreground font-mono">
-                    {userReceiptsCount}{" "}
-                    <span className="text-xs font-normal text-muted-foreground">
-                      of {totalReceiptsCount}
-                    </span>
+                  <div className="p-3 rounded-2xl bg-muted/40 border border-border/80 flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <span>Avg. per Trip:</span>
+                      <span className="font-mono font-bold text-foreground">
+                        {formatCurrency(userAverageContribution, currency)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-bold text-foreground">{userReceiptsCount}</span>
+                      <span>of {totalReceiptsCount} receipts</span>
+                    </div>
                   </div>
                 </Card>
 
-                {/* Box 2: Avg. per Trip */}
-                <Card className="border border-border bg-card rounded-2xl p-4 shadow-xs space-y-1">
-                  <span className="text-xs font-medium text-muted-foreground block">
-                    Avg. per Trip
-                  </span>
-                  <div className="text-xl sm:text-2xl font-bold text-foreground font-mono">
-                    {formatCurrency(userAverageContribution, currency)}
+                {/* Personal Card 2: Footprint & My Top Supplies */}
+                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                      <Target className="w-4 h-4 text-muted-foreground" />
+                      <span>Primary Footprint</span>
+                    </h2>
+                    <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border">
+                      My Impact
+                    </Badge>
                   </div>
-                </Card>
 
-                {/* Box 3: Top Merchant */}
-                <Card className="border border-border bg-card rounded-2xl p-4 shadow-xs space-y-1 min-w-0">
-                  <span className="text-xs font-medium text-muted-foreground block">
-                    Top Merchant
-                  </span>
-                  <div className="text-base sm:text-lg font-bold text-foreground truncate">
-                    {userCategoryFootprint ? (
-                      `${userCategoryFootprint.categoryName} · ${userCategoryFootprint.percentage}%`
-                    ) : (
-                      "None"
+                  <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/80 space-y-1">
+                    <div className="text-sm font-semibold text-foreground">
+                      {userCategoryFootprint ? userCategoryFootprint.displayText : "Balanced household contributions"}
+                    </div>
+                    {userCategoryFootprint && (
+                      <div className="text-xs font-mono text-muted-foreground">
+                        {formatCurrency(userCategoryFootprint.amount, currency)} invested in this category
+                      </div>
                     )}
+                  </div>
+
+                  {/* My Top Supplies */}
+                  <div className="space-y-2 pt-1">
+                    <span className="text-xs font-semibold text-foreground uppercase tracking-wider block">
+                      Kitchen MVP Supplies
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {allTopItems.slice(0, 4).map((item, index) => (
+                        <span
+                          key={item.name}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted/60 border border-border text-xs"
+                        >
+                          <span className="font-mono text-muted-foreground font-medium">
+                            #{index + 1}
+                          </span>
+                          <span className="font-semibold text-foreground">{item.name}</span>
+                          <Badge
+                            variant="secondary"
+                            className="text-[10px] font-mono bg-card text-foreground border-none px-1.5 py-0"
+                          >
+                            {item.count}×
+                          </Badge>
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </Card>
               </div>
-
-              {/* Top Items: Clean horizontal chips */}
-              {allTopItems.length > 0 && (
-                <Card className="border border-border bg-card rounded-2xl p-5 shadow-xs space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
-                      Most Purchased Supplies
-                    </span>
-                    <span className="text-[11px] font-mono text-muted-foreground">Top 5</span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 pt-0.5">
-                    {allTopItems.map((item, index) => (
-                      <span
-                        key={item.name}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted/60 border border-border text-xs"
-                      >
-                        <span className="font-mono text-muted-foreground font-medium">
-                          #{index + 1}
-                        </span>
-                        <span className="font-semibold text-foreground">{item.name}</span>
-                        <span className="font-mono text-muted-foreground">
-                          {item.count}×
-                        </span>
-                      </span>
-                    ))}
-                  </div>
-                </Card>
-              )}
             </div>
           )}
         </>
       )}
 
-      {/* Hidden Snapshot Export Card: Minimalist "kartli Wrapped" */}
+      {/* Hidden Snapshot Export Card: Styled "kartli Wrapped" */}
       <div className="fixed -left-[9999px] top-0 pointer-events-none" aria-hidden="true">
         <div
           ref={exportCardRef}
           style={{
-            width: "560px",
+            width: "600px",
             backgroundColor: "#0d0f14",
             color: "#f4f4f5",
             fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
@@ -601,57 +719,70 @@ export function KitchenPulse({
             </div>
           </div>
 
-          {/* Hero Row */}
-          <div className="grid grid-cols-2 gap-4 bg-[#131720] border border-[#242b38] rounded-2xl p-5">
-            <div className="space-y-1">
-              <span className="text-[11px] text-[#94a3b8]">Total Spent</span>
-              <div className="text-2xl font-bold font-mono text-white">
+          {/* 2-Column Hero Grid in Export */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-[#131720] border border-[#242b38] rounded-2xl p-4 space-y-1">
+              <div className="text-xs text-[#94a3b8] flex items-center gap-1.5">
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>Monthly Spend</span>
+              </div>
+              <div className="text-2xl font-bold font-mono text-white pt-1">
                 {formatCurrency(totalSpendCurrentMonth, currency)}
               </div>
+              <div className="text-[11px] font-mono text-[#94a3b8] pt-1">
+                Avg. {formatCurrency(vitals.averageBasketSize, currency)} / trip
+              </div>
             </div>
-            <div className="space-y-1">
-              <span className="text-[11px] text-[#94a3b8]">Pantry Health</span>
-              <div className="text-2xl font-bold font-mono text-[#c084fc]">
+
+            <div className="bg-[#131720] border border-[#242b38] rounded-2xl p-4 space-y-1">
+              <div className="text-xs text-[#94a3b8] flex items-center gap-1.5">
+                <Package className="w-3.5 h-3.5" />
+                <span>Pantry Health</span>
+              </div>
+              <div className="text-2xl font-bold font-mono text-[#4ade80] pt-1">
                 {pantryStockRatio.inStockPercentage}%
+              </div>
+              <div className="text-[11px] font-mono text-[#94a3b8] pt-1">
+                {pantryStockRatio.inStock} stocked · {pantryStockRatio.outOfStock} needed
               </div>
             </div>
           </div>
 
-          {/* Vitals Row */}
-          <div className="grid grid-cols-3 gap-3 bg-[#131720] border border-[#242b38] rounded-xl p-4 text-xs">
+          {/* Highlights */}
+          <div className="grid grid-cols-2 gap-4 bg-[#131720] border border-[#242b38] rounded-2xl p-4 text-xs">
             <div>
-              <span className="text-[#94a3b8] block text-[10px] uppercase">Avg. Ticket</span>
-              <span className="font-bold font-mono text-white">
-                {formatCurrency(vitals.averageBasketSize, currency)}
-              </span>
+              <span className="text-[#94a3b8] block text-[10px] uppercase font-semibold">Restock Speed</span>
+              <span className="font-bold text-white font-mono">{vitals.compactRestockLatency || "—"} avg.</span>
             </div>
             <div>
-              <span className="text-[#94a3b8] block text-[10px] uppercase">Restock Speed</span>
-              <span className="font-bold font-mono text-white">
-                {vitals.compactRestockLatency || "—"}
-              </span>
-            </div>
-            <div>
-              <span className="text-[#94a3b8] block text-[10px] uppercase">Idle Stock</span>
-              <span className="font-bold text-white truncate block">
-                {attentionDeadStock ? attentionDeadStock.name : "None"}
+              <span className="text-[#94a3b8] block text-[10px] uppercase font-semibold">Attention Item</span>
+              <span className="font-bold text-white">
+                {attentionDeadStock ? `${attentionDeadStock.name} (${attentionDeadStock.idleDays}d idle)` : "None"}
               </span>
             </div>
           </div>
 
-          {/* Top Stores */}
+          {/* Top Stores Breakdown */}
           {categoryBreakdown.length > 0 && (
             <div className="space-y-2 pt-1">
               <span className="text-[11px] font-semibold text-[#94a3b8] uppercase tracking-wider block">
                 Top Merchants
               </span>
-              <div className="space-y-1.5">
-                {categoryBreakdown.slice(0, 3).map((item) => (
-                  <div key={item.name} className="flex justify-between text-xs">
-                    <span className="text-white">{item.name}</span>
-                    <span className="font-mono text-[#94a3b8]">
-                      {formatCurrency(item.amount, currency)} ({item.percentage}%)
-                    </span>
+              <div className="space-y-2">
+                {categoryBreakdown.slice(0, 3).map((item, idx) => (
+                  <div key={item.name} className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-white">{item.name}</span>
+                      <span className="font-mono text-[#94a3b8]">
+                        {formatCurrency(item.amount, currency)} ({item.percentage}%)
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-[#1a202c] rounded-full overflow-hidden">
+                      <div
+                        className={cn("h-full rounded-full", categoryBarColors[idx % categoryBarColors.length])}
+                        style={{ width: `${Math.max(item.percentage, 2)}%` }}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
