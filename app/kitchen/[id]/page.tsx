@@ -6,6 +6,7 @@ import {
   getUserMembership,
 } from "@/lib/kitchen";
 import { getPantryItems, getShoppingListItems } from "@/lib/pantry";
+import { getKitchenStats } from "@/lib/actions/stats";
 import { KitchenSpaceView } from "@/components/KitchenSpaceView";
 
 export default async function KitchenPage({
@@ -26,12 +27,17 @@ export default async function KitchenPage({
     redirect(`/login?callbackUrl=/kitchen/${id}`);
   }
 
+  const initialTab = resolvedSearchParams?.tab || "kitchen";
+
   // Concurrent execution of all primary data queries via Promise.all
-  const [membership, kitchen, pantryItems, shoppingListItems] = await Promise.all([
+  const [membership, kitchen, pantryItems, shoppingListItems, initialPulseStats] = await Promise.all([
     getUserMembership(id, session.user.id),
     getKitchenById(id),
     getPantryItems(id),
     getShoppingListItems(id),
+    initialTab === "pulse"
+      ? getKitchenStats(id, session.user.id).catch(() => undefined)
+      : Promise.resolve(undefined),
   ]);
 
   if (!membership) {
@@ -46,8 +52,6 @@ export default async function KitchenPage({
   const protocol = headerList.get("x-forwarded-proto") || "http";
   const baseUrl = host ? `${protocol}://${host}` : "";
 
-  const initialTab = resolvedSearchParams?.tab || "kitchen";
-
   const preferredCurrency = session.user.preferred_currency || "EUR";
 
   return (
@@ -56,6 +60,7 @@ export default async function KitchenPage({
       membership={membership}
       pantryItems={pantryItems}
       shoppingListItems={shoppingListItems}
+      initialPulseStats={initialPulseStats}
       currentUserId={session.user.id}
       preferredCurrency={preferredCurrency}
       userPreferredCurrency={preferredCurrency}
