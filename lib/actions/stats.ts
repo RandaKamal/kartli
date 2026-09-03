@@ -23,6 +23,28 @@ export interface PantryStockRatio {
   inStockPercentage: number;
 }
 
+export interface DeadStockItem {
+  name: string;
+  idleDays: number;
+}
+
+export interface UserCategoryFootprint {
+  categoryName: string;
+  amount: number;
+  percentage: number;
+  displayText: string;
+}
+
+export interface KitchenVitals {
+  averageBasketSize: number;
+  averageRestockLatencySeconds: number;
+  formattedRestockLatency: string;
+  compactRestockLatency: string;
+  restockVelocityDays: number;
+  formattedRestockVelocity: string;
+  deadStock: DeadStockItem[];
+}
+
 export interface KitchenPulseStats {
   kitchenId: string;
   monthLabel: string;
@@ -37,9 +59,14 @@ export interface KitchenPulseStats {
   userSpendSharePercentage: number;
   userReceiptsCount: number;
   totalReceiptsCount: number;
+  averageBasketSize: number;
+  userAverageContribution: number;
+  userCategoryFootprint: UserCategoryFootprint | null;
+  vitals: KitchenVitals;
   topItem: TopItemHighlight | null;
   allTopItems: TopItemHighlight[];
   pantryStockRatio: PantryStockRatio;
+  deadStockItems: DeadStockItem[];
   hasData: boolean;
 }
 
@@ -55,6 +82,49 @@ interface RawSqlStatsRow {
   pantry_total: number;
   pantry_in_stock: number;
   pantry_out_of_stock: number;
+  dead_stock_items: Array<{ name: string; idle_days: number }> | null;
+  avg_latency_seconds: string | number;
+  latency_samples: number;
+  avg_in_stock_days: string | number;
+  velocity_samples: number;
+  user_top_category: Array<{ name: string; amount: number | string }> | null;
+}
+
+function formatLatencyCompact(seconds: number, sampleCount: number): string {
+  if (sampleCount === 0 || seconds <= 0) return "—";
+  if (seconds >= 86400) {
+    const days = (seconds / 86400).toFixed(1);
+    return `${days}d`;
+  }
+  if (seconds >= 3600) {
+    const hours = (seconds / 3600).toFixed(1);
+    return `${hours}h`;
+  }
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  return `${minutes}m`;
+}
+
+function formatLatency(seconds: number, sampleCount: number): string {
+  if (sampleCount === 0 || seconds <= 0) return "Instant / No delay";
+  if (seconds >= 86400) {
+    const days = (seconds / 86400).toFixed(1);
+    return `${days} days response time`;
+  }
+  if (seconds >= 3600) {
+    const hours = (seconds / 3600).toFixed(1);
+    return `${hours} hours response time`;
+  }
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  return `${minutes} mins response time`;
+}
+
+function formatVelocity(days: number, sampleCount: number): string {
+  if (sampleCount === 0 || days <= 0) return "Freshly stocked";
+  if (days >= 1) {
+    return `${days.toFixed(1)} days in stock`;
+  }
+  const hours = Math.max(1, Math.round(days * 24));
+  return `${hours} hours in stock`;
 }
 
 /**
@@ -167,6 +237,71 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
         COUNT(*) FILTER (WHERE is_out_of_stock = TRUE)::int AS out_of_stock_items
       FROM pantry_items
       WHERE kitchen_id = $1
+    ),
+    dead_stock AS (
+      SELECT 
+        COALESCE(json_agg(
+          json_build_object(
+            'name', name,
+            'idle_days', idle_days
+          ) ORDER BY idle_days DESC
+        ), '[]'::json) AS items
+      FROM (
+        SELECT 
+          name,
+          GREATEST(0, ROUND(EXTRACT(EPOCH FROM (NOW() - COALESCE(updated_at, created_at))) / 86400))::int AS idle_days
+        FROM pantry_items
+        WHERE kitchen_id = $1
+          AND is_out_of_stock = FALSE
+        ORDER BY COALESCE(updated_at, created_at) ASC
+        LIMIT 3
+      ) d
+    ),
+    restock_metrics AS (
+      SELECT
+        COALESCE(ROUND(AVG(EXTRACT(EPOCH FROM (c.created_at - sli.created_at)))::numeric, 1), 0) AS avg_latency_seconds,
+        COUNT(sli.id)::int AS latency_samples
+      FROM shopping_list_items sli
+      JOIN checkouts c ON sli.checkout_id = c.id
+      WHERE sli.kitchen_id = $1
+        AND c.created_at >= sli.created_at
+    ),
+    restock_velocity AS (
+      WITH item_intervals AS (
+        SELECT 
+          sli.pantry_item_id,
+          sli.created_at AS needed_at,
+          LAG(c.created_at) OVER (PARTITION BY sli.pantry_item_id ORDER BY sli.created_at) AS prev_restocked_at
+        FROM shopping_list_items sli
+        JOIN checkouts c ON sli.checkout_id = c.id
+        WHERE sli.kitchen_id = $1
+          AND sli.pantry_item_id IS NOT NULL
+      )
+      SELECT
+        COALESCE(ROUND(AVG(EXTRACT(EPOCH FROM (needed_at - prev_restocked_at)) / 86400)::numeric, 2), 0) AS avg_in_stock_days,
+        COUNT(*)::int AS velocity_samples
+      FROM item_intervals
+      WHERE prev_restocked_at IS NOT NULL
+        AND needed_at >= prev_restocked_at
+    ),
+    user_footprint AS (
+      SELECT 
+        COALESCE(json_agg(
+          json_build_object(
+            'name', store_name,
+            'amount', store_spend
+          )
+        ), '[]'::json) AS top_category
+      FROM (
+        SELECT 
+          store_name,
+          SUM(total_claimed_amount)::numeric AS store_spend
+        FROM monthly_checkouts, month_bounds mb
+        WHERE created_at >= mb.cur_start AND user_id = $2
+        GROUP BY store_name
+        ORDER BY store_spend DESC
+        LIMIT 1
+      ) uf
     )
     SELECT 
       s.current_month_spend,
@@ -179,11 +314,21 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
       ti.items AS top_items,
       p.total_items AS pantry_total,
       p.in_stock_items AS pantry_in_stock,
-      p.out_of_stock_items AS pantry_out_of_stock
+      p.out_of_stock_items AS pantry_out_of_stock,
+      ds.items AS dead_stock_items,
+      rm.avg_latency_seconds,
+      rm.latency_samples,
+      rv.avg_in_stock_days,
+      rv.velocity_samples,
+      uf.top_category AS user_top_category
     FROM spend_stats s
     CROSS JOIN store_breakdown sb
     CROSS JOIN top_items ti
-    CROSS JOIN pantry_stats p;
+    CROSS JOIN pantry_stats p
+    CROSS JOIN dead_stock ds
+    CROSS JOIN restock_metrics rm
+    CROSS JOIN restock_velocity rv
+    CROSS JOIN user_footprint uf;
   `;
 
   const { rows } = await pool.query<RawSqlStatsRow>(query, [kitchenId, targetUserId]);
@@ -230,9 +375,29 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
     };
   });
 
-  // Calculate Personal Impact
+  // Calculate Personal Impact & Basket Sizes
+  const totalReceipts = Number(row?.total_receipts_count ?? 0);
+  const userReceipts = Number(row?.user_receipts_count ?? 0);
+
+  const averageBasketSize = totalReceipts > 0 ? Math.round((currentSpend / totalReceipts) * 100) / 100 : 0;
+  const userAverageContribution = userReceipts > 0 ? Math.round((userSpend / userReceipts) * 100) / 100 : 0;
+
   const userSpendSharePercentage =
     currentSpend > 0 ? Math.min(100, Math.round((userSpend / currentSpend) * 100)) : 0;
+
+  // User Primary Category Footprint
+  let userCategoryFootprint: UserCategoryFootprint | null = null;
+  const rawUserTop = Array.isArray(row?.user_top_category) && row.user_top_category.length > 0 ? row.user_top_category[0] : null;
+  if (rawUserTop && userSpend > 0) {
+    const topAmount = parseFloat(String(rawUserTop.amount ?? "0"));
+    const topPct = Math.min(100, Math.round((topAmount / userSpend) * 100));
+    userCategoryFootprint = {
+      categoryName: rawUserTop.name,
+      amount: topAmount,
+      percentage: topPct,
+      displayText: `${topPct}% of your spend is at ${rawUserTop.name}`,
+    };
+  }
 
   // Activity Highlights
   const rawTopItems = Array.isArray(row?.top_items) ? row.top_items : [];
@@ -249,13 +414,40 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
   const inStockPercentage =
     pantryTotal > 0 ? Math.round((pantryInStock / pantryTotal) * 100) : 100;
 
+  // Dead Stock / Pantry Mummies
+  const rawDeadStock = Array.isArray(row?.dead_stock_items) ? row.dead_stock_items : [];
+  const deadStockItems: DeadStockItem[] = rawDeadStock.map((item) => ({
+    name: item.name,
+    idleDays: Number(item.idle_days) || 0,
+  }));
+
+  // Restock Latency & Velocity
+  const latencySeconds = parseFloat(String(row?.avg_latency_seconds ?? "0"));
+  const latencySamples = Number(row?.latency_samples ?? 0);
+  const formattedRestockLatency = formatLatency(latencySeconds, latencySamples);
+  const compactRestockLatency = formatLatencyCompact(latencySeconds, latencySamples);
+
+  const velocityDays = parseFloat(String(row?.avg_in_stock_days ?? "0"));
+  const velocitySamples = Number(row?.velocity_samples ?? 0);
+  const formattedRestockVelocity = formatVelocity(velocityDays, velocitySamples);
+
+  const vitals: KitchenVitals = {
+    averageBasketSize,
+    averageRestockLatencySeconds: latencySeconds,
+    formattedRestockLatency,
+    compactRestockLatency,
+    restockVelocityDays: velocityDays,
+    formattedRestockVelocity,
+    deadStock: deadStockItems,
+  };
+
   const now = new Date();
   const monthLabel = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(now);
   const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
   const hasData =
     currentSpend > 0 ||
-    row?.total_receipts_count > 0 ||
+    totalReceipts > 0 ||
     allTopItems.length > 0;
 
   return {
@@ -270,8 +462,12 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
     categoryBreakdown,
     userSpend,
     userSpendSharePercentage,
-    userReceiptsCount: Number(row?.user_receipts_count ?? 0),
-    totalReceiptsCount: Number(row?.total_receipts_count ?? 0),
+    userReceiptsCount: userReceipts,
+    totalReceiptsCount: totalReceipts,
+    averageBasketSize,
+    userAverageContribution,
+    userCategoryFootprint,
+    vitals,
     topItem,
     allTopItems,
     pantryStockRatio: {
@@ -280,6 +476,7 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
       total: pantryTotal,
       inStockPercentage,
     },
+    deadStockItems,
     hasData,
   };
 }
