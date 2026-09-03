@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Activity,
   CreditCard,
   Package,
   Store,
@@ -41,27 +42,21 @@ interface KitchenPulseProps {
 export function KitchenPulseSkeleton() {
   return (
     <div className="w-full space-y-6 animate-pulse">
-      {/* Header Skeleton */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-1 border-b border-border/40">
-        <div className="flex items-center justify-between gap-3 w-full sm:w-auto">
+      {/* Header Card Skeleton */}
+      <Card className="border border-border bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm space-y-3.5">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Skeleton className="h-7 w-20 rounded-xl" />
-            <Skeleton className="h-5 w-28 rounded-md" />
+            <Skeleton className="h-5 w-5 rounded-md" />
+            <Skeleton className="h-6 w-32 rounded-md" />
+            <Skeleton className="h-5 w-24 rounded-full" />
           </div>
-          <div className="flex items-center gap-1.5 sm:hidden">
-            <Skeleton className="h-9 w-9 rounded-xl" />
-            <Skeleton className="h-9 w-9 rounded-xl" />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Skeleton className="h-10 w-full sm:w-48 rounded-2xl" />
-          <div className="hidden sm:flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5">
             <Skeleton className="h-9 w-9 rounded-xl" />
             <Skeleton className="h-9 w-9 rounded-xl" />
           </div>
         </div>
-      </div>
+        <Skeleton className="h-10 w-full sm:w-56 rounded-2xl" />
+      </Card>
 
       {/* Hero 2-Column Grid Skeleton */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
@@ -250,22 +245,24 @@ export function KitchenPulse({
 
   return (
     <div className="w-full space-y-6 animate-in fade-in-50 duration-200">
-      {/* Header Area: Mobile-first 2-row stack, desktop single row */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-1 border-b border-border/40">
-        {/* Row 1 (Context & Quick Actions on mobile) */}
-        <div className="flex items-center justify-between gap-3 w-full sm:w-auto">
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-foreground tracking-tight">Pulse</h2>
+      {/* Header Card Container */}
+      <Card className="border border-border bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
+        {/* Header Row: Icon + Title + Month on left, Action buttons on right */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Activity className="w-4 h-4 text-muted-foreground shrink-0" />
+            <h2 className="text-base sm:text-lg font-bold text-foreground tracking-tight">
+              Kitchen Pulse
+            </h2>
             <Badge
               variant="secondary"
-              className="bg-muted text-muted-foreground text-[10px] font-mono uppercase px-2 py-0.5 rounded-md"
+              className="bg-muted text-muted-foreground text-[10px] font-mono uppercase px-2 py-0.5 rounded-md shrink-0"
             >
               {monthLabel}
             </Badge>
           </div>
 
-          {/* Quick Actions: grouped together on mobile right */}
-          <div className="flex items-center gap-1.5 sm:hidden">
+          <div className="flex items-center gap-1.5 shrink-0">
             <Button
               type="button"
               variant="ghost"
@@ -292,9 +289,8 @@ export function KitchenPulse({
           </div>
         </div>
 
-        {/* Row 2 (View Switcher on mobile, unified right side on desktop) */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          {/* Full-width segmented control on mobile, auto width on sm */}
+        {/* Controls / Sub-Row: Segmented Control [ Kitchen | My Impact ] */}
+        <div className="pt-0.5">
           <div className="inline-flex bg-muted/80 border border-border p-1 rounded-2xl h-10 shadow-xs w-full sm:w-auto">
             <button
               type="button"
@@ -327,35 +323,8 @@ export function KitchenPulse({
               )}
             </button>
           </div>
-
-          {/* Desktop Quick Actions (Refresh & Export) */}
-          <div className="hidden sm:flex items-center gap-1.5">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => fetchStats(true)}
-              disabled={isRefreshing}
-              className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted"
-              title="Refresh statistics"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-sm"
-              onClick={handleExport}
-              disabled={isExporting}
-              className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted border-border"
-              title="Export summary snapshot"
-            >
-              <Download className="w-3.5 h-3.5" />
-            </Button>
-          </div>
         </div>
-      </div>
+      </Card>
 
       {/* Empty State */}
       {!hasData ? (

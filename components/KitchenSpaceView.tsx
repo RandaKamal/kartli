@@ -520,7 +520,7 @@ export function KitchenSpaceView({
             aria-label="Kitchen Pulse"
             className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer"
           >
-            <Activity className="w-4 h-4 shrink-0 text-accent-primary" />
+            <Activity className="w-4 h-4 shrink-0" />
             <span className="hidden md:inline">Pulse</span>
           </TabsTrigger>
 
@@ -626,20 +626,20 @@ export function KitchenSpaceView({
           </div>
 
           {/* Kitchen Pulse Shortcut Callout */}
-          <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-3xl bg-card border border-border shadow-xs hover:border-accent-primary/40 transition">
+          <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-3xl bg-card border border-border shadow-xs hover:border-border transition">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-2xl bg-accent-primary/10 flex items-center justify-center text-accent-primary shrink-0">
+              <div className="w-9 h-9 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
                 <Activity className="w-4 h-4" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xs sm:text-sm font-semibold text-foreground">Kitchen Pulse</span>
-                  <Badge variant="secondary" className="bg-accent-primary/10 text-accent-primary border-none text-[10px] font-mono">
+                  <Badge variant="secondary" className="bg-muted text-muted-foreground text-[10px] font-mono">
                     Analytics
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground truncate">
-                  Monthly spend trend, category distribution & pantry health.
+                  Monthly spend trend, category distribution &amp; pantry health.
                 </p>
               </div>
             </div>
@@ -649,7 +649,7 @@ export function KitchenSpaceView({
               variant="ghost"
               size="sm"
               onClick={() => handleTabChange("pulse")}
-              className="rounded-xl text-xs font-semibold text-accent-primary hover:text-accent-primary hover:bg-accent-primary/10 gap-1 shrink-0 cursor-pointer"
+              className="rounded-xl text-xs font-semibold text-foreground hover:bg-muted gap-1 shrink-0 cursor-pointer"
             >
               <span>View Pulse</span>
               <ArrowRight className="w-3.5 h-3.5" />
