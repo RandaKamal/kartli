@@ -64,7 +64,7 @@ export function LoginForm({
       ref={formRef}
       method="POST"
       onSubmit={handleSubmit}
-      className="space-y-4"
+      className="space-y-3"
     >
       {callbackUrl && (
         <input type="hidden" name="callbackUrl" value={callbackUrl} />
@@ -95,7 +95,7 @@ export function LoginForm({
             required
             autoComplete="username"
             onKeyDown={handleKeyDown}
-            placeholder="alex@baker-street"
+            placeholder="e.g. sophie, alex, finn"
             className="w-full h-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/50 p-0"
           />
         </div>
@@ -142,7 +142,7 @@ export function LoginForm({
       <button
         type="submit"
         disabled={isPending}
-        className="h-11 w-full bg-white text-zinc-950 font-semibold rounded-xl hover:bg-zinc-200 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-[0_0_25px_-5px_rgba(255,255,255,0.2)] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+        className="h-11 w-full bg-white text-zinc-950 font-semibold rounded-xl hover:bg-zinc-200 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-[0_0_25px_-5px_rgba(255,255,255,0.2)] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mt-1.5"
       >
         {isPending ? (
           <>

@@ -15,45 +15,38 @@ export default async function RegisterPage({
     : "/login";
 
   return (
-    <div className="min-h-[calc(100vh-10rem)] flex items-center justify-center p-4 relative py-8 sm:py-12">
+    <main className="relative flex-1 flex items-center justify-center overflow-hidden py-4 sm:py-6 px-4 -my-6 sm:-my-8">
       {/* 1. Ambient Multi-Color Radial Glow */}
-      <div className="absolute inset-0 -z-10 flex items-center justify-center pointer-events-none overflow-hidden">
+      <div className="absolute inset-0 -z-20 flex items-center justify-center pointer-events-none overflow-hidden">
         <div className="w-[620px] h-[620px] max-w-full rounded-full bg-gradient-to-tr from-emerald-500/10 via-cyan-500/10 to-amber-500/10 blur-[130px] opacity-60" />
       </div>
 
-      {/* Elevated Card Shell */}
-      <div className="relative w-full max-w-md">
-        {/* Diffuse glow backdrop behind card */}
-        <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-cyan-500/10 rounded-3xl blur-xl pointer-events-none opacity-40" />
+      {/* Elevated Card Container with Optical Centering */}
+      <div className="relative w-full max-w-md -translate-y-2">
+        {/* Landing Page Ambient Backlight */}
+        <div className="absolute -inset-2 -z-10 rounded-[2.5rem] bg-gradient-to-tr from-amber-500/25 via-emerald-500/20 to-cyan-500/25 blur-3xl opacity-90 pointer-events-none" />
 
-        <div className="relative rounded-3xl border border-border/80 bg-card/90 p-6 sm:p-8 backdrop-blur-xl shadow-2xl space-y-6">
+        <div className="relative rounded-3xl border border-border/80 bg-card/85 p-6 sm:p-7 backdrop-blur-xl shadow-2xl space-y-4">
           {/* 2. Mini Terminal Header on the Card */}
-          <div className="flex items-center justify-between border-b border-border/40 pb-3 mb-6">
-            <div className="flex items-center">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
-              </div>
-              <span className="text-[11px] font-mono text-muted-foreground ml-2">
-                kartli // secure-auth
-              </span>
+          <div className="flex items-center border-b border-border/40 pb-3 mb-4">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
             </div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-mono text-[10px] tracking-wider uppercase font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>ENCRYPTED</span>
-            </div>
+            <span className="text-[11px] font-mono text-muted-foreground ml-2">
+              kartli // secure-auth
+            </span>
           </div>
 
           {/* 3. Punchy Headline & Landing Page Typography */}
-          <div className="text-center space-y-1.5">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-snug">
-              Start your kitchen with <span className="text-emerald-400">good food</span> and{" "}
-              <span className="text-cyan-400">zero drama</span>.
+          <div className="text-center">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white text-center">
+              Kitchen management with{" "}
+              <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent font-extrabold">
+                zero drama
+              </span>.
             </h1>
-            <p className="text-xs text-muted-foreground max-w-sm mx-auto text-center mt-1.5">
-              Pick a username and password. No email address required.
-            </p>
           </div>
 
           {/* 4 & 5. Form Inputs & Primary Action CTA */}
@@ -78,7 +71,7 @@ export default async function RegisterPage({
           </div>
 
           {/* 6. Micro-Feature Checklist Footer */}
-          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground pt-3 border-t border-border/40">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground pt-2.5 border-t border-border/40">
             <span className="flex items-center gap-1">
               <span className="text-emerald-400 font-bold">✓</span>
               <span>Email-free onboarding</span>
@@ -96,7 +89,7 @@ export default async function RegisterPage({
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
