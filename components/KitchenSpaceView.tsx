@@ -25,6 +25,8 @@ import { MyPurchasesSection, MyPurchasesSkeleton } from "@/components/MyPurchase
 import { AdminRefundsSection, AdminRefundsSkeleton } from "@/components/AdminRefundsSection";
 import { ActiveCartSection } from "@/components/ActiveCartSection";
 import { GuestCartHandoverListener } from "@/components/GuestCartHandoverListener";
+import { KitchenPulse } from "@/components/kitchen/KitchenPulse";
+import type { KitchenPulseStats } from "@/lib/actions/stats";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +68,7 @@ import {
   LogOut,
   UtensilsCrossed,
   Receipt,
+  Activity,
 } from "lucide-react";
 import { capitalize } from "@/lib/utils";
 import { toast } from "sonner";
@@ -115,6 +118,7 @@ interface KitchenSpaceViewProps {
   shoppingListItems: ShoppingListItem[];
   myCheckouts?: CheckoutWithDetails[];
   adminCheckouts?: CheckoutWithDetails[];
+  initialPulseStats?: KitchenPulseStats;
   currentUserId: string;
   preferredCurrency?: string;
   userPreferredCurrency?: string;
@@ -130,6 +134,7 @@ export function KitchenSpaceView({
   shoppingListItems,
   myCheckouts,
   adminCheckouts,
+  initialPulseStats,
   currentUserId,
   preferredCurrency,
   userPreferredCurrency = "EUR",
@@ -175,8 +180,8 @@ export function KitchenSpaceView({
   const terminology = getSpaceTerminology(spaceType);
   const isAdmin = membership.role === "ADMIN";
   const validTabs = isAdmin
-    ? ["kitchen", "cart", "members", "refunds", "settings"]
-    : ["kitchen", "cart", "members", "settings"];
+    ? ["kitchen", "pulse", "cart", "members", "refunds", "settings"]
+    : ["kitchen", "pulse", "cart", "members", "settings"];
 
   // Tab state syncing
   const urlTab = searchParams.get("tab");
@@ -496,7 +501,7 @@ export function KitchenSpaceView({
       <Tabs defaultValue={defaultTab} value={activeTab} onValueChange={handleTabChange} className="w-full space-y-6">
         <TabsList
           className={`grid ${
-            isAdmin ? "grid-cols-5 max-w-2xl" : "grid-cols-4 max-w-xl"
+            isAdmin ? "grid-cols-6 max-w-3xl" : "grid-cols-5 max-w-2xl"
           } w-full mx-auto mb-6 bg-muted/70 border border-border p-1 rounded-2xl h-11`}
         >
           {/* Tab 1: Kitchen */}
@@ -509,7 +514,17 @@ export function KitchenSpaceView({
             <span className="hidden md:inline">Kitchen</span>
           </TabsTrigger>
 
-          {/* Tab 2: Cart */}
+          {/* Tab 2: Pulse (Stats & Analytics) */}
+          <TabsTrigger
+            value="pulse"
+            aria-label="Kitchen Pulse"
+            className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer"
+          >
+            <Activity className="w-4 h-4 shrink-0 text-accent-primary" />
+            <span className="hidden md:inline">Pulse</span>
+          </TabsTrigger>
+
+          {/* Tab 3: Cart */}
           <TabsTrigger
             value="cart"
             aria-label="Cart"
@@ -610,12 +625,53 @@ export function KitchenSpaceView({
             />
           </div>
 
+          {/* Kitchen Pulse Shortcut Callout */}
+          <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-3xl bg-card border border-border shadow-xs hover:border-accent-primary/40 transition">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-2xl bg-accent-primary/10 flex items-center justify-center text-accent-primary shrink-0">
+                <Activity className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs sm:text-sm font-semibold text-foreground">Kitchen Pulse</span>
+                  <Badge variant="secondary" className="bg-accent-primary/10 text-accent-primary border-none text-[10px] font-mono">
+                    Analytics
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground truncate">
+                  Monthly spend trend, category distribution & pantry health.
+                </p>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => handleTabChange("pulse")}
+              className="rounded-xl text-xs font-semibold text-accent-primary hover:text-accent-primary hover:bg-accent-primary/10 gap-1 shrink-0 cursor-pointer"
+            >
+              <span>View Pulse</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+
           <Suspense fallback={<MyPurchasesSkeleton />}>
             <MyPurchasesSection kitchenId={initialKitchen.id} checkouts={myCheckouts} />
           </Suspense>
         </TabsContent>
 
-        {/* Tab 2: Cart (Full Workspace) */}
+        {/* Tab: Pulse (Kitchen Stats & Analytics) */}
+        <TabsContent value="pulse" className="space-y-6 animate-in fade-in-50">
+          <KitchenPulse
+            kitchenId={initialKitchen.id}
+            kitchenName={kitchenName}
+            currentUserId={currentUserId}
+            initialStats={initialPulseStats}
+          />
+        </TabsContent>
+
+        {/* Tab 3: Cart (Full Workspace) */}
         <TabsContent value="cart" className="space-y-6 animate-in fade-in-50">
           <ActiveCartSection
             kitchenId={initialKitchen.id}
