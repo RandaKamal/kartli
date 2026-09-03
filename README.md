@@ -27,7 +27,7 @@
 ### 🎨 Artisanal Culinary Themes
 Switch between four carefully balanced, high-contrast colorways with instant dark and light mode adaptation:
 - **Saffron Citrus**: Warm ochre and sun-drenched Mediterranean kitchen tones.
-- **Black Truffle**: Deep espresso, velvety charcoal, and understated elegance.
+- **Black Truffle (Default)**: Deep obsidian, high-contrast monochrome, and understated luxury.
 - **Midnight Plum**: Rich aubergine and moody bistro aesthetics.
 - **Nordic Salt**: Crisp mineral whites, sage greens, and airy Scandinavian minimalism.
 
@@ -58,6 +58,11 @@ Spaces adjust their vocabulary, tone, and terminology to match your living envir
 - Persistent digital catalog of household staples.
 - One-tap *"Out of Stock"* alerts immediately populate the shared shopping list.
 - Checking out items automatically resets the out-of-stock trigger and restocks the pantry.
+
+### ⚡ Kitchen Pulse & Analytics
+- Real-time household metrics covering monthly grocery expenditures and average receipts.
+- Live pantry health index with restocking velocity and idle supply tracking.
+- Merchant expenditure breakdowns and high-circulation kitchen staple statistics.
 
 ---
 
