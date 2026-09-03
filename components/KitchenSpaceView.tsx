@@ -428,7 +428,7 @@ export function KitchenSpaceView({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-28 sm:pb-8">
       <GuestCartHandoverListener kitchenId={initialKitchen.id} />
 
       {/* Top Breadcrumb & Header */}
@@ -497,100 +497,287 @@ export function KitchenSpaceView({
         </Card>
       </div>
 
-      {/* Responsive Pill-Based Tab Navigation Control */}
+      {/* Responsive Navigation System */}
       <Tabs defaultValue={defaultTab} value={activeTab} onValueChange={handleTabChange} className="w-full space-y-6">
-        <TabsList
-          className={`grid ${
-            isAdmin ? "grid-cols-6 max-w-3xl" : "grid-cols-5 max-w-2xl"
-          } w-full mx-auto mb-6 bg-muted/70 border border-border p-1 rounded-2xl h-11`}
-        >
-          {/* Tab 1: Kitchen */}
-          <TabsTrigger
-            value="kitchen"
-            aria-label="Kitchen"
-            className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer"
-          >
-            <UtensilsCrossed className="w-4 h-4 shrink-0" />
-            <span className="hidden md:inline">Kitchen</span>
-          </TabsTrigger>
-
-          {/* Tab 2: Pulse (Stats & Analytics) */}
-          <TabsTrigger
-            value="pulse"
-            aria-label="Kitchen Pulse"
-            className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer"
-          >
-            <Activity className="w-4 h-4 shrink-0" />
-            <span className="hidden md:inline">Pulse</span>
-          </TabsTrigger>
-
-          {/* Tab 3: Cart */}
-          <TabsTrigger
-            value="cart"
-            aria-label="Cart"
-            className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer relative"
-          >
-            <div className="relative flex items-center shrink-0">
-              <CartIcon className="w-4 h-4" />
-              {myCartCount > 0 && (
-                <span className="w-1.5 h-1.5 rounded-full bg-accent-success absolute -top-0.5 -right-0.5 shadow-xs md:hidden" />
-              )}
-            </div>
-
-            <span className="hidden md:inline">Cart</span>
-
-            {myCartCount > 0 && (
-              <span className="hidden md:inline-flex px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full bg-secondary text-secondary-foreground border border-border">
-                {myCartCount}
-              </span>
-            )}
-          </TabsTrigger>
-
-          {/* Tab 3: Members / Roommates */}
-          <TabsTrigger
-            value="members"
-            aria-label={terminology.memberLabelPlural}
-            className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer"
-          >
-            <Users className="w-4 h-4 shrink-0" />
-            <span className="hidden md:inline">{terminology.memberLabelPlural}</span>
-          </TabsTrigger>
-
-          {/* Tab 4: Refunds (Admin Only) */}
-          {isAdmin && (
+        {/* Desktop Experience: Surface Pill Segmented Bar */}
+        <div className="hidden sm:flex justify-center w-full">
+          <TabsList className="bg-zinc-900/60 border border-white/5 rounded-2xl p-1.5 inline-flex items-center gap-1 h-auto shadow-sm">
+            {/* Tab 1: Pantry / Kitchen */}
             <TabsTrigger
-              value="refunds"
-              aria-label="Purchases & Refunds"
-              className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer relative"
+              value="kitchen"
+              aria-label="Pantry"
+              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-white/5"
+            >
+              <UtensilsCrossed className="w-4 h-4 shrink-0" />
+              <span>Pantry</span>
+            </TabsTrigger>
+
+            {/* Tab 2: Pulse */}
+            <TabsTrigger
+              value="pulse"
+              aria-label="Pulse"
+              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-white/5"
+            >
+              <Activity className="w-4 h-4 shrink-0" />
+              <span>Pulse</span>
+            </TabsTrigger>
+
+            {/* Tab 3: Cart */}
+            <TabsTrigger
+              value="cart"
+              aria-label="Cart"
+              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-white/5 relative"
             >
               <div className="relative flex items-center shrink-0">
-                <Receipt className="w-4 h-4" />
-                {pendingRefundsCount > 0 && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 absolute -top-0.5 -right-0.5 shadow-xs md:hidden animate-pulse" />
+                <CartIcon className="w-4 h-4" />
+                {myCartCount > 0 && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 shadow-xs" />
                 )}
               </div>
-
-              <span className="hidden md:inline">Refunds</span>
-
-              {pendingRefundsCount > 0 && (
-                <span className="hidden md:inline-flex items-center gap-1 ml-1 px-1.5 py-0.2 text-[10px] font-mono font-medium rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                  <span>{pendingRefundsCount}</span>
+              <span>Cart</span>
+              {myCartCount > 0 && (
+                <span className="px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full bg-zinc-700/80 text-zinc-200 border border-white/10">
+                  {myCartCount}
                 </span>
               )}
             </TabsTrigger>
-          )}
 
-          {/* Tab 5: Settings */}
-          <TabsTrigger
-            value="settings"
-            aria-label="Settings"
-            className="rounded-xl text-xs font-semibold data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs flex items-center justify-center gap-1.5 h-9 transition-all cursor-pointer"
-          >
-            <Settings className="w-4 h-4 shrink-0" />
-            <span className="hidden md:inline">Settings</span>
-          </TabsTrigger>
-        </TabsList>
+            {/* Tab 4: Roommates / Flat */}
+            <TabsTrigger
+              value="members"
+              aria-label={spaceType === "FLATSHARE" ? "Roommates" : terminology.memberLabelPlural}
+              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-white/5"
+            >
+              <Users className="w-4 h-4 shrink-0" />
+              <span>{spaceType === "FLATSHARE" ? "Roommates" : terminology.memberLabelPlural}</span>
+            </TabsTrigger>
+
+            {/* Tab 5: Refunds (Admin Only) */}
+            {isAdmin && (
+              <TabsTrigger
+                value="refunds"
+                aria-label="Refunds"
+                className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-white/5 relative"
+              >
+                <div className="relative flex items-center shrink-0">
+                  <Receipt className="w-4 h-4" />
+                  {pendingRefundsCount > 0 && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 absolute -top-0.5 -right-0.5 shadow-xs animate-pulse" />
+                  )}
+                </div>
+                <span>Refunds</span>
+                {pendingRefundsCount > 0 && (
+                  <span className="inline-flex items-center gap-1 ml-1 px-1.5 py-0.2 text-[10px] font-mono font-medium rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                    <span>{pendingRefundsCount}</span>
+                  </span>
+                )}
+              </TabsTrigger>
+            )}
+
+            {/* Tab 6: Settings */}
+            <TabsTrigger
+              value="settings"
+              aria-label="Settings"
+              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-white/5"
+            >
+              <Settings className="w-4 h-4 shrink-0" />
+              <span>Settings</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        {/* Mobile Experience: iOS-Style Fixed Bottom Dock */}
+        <nav
+          aria-label="Mobile Bottom Navigation"
+          className="block sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 pb-[env(safe-area-inset-bottom,0.75rem)] pt-1.5 px-1 shadow-[0_-8px_20px_rgba(0,0,0,0.4)]"
+        >
+          <div className={`grid ${isAdmin ? "grid-cols-6" : "grid-cols-5"} items-center max-w-md mx-auto`}>
+            {/* Tab 1: Pantry */}
+            <button
+              type="button"
+              onClick={() => handleTabChange("kitchen")}
+              className="flex flex-col items-center justify-center gap-0.5 py-1 select-none active:scale-95 transition-transform cursor-pointer"
+              aria-label="Pantry"
+              aria-pressed={activeTab === "kitchen"}
+            >
+              <div className="relative flex items-center justify-center">
+                <UtensilsCrossed
+                  className={`w-5 h-5 stroke-[1.75] transition-colors ${
+                    activeTab === "kitchen" ? "text-white" : "text-zinc-500 hover:text-zinc-400"
+                  }`}
+                />
+              </div>
+              <span
+                className={`text-[10px] tracking-tight font-medium leading-tight truncate max-w-full transition-colors ${
+                  activeTab === "kitchen" ? "text-white font-semibold" : "text-zinc-500 hover:text-zinc-400"
+                }`}
+              >
+                Pantry
+              </span>
+              <span
+                className={`w-1 h-1 rounded-full transition-all duration-200 ${
+                  activeTab === "kitchen" ? "bg-emerald-400 mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
+                }`}
+              />
+            </button>
+
+            {/* Tab 2: Pulse */}
+            <button
+              type="button"
+              onClick={() => handleTabChange("pulse")}
+              className="flex flex-col items-center justify-center gap-0.5 py-1 select-none active:scale-95 transition-transform cursor-pointer"
+              aria-label="Pulse"
+              aria-pressed={activeTab === "pulse"}
+            >
+              <div className="relative flex items-center justify-center">
+                <Activity
+                  className={`w-5 h-5 stroke-[1.75] transition-colors ${
+                    activeTab === "pulse" ? "text-white" : "text-zinc-500 hover:text-zinc-400"
+                  }`}
+                />
+              </div>
+              <span
+                className={`text-[10px] tracking-tight font-medium leading-tight truncate max-w-full transition-colors ${
+                  activeTab === "pulse" ? "text-white font-semibold" : "text-zinc-500 hover:text-zinc-400"
+                }`}
+              >
+                Pulse
+              </span>
+              <span
+                className={`w-1 h-1 rounded-full transition-all duration-200 ${
+                  activeTab === "pulse" ? "bg-emerald-400 mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
+                }`}
+              />
+            </button>
+
+            {/* Tab 3: Cart */}
+            <button
+              type="button"
+              onClick={() => handleTabChange("cart")}
+              className="flex flex-col items-center justify-center gap-0.5 py-1 select-none active:scale-95 transition-transform cursor-pointer"
+              aria-label="Cart"
+              aria-pressed={activeTab === "cart"}
+            >
+              <div className="relative flex items-center justify-center">
+                <CartIcon
+                  className={`w-5 h-5 stroke-[1.75] transition-colors ${
+                    activeTab === "cart" ? "text-white" : "text-zinc-500 hover:text-zinc-400"
+                  }`}
+                />
+                {myCartCount > 0 && (
+                  <span className="absolute -top-1 -right-2 min-w-[14px] h-3.5 px-1 rounded-full bg-emerald-500 text-[9px] font-bold text-black flex items-center justify-center leading-none">
+                    {myCartCount > 9 ? "9+" : myCartCount}
+                  </span>
+                )}
+              </div>
+              <span
+                className={`text-[10px] tracking-tight font-medium leading-tight truncate max-w-full transition-colors ${
+                  activeTab === "cart" ? "text-white font-semibold" : "text-zinc-500 hover:text-zinc-400"
+                }`}
+              >
+                Cart
+              </span>
+              <span
+                className={`w-1 h-1 rounded-full transition-all duration-200 ${
+                  activeTab === "cart" ? "bg-emerald-400 mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
+                }`}
+              />
+            </button>
+
+            {/* Tab 4: Roommates (Flat micro-label on mobile) */}
+            <button
+              type="button"
+              onClick={() => handleTabChange("members")}
+              className="flex flex-col items-center justify-center gap-0.5 py-1 select-none active:scale-95 transition-transform cursor-pointer"
+              aria-label={spaceType === "FLATSHARE" ? "Flat" : terminology.memberLabelPlural}
+              aria-pressed={activeTab === "members"}
+            >
+              <div className="relative flex items-center justify-center">
+                <Users
+                  className={`w-5 h-5 stroke-[1.75] transition-colors ${
+                    activeTab === "members" ? "text-white" : "text-zinc-500 hover:text-zinc-400"
+                  }`}
+                />
+              </div>
+              <span
+                className={`text-[10px] tracking-tight font-medium leading-tight truncate max-w-full transition-colors ${
+                  activeTab === "members" ? "text-white font-semibold" : "text-zinc-500 hover:text-zinc-400"
+                }`}
+              >
+                {spaceType === "FLATSHARE" ? "Flat" : terminology.memberLabel}
+              </span>
+              <span
+                className={`w-1 h-1 rounded-full transition-all duration-200 ${
+                  activeTab === "members" ? "bg-emerald-400 mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
+                }`}
+              />
+            </button>
+
+            {/* Tab 5: Refunds (Admin Only) */}
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => handleTabChange("refunds")}
+                className="flex flex-col items-center justify-center gap-0.5 py-1 select-none active:scale-95 transition-transform cursor-pointer"
+                aria-label="Refunds"
+                aria-pressed={activeTab === "refunds"}
+              >
+                <div className="relative flex items-center justify-center">
+                  <Receipt
+                    className={`w-5 h-5 stroke-[1.75] transition-colors ${
+                      activeTab === "refunds" ? "text-white" : "text-zinc-500 hover:text-zinc-400"
+                    }`}
+                  />
+                  {pendingRefundsCount > 0 && (
+                    <span className="w-2 h-2 rounded-full bg-amber-400 absolute -top-0.5 -right-1 shadow-[0_0_6px_rgba(251,191,36,0.8)] animate-pulse" />
+                  )}
+                </div>
+                <span
+                  className={`text-[10px] tracking-tight font-medium leading-tight truncate max-w-full transition-colors ${
+                    activeTab === "refunds" ? "text-white font-semibold" : "text-zinc-500 hover:text-zinc-400"
+                  }`}
+                >
+                  Refunds
+                </span>
+                <span
+                  className={`w-1 h-1 rounded-full transition-all duration-200 ${
+                    activeTab === "refunds" ? "bg-emerald-400 mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
+                  }`}
+                />
+              </button>
+            )}
+
+            {/* Tab 6: Settings */}
+            <button
+              type="button"
+              onClick={() => handleTabChange("settings")}
+              className="flex flex-col items-center justify-center gap-0.5 py-1 select-none active:scale-95 transition-transform cursor-pointer"
+              aria-label="Settings"
+              aria-pressed={activeTab === "settings"}
+            >
+              <div className="relative flex items-center justify-center">
+                <Settings
+                  className={`w-5 h-5 stroke-[1.75] transition-colors ${
+                    activeTab === "settings" ? "text-white" : "text-zinc-500 hover:text-zinc-400"
+                  }`}
+                />
+              </div>
+              <span
+                className={`text-[10px] tracking-tight font-medium leading-tight truncate max-w-full transition-colors ${
+                  activeTab === "settings" ? "text-white font-semibold" : "text-zinc-500 hover:text-zinc-400"
+                }`}
+              >
+                Settings
+              </span>
+              <span
+                className={`w-1 h-1 rounded-full transition-all duration-200 ${
+                  activeTab === "settings" ? "bg-emerald-400 mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
+                }`}
+              />
+            </button>
+          </div>
+        </nav>
 
         {/* Tab 1: Kitchen (Daily Core) */}
         <TabsContent value="kitchen" className="space-y-6 animate-in fade-in-50">
@@ -623,37 +810,6 @@ export function KitchenSpaceView({
                 setLocalShoppingListItems((prev) => [item, ...prev])
               }
             />
-          </div>
-
-          {/* Kitchen Pulse Shortcut Callout */}
-          <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-3xl bg-card border border-border shadow-xs hover:border-border transition">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                <Activity className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs sm:text-sm font-semibold text-foreground">Kitchen Pulse</span>
-                  <Badge variant="secondary" className="bg-muted text-muted-foreground text-[10px] font-mono">
-                    Analytics
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground truncate">
-                  Monthly spend trend, category distribution &amp; pantry health.
-                </p>
-              </div>
-            </div>
-
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => handleTabChange("pulse")}
-              className="rounded-xl text-xs font-semibold text-foreground hover:bg-muted gap-1 shrink-0 cursor-pointer"
-            >
-              <span>View Pulse</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Button>
           </div>
 
           <Suspense fallback={<MyPurchasesSkeleton />}>
@@ -1172,7 +1328,7 @@ export function KitchenSpaceView({
 
       {/* Floating Cart Bottom Bar (Sticky UX when user has items in cart) */}
       {myCartCount > 0 && activeTab === "kitchen" && (
-        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-lg animate-in slide-in-from-bottom-5 duration-300">
+        <div className="fixed bottom-20 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-lg animate-in slide-in-from-bottom-5 duration-300">
           <div className="bg-card/95 backdrop-blur-md border border-border text-card-foreground rounded-2xl p-3 sm:px-5 sm:py-3.5 shadow-2xl flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="relative flex h-2.5 w-2.5 shrink-0">
