@@ -27,22 +27,30 @@ export default async function RootLayout({
   const culinaryTheme =
     cookieStore.get("kartli-theme")?.value ||
     cookieStore.get("culinary-theme")?.value ||
-    "truffle";
+    "black-truffle";
+
+  const initialTheme = culinaryTheme === "truffle" ? "black-truffle" : culinaryTheme;
 
   return (
-    <html lang="en" data-theme={culinaryTheme} suppressHydrationWarning>
+    <html
+      lang="en"
+      data-theme={initialTheme}
+      data-culinary-theme={initialTheme}
+      suppressHydrationWarning
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('kartli-theme')||localStorage.getItem('culinary-theme')||localStorage.getItem('theme')||(document.cookie.match(/(?:kartli-theme|culinary-theme)=([^;]+)/)||[])[1]||'${culinaryTheme}';if(t==='black-truffle')t='truffle';document.documentElement.setAttribute('data-theme',t);}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem('kartli-theme')||localStorage.getItem('culinary-theme')||(document.cookie.match(/(?:kartli-theme|culinary-theme)=([^;]+)/)||[])[1]||'${initialTheme}';if(t==='truffle')t='black-truffle';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-culinary-theme',t);}catch(e){}})()`,
           }}
         />
       </head>
       <body className="bg-background text-foreground min-h-screen flex flex-col antialiased selection:bg-accent-primary/20 selection:text-foreground">
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="system"
           enableSystem
+          themes={["light", "dark", "system"]}
           disableTransitionOnChange
         >
           <TooltipProvider delayDuration={200}>

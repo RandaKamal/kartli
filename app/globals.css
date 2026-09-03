@@ -62,8 +62,14 @@
      Theme 1: Black Truffle (Default)
      ========================================== */
   :root,
-  :root[data-theme='truffle'],
   :root[data-theme='black-truffle'],
+  :root[data-theme='truffle'],
+  :root[data-culinary-theme='black-truffle'],
+  :root[data-culinary-theme='truffle'],
+  [data-theme='black-truffle'],
+  [data-theme='truffle'],
+  [data-culinary-theme='black-truffle'],
+  [data-culinary-theme='truffle'],
   .theme-black-truffle {
     --accent-primary: #18181b;
     --accent-success: #34d399;
@@ -103,8 +109,10 @@
   }
 
   .dark,
-  .dark[data-theme='truffle'],
   .dark[data-theme='black-truffle'],
+  .dark[data-theme='truffle'],
+  .dark[data-culinary-theme='black-truffle'],
+  .dark[data-culinary-theme='truffle'],
   .dark.theme-black-truffle {
     --accent-primary: #f4f4f5;
     --accent-success: #34d399;
@@ -139,6 +147,8 @@
     --input: #222226;
     --ring: #f4f4f5;
 
+    --radius: 1rem;
+
     color-scheme: dark;
   }
 
@@ -146,7 +156,9 @@
      Theme 2: Saffron Citrus (Warm Mediterranean)
      ========================================== */
   :root[data-theme='saffron'],
-  :root[data-theme='olive'] {
+  :root[data-theme='olive'],
+  :root[data-culinary-theme='saffron'],
+  :root[data-culinary-theme='olive'] {
     --accent-primary: #e9c46a;
     --accent-success: #90be6d;
     --accent-warning: #f4a261;
@@ -185,7 +197,9 @@
   }
 
   .dark[data-theme='saffron'],
-  .dark[data-theme='olive'] {
+  .dark[data-theme='olive'],
+  .dark[data-culinary-theme='saffron'],
+  .dark[data-culinary-theme='olive'] {
     --accent-primary: #e9c46a;
     --accent-success: #90be6d;
     --accent-warning: #f4a261;
@@ -225,7 +239,8 @@
   /* ==========================================
      Theme 3: Midnight Plum (Neo-Bistro)
      ========================================== */
-  :root[data-theme='plum'] {
+  :root[data-theme='plum'],
+  :root[data-culinary-theme='plum'] {
     --accent-primary: #c084fc;
     --accent-success: #4ade80;
     --accent-warning: #f59e0b;
@@ -261,7 +276,8 @@
     color-scheme: light;
   }
 
-  .dark[data-theme='plum'] {
+  .dark[data-theme='plum'],
+  .dark[data-culinary-theme='plum'] {
     --accent-primary: #c084fc;
     --accent-success: #4ade80;
     --accent-warning: #f59e0b;
@@ -301,7 +317,8 @@
   /* ==========================================
      Theme 4: Nordic Salt (Scandinavian Slate & Teal)
      ========================================== */
-  :root[data-theme='nordic'] {
+  :root[data-theme='nordic'],
+  :root[data-culinary-theme='nordic'] {
     --accent-primary: #22d3ee;
     --accent-success: #10b981;
     --accent-warning: #fb923c;
@@ -337,7 +354,8 @@
     color-scheme: light;
   }
 
-  .dark[data-theme='nordic'] {
+  .dark[data-theme='nordic'],
+  .dark[data-culinary-theme='nordic'] {
     --accent-primary: #22d3ee;
     --accent-success: #10b981;
     --accent-warning: #fb923c;

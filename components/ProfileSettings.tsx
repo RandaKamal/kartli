@@ -37,6 +37,8 @@ interface ProfileSettingsProps {
     id: string;
     username: string;
     preferred_currency?: string;
+    culinary_theme?: string;
+    theme?: string;
   };
 }
 
@@ -49,7 +51,7 @@ interface CulinaryTheme {
 
 const CULINARY_THEMES: CulinaryTheme[] = [
   {
-    id: "truffle",
+    id: "black-truffle",
     name: "Black Truffle",
     subtitle: "Minimalist High-Contrast Luxury",
     colors: ["#f4f4f5", "#34d399", "#fbbf24"],
@@ -80,7 +82,11 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
   const [activeTab, setActiveTab] = useState("account");
   const { theme, setTheme } = useTheme();
-  const [culinaryTheme, setCulinaryTheme] = useState<string>("truffle");
+
+  const userTheme = user.culinary_theme || user.theme;
+  const [savedTheme, setSavedTheme] = useState<string>("black-truffle");
+  const currentTheme = userTheme || savedTheme || "black-truffle";
+
   const [preferredCurrency, setPreferredCurrency] = useState<string>(user.preferred_currency || "EUR");
   const [notifyPantry, setNotifyPantry] = useState(true);
   const [notifyShopping, setNotifyShopping] = useState(true);
@@ -100,25 +106,29 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const active =
+        userTheme ||
+        document.documentElement.dataset.culinaryTheme ||
+        document.documentElement.getAttribute("data-culinary-theme") ||
         document.documentElement.dataset.theme ||
         document.documentElement.getAttribute("data-theme") ||
         localStorage.getItem("kartli-theme") ||
         localStorage.getItem("culinary-theme") ||
-        localStorage.getItem("theme") ||
-        "truffle";
-      setCulinaryTheme(active === "black-truffle" ? "truffle" : active);
+        "black-truffle";
+      const normalized = active === "truffle" ? "black-truffle" : active;
+      setSavedTheme(normalized || "black-truffle");
     }
-  }, []);
+  }, [userTheme]);
 
   const handleCulinaryThemeChange = (themeKey: string) => {
-    const normalizedKey = themeKey === "black-truffle" ? "truffle" : themeKey;
-    setCulinaryTheme(normalizedKey);
+    const normalizedKey = themeKey === "truffle" ? "black-truffle" : themeKey;
+    setSavedTheme(normalizedKey);
     if (typeof document !== "undefined") {
       document.documentElement.dataset.theme = normalizedKey;
       document.documentElement.setAttribute("data-theme", normalizedKey);
+      document.documentElement.dataset.culinaryTheme = normalizedKey;
+      document.documentElement.setAttribute("data-culinary-theme", normalizedKey);
       localStorage.setItem("kartli-theme", normalizedKey);
       localStorage.setItem("culinary-theme", normalizedKey);
-      localStorage.setItem("theme", normalizedKey);
       document.cookie = `kartli-theme=${normalizedKey}; path=/; max-age=31536000; SameSite=Lax`;
       document.cookie = `culinary-theme=${normalizedKey}; path=/; max-age=31536000; SameSite=Lax`;
     }
@@ -297,7 +307,9 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   {CULINARY_THEMES.map((theme) => {
-                    const isSelected = culinaryTheme === theme.id;
+                    const isSelected =
+                      theme.id === currentTheme ||
+                      (theme.id === "black-truffle" && (currentTheme === "truffle" || currentTheme === "black_truffle" || !currentTheme));
                     return (
                       <button
                         key={theme.id}
