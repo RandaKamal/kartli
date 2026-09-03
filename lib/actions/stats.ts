@@ -35,6 +35,20 @@ export interface UserCategoryFootprint {
   displayText: string;
 }
 
+export interface UserSettlementStatus {
+  pendingRefundAmount: number;
+  settledRefundAmount: number;
+  pendingRefundsCount: number;
+  settledRefundsCount: number;
+  isAllSettled: boolean;
+}
+
+export interface UserHabitRole {
+  roleTitle: string;
+  roleDescription: string;
+  runPercentage: number;
+}
+
 export interface KitchenVitals {
   averageBasketSize: number;
   averageRestockLatencySeconds: number;
@@ -62,6 +76,9 @@ export interface KitchenPulseStats {
   averageBasketSize: number;
   userAverageContribution: number;
   userCategoryFootprint: UserCategoryFootprint | null;
+  userSettlement: UserSettlementStatus;
+  userTopItems: TopItemHighlight[];
+  userHabitRole: UserHabitRole;
   vitals: KitchenVitals;
   topItem: TopItemHighlight | null;
   allTopItems: TopItemHighlight[];
@@ -88,6 +105,11 @@ interface RawSqlStatsRow {
   avg_in_stock_days: string | number;
   velocity_samples: number;
   user_top_category: Array<{ name: string; amount: number | string }> | null;
+  user_pending_amount: string | number;
+  user_settled_amount: string | number;
+  user_pending_count: number;
+  user_settled_count: number;
+  user_top_items: Array<{ name: string; count: number }> | null;
 }
 
 function formatLatencyCompact(seconds: number, sampleCount: number): string {
@@ -302,6 +324,42 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
         ORDER BY store_spend DESC
         LIMIT 1
       ) uf
+    ),
+    user_settlement AS (
+      SELECT
+        COALESCE(SUM(total_claimed_amount) FILTER (WHERE is_refunded = FALSE), 0)::numeric AS pending_amount,
+        COALESCE(SUM(total_claimed_amount) FILTER (WHERE is_refunded = TRUE), 0)::numeric AS settled_amount,
+        COUNT(*) FILTER (WHERE is_refunded = FALSE)::int AS pending_count,
+        COUNT(*) FILTER (WHERE is_refunded = TRUE)::int AS settled_count
+      FROM checkouts
+      WHERE kitchen_id = $1 AND user_id = $2
+    ),
+    user_top_items AS (
+      SELECT 
+        COALESCE(json_agg(
+          json_build_object(
+            'name', item_name,
+            'count', item_count
+          ) ORDER BY item_count DESC, item_name ASC
+        ), '[]'::json) AS items
+      FROM (
+        SELECT 
+          TRIM(sli.name) AS item_name,
+          COUNT(*)::int AS item_count
+        FROM shopping_list_items sli
+        LEFT JOIN checkouts c ON sli.checkout_id = c.id
+        CROSS JOIN month_bounds mb
+        WHERE sli.kitchen_id = $1
+          AND (sli.purchased_by = $2 OR c.user_id = $2)
+          AND (
+            (c.id IS NOT NULL AND c.created_at >= mb.cur_start AND c.created_at < mb.cur_end)
+            OR (c.id IS NULL AND sli.is_purchased = TRUE AND sli.created_at >= mb.cur_start AND sli.created_at < mb.cur_end)
+          )
+          AND TRIM(sli.name) != ''
+        GROUP BY TRIM(sli.name)
+        ORDER BY item_count DESC, TRIM(sli.name) ASC
+        LIMIT 5
+      ) uti
     )
     SELECT 
       s.current_month_spend,
@@ -320,7 +378,12 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
       rm.latency_samples,
       rv.avg_in_stock_days,
       rv.velocity_samples,
-      uf.top_category AS user_top_category
+      uf.top_category AS user_top_category,
+      us.pending_amount AS user_pending_amount,
+      us.settled_amount AS user_settled_amount,
+      us.pending_count AS user_pending_count,
+      us.settled_count AS user_settled_count,
+      uti.items AS user_top_items
     FROM spend_stats s
     CROSS JOIN store_breakdown sb
     CROSS JOIN top_items ti
@@ -328,7 +391,9 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
     CROSS JOIN dead_stock ds
     CROSS JOIN restock_metrics rm
     CROSS JOIN restock_velocity rv
-    CROSS JOIN user_footprint uf;
+    CROSS JOIN user_footprint uf
+    CROSS JOIN user_settlement us
+    CROSS JOIN user_top_items uti;
   `;
 
   const { rows } = await pool.query<RawSqlStatsRow>(query, [kitchenId, targetUserId]);
@@ -395,9 +460,55 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
       categoryName: rawUserTop.name,
       amount: topAmount,
       percentage: topPct,
-      displayText: `${topPct}% of your spend is at ${rawUserTop.name}`,
+      displayText: `${rawUserTop.name} · ${topPct}% of personal spend`,
     };
   }
+
+  // User Settlement Status
+  const pendingRefundAmount = parseFloat(String(row?.user_pending_amount ?? "0"));
+  const settledRefundAmount = parseFloat(String(row?.user_settled_amount ?? "0"));
+  const pendingRefundsCount = Number(row?.user_pending_count ?? 0);
+  const settledRefundsCount = Number(row?.user_settled_count ?? 0);
+
+  const userSettlement: UserSettlementStatus = {
+    pendingRefundAmount,
+    settledRefundAmount,
+    pendingRefundsCount,
+    settledRefundsCount,
+    isAllSettled: pendingRefundsCount === 0 && pendingRefundAmount === 0,
+  };
+
+  // User Habit Role
+  const runPercentage = totalReceipts > 0 ? Math.round((userReceipts / totalReceipts) * 100) : 0;
+  let roleTitle = "Balanced Contributor";
+  let roleDescription = `You logged ${runPercentage}% of household grocery runs this month.`;
+
+  if (runPercentage >= 60) {
+    roleTitle = "Household Carrier";
+    roleDescription = `You logged ${runPercentage}% of all grocery runs this month.`;
+  } else if (runPercentage >= 35) {
+    roleTitle = "Core Supplier";
+    roleDescription = `You logged ${runPercentage}% of household checkouts.`;
+  } else if (userReceipts > 0) {
+    roleTitle = "Active Roommate";
+    roleDescription = `You contributed to ${userReceipts} grocery runs this month.`;
+  } else {
+    roleTitle = "Guest Observer";
+    roleDescription = "No grocery checkouts logged yet this month.";
+  }
+
+  const userHabitRole: UserHabitRole = {
+    roleTitle,
+    roleDescription,
+    runPercentage,
+  };
+
+  // User-Specific Stocked Items
+  const rawUserTopItems = Array.isArray(row?.user_top_items) ? row.user_top_items : [];
+  const userTopItems: TopItemHighlight[] = rawUserTopItems.map((item) => ({
+    name: item.name,
+    count: Number(item.count) || 0,
+  }));
 
   // Activity Highlights
   const rawTopItems = Array.isArray(row?.top_items) ? row.top_items : [];
@@ -467,6 +578,9 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
     averageBasketSize,
     userAverageContribution,
     userCategoryFootprint,
+    userSettlement,
+    userTopItems,
+    userHabitRole,
     vitals,
     topItem,
     allTopItems,

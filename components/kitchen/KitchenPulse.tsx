@@ -21,7 +21,9 @@ import {
   Download,
   RefreshCw,
   UserCheck,
-  Target,
+  Scale,
+  ShoppingBag,
+  Compass,
   ChevronDown,
   ChevronUp,
   Sparkles,
@@ -212,6 +214,9 @@ export function KitchenPulse({
     totalReceiptsCount,
     userAverageContribution,
     userCategoryFootprint,
+    userSettlement,
+    userTopItems,
+    userHabitRole,
     vitals,
     allTopItems,
     pantryStockRatio,
@@ -327,7 +332,7 @@ export function KitchenPulse({
         </Card>
       ) : (
         <>
-          {/* TAB 1: Kitchen Overview */}
+          {/* TAB 1: Kitchen Overview (Balanced 2x2 Grid) */}
           {activeView === "kitchen" && (
             <div className="space-y-6 animate-in fade-in-50 duration-200">
               {/* Top Hero Grid: 2-Column (matches Pantry & Shopping List grid) */}
@@ -544,7 +549,7 @@ export function KitchenPulse({
                   )}
                 </Card>
 
-                {/* Card 4: Activity & Most Needed / Circulated Supplies */}
+                {/* Card 4: Activity & Most Needed Supplies */}
                 <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
                   {/* Card Header Pattern */}
                   <div className="flex items-center justify-between gap-2">
@@ -596,26 +601,34 @@ export function KitchenPulse({
             </div>
           )}
 
-          {/* TAB 2: My Impact */}
+          {/* TAB 2: My Impact (Balanced 2x2 Grid) */}
           {activeView === "personal" && (
             <div className="space-y-6 animate-in fade-in-50 duration-200">
+              {/* Top Hero Grid: 2-Column */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                {/* Personal Card 1: Contribution & Share */}
+                {/* Card 1: My Spending & Contribution */}
                 <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+                  {/* Card Header Pattern */}
                   <div className="flex items-center justify-between gap-2">
                     <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
                       <UserCheck className="w-4 h-4 text-muted-foreground" />
-                      <span>Personal Contribution</span>
+                      <span>My Spending</span>
                     </h2>
                     <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-medium">
                       {userSpendSharePercentage}% share
                     </Badge>
                   </div>
 
+                  {/* Value & Progress Bar */}
                   <div className="space-y-2 pt-1">
-                    <span className="text-3xl sm:text-4xl font-extrabold text-foreground font-mono">
-                      {formatCurrency(userSpend, currency)}
-                    </span>
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-3xl sm:text-4xl font-extrabold text-foreground font-mono">
+                        {formatCurrency(userSpend, currency)}
+                      </span>
+                      <span className="text-xs font-mono text-muted-foreground">
+                        of {formatCurrency(totalSpendCurrentMonth, currency)} total
+                      </span>
+                    </div>
 
                     <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                       <div
@@ -625,6 +638,7 @@ export function KitchenPulse({
                     </div>
                   </div>
 
+                  {/* Bottom Mini-Row: Avg. per Trip & Receipts Logged */}
                   <div className="p-3 rounded-2xl bg-muted/40 border border-border/80 flex items-center justify-between text-xs text-muted-foreground">
                     <div className="flex items-center gap-1.5">
                       <span>Avg. per Trip:</span>
@@ -634,57 +648,194 @@ export function KitchenPulse({
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="font-mono font-bold text-foreground">{userReceiptsCount}</span>
-                      <span>of {totalReceiptsCount} receipts</span>
+                      <span>{userReceiptsCount === 1 ? "receipt logged" : "receipts logged"}</span>
                     </div>
                   </div>
                 </Card>
 
-                {/* Personal Card 2: Footprint & My Top Supplies */}
+                {/* Card 2: Settlement Status */}
                 <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+                  {/* Card Header Pattern */}
                   <div className="flex items-center justify-between gap-2">
                     <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                      <Target className="w-4 h-4 text-muted-foreground" />
-                      <span>Primary Footprint</span>
+                      <Scale className="w-4 h-4 text-muted-foreground" />
+                      <span>Refunds &amp; Balance</span>
                     </h2>
-                    <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border">
-                      My Impact
-                    </Badge>
-                  </div>
 
-                  <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/80 space-y-1">
-                    <div className="text-sm font-semibold text-foreground">
-                      {userCategoryFootprint ? userCategoryFootprint.displayText : "Balanced household contributions"}
-                    </div>
-                    {userCategoryFootprint && (
-                      <div className="text-xs font-mono text-muted-foreground">
-                        {formatCurrency(userCategoryFootprint.amount, currency)} invested in this category
-                      </div>
+                    {userSettlement.isAllSettled ? (
+                      <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-medium">
+                        All settled
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-medium gap-1">
+                        <AlertTriangle className="w-3 h-3 text-amber-400" />
+                        <span>Pending</span>
+                      </Badge>
                     )}
                   </div>
 
-                  {/* My Top Supplies */}
+                  {/* Value & Status Bar */}
                   <div className="space-y-2 pt-1">
-                    <span className="text-xs font-semibold text-foreground uppercase tracking-wider block">
-                      Kitchen MVP Supplies
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {allTopItems.slice(0, 4).map((item, index) => (
-                        <span
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-3xl sm:text-4xl font-extrabold text-foreground font-mono">
+                        {formatCurrency(userSettlement.pendingRefundAmount, currency)}
+                      </span>
+                      <span className="text-xs font-medium font-sans">
+                        {userSettlement.pendingRefundAmount > 0 ? (
+                          <span className="text-amber-400">pending reimbursement</span>
+                        ) : (
+                          <span className="text-emerald-400">All settled up</span>
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className={cn(
+                          "h-full rounded-full transition-all duration-500",
+                          userSettlement.isAllSettled ? "bg-emerald-400" : "bg-amber-400"
+                        )}
+                        style={{
+                          width: `${
+                            userSettlement.settledRefundsCount + userSettlement.pendingRefundsCount > 0
+                              ? Math.max(
+                                  Math.round(
+                                    (userSettlement.settledRefundsCount /
+                                      (userSettlement.settledRefundsCount + userSettlement.pendingRefundsCount)) *
+                                      100
+                                  ),
+                                  5
+                                )
+                              : 100
+                          }%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Sub-row: Count of settled vs. pending refunds */}
+                  <div className="p-3 rounded-2xl bg-muted/40 border border-border/80 flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-bold text-foreground">{userSettlement.settledRefundsCount}</span>
+                      <span>settled</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-bold text-foreground">{userSettlement.pendingRefundsCount}</span>
+                      <span>pending approval</span>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Secondary Grid: 2-Column */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                {/* Card 3: Items You Stocked */}
+                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+                  {/* Card Header Pattern */}
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                      <ShoppingBag className="w-4 h-4 text-muted-foreground" />
+                      <span>Your Restock Contributions</span>
+                    </h2>
+                    <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border">
+                      Top {userTopItems.length}
+                    </Badge>
+                  </div>
+
+                  {userTopItems.length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-4 text-center">
+                      No supplies checked out by you yet this month.
+                    </p>
+                  ) : (
+                    /* Itemized Compact Row List matching Pantry / Needed styling */
+                    <div className="divide-y divide-border">
+                      {userTopItems.map((item, index) => (
+                        <div
                           key={item.name}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted/60 border border-border text-xs"
+                          className="py-2.5 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition"
                         >
-                          <span className="font-mono text-muted-foreground font-medium">
-                            #{index + 1}
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <span className="text-xs font-mono text-muted-foreground w-4">
+                              #{index + 1}
+                            </span>
+                            <span className="font-medium text-foreground truncate">
+                              {item.name}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-xs text-muted-foreground">You stocked</span>
+                            <Badge
+                              variant="secondary"
+                              className="text-xs font-mono bg-muted text-foreground border border-border px-2 py-0.5"
+                            >
+                              {item.count}×
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+
+                {/* Card 4: Shopping Footprint & Habits */}
+                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+                  {/* Card Header Pattern */}
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                      <Compass className="w-4 h-4 text-muted-foreground" />
+                      <span>Shopping Habits</span>
+                    </h2>
+                    <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border">
+                      Routine
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-4 pt-1">
+                    {/* Top Store Footprint */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-foreground truncate max-w-[65%]">
+                          {userCategoryFootprint ? userCategoryFootprint.categoryName : "Balanced Spend"}
+                        </span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="font-mono text-muted-foreground">
+                            {userCategoryFootprint ? formatCurrency(userCategoryFootprint.amount, currency) : "€ 0.00"}
                           </span>
-                          <span className="font-semibold text-foreground">{item.name}</span>
                           <Badge
                             variant="secondary"
-                            className="text-[10px] font-mono bg-card text-foreground border-none px-1.5 py-0"
+                            className="text-[10px] font-mono bg-muted text-foreground border border-border px-1.5 py-0"
                           >
-                            {item.count}×
+                            {userCategoryFootprint ? `${userCategoryFootprint.percentage}%` : "0%"}
                           </Badge>
+                        </div>
+                      </div>
+
+                      <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-400 rounded-full transition-all duration-500"
+                          style={{ width: `${userCategoryFootprint ? Math.max(userCategoryFootprint.percentage, 2) : 0}%` }}
+                        />
+                      </div>
+
+                      <span className="text-[11px] text-muted-foreground block font-mono">
+                        {userCategoryFootprint ? userCategoryFootprint.displayText : "No dominant merchant footprint yet"}
+                      </span>
+                    </div>
+
+                    {/* Role Highlight: Subtle clean notification card */}
+                    <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/80 flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <span className="text-xs font-semibold text-foreground block">
+                          {userHabitRole.roleTitle}
                         </span>
-                      ))}
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {userHabitRole.roleDescription}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </Card>
