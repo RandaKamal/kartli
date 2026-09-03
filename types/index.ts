@@ -176,7 +176,8 @@ export interface UpdateKitchenNameInput {
 export interface UpdateKitchenSettingsInput {
   kitchenId: string;
   name: string;
-  spaceType: KitchenSpaceType;
+  spaceType?: KitchenSpaceType;
+  space_type?: KitchenSpaceType;
 }
 
 export interface Checkout {

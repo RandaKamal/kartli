@@ -83,14 +83,20 @@ export function AdminActiveMembersList({
                 <TableCell className="font-medium text-foreground">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-secondary text-xs font-semibold text-secondary-foreground">
+                      <AvatarFallback
+                        className={
+                          isSelf
+                            ? "bg-primary/15 text-primary border border-primary/25 font-semibold text-xs"
+                            : "bg-secondary border border-border text-foreground font-medium text-xs"
+                        }
+                      >
                         {initial}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex items-center">
                       <span>{capitalize(member.kitchen_display_name)}</span>
                       {isSelf && (
-                        <span className="ml-2 text-xs text-muted-foreground font-normal">(You)</span>
+                        <span className="ml-2 text-xs text-primary/70 font-medium">(You)</span>
                       )}
                     </div>
                   </div>
@@ -99,12 +105,15 @@ export function AdminActiveMembersList({
                   @{member.username || "—"}
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    variant="secondary"
-                    className="text-[11px] font-medium"
-                  >
-                    {member.role}
-                  </Badge>
+                  {member.role === "ADMIN" ? (
+                    <span className="bg-primary/15 text-primary border border-primary/30 text-[10px] font-bold px-2 py-0.5 rounded-md inline-block">
+                      ADMIN
+                    </span>
+                  ) : (
+                    <span className="bg-secondary text-muted-foreground border border-border text-[10px] font-medium px-2 py-0.5 rounded-md inline-block">
+                      {member.role}
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground font-mono">
                   {member.joined_at
@@ -118,9 +127,9 @@ export function AdminActiveMembersList({
                       variant="outline"
                       size="sm"
                       onClick={() => setSelectedMember(member)}
-                      className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground rounded-lg border-border"
+                      className="group h-8 px-2.5 text-xs text-muted-foreground hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 transition-colors rounded-lg border-border"
                     >
-                      <UserMinus className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
+                      <UserMinus className="w-3.5 h-3.5 mr-1 text-muted-foreground group-hover:text-red-400 transition-colors" />
                       <span>Remove</span>
                     </Button>
                   ) : isSelf ? (

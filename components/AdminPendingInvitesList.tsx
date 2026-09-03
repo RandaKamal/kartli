@@ -84,9 +84,9 @@ export function AdminPendingInvitesList({
                     <span className="font-medium text-foreground text-sm">
                       {invite.kitchen_display_name}
                     </span>
-                    <Badge variant="outline" className="text-[10px] text-muted-foreground font-mono">
+                    <span className="bg-amber-500/10 text-amber-400 border border-amber-500/25 text-[10px] font-medium px-2 py-0.5 rounded-full font-mono">
                       Pending
-                    </Badge>
+                    </span>
                   </div>
                   <span className="text-xs text-muted-foreground">
                     Created {new Date(invite.created_at).toLocaleDateString()}
@@ -99,15 +99,21 @@ export function AdminPendingInvitesList({
                   type="text"
                   readOnly
                   value={inviteUrl}
-                  className="h-8 px-2 text-xs text-muted-foreground font-mono w-40 sm:w-56 select-all rounded-lg"
+                  className="h-8 px-2 text-xs text-muted-foreground font-mono w-40 sm:w-56 select-all rounded-lg bg-secondary/50 border-input focus-visible:ring-ring"
                 />
-                <CopyButton text={inviteUrl} label="Copy" size="sm" />
+                <CopyButton
+                  text={inviteUrl}
+                  label="Copy"
+                  size="sm"
+                  variant="secondary"
+                  className="hover:bg-secondary/80 hover:text-foreground transition-colors"
+                />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => setSelectedInvite(invite)}
-                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                  className="text-muted-foreground hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent"
                   title="Cancel invite"
                   aria-label={`Cancel invite for ${invite.kitchen_display_name}`}
                 >

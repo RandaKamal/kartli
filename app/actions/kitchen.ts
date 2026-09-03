@@ -197,10 +197,11 @@ export async function updateKitchenSettingsAction(
     throw new Error("You must be logged in to update kitchen settings.");
   }
 
+  const spaceType = params.spaceType || params.space_type || "FLATSHARE";
   const validated = updateKitchenSettingsSchema.parse({
     kitchenId: params.kitchenId,
     name: params.name,
-    space_type: params.spaceType,
+    space_type: spaceType,
   });
 
   const updatedKitchen = await updateKitchenSettingsDb(

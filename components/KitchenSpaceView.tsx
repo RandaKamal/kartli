@@ -343,6 +343,11 @@ export function KitchenSpaceView({
     }
   };
 
+  const handleSelectSpaceType = (newType: KitchenSpaceType) => {
+    setDraftSpaceType(newType);
+    setSpaceType(newType);
+  };
+
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = draftName.trim();
@@ -358,6 +363,7 @@ export function KitchenSpaceView({
           kitchenId: initialKitchen.id,
           name: trimmed,
           spaceType: draftSpaceType,
+          space_type: draftSpaceType,
         });
         setKitchenName(updated.name);
         setSpaceType(updated.space_type);
@@ -366,6 +372,8 @@ export function KitchenSpaceView({
         toast.success("Kitchen settings saved successfully!");
         router.refresh();
       } catch (err: any) {
+        setSpaceType(initialKitchen.space_type || "FLATSHARE");
+        setDraftSpaceType(initialKitchen.space_type || "FLATSHARE");
         toast.error(err.message || "Failed to update kitchen settings.");
       } finally {
         setIsSavingSettings(false);
@@ -532,14 +540,14 @@ export function KitchenSpaceView({
               )}
             </TabsTrigger>
 
-            {/* Tab 4: Roommates / Flat */}
+            {/* Tab 4: Roommates / Dynamic Context */}
             <TabsTrigger
               value="members"
-              aria-label={spaceType === "FLATSHARE" ? "Roommates" : terminology.memberLabelPlural}
+              aria-label={terminology.memberTab}
               className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-white/5"
             >
               <Users className="w-4 h-4 shrink-0" />
-              <span>{spaceType === "FLATSHARE" ? "Roommates" : terminology.memberLabelPlural}</span>
+              <span>{terminology.memberTab}</span>
             </TabsTrigger>
 
             {/* Tab 5: Refunds (Admin Only) */}
@@ -680,7 +688,7 @@ export function KitchenSpaceView({
               type="button"
               onClick={() => handleTabChange("members")}
               className="flex flex-col items-center justify-center gap-0.5 py-1 select-none active:scale-95 transition-transform cursor-pointer"
-              aria-label={spaceType === "FLATSHARE" ? "Flat" : terminology.memberLabelPlural}
+              aria-label={spaceType === "FLATSHARE" ? "Flat" : terminology.memberTab}
               aria-pressed={activeTab === "members"}
             >
               <div className="relative flex items-center justify-center">
@@ -695,7 +703,7 @@ export function KitchenSpaceView({
                   activeTab === "members" ? "text-white font-semibold" : "text-zinc-500 hover:text-zinc-400"
                 }`}
               >
-                {spaceType === "FLATSHARE" ? "Flat" : terminology.memberLabel}
+                {spaceType === "FLATSHARE" ? "Flat" : terminology.memberTab}
               </span>
               <span
                 className={`w-1 h-1 rounded-full transition-all duration-200 ${
@@ -839,8 +847,10 @@ export function KitchenSpaceView({
               <div className="lg:col-span-2 space-y-6">
                 <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                      <Users className="w-4 h-4 text-muted-foreground" />
+                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-xs shrink-0">
+                        <Users className="w-4 h-4" />
+                      </div>
                       <span>{terminology.activeMembersTitle}</span>
                       <Badge variant="secondary" className="text-xs font-mono">
                         {activeMembers.length}
@@ -858,8 +868,10 @@ export function KitchenSpaceView({
 
                 <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-muted-foreground" />
+                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-xs shrink-0">
+                        <Mail className="w-4 h-4" />
+                      </div>
                       <span>Pending Invites</span>
                       <Badge variant="secondary" className="text-xs font-mono">
                         {pendingInvites.length}
@@ -880,8 +892,10 @@ export function KitchenSpaceView({
               <div className="space-y-6">
                 <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
                   <CardHeader className="p-0 space-y-1">
-                    <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-                      <UserPlus className="w-4 h-4 text-muted-foreground" />
+                    <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-xs shrink-0">
+                        <UserPlus className="w-4 h-4" />
+                      </div>
                       <span>{terminology.inviteCardTitle}</span>
                     </CardTitle>
                     <CardDescription className="text-xs text-muted-foreground">
@@ -910,7 +924,7 @@ export function KitchenSpaceView({
                       <Button
                         type="submit"
                         disabled={isInviting || !inviteMemberName.trim()}
-                        className="w-full h-10 rounded-xl font-semibold shadow-sm text-xs sm:text-sm gap-2"
+                        className="w-full h-10 rounded-xl font-semibold shadow-sm text-xs sm:text-sm gap-2 bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-[0.98] cursor-pointer"
                       >
                         {isInviting && <Loader2 className="w-4 h-4 animate-spin" />}
                         <span>Invite {terminology.memberLabel} &amp; Generate Link</span>
@@ -925,8 +939,10 @@ export function KitchenSpaceView({
             <div className="max-w-2xl mx-auto space-y-6">
               <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-5">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                    <Users className="w-4 h-4 text-muted-foreground" />
+                  <h2 className="text-base font-semibold text-foreground flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-xs shrink-0">
+                      <Users className="w-4 h-4" />
+                    </div>
                     <span>{terminology.kitchenMembersTitle}</span>
                     <Badge variant="secondary" className="text-xs font-mono">
                       {activeMembers.length}
@@ -942,7 +958,13 @@ export function KitchenSpaceView({
                     >
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-secondary text-xs font-semibold text-secondary-foreground">
+                          <AvatarFallback
+                            className={
+                              member.user_id === currentUserId
+                                ? "bg-primary/15 text-primary border border-primary/25 font-semibold text-xs"
+                                : "bg-secondary border border-border text-foreground font-medium text-xs"
+                            }
+                          >
                             {member.kitchen_display_name.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -950,7 +972,7 @@ export function KitchenSpaceView({
                           <div className="font-medium text-foreground">
                             {capitalize(member.kitchen_display_name)}
                             {member.user_id === currentUserId && (
-                              <span className="ml-2 text-xs text-muted-foreground font-normal">(You)</span>
+                              <span className="ml-2 text-xs text-primary/70 font-medium">(You)</span>
                             )}
                           </div>
                           <div className="text-xs text-muted-foreground font-mono">
@@ -963,12 +985,15 @@ export function KitchenSpaceView({
                         <span className="text-xs text-muted-foreground font-mono hidden sm:inline">
                           {member.joined_at ? new Date(member.joined_at).toLocaleDateString() : ""}
                         </span>
-                        <Badge
-                          variant="secondary"
-                          className="text-[11px] font-medium"
-                        >
-                          {member.role}
-                        </Badge>
+                        {member.role === "ADMIN" ? (
+                          <span className="bg-primary/15 text-primary border border-primary/30 text-[10px] font-bold px-2 py-0.5 rounded-md inline-block">
+                            ADMIN
+                          </span>
+                        ) : (
+                          <span className="bg-secondary text-muted-foreground border border-border text-[10px] font-medium px-2 py-0.5 rounded-md inline-block">
+                            {member.role}
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1073,7 +1098,7 @@ export function KitchenSpaceView({
                         {/* Option 1: Flatshare */}
                         <button
                           type="button"
-                          onClick={() => setDraftSpaceType("FLATSHARE")}
+                          onClick={() => handleSelectSpaceType("FLATSHARE")}
                           className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
                             draftSpaceType === "FLATSHARE"
                               ? "border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_15px_-3px_rgba(16,185,129,0.12)] text-emerald-200"
@@ -1096,7 +1121,7 @@ export function KitchenSpaceView({
                         {/* Option 2: Family */}
                         <button
                           type="button"
-                          onClick={() => setDraftSpaceType("FAMILY")}
+                          onClick={() => handleSelectSpaceType("FAMILY")}
                           className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
                             draftSpaceType === "FAMILY"
                               ? "border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_15px_-3px_rgba(16,185,129,0.12)] text-emerald-200"
@@ -1119,7 +1144,7 @@ export function KitchenSpaceView({
                         {/* Option 3: Office */}
                         <button
                           type="button"
-                          onClick={() => setDraftSpaceType("OFFICE")}
+                          onClick={() => handleSelectSpaceType("OFFICE")}
                           className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
                             draftSpaceType === "OFFICE"
                               ? "border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_15px_-3px_rgba(16,185,129,0.12)] text-emerald-200"
@@ -1142,7 +1167,7 @@ export function KitchenSpaceView({
                         {/* Option 4: Neutral */}
                         <button
                           type="button"
-                          onClick={() => setDraftSpaceType("NEUTRAL")}
+                          onClick={() => handleSelectSpaceType("NEUTRAL")}
                           className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
                             draftSpaceType === "NEUTRAL"
                               ? "border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_15px_-3px_rgba(16,185,129,0.12)] text-emerald-200"
