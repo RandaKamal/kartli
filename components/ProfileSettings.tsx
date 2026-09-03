@@ -1,10 +1,24 @@
 "use client";
 
-import { useState } from "react";
-import { User, Shield, Bell, Key, Palette, AlertOctagon, Sun, Moon, Laptop } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  User,
+  Shield,
+  Bell,
+  Key,
+  Palette,
+  AlertOctagon,
+  Sun,
+  Moon,
+  Laptop,
+  Check,
+  UtensilsCrossed,
+  DollarSign,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,30 +28,113 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { CopyButton } from "@/components/CopyButton";
 import { logoutAction } from "@/app/actions/auth";
+import { updatePreferredCurrencyAction } from "@/app/actions/user";
+import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { toast } from "sonner";
 
 interface ProfileSettingsProps {
   user: {
     id: string;
     username: string;
+    preferred_currency?: string;
   };
 }
 
+interface CulinaryTheme {
+  id: string;
+  name: string;
+  subtitle: string;
+  colors: [string, string, string]; // [Primary, Success/In-Cart, Warning/Needed]
+}
+
+const CULINARY_THEMES: CulinaryTheme[] = [
+  {
+    id: "saffron",
+    name: "Saffron Citrus",
+    subtitle: "Warm Mediterranean",
+    colors: ["#e9c46a", "#90be6d", "#f4a261"],
+  },
+  {
+    id: "truffle",
+    name: "Black Truffle",
+    subtitle: "Minimalist High-Contrast Luxury",
+    colors: ["#f4f4f5", "#34d399", "#fbbf24"],
+  },
+  {
+    id: "plum",
+    name: "Midnight Plum",
+    subtitle: "Neo-Bistro",
+    colors: ["#c084fc", "#4ade80", "#f59e0b"],
+  },
+  {
+    id: "nordic",
+    name: "Nordic Salt",
+    subtitle: "Scandinavian Slate & Teal",
+    colors: ["#22d3ee", "#10b981", "#fb923c"],
+  },
+];
+
 export function ProfileSettings({ user }: ProfileSettingsProps) {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+
+  const [activeTab, setActiveTab] = useState("account");
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const [culinaryTheme, setCulinaryTheme] = useState<string>("saffron");
+  const [preferredCurrency, setPreferredCurrency] = useState<string>(user.preferred_currency || "EUR");
   const [notifyPantry, setNotifyPantry] = useState(true);
   const [notifyShopping, setNotifyShopping] = useState(true);
   const [notifyMembers, setNotifyMembers] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  useState(() => {
-    // client effect
-  });
+  useEffect(() => {
+    if (tabParam === "settings" || tabParam === "preferences") {
+      setActiveTab("preferences");
+    } else if (tabParam === "security") {
+      setActiveTab("security");
+    } else if (tabParam === "account") {
+      setActiveTab("account");
+    }
+  }, [tabParam]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const active =
+        document.documentElement.dataset.theme ||
+        document.documentElement.getAttribute("data-theme") ||
+        localStorage.getItem("kartli-theme") ||
+        localStorage.getItem("culinary-theme") ||
+        "saffron";
+      setCulinaryTheme(active);
+    }
+  }, []);
+
+  const handleCulinaryThemeChange = (themeKey: string) => {
+    setCulinaryTheme(themeKey);
+    if (typeof document !== "undefined") {
+      document.documentElement.dataset.theme = themeKey;
+      document.documentElement.setAttribute("data-theme", themeKey);
+      localStorage.setItem("kartli-theme", themeKey);
+      localStorage.setItem("culinary-theme", themeKey);
+      document.cookie = `kartli-theme=${themeKey}; path=/; max-age=31536000; SameSite=Lax`;
+      document.cookie = `culinary-theme=${themeKey}; path=/; max-age=31536000; SameSite=Lax`;
+    }
+    const selected = CULINARY_THEMES.find((t) => t.id === themeKey);
+    toast.success(`Theme updated to ${selected?.name || themeKey}`);
+  };
 
   const initial = (user.username || "?").charAt(0).toUpperCase();
 
-  const handleSavePreferences = () => {
-    toast.success("Preferences updated successfully");
+  const handleSavePreferences = async () => {
+    setIsSaving(true);
+    try {
+      await updatePreferredCurrencyAction(preferredCurrency);
+      toast.success("Preferences updated successfully");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update preferences");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSaveSecurity = (e: React.FormEvent) => {
@@ -47,7 +144,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="account" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto mb-6 bg-muted/70 border border-border/80 p-1 rounded-2xl">
           <TabsTrigger value="account" className="rounded-xl text-xs font-semibold">
             Account
@@ -130,164 +227,226 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
         {/* Tab 2: Preferences */}
         <TabsContent value="preferences" className="space-y-6 animate-in fade-in-50">
           <Card className="border border-border/80 bg-card rounded-3xl p-6 sm:p-8 space-y-6">
-            {/* Appearance / Theme Selection */}
+            {/* 1. Appearance / Light & Dark Mode + Culinary Color Themes */}
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <div className="space-y-0.5">
+                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                    <Palette className="w-5 h-5 text-accent-primary" />
+                    <span>Light &amp; Dark Mode</span>
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Choose your preferred contrast mode (Light, Dark, or System default).
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setTheme("light")}
+                    className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
+                      theme === "light"
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <Sun className="w-4 h-4" />
+                    <span>Light</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTheme("dark")}
+                    className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
+                      theme === "dark"
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <Moon className="w-4 h-4" />
+                    <span>Dark</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTheme("system")}
+                    className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
+                      theme === "system"
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <Laptop className="w-4 h-4" />
+                    <span>System</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Culinary Color Themes Card Grid */}
+              <div className="space-y-3">
+                <div className="space-y-0.5">
+                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                    <UtensilsCrossed className="w-5 h-5 text-accent-primary" />
+                    <span>Culinary Color Themes</span>
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Choose an artisanal food-inspired palette for your personal kartli workspace.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {CULINARY_THEMES.map((theme) => {
+                    const isSelected = culinaryTheme === theme.id;
+                    return (
+                      <button
+                        key={theme.id}
+                        type="button"
+                        onClick={() => handleCulinaryThemeChange(theme.id)}
+                        className={`flex flex-col justify-between p-4 rounded-xl border transition-all h-[110px] text-left cursor-pointer ${
+                          isSelected
+                            ? "border-accent-primary bg-accent-primary/5 ring-2 ring-accent-primary/20 shadow-xs"
+                            : "bg-card border-border hover:border-primary/60 hover:bg-muted/30"
+                        }`}
+                      >
+                        {/* Top Row */}
+                        <div className="flex items-start justify-between gap-2 w-full">
+                          <div>
+                            <div className="text-sm font-semibold text-foreground">
+                              {theme.name}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              {theme.subtitle}
+                            </div>
+                          </div>
+
+                          {isSelected ? (
+                            <div className="w-5 h-5 rounded-full bg-accent-primary text-primary-foreground flex items-center justify-center shrink-0">
+                              <Check className="w-3 h-3 stroke-[3]" />
+                            </div>
+                          ) : (
+                            <div className="w-5 h-5 rounded-full border border-border shrink-0" />
+                          )}
+                        </div>
+
+                        {/* Bottom Row */}
+                        <div className="flex items-center justify-between pt-2 border-t border-border/40 mt-auto w-full">
+                          <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+                            Palette
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            {theme.colors.map((hex, idx) => (
+                              <span
+                                key={idx}
+                                className="w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/10 shrink-0 shadow-xs"
+                                style={{ backgroundColor: hex }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <Separator className="bg-border/60" />
+
+            {/* 2. Notification Preferences & Alerts */}
+            <div className="space-y-4">
+              <CardHeader className="p-0 space-y-1">
+                <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-muted-foreground" />
+                  <span>Notification Preferences</span>
+                </CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">
+                  Configure when and how you receive grocery and kitchen status alerts.
+                </CardDescription>
+              </CardHeader>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="notify-pantry" className="text-sm font-medium text-foreground cursor-pointer">
+                      Pantry Restock Alerts
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Get notified when an item in your kitchen is marked as Empty.
+                    </p>
+                  </div>
+                  <Switch
+                    id="notify-pantry"
+                    checked={notifyPantry}
+                    onCheckedChange={setNotifyPantry}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="notify-shopping" className="text-sm font-medium text-foreground cursor-pointer">
+                      Shopping Cart &amp; Checkout Updates
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Receive confirmation when a roommate checks out groceries.
+                    </p>
+                  </div>
+                  <Switch
+                    id="notify-shopping"
+                    checked={notifyShopping}
+                    onCheckedChange={setNotifyShopping}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="notify-members" className="text-sm font-medium text-foreground cursor-pointer">
+                      Member Activity
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Alert when a new member claims an invite link in your kitchen.
+                    </p>
+                  </div>
+                  <Switch
+                    id="notify-members"
+                    checked={notifyMembers}
+                    onCheckedChange={setNotifyMembers}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator className="bg-border/60" />
+
+            {/* 3. Preferred Currency (Pinned at bottom as secondary setting) */}
             <div className="space-y-3">
               <div className="space-y-0.5">
                 <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                  <Palette className="w-5 h-5 text-accent-primary" />
-                  <span>Theme &amp; Appearance</span>
+                  <DollarSign className="w-5 h-5 text-accent-primary" />
+                  <span>Preferred Currency</span>
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Choose your preferred visual mode for kartli.
+                  Set your default currency for receipts, shopping cart items, and automated refund conversions.
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 pt-1">
-                <Button
-                  type="button"
-                  variant={theme === "light" ? "default" : "secondary"}
-                  onClick={() => setTheme("light")}
-                  className="h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border border-border/60 shadow-xs"
+              <div className="pt-1 max-w-sm">
+                <select
+                  id="preferred-currency-select"
+                  value={preferredCurrency}
+                  onChange={(e) => setPreferredCurrency(e.target.value)}
+                  className="w-full h-10 rounded-xl bg-card border border-border px-3 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-xs"
+                  aria-label="Preferred Currency"
                 >
-                  <Sun className="w-4 h-4" />
-                  <span>Light</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant={theme === "dark" ? "default" : "secondary"}
-                  onClick={() => setTheme("dark")}
-                  className="h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border border-border/60 shadow-xs"
-                >
-                  <Moon className="w-4 h-4" />
-                  <span>Dark</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant={theme === "system" ? "default" : "secondary"}
-                  onClick={() => setTheme("system")}
-                  className="h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border border-border/60 shadow-xs"
-                >
-                  <Laptop className="w-4 h-4" />
-                  <span>System</span>
-                </Button>
+                  {SUPPORTED_CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code} className="bg-card text-foreground">
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            <Separator className="bg-border/60" />
-
-            {/* Notification Preferences */}
-            <CardHeader className="p-0 space-y-1">
-              <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-                <Bell className="w-5 h-5 text-muted-foreground" />
-                <span>Notification Preferences</span>
-              </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
-                Configure when and how you receive grocery and kitchen status alerts.
-              </CardDescription>
-            </CardHeader>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
-                <div className="space-y-0.5">
-                  <Label htmlFor="notify-pantry" className="text-sm font-medium text-foreground cursor-pointer">
-                    Pantry Restock Alerts
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Get notified when an item in your kitchen is marked as Empty.
-                  </p>
-                </div>
-                <Switch
-                  id="notify-pantry"
-                  checked={notifyPantry}
-                  onCheckedChange={setNotifyPantry}
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
-                <div className="space-y-0.5">
-                  <Label htmlFor="notify-shopping" className="text-sm font-medium text-foreground cursor-pointer">
-                    Shopping Cart &amp; Checkout Updates
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Receive confirmation when a roommate checks out groceries.
-                  </p>
-                </div>
-                <Switch
-                  id="notify-shopping"
-                  checked={notifyShopping}
-                  onCheckedChange={setNotifyShopping}
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
-                <div className="space-y-0.5">
-                  <Label htmlFor="notify-members" className="text-sm font-medium text-foreground cursor-pointer">
-                    Member Activity
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Alert when a new member claims an invite link in your kitchen.
-                  </p>
-                </div>
-                <Switch
-                  id="notify-members"
-                  checked={notifyMembers}
-                  onCheckedChange={setNotifyMembers}
-                />
-              </div>
-            </div>
-
-            <Separator className="bg-border/60" />
-
-            {/* Design System Token Palette Showcase */}
-            <div className="space-y-3">
-              <div className="space-y-0.5">
-                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-accent-primary" />
-                  <span>kartli Brand Palette</span>
-                </h4>
-                <p className="text-xs text-muted-foreground">
-                  Warm artisanal culinary colors with soft contrast for daily household kitchen use.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                <div className="p-3 rounded-2xl bg-muted/40 border border-border/70 space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 rounded-full bg-accent-primary shadow-xs" />
-                    <span className="text-xs font-semibold text-foreground">Hearth Ember</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">Terracotta Brand</p>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-muted/40 border border-border/70 space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 rounded-full bg-emerald-600 dark:bg-emerald-500 shadow-xs" />
-                    <span className="text-xs font-semibold text-foreground">Fresh Basil</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">Restocked / Success</p>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-muted/40 border border-border/70 space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 rounded-full bg-destructive shadow-xs" />
-                    <span className="text-xs font-semibold text-foreground">Pomegranate</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">Destructive Action</p>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-muted/40 border border-border/70 space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 rounded-full bg-amber-500 shadow-xs" />
-                    <span className="text-xs font-semibold text-foreground">Honey Ochre</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">Needed / Open Item</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <Button onClick={handleSavePreferences} className="rounded-xl font-semibold">
-                Save Preferences
+            <div className="pt-3 flex justify-end">
+              <Button onClick={handleSavePreferences} disabled={isSaving} className="rounded-xl font-semibold">
+                {isSaving ? "Saving..." : "Save Preferences"}
               </Button>
             </div>
           </Card>

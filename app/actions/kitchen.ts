@@ -12,13 +12,21 @@ import {
   getKitchenMembersWithUsers,
   isUserKitchenAdmin,
   getUserKitchens,
+  updateKitchenName as updateKitchenNameDb,
+  updateKitchenSettings as updateKitchenSettingsDb,
+  regeneratePublicViewToken as regeneratePublicViewTokenDb,
+  leaveKitchen as leaveKitchenDb,
 } from "@/lib/kitchen";
 import type {
   CreateKitchenInput,
   CreateKitchenResult,
   Kitchen,
   KitchenMemberWithUser,
+  KitchenSpaceType,
+  UpdateKitchenNameInput,
+  UpdateKitchenSettingsInput,
 } from "@/types";
+import { updateKitchenSettingsSchema } from "@/lib/validations/kitchen";
 
 /**
  * Server Action to create a kitchen and redirect to the admin dashboard.
@@ -45,6 +53,11 @@ export async function createKitchenFormAction(formData: FormData) {
   }
 
   const name = String(formData.get("name") || "").trim();
+  const spaceTypeRaw = String(formData.get("spaceType") || "FLATSHARE").toUpperCase();
+  const spaceType: KitchenSpaceType =
+    spaceTypeRaw === "FAMILY" || spaceTypeRaw === "NEUTRAL" || spaceTypeRaw === "OFFICE"
+      ? (spaceTypeRaw as KitchenSpaceType)
+      : "FLATSHARE";
   const adminDisplayName = String(formData.get("adminDisplayName") || session.user.username || "").trim();
   const rawMembers = String(formData.get("members") || "");
   const memberNames = rawMembers
@@ -59,6 +72,7 @@ export async function createKitchenFormAction(formData: FormData) {
   const result = await createKitchen(
     {
       name,
+      spaceType,
       memberNames,
       adminDisplayName,
     },
@@ -125,6 +139,8 @@ export async function removeKitchenMemberAction(
 export async function getKitchenMembersAction(
   kitchenId: string
 ): Promise<KitchenMemberWithUser[]> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("You must be logged in.");
   return await getKitchenMembersWithUsers(kitchenId);
 }
 
@@ -139,3 +155,114 @@ export async function getMyKitchensAction() {
 
   return await getUserKitchens(session.user.id);
 }
+
+/**
+ * Server Action for an admin to rename a kitchen.
+ * Supports passing either an object { kitchenId, newName } or two separate string arguments.
+ */
+export async function updateKitchenName(
+  params: UpdateKitchenNameInput | string,
+  maybeNewName?: string
+): Promise<Kitchen> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in to rename the kitchen.");
+  }
+
+  const kitchenId = typeof params === "object" ? params.kitchenId : params;
+  const newName = typeof params === "object" ? params.newName : (maybeNewName ?? "");
+
+  const updatedKitchen = await updateKitchenNameDb(kitchenId, newName, session.user.id);
+
+  revalidatePath(`/kitchen/${kitchenId}`);
+  revalidatePath(`/kitchen/${kitchenId}/admin`);
+  revalidatePath(`/kitchen/${kitchenId}/member`);
+  revalidatePath(`/kitchen/${kitchenId}/admin/purchases`);
+  revalidatePath(`/kitchen/view/${updatedKitchen.public_view_token}`);
+  revalidatePath("/");
+
+  return updatedKitchen;
+}
+
+export const updateKitchenNameAction = updateKitchenName;
+
+/**
+ * Server Action for an admin to update kitchen settings including name and space type.
+ */
+export async function updateKitchenSettingsAction(
+  params: UpdateKitchenSettingsInput
+): Promise<Kitchen> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in to update kitchen settings.");
+  }
+
+  const validated = updateKitchenSettingsSchema.parse({
+    kitchenId: params.kitchenId,
+    name: params.name,
+    space_type: params.spaceType,
+  });
+
+  const updatedKitchen = await updateKitchenSettingsDb(
+    validated.kitchenId,
+    validated.name,
+    validated.space_type,
+    session.user.id
+  );
+
+  revalidatePath(`/kitchen/${params.kitchenId}`);
+  revalidatePath(`/kitchen/${params.kitchenId}/admin`);
+  revalidatePath(`/kitchen/${params.kitchenId}/member`);
+  revalidatePath(`/kitchen/${params.kitchenId}/admin/purchases`);
+  revalidatePath(`/kitchen/view/${updatedKitchen.public_view_token}`);
+  revalidatePath("/");
+
+  return updatedKitchen;
+}
+
+export const updateKitchenSettings = updateKitchenSettingsAction;
+
+/**
+ * Server Action for an admin to regenerate the disposable public supermarket guest token.
+ * Instantly revokes previously shared guest links.
+ */
+export async function regeneratePublicViewTokenAction(
+  params: { kitchenId: string } | string
+): Promise<{ success: boolean; newToken: string }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in to regenerate the guest link.");
+  }
+
+  const kitchenId = typeof params === "object" ? params.kitchenId : params;
+  const newToken = await regeneratePublicViewTokenDb(kitchenId, session.user.id);
+
+  revalidatePath(`/kitchen/${kitchenId}`);
+  revalidatePath(`/kitchen/${kitchenId}/admin`);
+  revalidatePath(`/kitchen/${kitchenId}/member`);
+  revalidatePath(`/kitchen/view/${newToken}`);
+
+  return { success: true, newToken };
+}
+
+export const regeneratePublicViewToken = regeneratePublicViewTokenAction;
+
+/**
+ * Server Action for a regular member to leave a kitchen.
+ */
+export async function leaveKitchenAction(kitchenId: string): Promise<{ success: boolean }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in to leave a kitchen.");
+  }
+
+  await leaveKitchenDb(kitchenId, session.user.id);
+  revalidatePath("/");
+  revalidatePath("/dashboard");
+  revalidatePath(`/kitchen/${kitchenId}`);
+  return { success: true };
+}
+
+export const leaveKitchen = leaveKitchenAction;
+
+

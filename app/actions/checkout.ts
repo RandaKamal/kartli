@@ -3,11 +3,13 @@
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { getUserMembership, isUserKitchenAdmin } from "@/lib/kitchen";
+import { pool } from "@/lib/db";
 import {
   createCheckout,
   getKitchenCheckouts,
   getUserCheckouts,
   refundCheckout,
+  deleteReceiptForSide,
 } from "@/lib/pantry";
 import type { Checkout, CheckoutWithDetails } from "@/types";
 
@@ -20,14 +22,28 @@ async function requireMembership(kitchenId: string): Promise<string> {
 }
 
 function revalidateKitchen(kitchenId: string) {
-  revalidatePath(`/kitchen/${kitchenId}/member`);
-  revalidatePath(`/kitchen/${kitchenId}/admin`);
-  revalidatePath(`/kitchen/${kitchenId}/admin/purchases`);
+  revalidatePath(`/kitchen/${kitchenId}`);
 }
 
-export async function checkoutAction(kitchenId: string, receiptFilename: string): Promise<Checkout> {
+export async function getPendingRefundsCountAction(kitchenId: string): Promise<number> {
+  const session = await auth();
+  if (!session?.user?.id) return 0;
+  const isAdmin = await isUserKitchenAdmin(kitchenId, session.user.id);
+  if (!isAdmin) return 0;
+  const { rows } = await pool.query<{ count: string }>(
+    `SELECT COUNT(*) AS count FROM checkouts WHERE kitchen_id = $1 AND is_refunded = FALSE`,
+    [kitchenId]
+  );
+  return parseInt(rows[0]?.count || "0", 10);
+}
+
+export async function checkoutAction(
+  kitchenId: string,
+  receiptFilename?: string | null,
+  options?: { storeName?: string | null; note?: string | null; totalAmount?: number; currency?: string }
+): Promise<Checkout> {
   const userId = await requireMembership(kitchenId);
-  const checkout = await createCheckout(kitchenId, userId, receiptFilename);
+  const checkout = await createCheckout(kitchenId, userId, receiptFilename, options);
   revalidateKitchen(kitchenId);
   return checkout;
 }
@@ -51,4 +67,18 @@ export async function refundCheckoutAction(kitchenId: string, checkoutId: string
   const result = await refundCheckout(kitchenId, checkoutId, session.user.id);
   revalidateKitchen(kitchenId);
   return result;
+}
+
+export async function deleteReceiptForAdminAction(kitchenId: string, receiptId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("You must be logged in.");
+  await deleteReceiptForSide(kitchenId, receiptId, session.user.id, "admin");
+  revalidateKitchen(kitchenId);
+}
+
+export async function deleteReceiptForMemberAction(kitchenId: string, receiptId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("You must be logged in.");
+  await deleteReceiptForSide(kitchenId, receiptId, session.user.id, "member");
+  revalidateKitchen(kitchenId);
 }

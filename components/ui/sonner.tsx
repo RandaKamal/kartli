@@ -24,11 +24,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
           error:
             "group-[.toaster]:border-destructive/40 group-[.toaster]:text-destructive",
           success:
-            "group-[.toaster]:border-emerald-500/40 group-[.toaster]:text-emerald-700 dark:group-[.toaster]:text-emerald-300",
+            "group-[.toaster]:border-accent-success/40 group-[.toaster]:text-accent-success",
           warning:
-            "group-[.toaster]:border-amber-500/40 group-[.toaster]:text-amber-700 dark:group-[.toaster]:text-amber-300",
+            "group-[.toaster]:border-accent-warning/40 group-[.toaster]:text-accent-warning",
           info:
-            "group-[.toaster]:border-accent-primary/40 group-[.toaster]:text-accent-primary",
+            "group-[.toaster]:border-accent-brand/40 group-[.toaster]:text-accent-brand",
         },
       }}
       {...props}

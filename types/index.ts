@@ -6,12 +6,18 @@ import type { DefaultSession } from "next-auth";
 export type KitchenRole = "ADMIN" | "MEMBER";
 
 /**
+ * Household / Space preset controlling terminology across the app.
+ */
+export type KitchenSpaceType = "FLATSHARE" | "FAMILY" | "NEUTRAL" | "OFFICE";
+
+/**
  * Represents a user record in the `users` table.
  */
 export interface DbUser {
   id: string;
   username: string;
   password_hash: string;
+  preferred_currency?: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -22,6 +28,7 @@ export interface DbUser {
 export interface Kitchen {
   id: string;
   name: string;
+  space_type: KitchenSpaceType;
   public_view_token: string;
   created_at: Date;
   updated_at: Date;
@@ -53,6 +60,7 @@ export interface KitchenMemberWithUser extends KitchenMember {
  */
 export interface CreateKitchenInput {
   name: string;
+  spaceType?: KitchenSpaceType;
   memberNames?: string[];
   adminDisplayName?: string;
 }
@@ -119,6 +127,7 @@ export type ClaimInviteResult =
 export interface PublicKitchenContext {
   id: string;
   name: string;
+  space_type?: KitchenSpaceType;
   public_view_token: string;
   created_at: Date;
   members: Array<{
@@ -147,27 +156,75 @@ export interface PantryItem {
 export interface ShoppingListItem {
   id: string;
   kitchen_id: string;
-  pantry_item_id: string;
+  pantry_item_id: string | null;
   name: string;
+  item_price: number | null;
+  currency?: string;
   is_purchased: boolean;
   purchased_by: string | null;
+  purchased_by_name?: string | null;
+  is_guest_staged: boolean;
   checkout_id: string | null;
   created_at: Date;
+}
+
+export interface UpdateKitchenNameInput {
+  kitchenId: string;
+  newName: string;
+}
+
+export interface UpdateKitchenSettingsInput {
+  kitchenId: string;
+  name: string;
+  spaceType: KitchenSpaceType;
 }
 
 export interface Checkout {
   id: string;
   kitchen_id: string;
   user_id: string;
-  receipt_filename: string;
+  store_name: string | null;
+  note: string | null;
+  total_claimed_amount: number;
+  total_receipt_amount: number | null;
+  receipt_filename: string | null;
   is_refunded: boolean;
+  currency?: string;
   created_at: Date;
   refunded_at: Date | null;
+  receipt_deleted_at: Date | null;
 }
 
 export interface CheckoutWithDetails extends Checkout {
   username: string | null;
   items: ShoppingListItem[];
+  receipts: CheckoutReceipt[];
+  totalReceiptsEverAttached: number;
+}
+
+export interface CheckoutReceipt {
+  id: string;
+  checkout_id: string;
+  receipt_filename: string;
+  created_at: Date;
+  deleted_by_admin_at: Date | null;
+  deleted_by_member_at: Date | null;
+}
+
+
+export interface ReceiptLine {
+  raw_name: string;
+  price: number;
+  quantity: number;
+  matched_cart_item_id: string | null;
+}
+
+export interface ScanReceiptResult {
+  receiptPath: string;
+  storeName: string;
+  currency: string;
+  totalReceiptAmount: number;
+  lines: ReceiptLine[];
 }
 
 
@@ -179,11 +236,13 @@ declare module "next-auth" {
     user: {
       id: string;
       username: string;
+      preferred_currency?: string;
     } & DefaultSession["user"];
   }
 
   interface User {
     id?: string;
     username?: string;
+    preferred_currency?: string;
   }
 }

@@ -1,28 +1,71 @@
 import { auth } from "@/auth";
-import { redirect } from "next/navigation";
-import { isUserKitchenAdmin, getUserMembership } from "@/lib/kitchen";
+import { redirect, notFound } from "next/navigation";
+import { headers } from "next/headers";
+import {
+  getKitchenById,
+  getUserMembership,
+} from "@/lib/kitchen";
+import { getPantryItems, getShoppingListItems } from "@/lib/pantry";
+import { getKitchenStats } from "@/lib/actions/stats";
+import { KitchenSpaceView } from "@/components/KitchenSpaceView";
 
-export default async function KitchenRootPage({
+export default async function KitchenPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ tab?: string }>;
 }) {
-  const { id } = await params;
-  const session = await auth();
+  const [{ id }, session, headerList, resolvedSearchParams] = await Promise.all([
+    params,
+    auth(),
+    headers(),
+    searchParams ? searchParams : Promise.resolve(undefined),
+  ]);
 
-  if (!session?.user) {
+  if (!session?.user?.id) {
     redirect(`/login?callbackUrl=/kitchen/${id}`);
   }
 
-  const isAdmin = await isUserKitchenAdmin(id, session.user.id);
-  if (isAdmin) {
-    redirect(`/kitchen/${id}/admin`);
+  const initialTab = resolvedSearchParams?.tab || "kitchen";
+
+  // Concurrent execution of all primary data queries via Promise.all
+  const [membership, kitchen, pantryItems, shoppingListItems, initialPulseStats] = await Promise.all([
+    getUserMembership(id, session.user.id),
+    getKitchenById(id),
+    getPantryItems(id),
+    getShoppingListItems(id),
+    initialTab === "pulse"
+      ? getKitchenStats(id, session.user.id).catch(() => undefined)
+      : Promise.resolve(undefined),
+  ]);
+
+  if (!membership) {
+    redirect("/");
   }
 
-  const membership = await getUserMembership(id, session.user.id);
-  if (membership) {
-    redirect(`/kitchen/${id}/member`);
+  if (!kitchen) {
+    notFound();
   }
 
-  redirect("/");
+  const host = headerList.get("x-forwarded-host") || headerList.get("host") || "";
+  const protocol = headerList.get("x-forwarded-proto") || "http";
+  const baseUrl = host ? `${protocol}://${host}` : "";
+
+  const preferredCurrency = session.user.preferred_currency || "EUR";
+
+  return (
+    <KitchenSpaceView
+      kitchen={kitchen}
+      membership={membership}
+      pantryItems={pantryItems}
+      shoppingListItems={shoppingListItems}
+      initialPulseStats={initialPulseStats}
+      currentUserId={session.user.id}
+      preferredCurrency={preferredCurrency}
+      userPreferredCurrency={preferredCurrency}
+      baseUrl={baseUrl}
+      initialTab={initialTab}
+    />
+  );
 }

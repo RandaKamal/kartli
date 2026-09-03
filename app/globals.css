@@ -3,21 +3,26 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-accent-primary: var(--brand-primary);
-  --color-accent-secondary: var(--brand-secondary);
-  --color-accent-warm: var(--brand-warm);
-  --color-accent-muted-green: var(--brand-success);
-  --color-accent-green: var(--brand-success);
-  --color-accent-success: var(--brand-success);
-  --color-accent-danger: var(--brand-danger);
-  --color-accent-light: var(--brand-light);
+  --color-accent-brand: var(--accent-primary);
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-warning: var(--accent-warning);
+  --color-accent-success: var(--accent-success);
+  --color-accent-sage: var(--accent-success);
+  --color-accent-ochre: var(--accent-warning);
 
-  --color-brand-primary: var(--brand-primary);
-  --color-brand-secondary: var(--brand-secondary);
-  --color-brand-warm: var(--brand-warm);
-  --color-brand-success: var(--brand-success);
-  --color-brand-danger: var(--brand-danger);
-  --color-brand-light: var(--brand-light);
+  --color-accent-secondary: var(--accent-success);
+  --color-accent-warm: var(--accent-warning);
+  --color-accent-muted-green: var(--accent-success);
+  --color-accent-green: var(--accent-success);
+  --color-accent-danger: var(--destructive);
+  --color-accent-light: var(--muted);
+
+  --color-brand-primary: var(--accent-primary);
+  --color-brand-secondary: var(--accent-success);
+  --color-brand-warm: var(--accent-warning);
+  --color-brand-success: var(--accent-success);
+  --color-brand-danger: var(--destructive);
+  --color-brand-light: var(--muted);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -53,88 +58,312 @@
 }
 
 @layer base {
-  :root {
-    /* Brand Identity: Warm Culinary / Terracotta & Fresh Sage */
-    --brand-primary: #ea580c;      /* Warm Terracotta Ember */
-    --brand-secondary: #0f766e;    /* Deep Fresh Sage / Teal */
-    --brand-warm: #d97706;         /* Golden Honey Amber */
-    --brand-success: #16a34a;      /* Fresh Basil Green */
-    --brand-danger: #e11d48;       /* Clean Pomegranate Crimson */
-    --brand-muted-green: #16a34a;  /* Botanical Green */
-    --brand-light: #ffedd5;        /* Warm Apricot Glow */
-
-    /* Refined Light Theme: Warm Linen & Milk White with Soft Tones */
-    --background: #fbfaf7;
-    --foreground: #1c1917;
-
-    --card: #ffffff;
-    --card-foreground: #1c1917;
-
-    --popover: #ffffff;
-    --popover-foreground: #1c1917;
-
-    --primary: #ea580c;
-    --primary-foreground: #ffffff;
-
-    --secondary: #f4f1ea;
-    --secondary-foreground: #1c1917;
-
-    --muted: #f4f1ea;
-    --muted-foreground: #78716c;
-
-    --accent: #f4f1ea;
-    --accent-foreground: #1c1917;
-
-    --destructive: #e11d48;
+  /* ==========================================
+     Theme 1: Saffron Citrus (Default)
+     ========================================== */
+  :root,
+  :root[data-theme='saffron'],
+  :root[data-theme='olive'] {
+    --accent-primary: #e9c46a;
+    --accent-success: #90be6d;
+    --accent-warning: #f4a261;
+    --accent-brand: #e9c46a;
+    --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
-    --border: #ece7de;
-    --input: #e5dfd5;
-    --ring: #ea580c;
+    --background: #ffffff;
+    --foreground: #09090b;
+
+    --card: #ffffff;
+    --card-foreground: #09090b;
+
+    --popover: #ffffff;
+    --popover-foreground: #09090b;
+
+    --primary: #18181b;
+    --primary-foreground: #ffffff;
+
+    --secondary: #f4f4f5;
+    --secondary-foreground: #18181b;
+
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+
+    --accent: #f4f4f5;
+    --accent-foreground: #18181b;
+
+    --border: #e4e4e7;
+    --input: #e4e4e7;
+    --ring: #e9c46a;
 
     --radius: 1rem;
 
     color-scheme: light;
   }
 
-  .dark {
-    /* Brand Identity: Warm Obsidian & Glowing Ember */
-    --brand-primary: #f97316;      /* Glowing Terracotta Tangerine */
-    --brand-secondary: #2dd4bf;    /* Bright Sage Mint */
-    --brand-warm: #fbbf24;         /* Golden Honey */
-    --brand-success: #22c55e;      /* Crisp Basil Green */
-    --brand-danger: #f43f5e;       /* Rose Crimson */
-    --brand-muted-green: #22c55e;  /* Crisp Green */
-    --brand-light: #431407;        /* Deep Ember Highlight */
-
-    /* Refined Dark Theme: Deep Roasted Espresso & Warm Carbon */
-    --background: #141312;
-    --foreground: #f5f4f0;
-
-    --card: #1c1b18;
-    --card-foreground: #f5f4f0;
-
-    --popover: #1c1b18;
-    --popover-foreground: #f5f4f0;
-
-    --primary: #f97316;
-    --primary-foreground: #141312;
-
-    --secondary: #262421;
-    --secondary-foreground: #f5f4f0;
-
-    --muted: #262421;
-    --muted-foreground: #a8a29e;
-
-    --accent: #2e2b26;
-    --accent-foreground: #f5f4f0;
-
-    --destructive: #f43f5e;
+  .dark,
+  .dark[data-theme='saffron'],
+  .dark[data-theme='olive'] {
+    --accent-primary: #e9c46a;
+    --accent-success: #90be6d;
+    --accent-warning: #f4a261;
+    --accent-brand: #e9c46a;
+    --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
-    --border: #2e2b26;
-    --input: #2e2b26;
-    --ring: #f97316;
+    /* Base Dark: #0c0c0e, Card: #141418, Border: #27272a */
+    --background: #0c0c0e;
+    --foreground: #f4f4f5;
+
+    --card: #141418;
+    --card-foreground: #f4f4f5;
+
+    --popover: #141418;
+    --popover-foreground: #f4f4f5;
+
+    --primary: #f4f4f5;
+    --primary-foreground: #0c0c0e;
+
+    --secondary: #18181b;
+    --secondary-foreground: #f4f4f5;
+
+    --muted: #18181b;
+    --muted-foreground: #a1a1aa;
+
+    --accent: #18181b;
+    --accent-foreground: #f4f4f5;
+
+    --border: #27272a;
+    --input: #27272a;
+    --ring: #e9c46a;
+
+    color-scheme: dark;
+  }
+
+  /* ==========================================
+     Theme 2: Black Truffle
+     ========================================== */
+  :root[data-theme='truffle'] {
+    --accent-primary: #18181b;
+    --accent-success: #34d399;
+    --accent-warning: #fbbf24;
+    --accent-brand: #18181b;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    --background: #ffffff;
+    --foreground: #09090b;
+
+    --card: #ffffff;
+    --card-foreground: #09090b;
+
+    --popover: #ffffff;
+    --popover-foreground: #09090b;
+
+    --primary: #09090b;
+    --primary-foreground: #ffffff;
+
+    --secondary: #f4f4f5;
+    --secondary-foreground: #09090b;
+
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+
+    --accent: #f4f4f5;
+    --accent-foreground: #09090b;
+
+    --border: #e4e4e7;
+    --input: #e4e4e7;
+    --ring: #18181b;
+
+    color-scheme: light;
+  }
+
+  .dark[data-theme='truffle'] {
+    --accent-primary: #f4f4f5;
+    --accent-success: #34d399;
+    --accent-warning: #fbbf24;
+    --accent-brand: #f4f4f5;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    /* Base Dark: #000000, Card: #0d0d10, Border: #222226 */
+    --background: #000000;
+    --foreground: #f4f4f5;
+
+    --card: #0d0d10;
+    --card-foreground: #f4f4f5;
+
+    --popover: #0d0d10;
+    --popover-foreground: #f4f4f5;
+
+    --primary: #f4f4f5;
+    --primary-foreground: #000000;
+
+    --secondary: #18181b;
+    --secondary-foreground: #f4f4f5;
+
+    --muted: #18181b;
+    --muted-foreground: #a1a1aa;
+
+    --accent: #18181b;
+    --accent-foreground: #f4f4f5;
+
+    --border: #222226;
+    --input: #222226;
+    --ring: #f4f4f5;
+
+    color-scheme: dark;
+  }
+
+  /* ==========================================
+     Theme 3: Midnight Plum (Neo-Bistro)
+     ========================================== */
+  :root[data-theme='plum'] {
+    --accent-primary: #c084fc;
+    --accent-success: #4ade80;
+    --accent-warning: #f59e0b;
+    --accent-brand: #c084fc;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    --background: #ffffff;
+    --foreground: #09090b;
+
+    --card: #ffffff;
+    --card-foreground: #09090b;
+
+    --popover: #ffffff;
+    --popover-foreground: #09090b;
+
+    --primary: #18181b;
+    --primary-foreground: #ffffff;
+
+    --secondary: #f4f4f5;
+    --secondary-foreground: #18181b;
+
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+
+    --accent: #f4f4f5;
+    --accent-foreground: #18181b;
+
+    --border: #e4e4e7;
+    --input: #e4e4e7;
+    --ring: #c084fc;
+
+    color-scheme: light;
+  }
+
+  .dark[data-theme='plum'] {
+    --accent-primary: #c084fc;
+    --accent-success: #4ade80;
+    --accent-warning: #f59e0b;
+    --accent-brand: #c084fc;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    /* Base Dark: #0d0f14, Card: #131720, Border: #242b38 */
+    --background: #0d0f14;
+    --foreground: #f4f4f5;
+
+    --card: #131720;
+    --card-foreground: #f4f4f5;
+
+    --popover: #131720;
+    --popover-foreground: #f4f4f5;
+
+    --primary: #f4f4f5;
+    --primary-foreground: #0d0f14;
+
+    --secondary: #1a202c;
+    --secondary-foreground: #f4f4f5;
+
+    --muted: #1a202c;
+    --muted-foreground: #94a3b8;
+
+    --accent: #1a202c;
+    --accent-foreground: #f4f4f5;
+
+    --border: #242b38;
+    --input: #242b38;
+    --ring: #c084fc;
+
+    color-scheme: dark;
+  }
+
+  /* ==========================================
+     Theme 4: Nordic Salt (Scandinavian Slate & Teal)
+     ========================================== */
+  :root[data-theme='nordic'] {
+    --accent-primary: #22d3ee;
+    --accent-success: #10b981;
+    --accent-warning: #fb923c;
+    --accent-brand: #22d3ee;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    --background: #ffffff;
+    --foreground: #09090b;
+
+    --card: #ffffff;
+    --card-foreground: #09090b;
+
+    --popover: #ffffff;
+    --popover-foreground: #09090b;
+
+    --primary: #083344;
+    --primary-foreground: #ffffff;
+
+    --secondary: #f4f4f5;
+    --secondary-foreground: #09090b;
+
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+
+    --accent: #f4f4f5;
+    --accent-foreground: #09090b;
+
+    --border: #e4e4e7;
+    --input: #e4e4e7;
+    --ring: #22d3ee;
+
+    color-scheme: light;
+  }
+
+  .dark[data-theme='nordic'] {
+    --accent-primary: #22d3ee;
+    --accent-success: #10b981;
+    --accent-warning: #fb923c;
+    --accent-brand: #22d3ee;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    /* Base Dark: #0a0e13, Card: #11161d, Border: #1e2633 */
+    --background: #0a0e13;
+    --foreground: #f4f4f5;
+
+    --card: #11161d;
+    --card-foreground: #f4f4f5;
+
+    --popover: #11161d;
+    --popover-foreground: #f4f4f5;
+
+    --primary: #f4f4f5;
+    --primary-foreground: #0a0e13;
+
+    --secondary: #17202c;
+    --secondary-foreground: #f4f4f5;
+
+    --muted: #17202c;
+    --muted-foreground: #94a3b8;
+
+    --accent: #17202c;
+    --accent-foreground: #f4f4f5;
+
+    --border: #1e2633;
+    --input: #1e2633;
+    --ring: #22d3ee;
 
     color-scheme: dark;
   }
@@ -143,8 +372,20 @@
     @apply border-border;
   }
 
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
   body {
     @apply bg-background text-foreground antialiased min-h-screen selection:bg-accent-primary/20 selection:text-foreground;
+  }
+
+  /* Prevent Radix / UI library scroll-locking layout shifts */
+  body[data-scroll-locked] {
+    overflow: unset !important;
+    padding-right: 0px !important;
+    margin-right: 0px !important;
   }
 }
 

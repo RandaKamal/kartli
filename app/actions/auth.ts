@@ -56,7 +56,7 @@ export async function registerUserAction(
     await signIn("credentials", {
       username,
       password,
-      redirectTo: callbackUrl || "/",
+      redirectTo: callbackUrl || "/dashboard",
     });
     return {};
   } catch (error) {
@@ -97,7 +97,7 @@ export async function loginUserAction(
     await signIn("credentials", {
       username,
       password,
-      redirectTo: callbackUrl || "/",
+      redirectTo: callbackUrl || "/dashboard",
     });
     return {};
   } catch (error) {

@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.github
+.vscode
+.env*
+.env
+.env.*
+.env*.local
+!.env.example
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+README.md

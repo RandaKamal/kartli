@@ -1,0 +1,16 @@
+services:
+  kartli-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kartli
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - BLOB_READ_WRITE_TOKEN=${BLOB_READ_WRITE_TOKEN}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - AUTH_SECRET=${AUTH_SECRET:-${NEXTAUTH_SECRET}}
+    restart: unless-stopped
