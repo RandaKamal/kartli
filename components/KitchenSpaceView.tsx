@@ -1006,211 +1006,280 @@ export function KitchenSpaceView({
         {/* Tab 5: Settings */}
         <TabsContent value="settings" className="space-y-6 animate-in fade-in-50">
           {isAdmin ? (
-            <div className="w-full max-w-6xl mx-auto flex flex-col gap-6">
-              <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-6">
-                <CardHeader className="p-0 space-y-1">
-                  <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-                    <Settings className="w-5 h-5 text-muted-foreground" />
-                    <span>Kitchen Settings</span>
-                  </CardTitle>
-                  <CardDescription className="text-xs text-muted-foreground">
-                    Manage your household space, terminology presets, and guest supermarket access.
-                  </CardDescription>
-                </CardHeader>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left Column (Col 7/12) — "General Settings" Card */}
+              <div className="lg:col-span-7">
+                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-5">
+                  <form onSubmit={handleSaveSettings} className="space-y-5">
+                    {/* Header with Title and inline Save Button */}
+                    <div className="flex items-center justify-between gap-3 pb-3 border-b border-border">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-xs shrink-0">
+                          <Settings className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-base font-bold text-foreground tracking-tight truncate">
+                            General &amp; Wording
+                          </h3>
+                          <p className="text-xs text-muted-foreground truncate">
+                            Household configuration &amp; naming
+                          </p>
+                        </div>
+                      </div>
 
-                <form onSubmit={handleSaveSettings} className="space-y-6">
-                  {/* Section 1: Kitchen Name */}
-                  <div className="space-y-2">
-                    <Label htmlFor="admin-settings-kitchen-name">Kitchen Name</Label>
-                    <Input
-                      id="admin-settings-kitchen-name"
-                      type="text"
-                      value={draftName}
-                      onChange={(e) => setDraftName(e.target.value)}
-                      required
-                      maxLength={255}
-                      placeholder="e.g. Baker Street Kitchen"
-                      className="rounded-xl h-10 bg-muted/40"
-                      disabled={isSavingSettings}
-                    />
-                    <span className="text-[11px] text-muted-foreground block">
-                      The public display name for this shared kitchen space.
-                    </span>
-                  </div>
+                      <Button
+                        type="submit"
+                        disabled={isSavingSettings || !draftName.trim()}
+                        className="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold px-4 py-2 rounded-xl shadow-[0_0_20px_-5px_rgba(16,185,129,0.35)] transition-all active:scale-95 text-xs h-8.5 cursor-pointer"
+                      >
+                        {isSavingSettings && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1 text-zinc-950" />}
+                        <span>Save Changes</span>
+                      </Button>
+                    </div>
 
-                  <Separator className="bg-border/60" />
-
-                  {/* Section 2: Space Context / Wording Presets */}
-                  <div className="space-y-2.5">
-                    <div className="space-y-0.5">
-                      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Space Context &amp; Wording
+                    {/* Field 1: Kitchen Name */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="admin-settings-kitchen-name" className="text-xs font-semibold text-foreground">
+                        Kitchen Name
                       </Label>
-                      <p className="text-[11px] text-muted-foreground">
-                        Choose how household members are addressed throughout the app.
-                      </p>
+                      <Input
+                        id="admin-settings-kitchen-name"
+                        type="text"
+                        value={draftName}
+                        onChange={(e) => setDraftName(e.target.value)}
+                        required
+                        maxLength={255}
+                        placeholder="e.g. Baker Street Kitchen"
+                        className="rounded-xl h-10 bg-secondary/50 border-input text-foreground focus-visible:ring-ring text-xs sm:text-sm"
+                        disabled={isSavingSettings}
+                      />
+                      <span className="text-[11px] text-muted-foreground block">
+                        The public display name for this shared space.
+                      </span>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setDraftSpaceType("FLATSHARE")}
-                        className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs border transition-all cursor-pointer ${
-                          draftSpaceType === "FLATSHARE"
-                            ? "bg-secondary text-foreground border-foreground/30 shadow-xs"
-                            : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted/40"
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <Home className="w-3.5 h-3.5" />
-                          <span>Flatshare</span>
-                        </div>
-                        <span className="text-[10px] font-normal text-muted-foreground">
-                          Term: Roommates
-                        </span>
-                      </button>
+                    {/* Field 2: Space Context & Terminology in a 2x2 grid */}
+                    <div className="space-y-2 pt-1">
+                      <div className="space-y-0.5">
+                        <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                          Space Context &amp; Terminology
+                        </Label>
+                        <p className="text-[11px] text-muted-foreground">
+                          Select how members and notifications are addressed across the app.
+                        </p>
+                      </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setDraftSpaceType("FAMILY")}
-                        className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs border transition-all cursor-pointer ${
-                          draftSpaceType === "FAMILY"
-                            ? "bg-secondary text-foreground border-foreground/30 shadow-xs"
-                            : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted/40"
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <Heart className="w-3.5 h-3.5" />
-                          <span>Family</span>
-                        </div>
-                        <span className="text-[10px] font-normal text-muted-foreground">
-                          Term: Family
-                        </span>
-                      </button>
+                      <div className="grid grid-cols-2 gap-2.5 pt-0.5">
+                        {/* Option 1: Flatshare */}
+                        <button
+                          type="button"
+                          onClick={() => setDraftSpaceType("FLATSHARE")}
+                          className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
+                            draftSpaceType === "FLATSHARE"
+                              ? "border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_15px_-3px_rgba(16,185,129,0.12)] text-emerald-200"
+                              : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <Home className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "FLATSHARE" ? "text-emerald-400" : "text-muted-foreground"}`} />
+                            <span className={`text-xs leading-none ${draftSpaceType === "FLATSHARE" ? "text-emerald-200 font-semibold" : "font-bold"}`}>
+                              Flatshare
+                            </span>
+                          </div>
+                          <span className={`text-[10px] font-normal leading-tight transition-colors ${
+                            draftSpaceType === "FLATSHARE" ? "text-emerald-300/70" : "text-muted-foreground"
+                          }`}>
+                            Roommates
+                          </span>
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setDraftSpaceType("OFFICE")}
-                        className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs border transition-all cursor-pointer ${
-                          draftSpaceType === "OFFICE"
-                            ? "bg-secondary text-foreground border-foreground/30 shadow-xs"
-                            : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted/40"
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <Briefcase className="w-3.5 h-3.5" />
-                          <span>Office</span>
-                        </div>
-                        <span className="text-[10px] font-normal text-muted-foreground">
-                          Term: Team
-                        </span>
-                      </button>
+                        {/* Option 2: Family */}
+                        <button
+                          type="button"
+                          onClick={() => setDraftSpaceType("FAMILY")}
+                          className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
+                            draftSpaceType === "FAMILY"
+                              ? "border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_15px_-3px_rgba(16,185,129,0.12)] text-emerald-200"
+                              : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <Heart className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "FAMILY" ? "text-emerald-400" : "text-muted-foreground"}`} />
+                            <span className={`text-xs leading-none ${draftSpaceType === "FAMILY" ? "text-emerald-200 font-semibold" : "font-bold"}`}>
+                              Family
+                            </span>
+                          </div>
+                          <span className={`text-[10px] font-normal leading-tight transition-colors ${
+                            draftSpaceType === "FAMILY" ? "text-emerald-300/70" : "text-muted-foreground"
+                          }`}>
+                            Family
+                          </span>
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setDraftSpaceType("NEUTRAL")}
-                        className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs border transition-all cursor-pointer ${
-                          draftSpaceType === "NEUTRAL"
-                            ? "bg-secondary text-foreground border-foreground/30 shadow-xs"
-                            : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted/40"
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <Building2 className="w-3.5 h-3.5" />
-                          <span>Neutral</span>
-                        </div>
-                        <span className="text-[10px] font-normal text-muted-foreground">
-                          Term: Members
-                        </span>
-                      </button>
+                        {/* Option 3: Office */}
+                        <button
+                          type="button"
+                          onClick={() => setDraftSpaceType("OFFICE")}
+                          className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
+                            draftSpaceType === "OFFICE"
+                              ? "border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_15px_-3px_rgba(16,185,129,0.12)] text-emerald-200"
+                              : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <Briefcase className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "OFFICE" ? "text-emerald-400" : "text-muted-foreground"}`} />
+                            <span className={`text-xs leading-none ${draftSpaceType === "OFFICE" ? "text-emerald-200 font-semibold" : "font-bold"}`}>
+                              Office
+                            </span>
+                          </div>
+                          <span className={`text-[10px] font-normal leading-tight transition-colors ${
+                            draftSpaceType === "OFFICE" ? "text-emerald-300/70" : "text-muted-foreground"
+                          }`}>
+                            Team
+                          </span>
+                        </button>
+
+                        {/* Option 4: Neutral */}
+                        <button
+                          type="button"
+                          onClick={() => setDraftSpaceType("NEUTRAL")}
+                          className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
+                            draftSpaceType === "NEUTRAL"
+                              ? "border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_15px_-3px_rgba(16,185,129,0.12)] text-emerald-200"
+                              : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <Building2 className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "NEUTRAL" ? "text-emerald-400" : "text-muted-foreground"}`} />
+                            <span className={`text-xs leading-none ${draftSpaceType === "NEUTRAL" ? "text-emerald-200 font-semibold" : "font-bold"}`}>
+                              Neutral
+                            </span>
+                          </div>
+                          <span className={`text-[10px] font-normal leading-tight transition-colors ${
+                            draftSpaceType === "NEUTRAL" ? "text-emerald-300/70" : "text-muted-foreground"
+                          }`}>
+                            Members
+                          </span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  </form>
+                </Card>
+              </div>
 
-                  <div className="flex justify-end pt-2">
-                    <Button
-                      type="submit"
-                      disabled={isSavingSettings || !draftName.trim()}
-                      className="rounded-xl font-semibold px-5"
+              {/* Right Column (Col 5/12) — Stacked Action Cards */}
+              <div className="lg:col-span-5 space-y-6">
+                {/* Card 1: Guest Supermarket Link */}
+                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-xs shrink-0">
+                        <Share2 className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-sm font-bold text-foreground truncate">
+                          Guest Access
+                        </h4>
+                        <p className="text-xs text-muted-foreground truncate">
+                          Read-only access for guest grocery runs.
+                        </p>
+                      </div>
+                    </div>
+
+                    <Badge
+                      className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs px-2.5 py-0.5 rounded-full font-medium shrink-0"
                     >
-                      {isSavingSettings && <Loader2 className="w-4 h-4 animate-spin mr-1.5" />}
-                      <span>Save Changes</span>
-                    </Button>
-                  </div>
-                </form>
-
-                <Separator className="bg-border/60" />
-
-                {/* Section 3: Guest Supermarket Link */}
-                <div className="space-y-3 rounded-2xl p-5 bg-muted/30 border border-border/70">
-                  <div className="space-y-1">
-                    <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <Share2 className="w-4 h-4 text-muted-foreground" />
-                      <span>Guest Supermarket Link</span>
-                    </h4>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Disposable read-only link for supermarket visitors. Regenerating creates a new token and immediately invalidates the previous link.
-                    </p>
+                      Active
+                    </Badge>
                   </div>
 
-                  <div className="flex items-center gap-2 pt-1">
+                  <div className="flex items-center gap-1.5">
                     <Input
                       type="text"
                       readOnly
                       value={publicGuestUrl}
-                      className="h-9 px-3 text-xs text-foreground font-mono select-all rounded-xl bg-card border-border/80"
+                      className="h-9 px-3 text-xs font-mono select-all rounded-xl bg-secondary/50 border-input text-foreground focus-visible:ring-ring truncate min-w-0"
                     />
-                    <CopyButton text={publicGuestUrl} label="Copy Link" size="sm" />
-                    <Button asChild variant="ghost" size="icon-sm" className="h-9 w-9 rounded-xl shrink-0" title="Open guest view">
+                    <CopyButton
+                      text={publicGuestUrl}
+                      label="Copy"
+                      size="sm"
+                      variant="secondary"
+                      className="shrink-0 h-9 px-2.5"
+                    />
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="icon-sm"
+                      className="h-9 w-9 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted"
+                      title="Open guest view"
+                    >
                       <Link href={publicGuestUrl} target="_blank">
-                        <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                        <ExternalLink className="w-4 h-4" />
                       </Link>
                     </Button>
                   </div>
 
-                  <div className="pt-1">
+                  <div className="pt-0.5">
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={handleRegenerateGuestLink}
                       disabled={isRegenerating}
-                      className="rounded-xl text-xs font-medium gap-1.5 h-8.5 border-border hover:bg-muted"
+                      className="rounded-xl text-xs font-medium gap-1.5 h-8 border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer w-full justify-center"
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${isRegenerating ? "animate-spin" : ""}`} />
-                      <span>{isRegenerating ? "Regenerating..." : "Regenerate Guest Link"}</span>
+                      <span>{isRegenerating ? "Regenerating..." : "Regenerate Link"}</span>
                     </Button>
                   </div>
-                </div>
+                </Card>
 
-                <Separator className="bg-border/60" />
-
-                {/* Purchases Audit Log Shortcut */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-muted/20 border border-border/60">
-                  <div className="space-y-0.5">
-                    <span className="text-xs font-semibold text-foreground">Purchase History &amp; Refunds</span>
-                    <p className="text-[11px] text-muted-foreground">
-                      Review checkout receipts and audit member grocery expenditures.
-                    </p>
+                {/* Card 2: Financial & Ledger Quicklink */}
+                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-xs shrink-0">
+                      <Receipt className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-bold text-foreground truncate">
+                        Purchase History &amp; Refunds
+                      </h4>
+                      <p className="text-xs text-muted-foreground truncate">
+                        Receipts, checkouts &amp; grocery audits
+                      </p>
+                    </div>
                   </div>
+
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Review checkout receipts and audit member grocery expenditures directly from the ledger.
+                  </p>
+
                   <Button
                     type="button"
                     variant="secondary"
                     size="sm"
                     onClick={() => handleTabChange("refunds")}
-                    className="rounded-xl font-semibold shrink-0"
+                    className="group rounded-xl font-medium w-full justify-between h-9 text-xs px-3.5 border border-border/80 hover:border-border/80 hover:text-emerald-400 transition-all cursor-pointer"
                   >
-                    View Refunds
+                    <span className="flex items-center gap-1.5">
+                      <Receipt className="w-3.5 h-3.5 text-muted-foreground group-hover:text-emerald-400 transition-colors" />
+                      <span>View Ledger</span>
+                    </span>
+                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:translate-x-0.5 group-hover:text-emerald-400 transition-all" />
                   </Button>
-                </div>
-              </Card>
+                </Card>
+              </div>
             </div>
           ) : (
             /* Member Settings View */
-            <div className="w-full max-w-6xl mx-auto flex flex-col gap-6">
+            <div className="w-full max-w-4xl mx-auto flex flex-col gap-6">
               <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-6">
                 <CardHeader className="p-0 space-y-1">
-                  <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-                    <Settings className="w-5 h-5 text-muted-foreground" />
+                  <CardTitle className="text-base font-bold text-foreground flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-xs shrink-0">
+                      <Settings className="w-4 h-4" />
+                    </div>
                     <span>Kitchen Information</span>
                   </CardTitle>
                   <CardDescription className="text-xs text-muted-foreground">
