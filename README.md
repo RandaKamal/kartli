@@ -18,7 +18,7 @@
 
 ## Overview
 
-**kartli** elevates household grocery shopping from a chaotic chore into a collaborative experience. Designed with privacy, tactile aesthetics, and frictionless collaboration in mind, it provides email-free authentication, live shopping collaboration, automated pantry restock flows, and multimodal AI-powered receipt scanning.
+**kartli** elevates household grocery shopping from a chaotic chore into a collaborative experience. Designed with privacy, tactile aesthetics, and frictionless collaboration in mind, it provides email free authentication, live shopping collaboration, automated pantry restock flows, and multimodal AI-powered receipt scanning.
 
 ---
 
@@ -164,4 +164,3 @@ Open `http://<your-local-ip>:3000` (e.g. `http://192.168.1.100:3000`) on your mo
 ## License
 
 This project is available for personal and noncommercial use under the [PolyForm Noncommercial License](LICENSE).
-
