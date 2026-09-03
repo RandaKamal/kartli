@@ -42,15 +42,24 @@ export function KitchenPulseSkeleton() {
   return (
     <div className="w-full space-y-6 animate-pulse">
       {/* Header Skeleton */}
-      <div className="flex items-center justify-between gap-4 pb-1 border-b border-border/40">
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-7 w-24 rounded-xl" />
-          <Skeleton className="h-5 w-28 rounded-md" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-1 border-b border-border/40">
+        <div className="flex items-center justify-between gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-7 w-20 rounded-xl" />
+            <Skeleton className="h-5 w-28 rounded-md" />
+          </div>
+          <div className="flex items-center gap-1.5 sm:hidden">
+            <Skeleton className="h-9 w-9 rounded-xl" />
+            <Skeleton className="h-9 w-9 rounded-xl" />
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-9 w-44 rounded-xl" />
-          <Skeleton className="h-9 w-9 rounded-xl" />
-          <Skeleton className="h-9 w-9 rounded-xl" />
+
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Skeleton className="h-10 w-full sm:w-48 rounded-2xl" />
+          <div className="hidden sm:flex items-center gap-1.5">
+            <Skeleton className="h-9 w-9 rounded-xl" />
+            <Skeleton className="h-9 w-9 rounded-xl" />
+          </div>
         </div>
       </div>
 
@@ -59,7 +68,6 @@ export function KitchenPulseSkeleton() {
         <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <Skeleton className="h-5 w-36 rounded-md" />
-            <Skeleton className="h-5 w-24 rounded-full" />
           </div>
           <Skeleton className="h-10 w-44 rounded-lg" />
           <Skeleton className="h-9 w-full rounded-xl" />
@@ -242,27 +250,56 @@ export function KitchenPulse({
 
   return (
     <div className="w-full space-y-6 animate-in fade-in-50 duration-200">
-      {/* Header Area: Icon title, month pill, segmented control, icon actions */}
-      <div className="flex items-center justify-between gap-3 pb-1 border-b border-border/40">
-        <div className="flex items-center gap-2">
-          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-            <span>Pulse</span>
-          </h2>
-          <Badge
-            variant="secondary"
-            className="bg-muted text-muted-foreground text-[10px] font-mono uppercase px-2 py-0.5 rounded-md"
-          >
-            {monthLabel}
-          </Badge>
+      {/* Header Area: Mobile-first 2-row stack, desktop single row */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-1 border-b border-border/40">
+        {/* Row 1 (Context & Quick Actions on mobile) */}
+        <div className="flex items-center justify-between gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-foreground tracking-tight">Pulse</h2>
+            <Badge
+              variant="secondary"
+              className="bg-muted text-muted-foreground text-[10px] font-mono uppercase px-2 py-0.5 rounded-md"
+            >
+              {monthLabel}
+            </Badge>
+          </div>
+
+          {/* Quick Actions: grouped together on mobile right */}
+          <div className="flex items-center gap-1.5 sm:hidden">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => fetchStats(true)}
+              disabled={isRefreshing}
+              className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted"
+              title="Refresh statistics"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              onClick={handleExport}
+              disabled={isExporting}
+              className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted border-border"
+              title="Export summary snapshot"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Segmented Control: [ Kitchen | My Impact ] */}
-          <div className="inline-flex bg-muted/80 border border-border p-1 rounded-2xl h-10 shadow-xs">
+        {/* Row 2 (View Switcher on mobile, unified right side on desktop) */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {/* Full-width segmented control on mobile, auto width on sm */}
+          <div className="inline-flex bg-muted/80 border border-border p-1 rounded-2xl h-10 shadow-xs w-full sm:w-auto">
             <button
               type="button"
               onClick={() => setActiveView("kitchen")}
-              className={`px-3 py-1 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-150 ${
+              className={`flex-1 sm:flex-initial text-center px-4 py-1.5 rounded-xl text-sm font-semibold whitespace-nowrap cursor-pointer transition-all duration-150 ${
                 activeView === "kitchen"
                   ? "bg-card text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -275,7 +312,7 @@ export function KitchenPulse({
             <button
               type="button"
               onClick={() => setActiveView("personal")}
-              className={`px-3 py-1 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-150 flex items-center gap-1.5 ${
+              className={`flex-1 sm:flex-initial text-center px-4 py-1.5 rounded-xl text-sm font-semibold whitespace-nowrap cursor-pointer transition-all duration-150 inline-flex items-center justify-center gap-1.5 ${
                 activeView === "personal"
                   ? "bg-card text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -284,38 +321,39 @@ export function KitchenPulse({
             >
               <span>My Impact</span>
               {userSpendSharePercentage > 0 && (
-                <span className="px-1.5 py-0.2 text-[10px] font-mono rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                <span className="px-1.5 py-0.2 text-[10px] font-mono rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 shrink-0">
                   {userSpendSharePercentage}%
                 </span>
               )}
             </button>
           </div>
 
-          {/* Refresh Action */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => fetchStats(true)}
-            disabled={isRefreshing}
-            className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted"
-            title="Refresh statistics"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-          </Button>
+          {/* Desktop Quick Actions (Refresh & Export) */}
+          <div className="hidden sm:flex items-center gap-1.5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => fetchStats(true)}
+              disabled={isRefreshing}
+              className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted"
+              title="Refresh statistics"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+            </Button>
 
-          {/* Export Action */}
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-sm"
-            onClick={handleExport}
-            disabled={isExporting}
-            className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted border-border"
-            title="Export summary snapshot"
-          >
-            <Download className="w-3.5 h-3.5" />
-          </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              onClick={handleExport}
+              disabled={isExporting}
+              className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted border-border"
+              title="Export summary snapshot"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -339,15 +377,12 @@ export function KitchenPulse({
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                 {/* Card 1: Monthly Spend & Vitals */}
                 <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-                  {/* Card Header Pattern */}
+                  {/* Card Header Pattern - Redundant month badge removed */}
                   <div className="flex items-center justify-between gap-2">
                     <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
                       <CreditCard className="w-4 h-4 text-muted-foreground" />
                       <span>Monthly Spend</span>
                     </h2>
-                    <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border">
-                      {monthLabel}
-                    </Badge>
                   </div>
 
                   {/* Hero Metric & Trend Indicator */}
