@@ -152,23 +152,14 @@ export function PantrySection({
             </Badge>
           </h2>
 
-          <div className="flex items-center gap-2">
-            {outOfStockCount > 0 && (
-              <Badge variant="warm" className="gap-1 font-medium text-xs bg-accent-ochre/15 text-accent-warning border-accent-ochre/30">
-                <AlertTriangle className="w-3 h-3 text-accent-warning" />
-                <span>{outOfStockCount} empty</span>
-              </Badge>
-            )}
-
-            {/* Mobile-only Chevron Indicator */}
-            <div className="p-1 rounded-lg text-muted-foreground group-hover:text-foreground transition md:hidden">
-              <ChevronDown
-                className={cn(
-                  "w-4 h-4 transition-transform duration-200",
-                  isMobileOpen && "rotate-180"
-                )}
-              />
-            </div>
+          {/* Mobile-only Chevron Indicator */}
+          <div className="p-1 rounded-lg text-muted-foreground group-hover:text-foreground transition md:hidden">
+            <ChevronDown
+              className={cn(
+                "w-4 h-4 transition-transform duration-200",
+                isMobileOpen && "rotate-180"
+              )}
+            />
           </div>
         </div>
 
@@ -193,88 +184,155 @@ export function PantrySection({
             </Button>
           </form>
 
-          <div className="divide-y divide-border">
-            {optimisticItems.length === 0 && (
-              <p className="text-xs text-muted-foreground py-4 text-center">
-                No pantry items yet. Add your first item above.
-              </p>
-            )}
-            {optimisticItems.map((item) => (
-              <div
-                key={item.id}
-                className="py-3 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition"
-              >
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <span
-                    className={`font-medium truncate ${
-                      item.is_out_of_stock ? "text-muted-foreground line-through decoration-muted-foreground/50" : "text-foreground"
-                    }`}
-                  >
-                    {item.name}
-                  </span>
-
-                  {item.is_out_of_stock ? (
-                    <Badge
-                      variant="warm"
-                      className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium bg-accent-ochre/15 text-accent-warning border-accent-ochre/30"
-                      title="Out of stock - on shopping list"
-                    >
-                      <AlertTriangle className="w-3 h-3 text-accent-warning" />
-                      <span>Empty</span>
-                    </Badge>
-                  ) : (
-                    <Badge
-                      variant="success"
-                      className="text-[10px] px-2 py-0.5 gap-1 shrink-0 font-medium bg-accent-sage/15 text-accent-success border-accent-sage/30"
-                      title="In stock"
-                    >
-                      <Check className="w-3 h-3 text-accent-success" />
-                      <span>In Stock</span>
-                    </Badge>
+          {optimisticItems.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-4 text-center">
+              No pantry items yet. Add your first item above.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {/* Section A: Needs Restock */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between px-1 pt-1 pb-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground">
+                      Needs Restock
+                    </span>
+                    <span className="bg-secondary text-muted-foreground px-2 py-0.5 rounded-full text-[10px] font-medium">
+                      {outOfStockCount}
+                    </span>
+                  </div>
+                  {outOfStockCount > 0 && (
+                    <span className="text-[11px] text-muted-foreground/60 hidden sm:inline">
+                      Auto-added to shopping list
+                    </span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  <Button
-                    type="button"
-                    variant={item.is_out_of_stock ? "success" : "secondary"}
-                    size="sm"
-                    onClick={() => handleToggleStock(item)}
-                    title={
-                      item.is_out_of_stock
-                        ? "Restock item (removes from shopping list)"
-                        : "Mark as empty (adds to shopping list)"
-                    }
-                    className="h-8 px-3 rounded-lg text-xs font-semibold cursor-pointer"
-                  >
-                    {item.is_out_of_stock ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Restock</span>
-                      </>
-                    ) : (
-                      <>
-                        <AlertTriangle className="w-3.5 h-3.5 text-accent-warning" />
-                        <span>Mark Empty</span>
-                      </>
-                    )}
-                  </Button>
+                {outOfStockCount === 0 ? (
+                  <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl border border-border/60 bg-muted/20 text-xs text-muted-foreground">
+                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>All staples are in stock.</span>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    {optimisticItems
+                      .filter((i) => i.is_out_of_stock)
+                      .map((item) => (
+                        <div
+                          key={item.id}
+                          className="bg-amber-500/[0.04] border border-amber-500/15 rounded-xl px-3 py-2 flex items-center justify-between gap-3 text-sm transition hover:border-amber-500/25"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <span className="font-medium truncate text-muted-foreground line-through decoration-muted-foreground/50">
+                              {item.name}
+                            </span>
+                            <span
+                              className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-medium px-2 py-0.5 rounded-md shrink-0 flex items-center gap-1"
+                              title="Out of stock - on shopping list"
+                            >
+                              <AlertTriangle className="w-3 h-3" />
+                              <span>Empty</span>
+                            </span>
+                          </div>
 
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => setItemToDelete(item)}
-                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
-                    title="Delete item from pantry"
-                    aria-label={`Delete ${item.name}`}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStock(item)}
+                              title="Restock item (removes from shopping list)"
+                              className="h-8 px-3 text-xs font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Restock</span>
+                            </button>
+
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => setItemToDelete(item)}
+                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
+                              title="Delete item from pantry"
+                              aria-label={`Delete ${item.name}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
+
+              {/* Section B: In Stock */}
+              <div className="space-y-2 border-t border-border/40 pt-4 mt-3">
+                <div className="flex items-center justify-between px-1 pb-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground">
+                      In Stock
+                    </span>
+                    <span className="bg-secondary text-muted-foreground px-2 py-0.5 rounded-full text-[10px] font-medium">
+                      {optimisticItems.length - outOfStockCount}
+                    </span>
+                  </div>
+                </div>
+
+                {optimisticItems.length - outOfStockCount === 0 ? (
+                  <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl border border-border/60 bg-muted/20 text-xs text-muted-foreground">
+                    <span>No items currently marked in stock.</span>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {optimisticItems
+                      .filter((i) => !i.is_out_of_stock)
+                      .map((item) => (
+                        <div
+                          key={item.id}
+                          className="py-2.5 px-2 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 rounded-xl transition"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <span className="font-medium truncate text-foreground">
+                              {item.name}
+                            </span>
+                            <span
+                              className="bg-secondary text-muted-foreground border border-border text-[10px] px-2 py-0.5 rounded-md font-medium shrink-0 flex items-center gap-1"
+                              title="In stock"
+                            >
+                              <Check className="w-3 h-3 text-muted-foreground/70" />
+                              <span>In Stock</span>
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStock(item)}
+                              title="Mark as empty (adds to shopping list)"
+                              className="h-8 px-2.5 text-xs text-muted-foreground hover:text-amber-400 hover:border-amber-500/30 hover:bg-amber-500/10 border border-transparent rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                            >
+                              <AlertTriangle className="w-3.5 h-3.5" />
+                              <span>Mark Empty</span>
+                            </button>
+
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => setItemToDelete(item)}
+                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
+                              title="Delete item from pantry"
+                              aria-label={`Delete ${item.name}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </Card>
 

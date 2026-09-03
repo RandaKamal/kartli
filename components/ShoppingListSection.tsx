@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useTransition, useEffect, useOptimistic } from "react";
+import { useState, useTransition, useEffect, useOptimistic, useMemo } from "react";
 import {
   addCustomShoppingItemAction,
   moveToCartAction,
   returnToShoppingListAction,
   removeShoppingListItemAction,
+  moveAllNeededToCartAction,
+  setPantryItemStockAction,
 } from "@/app/actions/pantry";
 import type { ShoppingListItem, KitchenSpaceType } from "@/types";
 import { getSpaceWording } from "@/lib/space-wording";
@@ -36,6 +38,8 @@ interface ShoppingListSectionProps {
   spaceType?: KitchenSpaceType;
   onViewCart?: () => void;
   onItemMovedToCart?: (item: ShoppingListItem) => void;
+  onAllItemsMovedToCart?: (items: ShoppingListItem[]) => void;
+  onPantryItemEmptied?: (pantryItemId: string) => void;
   onItemReturnedToList?: (item: ShoppingListItem) => void;
   onItemRemoved?: (item: ShoppingListItem) => void;
   onItemAdded?: (item: ShoppingListItem) => void;
@@ -53,6 +57,8 @@ export function ShoppingListSection({
   spaceType = "FLATSHARE",
   onViewCart,
   onItemMovedToCart,
+  onAllItemsMovedToCart,
+  onPantryItemEmptied,
   onItemReturnedToList,
   onItemRemoved,
   onItemAdded,
@@ -74,9 +80,11 @@ export function ShoppingListSection({
     }
   );
   const [customItemName, setCustomItemName] = useState("");
-  const [showCheckedOut, setShowCheckedOut] = useState(false);
+  const [showCheckedOut, setShowCheckedOut] = useState(true);
   const [clearedCheckedOut, setClearedCheckedOut] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [isMovingAll, setIsMovingAll] = useState(false);
+  const [reAddingItemId, setReAddingItemId] = useState<string | null>(null);
   const [checkedVisualIds, setCheckedVisualIds] = useState<Set<string>>(new Set());
   const [, startTransition] = useTransition();
 
@@ -221,9 +229,97 @@ export function ShoppingListSection({
       i.purchased_by === currentUserId &&
       !checkedVisualIds.has(i.id)
   ).length;
-  // Strictly limit resolved/checked out items to the last 3 items to avoid vertical imbalance
+
+  const handleMoveAllToCart = () => {
+    if (openItems.length === 0 || isMovingAll) return;
+    const itemsToMove = [...openItems];
+    setIsMovingAll(true);
+
+    startTransition(async () => {
+      // Optimistically update all open items
+      for (const item of itemsToMove) {
+        setOptimisticListItems({
+          type: "UPDATE",
+          id: item.id,
+          changes: { is_purchased: true, purchased_by: currentUserId || null, is_guest_staged: false },
+        });
+      }
+      onAllItemsMovedToCart?.(itemsToMove);
+
+      try {
+        await moveAllNeededToCartAction(kitchenId);
+        toast.success(`Moved all ${itemsToMove.length} items to cart`);
+      } catch (err: any) {
+        for (const item of itemsToMove) {
+          setOptimisticListItems({
+            type: "UPDATE",
+            id: item.id,
+            changes: { is_purchased: false, purchased_by: null, is_guest_staged: false },
+          });
+          onItemReturnedToList?.(item);
+        }
+        toast.error(err.message || "Failed to move items to cart.");
+      } finally {
+        setIsMovingAll(false);
+      }
+    });
+  };
+
+  // Distinct recently checked-out items by name (up to 8 items) for 1-click re-ordering
   const resolvedItems = optimisticListItems.filter((i) => !!i.checkout_id);
-  const recentCheckedOutItems = resolvedItems.slice(-3).reverse();
+  const uniqueRecentCheckedOut = useMemo(() => {
+    const map = new Map<string, ShoppingListItem>();
+    for (let i = resolvedItems.length - 1; i >= 0; i--) {
+      const item = resolvedItems[i];
+      const key = item.name.trim().toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, item);
+      }
+    }
+    return Array.from(map.values()).slice(0, 8);
+  }, [resolvedItems]);
+
+  const handleReAddItem = (item: ShoppingListItem) => {
+    const alreadyNeeded = openItems.some(
+      (open) => open.name.trim().toLowerCase() === item.name.trim().toLowerCase()
+    );
+    if (alreadyNeeded) {
+      toast.info(`"${item.name}" is already on your shopping list`);
+      return;
+    }
+
+    setReAddingItemId(item.id);
+    startTransition(async () => {
+      try {
+        if (item.pantry_item_id) {
+          await setPantryItemStockAction(kitchenId, item.pantry_item_id, true);
+          const newItem: ShoppingListItem = {
+            id: `temp-${Date.now()}`,
+            kitchen_id: kitchenId,
+            pantry_item_id: item.pantry_item_id,
+            name: item.name,
+            item_price: item.item_price,
+            currency: item.currency,
+            is_purchased: false,
+            purchased_by: null,
+            is_guest_staged: false,
+            checkout_id: null,
+            created_at: new Date(),
+          };
+          onItemAdded?.(newItem);
+          onPantryItemEmptied?.(item.pantry_item_id);
+        } else {
+          const newItem = await addCustomShoppingItemAction(kitchenId, item.name);
+          onItemAdded?.(newItem);
+        }
+        toast.success(`Added "${item.name}" back to shopping list`);
+      } catch (err: any) {
+        toast.error(err.message || `Failed to re-add "${item.name}".`);
+      } finally {
+        setReAddingItemId(null);
+      }
+    });
+  };
 
   return (
     <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-5">
@@ -231,10 +327,26 @@ export function ShoppingListSection({
         <div className="flex items-center gap-2">
           <ShoppingBag className="w-4 h-4 text-muted-foreground" />
           <h2 className="text-base font-semibold text-foreground">Shopping List</h2>
-          <Badge variant="warm" className="text-xs font-mono bg-accent-ochre/15 text-accent-warning border-accent-ochre/30">
-            {openItems.length} needed
-          </Badge>
         </div>
+
+        {openItems.length > 0 && (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={handleMoveAllToCart}
+            disabled={isMovingAll}
+            className="h-8 px-3 rounded-xl text-xs font-semibold gap-1.5 border border-border/80 hover:border-primary/40 hover:bg-secondary text-foreground hover:text-primary transition-all cursor-pointer shadow-2xs active:scale-95"
+            title="Move all needed items directly into your cart"
+          >
+            {isMovingAll ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <CartIcon className="w-3.5 h-3.5 text-primary" />
+            )}
+            <span>Add All to Cart</span>
+          </Button>
+        )}
       </div>
 
       {/* Add Custom Item Input */}
@@ -264,8 +376,13 @@ export function ShoppingListSection({
 
       {/* Needed Items List */}
       <div className="space-y-2">
-        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
-          Needed Items ({openItems.length})
+        <div className="flex items-center gap-2 px-1">
+          <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground">
+            Needed Items
+          </span>
+          <span className="bg-secondary text-muted-foreground px-2 py-0.5 rounded-full text-[10px] font-medium">
+            {openItems.length}
+          </span>
         </div>
 
         {openItems.length === 0 ? (
@@ -299,11 +416,7 @@ export function ShoppingListSection({
                       )}
                       title={isChecked ? "Checked (staged in cart)" : "Check off item"}
                     >
-                      {isChecked ? (
-                        <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      ) : (
-                        <span className="w-2 h-2 rounded-full bg-accent-warning" />
-                      )}
+                      {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                     </button>
 
                     <span
@@ -403,25 +516,32 @@ export function ShoppingListSection({
         </div>
       )}
 
-      {/* Resolved / Recently checked out items (strictly max 3) */}
-      {!clearedCheckedOut && recentCheckedOutItems.length > 0 && (
-        <div className="space-y-2 pt-3 border-t border-border">
+      {/* Resolved / Recently checked out items (Expanded with 1-click re-add chips) */}
+      {!clearedCheckedOut && (
+        <div className="space-y-2.5 pt-3 border-t border-border">
           <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
             <span className="flex items-center gap-1.5">
-              <span>Recently Checked Out</span>
-              <Badge variant="outline" className="text-[10px] px-1 py-0 font-mono font-normal">
-                {recentCheckedOutItems.length}
-              </Badge>
+              <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground">
+                Recently Checked Out
+              </span>
+              {uniqueRecentCheckedOut.length > 0 && (
+                <span className="bg-secondary text-muted-foreground px-2 py-0.5 rounded-full text-[10px] font-medium">
+                  {uniqueRecentCheckedOut.length}
+                </span>
+              )}
             </span>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setClearedCheckedOut(true)}
-                className="text-[11px] font-medium normal-case tracking-normal text-muted-foreground hover:text-foreground transition cursor-pointer py-0.5 px-1.5 rounded-lg hover:bg-muted"
-                aria-label="Clear recent checked out list from view"
-              >
-                Clear
-              </button>
+              {uniqueRecentCheckedOut.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setClearedCheckedOut(true)}
+                  className="text-[11px] font-medium normal-case tracking-normal text-muted-foreground hover:text-foreground transition cursor-pointer py-0.5 px-1.5 rounded-lg hover:bg-muted"
+                  aria-label="Clear recent checked out list from view"
+                >
+                  Clear
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setShowCheckedOut((prev) => !prev)}
@@ -435,21 +555,61 @@ export function ShoppingListSection({
           </div>
 
           {showCheckedOut && (
-            <div className="divide-y divide-border animate-in fade-in-50 duration-200">
-              {recentCheckedOutItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="py-1.5 flex items-center justify-between gap-3 text-xs opacity-60 px-2"
-                >
-                  <span className="font-medium line-through truncate text-muted-foreground">
-                    {item.name}
-                  </span>
-                  <span className="text-muted-foreground shrink-0 text-[10px] font-mono">
-                    Checked out
-                  </span>
+            uniqueRecentCheckedOut.length === 0 ? (
+              <div className="py-3 px-3 rounded-2xl border border-dashed border-border/70 bg-muted/20 text-center">
+                <p className="text-xs text-muted-foreground">
+                  No recently checked-out items yet. Completed groceries will appear here for fast 1-click re-ordering.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2 animate-in fade-in-50 duration-200">
+                <p className="text-[11px] text-muted-foreground px-1">
+                  Quick re-add: tap any staple below to return it to your needed list:
+                </p>
+                <div className="flex flex-wrap gap-2 pt-0.5">
+                  {uniqueRecentCheckedOut.map((item) => {
+                    const isAlreadyNeeded = openItems.some(
+                      (open) => open.name.trim().toLowerCase() === item.name.trim().toLowerCase()
+                    );
+                    const isThisReAdding = reAddingItemId === item.id;
+
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleReAddItem(item)}
+                        disabled={isThisReAdding || isAlreadyNeeded}
+                        title={
+                          isAlreadyNeeded
+                            ? `"${item.name}" is already on your shopping list`
+                            : `Click to re-add "${item.name}" to shopping list`
+                        }
+                        className={cn(
+                          "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer select-none active:scale-95 shadow-2xs",
+                          isAlreadyNeeded
+                            ? "bg-secondary/40 border-border/60 text-muted-foreground opacity-60 cursor-default"
+                            : "bg-secondary/70 hover:bg-secondary border-border hover:border-primary/40 text-foreground hover:text-primary transition-colors"
+                        )}
+                      >
+                        {isThisReAdding ? (
+                          <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                        ) : isAlreadyNeeded ? (
+                          <Check className="w-3 h-3 text-emerald-400" />
+                        ) : (
+                          <Plus className="w-3 h-3 text-primary" />
+                        )}
+                        <span>{item.name}</span>
+                        {isAlreadyNeeded && (
+                          <span className="text-[10px] text-muted-foreground/80 font-normal">
+                            (Needed)
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
+              </div>
+            )
           )}
         </div>
       )}

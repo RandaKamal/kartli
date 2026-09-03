@@ -17,6 +17,7 @@ import {
   clearUserCart,
   clearBoughtShoppingListItems,
   transferGuestCartToUser,
+  moveAllNeededToCart,
   stageGuestShoppingItem as stageGuestShoppingItemDb,
   unstageGuestItem as unstageGuestItemDb,
 } from "@/lib/pantry";
@@ -97,6 +98,13 @@ export async function moveToCartAction(kitchenId: string, itemId: string) {
 
 export async function returnToShoppingListAction(kitchenId: string, itemId: string) {
   return await togglePurchasedAction(kitchenId, itemId, false);
+}
+
+export async function moveAllNeededToCartAction(kitchenId: string) {
+  const userId = await requireMembership(kitchenId);
+  const items = await moveAllNeededToCart(kitchenId, userId);
+  revalidateKitchen(kitchenId);
+  return items;
 }
 
 export async function removeShoppingListItemAction(kitchenId: string, itemId: string) {

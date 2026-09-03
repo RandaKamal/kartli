@@ -193,11 +193,75 @@ export async function getShoppingListItems(kitchenId: string): Promise<ShoppingL
     LEFT JOIN kitchen_members km ON km.kitchen_id = sli.kitchen_id AND km.user_id = sli.purchased_by
     LEFT JOIN checkouts c ON sli.checkout_id = c.id
     WHERE sli.kitchen_id = $1
-      AND (sli.checkout_id IS NULL OR c.created_at >= NOW() - INTERVAL '24 hours' OR sli.created_at >= NOW() - INTERVAL '24 hours')
+      AND (
+        sli.checkout_id IS NULL 
+        OR c.created_at >= NOW() - INTERVAL '7 days' 
+        OR sli.id IN (
+          SELECT sub.id FROM shopping_list_items sub
+          WHERE sub.kitchen_id = $1 AND sub.checkout_id IS NOT NULL
+          ORDER BY sub.created_at DESC LIMIT 20
+        )
+      )
     ORDER BY (sli.is_purchased OR sli.is_guest_staged) ASC, sli.created_at ASC
   `;
   const { rows } = await pool.query<ShoppingListItem>(sql, [kitchenId]);
   return rows;
+}
+
+/**
+ * Moves all currently needed (unpurchased) items into the current user's staged cart.
+ * Restocks any linked pantry items in the database.
+ */
+export async function moveAllNeededToCart(
+  kitchenId: string,
+  userId: string
+): Promise<ShoppingListItem[]> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const { rows } = await client.query<ShoppingListItem>(
+      `UPDATE shopping_list_items
+       SET is_purchased = TRUE, purchased_by = $1, is_guest_staged = FALSE
+       WHERE kitchen_id = $2
+         AND is_purchased = FALSE
+         AND checkout_id IS NULL
+       RETURNING id, kitchen_id, pantry_item_id, name, item_price, currency, is_purchased, purchased_by, is_guest_staged, checkout_id, created_at`,
+      [userId, kitchenId]
+    );
+
+    const pantryItemIds = rows
+      .map((r) => r.pantry_item_id)
+      .filter((id): id is string => id !== null);
+
+    if (pantryItemIds.length > 0) {
+      await client.query(
+        `UPDATE pantry_items SET is_out_of_stock = FALSE, updated_at = NOW()
+         WHERE kitchen_id = $1 AND id = ANY($2::uuid[])`,
+        [kitchenId, pantryItemIds]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    // Fetch user name for attribution
+    let userName: string | null = null;
+    const userRes = await client.query<{ name: string }>(
+      `SELECT COALESCE(km.kitchen_display_name, u.username) AS name
+       FROM users u
+       LEFT JOIN kitchen_members km ON km.kitchen_id = $1 AND km.user_id = u.id
+       WHERE u.id = $2`,
+      [kitchenId, userId]
+    );
+    userName = userRes.rows[0]?.name ?? null;
+
+    return rows.map((r) => ({ ...r, purchased_by_name: userName }));
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 

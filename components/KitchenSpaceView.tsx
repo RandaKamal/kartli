@@ -299,6 +299,24 @@ export function KitchenSpaceView({
     }
   };
 
+  const handleAllItemsMovedToCart = (itemsMoved: ShoppingListItem[]) => {
+    const movedIds = new Set(itemsMoved.map((i) => i.id));
+    const pantryIds = new Set(itemsMoved.map((i) => i.pantry_item_id).filter(Boolean));
+
+    setLocalShoppingListItems((prev) =>
+      prev.map((i) =>
+        movedIds.has(i.id)
+          ? { ...i, is_purchased: true, purchased_by: currentUserId, is_guest_staged: false }
+          : i
+      )
+    );
+    if (pantryIds.size > 0) {
+      setLocalPantryItems((prev) =>
+        prev.map((p) => (pantryIds.has(p.id) ? { ...p, is_out_of_stock: false } : p))
+      );
+    }
+  };
+
   const handleItemReturnedToList = (item: ShoppingListItem) => {
     setLocalShoppingListItems((prev) =>
       prev.map((i) =>
@@ -802,6 +820,12 @@ export function KitchenSpaceView({
               spaceType={spaceType}
               onViewCart={() => handleTabChange("cart")}
               onItemMovedToCart={handleItemMovedToCart}
+              onAllItemsMovedToCart={handleAllItemsMovedToCart}
+              onPantryItemEmptied={(pantryId) => {
+                setLocalPantryItems((prev) =>
+                  prev.map((p) => (p.id === pantryId ? { ...p, is_out_of_stock: true } : p))
+                );
+              }}
               onItemReturnedToList={handleItemReturnedToList}
               onItemRemoved={handleItemRemoved}
               onItemAdded={(item) =>
