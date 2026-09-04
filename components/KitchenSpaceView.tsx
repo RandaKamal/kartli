@@ -454,7 +454,7 @@ export function KitchenSpaceView({
   };
 
   return (
-    <div className="space-y-6 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-8">
+    <div className="w-full space-y-6 pb-6 sm:pb-8">
       <GuestCartHandoverListener kitchenId={initialKitchen.id} />
 
       {/* Sleek Single-Row Page Header */}
@@ -607,7 +607,7 @@ export function KitchenSpaceView({
         {/* Mobile Experience: Floating Navigation Dock */}
         <nav
           aria-label="Mobile Bottom Navigation"
-          className="block sm:hidden fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] inset-x-3 sm:inset-x-4 max-w-lg mx-auto z-50 transform-gpu will-change-transform bg-card/90 sm:bg-card/95 backdrop-blur-xl border border-border/80 shadow-2xl rounded-2xl py-1.5 px-1"
+          className="block sm:hidden fixed bottom-3 inset-x-3 sm:inset-x-4 max-w-lg mx-auto z-50 pointer-events-auto bg-card/90 sm:bg-card/95 backdrop-blur-xl border border-border/80 shadow-2xl rounded-2xl py-1.5 px-1"
         >
           <div className={`grid ${isAdmin ? "grid-cols-6" : "grid-cols-5"} items-center max-w-md mx-auto`}>
             {/* Tab 1: Pantry */}
@@ -1449,7 +1449,7 @@ export function KitchenSpaceView({
 
       {/* Floating Cart Bottom Bar (Sticky UX when user has items in cart) */}
       {myCartCount > 0 && activeTab === "kitchen" && (
-        <div className="fixed bottom-[calc(max(0.75rem,env(safe-area-inset-bottom))+4.25rem)] sm:bottom-5 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-lg animate-in slide-in-from-bottom-5 duration-300 transform-gpu will-change-transform">
+        <div className="fixed bottom-20 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-lg animate-in slide-in-from-bottom-5 duration-300 pointer-events-auto">
           <div className="bg-card/95 backdrop-blur-md border border-border text-card-foreground rounded-2xl p-3 sm:px-5 sm:py-3.5 shadow-2xl flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="relative flex h-2.5 w-2.5 shrink-0">

@@ -99,7 +99,7 @@ export default async function RootLayout({
               </div>
             </header>
 
-            <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 py-6 sm:py-8 flex flex-col">
+            <main className="w-full flex-1 pb-32 max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
               {children}
             </main>
 
