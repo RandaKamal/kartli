@@ -402,7 +402,8 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased min-h-screen selection:bg-accent-primary/20 selection:text-foreground;
+    @apply bg-background text-foreground antialiased min-h-[100dvh] selection:bg-accent-primary/20 selection:text-foreground;
+    overscroll-behavior-y: none;
   }
 
   /* Prevent Radix / UI library scroll-locking layout shifts */

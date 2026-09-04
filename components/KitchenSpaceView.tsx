@@ -454,7 +454,7 @@ export function KitchenSpaceView({
   };
 
   return (
-    <div className="space-y-6 pb-28 sm:pb-8">
+    <div className="space-y-6 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-8">
       <GuestCartHandoverListener kitchenId={initialKitchen.id} />
 
       {/* Sleek Single-Row Page Header */}
@@ -465,7 +465,7 @@ export function KitchenSpaceView({
             asChild
             variant="ghost"
             size="icon"
-            className="h-9 w-9 rounded-xl border border-border/60 sm:border-white/10 bg-muted/40 sm:bg-zinc-900/60 hover:bg-muted sm:hover:bg-zinc-800 text-muted-foreground hover:text-foreground shrink-0 transition-colors"
+            className="h-9 w-9 rounded-xl border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground shrink-0 transition-colors"
             title="Back to Kitchens"
             aria-label="Back to Kitchens"
           >
@@ -475,13 +475,13 @@ export function KitchenSpaceView({
           </Button>
 
           <div className="flex items-center gap-2 min-w-0 flex-wrap">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-white truncate">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground truncate">
               {kitchenName}
             </h1>
             {isAdmin && (
               <Badge
                 variant="secondary"
-                className="bg-zinc-800 text-zinc-300 border border-white/10 font-medium text-[10px] tracking-wider uppercase px-2 py-0.5 rounded-md shrink-0"
+                className="bg-muted text-muted-foreground border border-border font-medium text-[10px] tracking-wider uppercase px-2 py-0.5 rounded-md shrink-0"
               >
                 Admin
               </Badge>
@@ -496,13 +496,14 @@ export function KitchenSpaceView({
             label="Guest Link"
             size="sm"
             variant="outline"
-            className="h-9 px-3 text-xs font-medium rounded-xl border-border/60 sm:border-white/10 bg-muted/40 sm:bg-zinc-900/60 hover:bg-muted sm:hover:bg-zinc-800 text-foreground sm:text-zinc-200 transition-colors"
+            className="h-9 px-3 text-xs font-medium rounded-xl border-border/60 bg-muted/40 hover:bg-muted text-foreground transition-colors"
           />
+
           <Button
             asChild
             variant="outline"
             size="icon"
-            className="h-9 w-9 rounded-xl border border-border/60 sm:border-white/10 bg-muted/40 sm:bg-zinc-900/60 hover:bg-muted sm:hover:bg-zinc-800 text-muted-foreground hover:text-foreground shrink-0 transition-colors"
+            className="h-9 w-9 rounded-xl border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground shrink-0 transition-colors"
             title="Open guest view in new tab"
             aria-label="Open guest view in new tab"
           >
@@ -517,12 +518,12 @@ export function KitchenSpaceView({
       <Tabs defaultValue={defaultTab} value={activeTab} onValueChange={handleTabChange} className="w-full space-y-6">
         {/* Desktop Experience: Surface Pill Segmented Bar */}
         <div className="hidden sm:flex justify-center w-full">
-          <TabsList className="bg-zinc-900/60 border border-white/5 rounded-2xl p-1.5 inline-flex items-center gap-1 h-auto shadow-sm">
+          <TabsList className="bg-muted/80 border border-border/80 rounded-2xl p-1.5 inline-flex items-center gap-1 h-auto shadow-sm">
             {/* Tab 1: Pantry / Kitchen */}
             <TabsTrigger
               value="kitchen"
               aria-label="Pantry"
-              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-white/5"
+              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs data-[state=active]:border data-[state=active]:border-border/60"
             >
               <UtensilsCrossed className="w-4 h-4 shrink-0" />
               <span>Pantry</span>
@@ -532,7 +533,7 @@ export function KitchenSpaceView({
             <TabsTrigger
               value="pulse"
               aria-label="Pulse"
-              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-white/5"
+              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs data-[state=active]:border data-[state=active]:border-border/60"
             >
               <Activity className="w-4 h-4 shrink-0" />
               <span>Pulse</span>
@@ -542,17 +543,17 @@ export function KitchenSpaceView({
             <TabsTrigger
               value="cart"
               aria-label="Cart"
-              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-white/5 relative"
+              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs data-[state=active]:border data-[state=active]:border-border/60 relative"
             >
               <div className="relative flex items-center shrink-0">
                 <CartIcon className="w-4 h-4" />
                 {myCartCount > 0 && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 shadow-xs" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 absolute -top-0.5 -right-0.5 shadow-xs" />
                 )}
               </div>
               <span>Cart</span>
               {myCartCount > 0 && (
-                <span className="px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full bg-zinc-700/80 text-zinc-200 border border-white/10">
+                <span className="px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full bg-primary/10 text-primary border border-primary/20">
                   {myCartCount}
                 </span>
               )}
@@ -562,7 +563,7 @@ export function KitchenSpaceView({
             <TabsTrigger
               value="members"
               aria-label={terminology.memberTab}
-              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-white/5"
+              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs data-[state=active]:border data-[state=active]:border-border/60"
             >
               <Users className="w-4 h-4 shrink-0" />
               <span>{terminology.memberTab}</span>
@@ -573,7 +574,7 @@ export function KitchenSpaceView({
               <TabsTrigger
                 value="refunds"
                 aria-label="Refunds"
-                className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-white/5 relative"
+                className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs data-[state=active]:border data-[state=active]:border-border/60 relative"
               >
                 <div className="relative flex items-center shrink-0">
                   <Receipt className="w-4 h-4" />
@@ -583,7 +584,7 @@ export function KitchenSpaceView({
                 </div>
                 <span>Refunds</span>
                 {pendingRefundsCount > 0 && (
-                  <span className="inline-flex items-center gap-1 ml-1 px-1.5 py-0.2 text-[10px] font-mono font-medium rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  <span className="inline-flex items-center gap-1 ml-1 px-1.5 py-0.2 text-[10px] font-mono font-medium rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
                     <span>{pendingRefundsCount}</span>
                   </span>
@@ -595,7 +596,7 @@ export function KitchenSpaceView({
             <TabsTrigger
               value="settings"
               aria-label="Settings"
-              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 data-[state=active]:bg-zinc-800 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-white/5"
+              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs data-[state=active]:border data-[state=active]:border-border/60"
             >
               <Settings className="w-4 h-4 shrink-0" />
               <span>Settings</span>
@@ -603,37 +604,46 @@ export function KitchenSpaceView({
           </TabsList>
         </div>
 
+<<<<<<< HEAD
         {/* Mobile Experience: Floating Island Dock */}
         <nav
           aria-label="Mobile Bottom Navigation"
           className="block sm:hidden fixed bottom-3 sm:bottom-4 inset-x-3 sm:inset-x-4 max-w-lg mx-auto z-50 rounded-2xl border border-border/80 bg-card/90 backdrop-blur-xl shadow-2xl py-2 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+=======
+        {/* Mobile Experience: Floating Navigation Dock */}
+        <nav
+          aria-label="Mobile Bottom Navigation"
+          className="block sm:hidden fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] inset-x-3 sm:inset-x-4 max-w-lg mx-auto z-50 transform-gpu will-change-transform bg-card/90 sm:bg-card/95 backdrop-blur-xl border border-border/80 shadow-2xl rounded-2xl py-1.5 px-1"
+>>>>>>> ui
         >
           <div className={`grid ${isAdmin ? "grid-cols-6" : "grid-cols-5"} items-center max-w-md mx-auto`}>
             {/* Tab 1: Pantry */}
             <button
               type="button"
               onClick={() => handleTabChange("kitchen")}
-              className="flex flex-col items-center justify-center gap-0.5 py-1 select-none active:scale-95 transition-transform cursor-pointer"
+              className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl select-none active:scale-95 transition-all cursor-pointer ${
+                activeTab === "kitchen" ? "bg-primary/10" : ""
+              }`}
               aria-label="Pantry"
               aria-pressed={activeTab === "kitchen"}
             >
               <div className="relative flex items-center justify-center">
                 <UtensilsCrossed
                   className={`w-5 h-5 stroke-[1.75] transition-colors ${
-                    activeTab === "kitchen" ? "text-white" : "text-zinc-500 hover:text-zinc-400"
+                    activeTab === "kitchen" ? "text-primary" : "text-muted-foreground hover:text-foreground"
                   }`}
                 />
               </div>
               <span
-                className={`text-[10px] tracking-tight font-medium leading-tight truncate max-w-full transition-colors ${
-                  activeTab === "kitchen" ? "text-white font-semibold" : "text-zinc-500 hover:text-zinc-400"
+                className={`text-[10px] tracking-tight leading-tight truncate max-w-full transition-colors ${
+                  activeTab === "kitchen" ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground font-medium"
                 }`}
               >
                 Pantry
               </span>
               <span
                 className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                  activeTab === "kitchen" ? "bg-emerald-400 mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
+                  activeTab === "kitchen" ? "bg-primary mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
                 }`}
               />
             </button>
@@ -642,27 +652,29 @@ export function KitchenSpaceView({
             <button
               type="button"
               onClick={() => handleTabChange("pulse")}
-              className="flex flex-col items-center justify-center gap-0.5 py-1 select-none active:scale-95 transition-transform cursor-pointer"
+              className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl select-none active:scale-95 transition-all cursor-pointer ${
+                activeTab === "pulse" ? "bg-primary/10" : ""
+              }`}
               aria-label="Pulse"
               aria-pressed={activeTab === "pulse"}
             >
               <div className="relative flex items-center justify-center">
                 <Activity
                   className={`w-5 h-5 stroke-[1.75] transition-colors ${
-                    activeTab === "pulse" ? "text-white" : "text-zinc-500 hover:text-zinc-400"
+                    activeTab === "pulse" ? "text-primary" : "text-muted-foreground hover:text-foreground"
                   }`}
                 />
               </div>
               <span
-                className={`text-[10px] tracking-tight font-medium leading-tight truncate max-w-full transition-colors ${
-                  activeTab === "pulse" ? "text-white font-semibold" : "text-zinc-500 hover:text-zinc-400"
+                className={`text-[10px] tracking-tight leading-tight truncate max-w-full transition-colors ${
+                  activeTab === "pulse" ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground font-medium"
                 }`}
               >
                 Pulse
               </span>
               <span
                 className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                  activeTab === "pulse" ? "bg-emerald-400 mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
+                  activeTab === "pulse" ? "bg-primary mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
                 }`}
               />
             </button>
@@ -671,32 +683,34 @@ export function KitchenSpaceView({
             <button
               type="button"
               onClick={() => handleTabChange("cart")}
-              className="flex flex-col items-center justify-center gap-0.5 py-1 select-none active:scale-95 transition-transform cursor-pointer"
+              className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl select-none active:scale-95 transition-all cursor-pointer ${
+                activeTab === "cart" ? "bg-primary/10" : ""
+              }`}
               aria-label="Cart"
               aria-pressed={activeTab === "cart"}
             >
               <div className="relative flex items-center justify-center">
                 <CartIcon
                   className={`w-5 h-5 stroke-[1.75] transition-colors ${
-                    activeTab === "cart" ? "text-white" : "text-zinc-500 hover:text-zinc-400"
+                    activeTab === "cart" ? "text-primary" : "text-muted-foreground hover:text-foreground"
                   }`}
                 />
                 {myCartCount > 0 && (
-                  <span className="absolute -top-1 -right-2 min-w-[14px] h-3.5 px-1 rounded-full bg-emerald-500 text-[9px] font-bold text-black flex items-center justify-center leading-none">
+                  <span className="absolute -top-1 -right-2 min-w-[14px] h-3.5 px-1 rounded-full bg-primary text-[9px] font-bold text-primary-foreground flex items-center justify-center leading-none">
                     {myCartCount > 9 ? "9+" : myCartCount}
                   </span>
                 )}
               </div>
               <span
-                className={`text-[10px] tracking-tight font-medium leading-tight truncate max-w-full transition-colors ${
-                  activeTab === "cart" ? "text-white font-semibold" : "text-zinc-500 hover:text-zinc-400"
+                className={`text-[10px] tracking-tight leading-tight truncate max-w-full transition-colors ${
+                  activeTab === "cart" ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground font-medium"
                 }`}
               >
                 Cart
               </span>
               <span
                 className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                  activeTab === "cart" ? "bg-emerald-400 mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
+                  activeTab === "cart" ? "bg-primary mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
                 }`}
               />
             </button>
@@ -705,27 +719,29 @@ export function KitchenSpaceView({
             <button
               type="button"
               onClick={() => handleTabChange("members")}
-              className="flex flex-col items-center justify-center gap-0.5 py-1 select-none active:scale-95 transition-transform cursor-pointer"
+              className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl select-none active:scale-95 transition-all cursor-pointer ${
+                activeTab === "members" ? "bg-primary/10" : ""
+              }`}
               aria-label={spaceType === "FLATSHARE" ? "Flat" : terminology.memberTab}
               aria-pressed={activeTab === "members"}
             >
               <div className="relative flex items-center justify-center">
                 <Users
                   className={`w-5 h-5 stroke-[1.75] transition-colors ${
-                    activeTab === "members" ? "text-white" : "text-zinc-500 hover:text-zinc-400"
+                    activeTab === "members" ? "text-primary" : "text-muted-foreground hover:text-foreground"
                   }`}
                 />
               </div>
               <span
-                className={`text-[10px] tracking-tight font-medium leading-tight truncate max-w-full transition-colors ${
-                  activeTab === "members" ? "text-white font-semibold" : "text-zinc-500 hover:text-zinc-400"
+                className={`text-[10px] tracking-tight leading-tight truncate max-w-full transition-colors ${
+                  activeTab === "members" ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground font-medium"
                 }`}
               >
                 {spaceType === "FLATSHARE" ? "Flat" : terminology.memberTab}
               </span>
               <span
                 className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                  activeTab === "members" ? "bg-emerald-400 mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
+                  activeTab === "members" ? "bg-primary mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
                 }`}
               />
             </button>
@@ -735,14 +751,16 @@ export function KitchenSpaceView({
               <button
                 type="button"
                 onClick={() => handleTabChange("refunds")}
-                className="flex flex-col items-center justify-center gap-0.5 py-1 select-none active:scale-95 transition-transform cursor-pointer"
+                className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl select-none active:scale-95 transition-all cursor-pointer ${
+                  activeTab === "refunds" ? "bg-primary/10" : ""
+                }`}
                 aria-label="Refunds"
                 aria-pressed={activeTab === "refunds"}
               >
                 <div className="relative flex items-center justify-center">
                   <Receipt
                     className={`w-5 h-5 stroke-[1.75] transition-colors ${
-                      activeTab === "refunds" ? "text-white" : "text-zinc-500 hover:text-zinc-400"
+                      activeTab === "refunds" ? "text-primary" : "text-muted-foreground hover:text-foreground"
                     }`}
                   />
                   {pendingRefundsCount > 0 && (
@@ -750,15 +768,15 @@ export function KitchenSpaceView({
                   )}
                 </div>
                 <span
-                  className={`text-[10px] tracking-tight font-medium leading-tight truncate max-w-full transition-colors ${
-                    activeTab === "refunds" ? "text-white font-semibold" : "text-zinc-500 hover:text-zinc-400"
+                  className={`text-[10px] tracking-tight leading-tight truncate max-w-full transition-colors ${
+                    activeTab === "refunds" ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground font-medium"
                   }`}
                 >
                   Refunds
                 </span>
                 <span
                   className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                    activeTab === "refunds" ? "bg-emerald-400 mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
+                    activeTab === "refunds" ? "bg-primary mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
                   }`}
                 />
               </button>
@@ -768,27 +786,29 @@ export function KitchenSpaceView({
             <button
               type="button"
               onClick={() => handleTabChange("settings")}
-              className="flex flex-col items-center justify-center gap-0.5 py-1 select-none active:scale-95 transition-transform cursor-pointer"
+              className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl select-none active:scale-95 transition-all cursor-pointer ${
+                activeTab === "settings" ? "bg-primary/10" : ""
+              }`}
               aria-label="Settings"
               aria-pressed={activeTab === "settings"}
             >
               <div className="relative flex items-center justify-center">
                 <Settings
                   className={`w-5 h-5 stroke-[1.75] transition-colors ${
-                    activeTab === "settings" ? "text-white" : "text-zinc-500 hover:text-zinc-400"
+                    activeTab === "settings" ? "text-primary" : "text-muted-foreground hover:text-foreground"
                   }`}
                 />
               </div>
               <span
-                className={`text-[10px] tracking-tight font-medium leading-tight truncate max-w-full transition-colors ${
-                  activeTab === "settings" ? "text-white font-semibold" : "text-zinc-500 hover:text-zinc-400"
+                className={`text-[10px] tracking-tight leading-tight truncate max-w-full transition-colors ${
+                  activeTab === "settings" ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground font-medium"
                 }`}
               >
                 Settings
               </span>
               <span
                 className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                  activeTab === "settings" ? "bg-emerald-400 mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
+                  activeTab === "settings" ? "bg-primary mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
                 }`}
               />
             </button>
@@ -1436,7 +1456,7 @@ export function KitchenSpaceView({
 
       {/* Floating Cart Bottom Bar (Sticky UX when user has items in cart) */}
       {myCartCount > 0 && activeTab === "kitchen" && (
-        <div className="fixed bottom-20 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-lg animate-in slide-in-from-bottom-5 duration-300">
+        <div className="fixed bottom-[calc(max(0.75rem,env(safe-area-inset-bottom))+4.25rem)] sm:bottom-5 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-lg animate-in slide-in-from-bottom-5 duration-300 transform-gpu will-change-transform">
           <div className="bg-card/95 backdrop-blur-md border border-border text-card-foreground rounded-2xl p-3 sm:px-5 sm:py-3.5 shadow-2xl flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="relative flex h-2.5 w-2.5 shrink-0">

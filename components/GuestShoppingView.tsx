@@ -211,7 +211,7 @@ export function GuestShoppingView({
     totalNeeded > 0 ? Math.round((checkedCount / totalNeeded) * 100) : 0;
 
   return (
-    <div className="max-w-xl mx-auto space-y-5 pb-24">
+    <div className="max-w-xl mx-auto space-y-5 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-24">
       {/* Top Header Card */}
       <Card className="border border-border/80 bg-card rounded-3xl p-5 sm:p-6 space-y-4 shadow-sm">
         <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -533,7 +533,7 @@ export function GuestShoppingView({
 
       {/* Persistent Floating Bottom Pill for Guests with Cart Items */}
       {!sessionUser?.isMember && checkedCount > 0 && (
-        <div className="fixed bottom-4 left-4 right-4 max-w-xl mx-auto z-40 p-3.5 sm:p-4 rounded-2xl bg-card/95 backdrop-blur-md border border-accent-brand/50 shadow-2xl flex items-center justify-between gap-3 text-xs">
+        <div className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] inset-x-3 sm:inset-x-4 max-w-xl mx-auto z-40 transform-gpu will-change-transform p-3.5 sm:p-4 rounded-2xl bg-card/95 backdrop-blur-md border border-accent-brand/50 shadow-2xl flex items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2.5 min-w-0">
             <span className="w-2.5 h-2.5 rounded-full bg-accent-brand shrink-0 animate-pulse" />
             <span className="text-foreground font-medium truncate">
