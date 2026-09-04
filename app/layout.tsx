@@ -45,7 +45,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className="bg-background text-foreground min-h-screen flex flex-col antialiased selection:bg-accent-primary/20 selection:text-foreground">
+      <body className="bg-background text-foreground min-h-[100dvh] flex flex-col antialiased selection:bg-accent-primary/20 selection:text-foreground">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
