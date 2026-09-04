@@ -604,17 +604,10 @@ export function KitchenSpaceView({
           </TabsList>
         </div>
 
-<<<<<<< HEAD
-        {/* Mobile Experience: Floating Island Dock */}
-        <nav
-          aria-label="Mobile Bottom Navigation"
-          className="block sm:hidden fixed bottom-3 sm:bottom-4 inset-x-3 sm:inset-x-4 max-w-lg mx-auto z-50 rounded-2xl border border-border/80 bg-card/90 backdrop-blur-xl shadow-2xl py-2 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
-=======
         {/* Mobile Experience: Floating Navigation Dock */}
         <nav
           aria-label="Mobile Bottom Navigation"
           className="block sm:hidden fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] inset-x-3 sm:inset-x-4 max-w-lg mx-auto z-50 transform-gpu will-change-transform bg-card/90 sm:bg-card/95 backdrop-blur-xl border border-border/80 shadow-2xl rounded-2xl py-1.5 px-1"
->>>>>>> ui
         >
           <div className={`grid ${isAdmin ? "grid-cols-6" : "grid-cols-5"} items-center max-w-md mx-auto`}>
             {/* Tab 1: Pantry */}
