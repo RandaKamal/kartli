@@ -397,12 +397,15 @@
   }
 
   html, body {
+    min-height: 100dvh;
     overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     max-width: 100vw;
   }
 
   body {
-    @apply bg-background text-foreground antialiased min-h-screen selection:bg-accent-primary/20 selection:text-foreground;
+    @apply bg-background text-foreground antialiased min-h-[100dvh] selection:bg-accent-primary/20 selection:text-foreground;
   }
 
   /* Prevent Radix / UI library scroll-locking layout shifts */
