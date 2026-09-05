@@ -82,11 +82,11 @@ export function LoginForm({
       <div className="space-y-1.5">
         <Label
           htmlFor="login-username"
-          className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground mb-1 block"
+          className="text-[11px] font-semibold tracking-wider uppercase text-foreground/80 mb-1 block"
         >
           Username
         </Label>
-        <div className="h-11 bg-secondary/30 border border-border/80 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 rounded-xl transition-all flex items-center px-3.5 gap-2.5">
+        <div className="h-11 bg-secondary/50 border border-border focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 rounded-xl transition-all flex items-center px-3.5 gap-2.5">
           <User className="w-4 h-4 text-muted-foreground/70 shrink-0 pointer-events-none" />
           <input
             id="login-username"
@@ -96,7 +96,7 @@ export function LoginForm({
             autoComplete="username"
             onKeyDown={handleKeyDown}
             placeholder="e.g. sophie, alex, finn"
-            className="w-full h-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/50 p-0"
+            className="w-full h-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/60 p-0"
           />
         </div>
       </div>
@@ -105,12 +105,12 @@ export function LoginForm({
         <div className="flex items-center justify-between">
           <Label
             htmlFor="login-password"
-            className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground mb-1 block"
+            className="text-[11px] font-semibold tracking-wider uppercase text-foreground/80 mb-1 block"
           >
             Password
           </Label>
         </div>
-        <div className="h-11 bg-secondary/30 border border-border/80 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 rounded-xl transition-all flex items-center px-3.5 gap-2.5">
+        <div className="h-11 bg-secondary/50 border border-border focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 rounded-xl transition-all flex items-center px-3.5 gap-2.5">
           <Lock className="w-4 h-4 text-muted-foreground/70 shrink-0 pointer-events-none" />
           <input
             id="login-password"
@@ -120,7 +120,7 @@ export function LoginForm({
             autoComplete="current-password"
             onKeyDown={handleKeyDown}
             placeholder="••••••••"
-            className="w-full h-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/50 p-0"
+            className="w-full h-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/60 p-0"
           />
           <button
             type="button"
@@ -142,7 +142,7 @@ export function LoginForm({
       <button
         type="submit"
         disabled={isPending}
-        className="h-11 w-full bg-white text-zinc-950 font-semibold rounded-xl hover:bg-zinc-200 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-[0_0_25px_-5px_rgba(255,255,255,0.2)] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mt-1.5"
+        className="h-11 w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-xl shadow-sm active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mt-1.5"
       >
         {isPending ? (
           <>
