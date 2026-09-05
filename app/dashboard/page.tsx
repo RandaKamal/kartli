@@ -237,7 +237,7 @@ export default async function DashboardPage() {
                                 <span>{neededItemCount} needed</span>
                               </span>
                             ) : (
-                              <span className="text-emerald-500 font-medium flex items-center gap-1">
+                              <span className="text-primary font-medium flex items-center gap-1">
                                 <PackageCheck className="w-3.5 h-3.5" />
                                 <span>Stocked</span>
                               </span>
@@ -269,7 +269,7 @@ export default async function DashboardPage() {
                           </div>
                         ) : (
                           <div className="py-1 flex items-center gap-1.5 text-[11px] text-muted-foreground italic">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                            <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
                             <span>No urgent groceries on the list.</span>
                           </div>
                         )}

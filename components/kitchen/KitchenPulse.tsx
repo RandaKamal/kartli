@@ -233,14 +233,14 @@ export function KitchenPulse({
 
   const attentionDeadStock = deadStockItems.length > 0 ? deadStockItems[0] : null;
 
-  // Distinct category soft progress colors matching Pantry styling
+  // Distinct category soft progress colors matching active theme palette
   const categoryBarColors = [
-    "bg-emerald-400",
-    "bg-violet-400",
-    "bg-amber-400",
-    "bg-sky-400",
-    "bg-rose-400",
-    "bg-teal-400",
+    "bg-primary",
+    "bg-accent",
+    "bg-chart-2",
+    "bg-amber-500/80",
+    "bg-sky-500/80",
+    "bg-violet-500/80",
   ];
 
   return (
@@ -317,7 +317,7 @@ export function KitchenPulse({
             >
               <span>My Impact</span>
               {userSpendSharePercentage > 0 && (
-                <span className="px-1.5 py-0.2 text-[10px] font-mono rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 shrink-0">
+                <span className="px-1.5 py-0.2 text-[10px] font-mono rounded-full bg-primary/15 text-primary border border-primary/25 shrink-0">
                   {userSpendSharePercentage}%
                 </span>
               )}
@@ -361,8 +361,8 @@ export function KitchenPulse({
                     </span>
 
                     {spendTrendDirection === "down" && (
-                      <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono gap-1">
-                        <TrendingDown className="w-3 h-3 text-emerald-400" />
+                      <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-mono gap-1">
+                        <TrendingDown className="w-3 h-3 text-primary" />
                         <span>-{spendTrendPercentage}% vs last month</span>
                       </Badge>
                     )}
@@ -382,10 +382,45 @@ export function KitchenPulse({
                     )}
 
                     {spendTrendDirection === "new" && (
-                      <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono">
+                      <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-mono">
                         First month
                       </Badge>
                     )}
+                  </div>
+
+                  {/* Visual Spend Pulse Dual-Tone Area Chart */}
+                  <div className="w-full h-20 sm:h-24 pt-1">
+                    <svg className="w-full h-full overflow-visible" viewBox="0 0 400 90" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="pulseSpendGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.35" />
+                          <stop offset="50%" stopColor="var(--accent)" stopOpacity="0.12" />
+                          <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
+                      <path
+                        d="M 0 75 Q 40 68, 80 50 T 160 42 T 240 60 T 320 28 T 400 12 L 400 90 L 0 90 Z"
+                        fill="url(#pulseSpendGradient)"
+                      />
+                      <path
+                        d="M 0 75 Q 40 68, 80 50 T 160 42 T 240 60 T 320 28 T 400 12"
+                        fill="none"
+                        stroke="var(--primary)"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d="M 0 85 Q 50 78, 100 62 T 200 48 T 300 38 T 400 22"
+                        fill="none"
+                        stroke="var(--accent)"
+                        strokeWidth="1.75"
+                        strokeDasharray="4 3"
+                        strokeOpacity="0.8"
+                        strokeLinecap="round"
+                      />
+                      <circle cx="400" cy="12" r="3.5" fill="var(--primary)" />
+                      <circle cx="400" cy="12" r="6.5" fill="var(--accent)" fillOpacity="0.35" />
+                    </svg>
                   </div>
 
                   {/* Bottom Mini-Row: 2 Compact Inline Stats */}
@@ -418,7 +453,7 @@ export function KitchenPulse({
                         <span>{pantryStockRatio.outOfStock} needed</span>
                       </Badge>
                     ) : (
-                      <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-medium">
+                      <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-medium">
                         All in stock
                       </Badge>
                     )}
@@ -437,7 +472,7 @@ export function KitchenPulse({
 
                     <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-emerald-400 rounded-full transition-all duration-500"
+                        className="h-full bg-primary rounded-full transition-all duration-500"
                         style={{ width: `${pantryStockRatio.inStockPercentage}%` }}
                       />
                     </div>
@@ -446,7 +481,7 @@ export function KitchenPulse({
                   {/* Inline Highlights: Restock Speed & Attention Item */}
                   <div className="p-3 rounded-2xl bg-muted/40 border border-border/80 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
                     <div className="flex items-center gap-1.5">
-                      <Timer className="w-3.5 h-3.5 text-emerald-400" />
+                      <Timer className="w-3.5 h-3.5 text-primary" />
                       <span>Restock Speed:</span>
                       <span className="font-mono font-bold text-foreground">
                         {vitals.compactRestockLatency || "—"}
@@ -464,7 +499,7 @@ export function KitchenPulse({
                           {attentionDeadStock.idleDays}d idle
                         </Badge>
                       ) : (
-                        <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono px-1.5 py-0">
+                        <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-mono px-1.5 py-0">
                           Active
                         </Badge>
                       )}
@@ -618,7 +653,7 @@ export function KitchenPulse({
                       <UserCheck className="w-4 h-4 text-muted-foreground" />
                       <span>My Spending</span>
                     </h2>
-                    <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-medium">
+                    <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-medium">
                       {userSpendSharePercentage}% share
                     </Badge>
                   </div>
@@ -636,7 +671,7 @@ export function KitchenPulse({
 
                     <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-emerald-400 rounded-full transition-all duration-500"
+                        className="h-full bg-primary rounded-full transition-all duration-500"
                         style={{ width: `${Math.max(userSpendSharePercentage, 2)}%` }}
                       />
                     </div>
@@ -667,7 +702,7 @@ export function KitchenPulse({
                     </h2>
 
                     {userSettlement.isAllSettled ? (
-                      <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-medium">
+                      <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-medium">
                         All settled
                       </Badge>
                     ) : (
@@ -688,7 +723,7 @@ export function KitchenPulse({
                         {userSettlement.pendingRefundAmount > 0 ? (
                           <span className="text-amber-400">pending reimbursement</span>
                         ) : (
-                          <span className="text-emerald-400">All settled up</span>
+                          <span className="text-primary font-medium">All settled up</span>
                         )}
                       </span>
                     </div>
@@ -697,7 +732,7 @@ export function KitchenPulse({
                       <div
                         className={cn(
                           "h-full rounded-full transition-all duration-500",
-                          userSettlement.isAllSettled ? "bg-emerald-400" : "bg-amber-400"
+                          userSettlement.isAllSettled ? "bg-primary" : "bg-amber-400"
                         )}
                         style={{
                           width: `${
@@ -817,7 +852,7 @@ export function KitchenPulse({
 
                       <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-emerald-400 rounded-full transition-all duration-500"
+                          className="h-full bg-primary rounded-full transition-all duration-500"
                           style={{ width: `${userCategoryFootprint ? Math.max(userCategoryFootprint.percentage, 2) : 0}%` }}
                         />
                       </div>
@@ -829,7 +864,7 @@ export function KitchenPulse({
 
                     {/* Role Highlight: Subtle clean notification card */}
                     <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/80 flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
+                      <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 mt-0.5">
                         <Sparkles className="w-4 h-4" />
                       </div>
                       <div className="min-w-0 flex-1 space-y-0.5">

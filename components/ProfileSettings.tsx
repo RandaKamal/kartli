@@ -60,19 +60,19 @@ const CULINARY_THEMES: CulinaryTheme[] = [
     id: "campari-bitter",
     name: "Campari Bitter",
     subtitle: "Milanese Aperitivo & Blood Orange",
-    colors: ["#9f1a17", "#e24a46", "#f4f1de"],
+    colors: ["#bf1b26", "#f65f1d", "#f0aa38"],
   },
   {
     id: "velvet-fig",
     name: "Velvet Fig",
-    subtitle: "Ripe French Fig & Dark Cordial",
-    colors: ["#6b21a8", "#a855f7", "#f3e8ff"],
+    subtitle: "Warm French Bistro & Port Wine",
+    colors: ["#793994", "#e0a629", "#ab54ab"],
   },
   {
     id: "matcha-pistachio",
     name: "Matcha Pistachio",
-    subtitle: "Ceremonial Matcha & Slate Sage",
-    colors: ["#2d6a4f", "#52b788", "#d8f3dc"],
+    subtitle: "Ceremonial Tea & Yuzu",
+    colors: ["#367856", "#ecc41e", "#569085"],
   },
 ];
 

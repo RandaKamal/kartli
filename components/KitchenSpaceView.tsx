@@ -548,7 +548,7 @@ export function KitchenSpaceView({
               <div className="relative flex items-center shrink-0">
                 <CartIcon className="w-4 h-4" />
                 {myCartCount > 0 && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 absolute -top-0.5 -right-0.5 shadow-xs" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary absolute -top-0.5 -right-0.5 shadow-xs" />
                 )}
               </div>
               <span>Cart</span>
@@ -1076,7 +1076,7 @@ export function KitchenSpaceView({
                     {/* Header with Title and inline Save Button */}
                     <div className="flex items-center justify-between gap-3 pb-3 border-b border-border">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-xs shrink-0">
+                        <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-xs shrink-0">
                           <Settings className="w-4 h-4" />
                         </div>
                         <div className="min-w-0">
@@ -1092,9 +1092,9 @@ export function KitchenSpaceView({
                       <Button
                         type="submit"
                         disabled={isSavingSettings || !draftName.trim()}
-                        className="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold px-4 py-2 rounded-xl shadow-[0_0_20px_-5px_rgba(16,185,129,0.35)] transition-all active:scale-95 text-xs h-8.5 cursor-pointer"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-4 py-2 rounded-xl shadow-xs transition-all active:scale-95 text-xs h-8.5 cursor-pointer"
                       >
-                        {isSavingSettings && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1 text-zinc-950" />}
+                        {isSavingSettings && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1 text-primary-foreground" />}
                         <span>Save Changes</span>
                       </Button>
                     </div>
@@ -1138,18 +1138,18 @@ export function KitchenSpaceView({
                           onClick={() => handleSelectSpaceType("FLATSHARE")}
                           className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
                             draftSpaceType === "FLATSHARE"
-                              ? "border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_15px_-3px_rgba(16,185,129,0.12)] text-emerald-200"
+                              ? "border-primary/50 bg-primary/10 shadow-xs text-foreground"
                               : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                           }`}
                         >
                           <div className="flex items-center gap-1.5">
-                            <Home className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "FLATSHARE" ? "text-emerald-400" : "text-muted-foreground"}`} />
-                            <span className={`text-xs leading-none ${draftSpaceType === "FLATSHARE" ? "text-emerald-200 font-semibold" : "font-bold"}`}>
+                            <Home className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "FLATSHARE" ? "text-primary" : "text-muted-foreground"}`} />
+                            <span className={`text-xs leading-none ${draftSpaceType === "FLATSHARE" ? "text-foreground font-semibold" : "font-bold"}`}>
                               Flatshare
                             </span>
                           </div>
                           <span className={`text-[10px] font-normal leading-tight transition-colors ${
-                            draftSpaceType === "FLATSHARE" ? "text-emerald-300/70" : "text-muted-foreground"
+                            draftSpaceType === "FLATSHARE" ? "text-primary/80" : "text-muted-foreground"
                           }`}>
                             Roommates
                           </span>
@@ -1161,18 +1161,18 @@ export function KitchenSpaceView({
                           onClick={() => handleSelectSpaceType("FAMILY")}
                           className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
                             draftSpaceType === "FAMILY"
-                              ? "border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_15px_-3px_rgba(16,185,129,0.12)] text-emerald-200"
+                              ? "border-primary/50 bg-primary/10 shadow-xs text-foreground"
                               : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                           }`}
                         >
                           <div className="flex items-center gap-1.5">
-                            <Heart className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "FAMILY" ? "text-emerald-400" : "text-muted-foreground"}`} />
-                            <span className={`text-xs leading-none ${draftSpaceType === "FAMILY" ? "text-emerald-200 font-semibold" : "font-bold"}`}>
+                            <Heart className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "FAMILY" ? "text-primary" : "text-muted-foreground"}`} />
+                            <span className={`text-xs leading-none ${draftSpaceType === "FAMILY" ? "text-foreground font-semibold" : "font-bold"}`}>
                               Family
                             </span>
                           </div>
                           <span className={`text-[10px] font-normal leading-tight transition-colors ${
-                            draftSpaceType === "FAMILY" ? "text-emerald-300/70" : "text-muted-foreground"
+                            draftSpaceType === "FAMILY" ? "text-primary/80" : "text-muted-foreground"
                           }`}>
                             Family
                           </span>
@@ -1184,18 +1184,18 @@ export function KitchenSpaceView({
                           onClick={() => handleSelectSpaceType("OFFICE")}
                           className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
                             draftSpaceType === "OFFICE"
-                              ? "border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_15px_-3px_rgba(16,185,129,0.12)] text-emerald-200"
+                              ? "border-primary/50 bg-primary/10 shadow-xs text-foreground"
                               : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                           }`}
                         >
                           <div className="flex items-center gap-1.5">
-                            <Briefcase className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "OFFICE" ? "text-emerald-400" : "text-muted-foreground"}`} />
-                            <span className={`text-xs leading-none ${draftSpaceType === "OFFICE" ? "text-emerald-200 font-semibold" : "font-bold"}`}>
+                            <Briefcase className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "OFFICE" ? "text-primary" : "text-muted-foreground"}`} />
+                            <span className={`text-xs leading-none ${draftSpaceType === "OFFICE" ? "text-foreground font-semibold" : "font-bold"}`}>
                               Office
                             </span>
                           </div>
                           <span className={`text-[10px] font-normal leading-tight transition-colors ${
-                            draftSpaceType === "OFFICE" ? "text-emerald-300/70" : "text-muted-foreground"
+                            draftSpaceType === "OFFICE" ? "text-primary/80" : "text-muted-foreground"
                           }`}>
                             Team
                           </span>
@@ -1207,18 +1207,18 @@ export function KitchenSpaceView({
                           onClick={() => handleSelectSpaceType("NEUTRAL")}
                           className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
                             draftSpaceType === "NEUTRAL"
-                              ? "border-emerald-500/40 bg-emerald-500/10 shadow-[0_0_15px_-3px_rgba(16,185,129,0.12)] text-emerald-200"
+                              ? "border-primary/50 bg-primary/10 shadow-xs text-foreground"
                               : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                           }`}
                         >
                           <div className="flex items-center gap-1.5">
-                            <Building2 className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "NEUTRAL" ? "text-emerald-400" : "text-muted-foreground"}`} />
-                            <span className={`text-xs leading-none ${draftSpaceType === "NEUTRAL" ? "text-emerald-200 font-semibold" : "font-bold"}`}>
+                            <Building2 className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "NEUTRAL" ? "text-primary" : "text-muted-foreground"}`} />
+                            <span className={`text-xs leading-none ${draftSpaceType === "NEUTRAL" ? "text-foreground font-semibold" : "font-bold"}`}>
                               Neutral
                             </span>
                           </div>
                           <span className={`text-[10px] font-normal leading-tight transition-colors ${
-                            draftSpaceType === "NEUTRAL" ? "text-emerald-300/70" : "text-muted-foreground"
+                            draftSpaceType === "NEUTRAL" ? "text-primary/80" : "text-muted-foreground"
                           }`}>
                             Members
                           </span>
@@ -1249,7 +1249,7 @@ export function KitchenSpaceView({
                     </div>
 
                     <Badge
-                      className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs px-2.5 py-0.5 rounded-full font-medium shrink-0"
+                      className="bg-primary/10 text-primary border border-primary/20 text-xs px-2.5 py-0.5 rounded-full font-medium shrink-0"
                     >
                       Active
                     </Badge>
@@ -1322,13 +1322,13 @@ export function KitchenSpaceView({
                     variant="secondary"
                     size="sm"
                     onClick={() => handleTabChange("refunds")}
-                    className="group rounded-xl font-medium w-full justify-between h-9 text-xs px-3.5 border border-border/80 hover:border-border/80 hover:text-emerald-400 transition-all cursor-pointer"
+                    className="group rounded-xl font-medium w-full justify-between h-9 text-xs px-3.5 border border-border/80 hover:border-border/80 hover:text-primary transition-all cursor-pointer"
                   >
                     <span className="flex items-center gap-1.5">
-                      <Receipt className="w-3.5 h-3.5 text-muted-foreground group-hover:text-emerald-400 transition-colors" />
+                      <Receipt className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
                       <span>View Ledger</span>
                     </span>
-                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:translate-x-0.5 group-hover:text-emerald-400 transition-all" />
+                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:translate-x-0.5 group-hover:text-primary transition-all" />
                   </Button>
                 </Card>
               </div>
@@ -1339,7 +1339,7 @@ export function KitchenSpaceView({
               <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-6">
                 <CardHeader className="p-0 space-y-1">
                   <CardTitle className="text-base font-bold text-foreground flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-xs shrink-0">
+                    <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-xs shrink-0">
                       <Settings className="w-4 h-4" />
                     </div>
                     <span>Kitchen Information</span>
@@ -1453,8 +1453,8 @@ export function KitchenSpaceView({
           <div className="bg-card/95 backdrop-blur-md border border-border text-card-foreground rounded-2xl p-3 sm:px-5 sm:py-3.5 shadow-2xl flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="relative flex h-2.5 w-2.5 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary shadow-xs" />
               </span>
               <p className="text-xs sm:text-sm font-medium text-foreground truncate">
                 You have <strong className="text-foreground font-bold">{myCartCount}</strong> item{myCartCount === 1 ? "" : "s"} staged in your cart
