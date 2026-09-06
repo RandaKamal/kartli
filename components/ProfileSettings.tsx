@@ -57,22 +57,22 @@ const CULINARY_THEMES: CulinaryTheme[] = [
     colors: ["#f4f4f5", "#34d399", "#fbbf24"],
   },
   {
-    id: "saffron",
-    name: "Saffron Citrus",
-    subtitle: "Warm Mediterranean",
-    colors: ["#e9c46a", "#90be6d", "#f4a261"],
+    id: "campari-bitter",
+    name: "Campari Bitter",
+    subtitle: "Milanese Aperitivo & Blood Orange",
+    colors: ["#bf1b26", "#f65f1d", "#f0aa38"],
   },
   {
-    id: "plum",
-    name: "Midnight Plum",
-    subtitle: "Neo-Bistro",
-    colors: ["#c084fc", "#4ade80", "#f59e0b"],
+    id: "velvet-fig",
+    name: "Velvet Fig",
+    subtitle: "Warm French Bistro & Port Wine",
+    colors: ["#793994", "#e0a629", "#ab54ab"],
   },
   {
-    id: "nordic",
-    name: "Nordic Salt",
-    subtitle: "Scandinavian Slate & Teal",
-    colors: ["#22d3ee", "#10b981", "#fb923c"],
+    id: "matcha-pistachio",
+    name: "Matcha Pistachio",
+    subtitle: "Ceremonial Tea & Yuzu",
+    colors: ["#367856", "#ecc41e", "#569085"],
   },
 ];
 
@@ -114,13 +114,31 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
         localStorage.getItem("kartli-theme") ||
         localStorage.getItem("culinary-theme") ||
         "black-truffle";
-      const normalized = active === "truffle" ? "black-truffle" : active;
+      const normalized =
+        active === "truffle" || active === "black_truffle"
+          ? "black-truffle"
+          : active === "saffron" || active === "olive"
+          ? "campari-bitter"
+          : active === "plum"
+          ? "velvet-fig"
+          : active === "nordic"
+          ? "matcha-pistachio"
+          : active;
       setSavedTheme(normalized || "black-truffle");
     }
   }, [userTheme]);
 
   const handleCulinaryThemeChange = (themeKey: string) => {
-    const normalizedKey = themeKey === "truffle" ? "black-truffle" : themeKey;
+    const normalizedKey =
+      themeKey === "truffle" || themeKey === "black_truffle"
+        ? "black-truffle"
+        : themeKey === "saffron" || themeKey === "olive"
+        ? "campari-bitter"
+        : themeKey === "plum"
+        ? "velvet-fig"
+        : themeKey === "nordic"
+        ? "matcha-pistachio"
+        : themeKey;
     setSavedTheme(normalizedKey);
     if (typeof document !== "undefined") {
       document.documentElement.dataset.theme = normalizedKey;
@@ -309,7 +327,10 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   {CULINARY_THEMES.map((theme) => {
                     const isSelected =
                       theme.id === currentTheme ||
-                      (theme.id === "black-truffle" && (currentTheme === "truffle" || currentTheme === "black_truffle" || !currentTheme));
+                      (theme.id === "black-truffle" && (currentTheme === "truffle" || currentTheme === "black_truffle" || !currentTheme)) ||
+                      (theme.id === "campari-bitter" && (currentTheme === "saffron" || currentTheme === "olive")) ||
+                      (theme.id === "velvet-fig" && currentTheme === "plum") ||
+                      (theme.id === "matcha-pistachio" && currentTheme === "nordic");
                     return (
                       <button
                         key={theme.id}

@@ -521,7 +521,7 @@ export function ShoppingListSection({
         <div className="space-y-2.5 pt-3 border-t border-border">
           <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
             <span className="flex items-center gap-1.5">
-              <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <CheckCheck className="w-3.5 h-3.5 text-primary" />
               <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground">
                 Recently Checked Out
               </span>
@@ -594,7 +594,7 @@ export function ShoppingListSection({
                         {isThisReAdding ? (
                           <Loader2 className="w-3 h-3 animate-spin text-primary" />
                         ) : isAlreadyNeeded ? (
-                          <Check className="w-3 h-3 text-emerald-400" />
+                          <Check className="w-3 h-3 text-primary" />
                         ) : (
                           <Plus className="w-3 h-3 text-primary" />
                         )}

@@ -210,7 +210,7 @@ export function PantrySection({
 
                 {outOfStockCount === 0 ? (
                   <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl border border-border/60 bg-muted/20 text-xs text-muted-foreground">
-                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-primary shrink-0" />
                     <span>All staples are in stock.</span>
                   </div>
                 ) : (
@@ -240,7 +240,7 @@ export function PantrySection({
                               type="button"
                               onClick={() => handleToggleStock(item)}
                               title="Restock item (removes from shopping list)"
-                              className="h-8 px-3 text-xs font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                              className="h-8 px-3 text-xs font-medium bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
                             >
                               <Check className="w-3.5 h-3.5" />
                               <span>Restock</span>

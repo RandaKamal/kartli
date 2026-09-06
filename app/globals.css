@@ -52,6 +52,9 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -75,6 +78,7 @@
     --accent-success: #34d399;
     --accent-warning: #fbbf24;
     --accent-brand: #18181b;
+    --accent-secondary: #34d399;
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
@@ -96,8 +100,11 @@
     --muted: #f4f4f5;
     --muted-foreground: #71717a;
 
-    --accent: #f4f4f5;
+    --accent: #34d399;
     --accent-foreground: #09090b;
+
+    --chart-1: #10b981;
+    --chart-2: #f59e0b;
 
     --border: #e4e4e7;
     --input: #e4e4e7;
@@ -118,6 +125,7 @@
     --accent-success: #34d399;
     --accent-warning: #fbbf24;
     --accent-brand: #f4f4f5;
+    --accent-secondary: #34d399;
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
@@ -140,8 +148,11 @@
     --muted: #18181b;
     --muted-foreground: #a1a1aa;
 
-    --accent: #18181b;
-    --accent-foreground: #f4f4f5;
+    --accent: #34d399;
+    --accent-foreground: #000000;
+
+    --chart-1: #34d399;
+    --chart-2: #fbbf24;
 
     --border: #222226;
     --input: #222226;
@@ -153,16 +164,19 @@
   }
 
   /* ==========================================
-     Theme 2: Saffron Citrus (Warm Mediterranean)
+     Theme 2: Campari Bitter (Milanese Aperitivo & Blood Orange)
      ========================================== */
+  :root[data-theme='campari-bitter'],
+  :root[data-culinary-theme='campari-bitter'],
+  [data-theme='campari-bitter'],
+  [data-culinary-theme='campari-bitter'],
   :root[data-theme='saffron'],
-  :root[data-theme='olive'],
-  :root[data-culinary-theme='saffron'],
-  :root[data-culinary-theme='olive'] {
-    --accent-primary: #e9c46a;
-    --accent-success: #90be6d;
-    --accent-warning: #f4a261;
-    --accent-brand: #e9c46a;
+  :root[data-culinary-theme='saffron'] {
+    --accent-primary: hsl(356 75% 42%);
+    --accent-brand: hsl(356 75% 42%);
+    --accent-success: hsl(38 85% 45%);
+    --accent-warning: hsl(22 92% 54%);
+    --accent-secondary: hsl(38 85% 58%);
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
@@ -175,35 +189,41 @@
     --popover: #ffffff;
     --popover-foreground: #09090b;
 
-    --primary: #18181b;
+    --primary: hsl(356 75% 42%);
     --primary-foreground: #ffffff;
 
     --secondary: #f4f4f5;
-    --secondary-foreground: #18181b;
+    --secondary-foreground: #09090b;
 
     --muted: #f4f4f5;
     --muted-foreground: #71717a;
 
-    --accent: #f4f4f5;
-    --accent-foreground: #18181b;
+    --accent: hsl(22 92% 54%);
+    --accent-foreground: #ffffff;
+
+    --chart-1: hsl(22 92% 54%);
+    --chart-2: hsl(38 85% 58%);
 
     --border: #e4e4e7;
     --input: #e4e4e7;
-    --ring: #e9c46a;
+    --ring: hsl(22 92% 54%);
 
     --radius: 1rem;
 
     color-scheme: light;
   }
 
+  .dark[data-theme='campari-bitter'],
+  .dark[data-culinary-theme='campari-bitter'],
+  .dark [data-theme='campari-bitter'],
+  .dark [data-culinary-theme='campari-bitter'],
   .dark[data-theme='saffron'],
-  .dark[data-theme='olive'],
-  .dark[data-culinary-theme='saffron'],
-  .dark[data-culinary-theme='olive'] {
-    --accent-primary: #e9c46a;
-    --accent-success: #90be6d;
-    --accent-warning: #f4a261;
-    --accent-brand: #e9c46a;
+  .dark[data-culinary-theme='saffron'] {
+    --accent-primary: hsl(356 78% 58%);
+    --accent-brand: hsl(356 78% 58%);
+    --accent-success: hsl(38 85% 58%);
+    --accent-warning: hsl(22 92% 54%);
+    --accent-secondary: hsl(38 85% 58%);
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
@@ -217,7 +237,7 @@
     --popover: #141418;
     --popover-foreground: #f4f4f5;
 
-    --primary: #f4f4f5;
+    --primary: hsl(356 78% 58%);
     --primary-foreground: #0c0c0e;
 
     --secondary: #18181b;
@@ -226,25 +246,33 @@
     --muted: #18181b;
     --muted-foreground: #a1a1aa;
 
-    --accent: #18181b;
-    --accent-foreground: #f4f4f5;
+    --accent: hsl(22 92% 54%);
+    --accent-foreground: #0c0c0e;
+
+    --chart-1: hsl(22 92% 54%);
+    --chart-2: hsl(38 85% 58%);
 
     --border: #27272a;
     --input: #27272a;
-    --ring: #e9c46a;
+    --ring: hsl(22 92% 54%);
 
     color-scheme: dark;
   }
 
   /* ==========================================
-     Theme 3: Midnight Plum (Neo-Bistro)
+     Theme 3: Velvet Fig (Warm French Bistro & Port Wine)
      ========================================== */
+  :root[data-theme='velvet-fig'],
+  :root[data-culinary-theme='velvet-fig'],
+  [data-theme='velvet-fig'],
+  [data-culinary-theme='velvet-fig'],
   :root[data-theme='plum'],
   :root[data-culinary-theme='plum'] {
-    --accent-primary: #c084fc;
-    --accent-success: #4ade80;
-    --accent-warning: #f59e0b;
-    --accent-brand: #c084fc;
+    --accent-primary: hsl(285 45% 40%);
+    --accent-brand: hsl(285 45% 40%);
+    --accent-success: hsl(300 35% 45%);
+    --accent-warning: hsl(42 75% 52%);
+    --accent-secondary: hsl(300 35% 50%);
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
@@ -257,31 +285,41 @@
     --popover: #ffffff;
     --popover-foreground: #09090b;
 
-    --primary: #18181b;
+    --primary: hsl(285 45% 40%);
     --primary-foreground: #ffffff;
 
     --secondary: #f4f4f5;
-    --secondary-foreground: #18181b;
+    --secondary-foreground: #09090b;
 
     --muted: #f4f4f5;
     --muted-foreground: #71717a;
 
-    --accent: #f4f4f5;
-    --accent-foreground: #18181b;
+    --accent: hsl(42 75% 52%);
+    --accent-foreground: #09090b;
+
+    --chart-1: hsl(42 75% 52%);
+    --chart-2: hsl(300 35% 50%);
 
     --border: #e4e4e7;
     --input: #e4e4e7;
-    --ring: #c084fc;
+    --ring: hsl(285 45% 40%);
+
+    --radius: 1rem;
 
     color-scheme: light;
   }
 
+  .dark[data-theme='velvet-fig'],
+  .dark[data-culinary-theme='velvet-fig'],
+  .dark [data-theme='velvet-fig'],
+  .dark [data-culinary-theme='velvet-fig'],
   .dark[data-theme='plum'],
   .dark[data-culinary-theme='plum'] {
-    --accent-primary: #c084fc;
-    --accent-success: #4ade80;
-    --accent-warning: #f59e0b;
-    --accent-brand: #c084fc;
+    --accent-primary: hsl(285 55% 62%);
+    --accent-brand: hsl(285 55% 62%);
+    --accent-success: hsl(300 35% 55%);
+    --accent-warning: hsl(42 75% 52%);
+    --accent-secondary: hsl(300 35% 50%);
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
@@ -295,7 +333,7 @@
     --popover: #131720;
     --popover-foreground: #f4f4f5;
 
-    --primary: #f4f4f5;
+    --primary: hsl(285 55% 62%);
     --primary-foreground: #0d0f14;
 
     --secondary: #1a202c;
@@ -304,25 +342,33 @@
     --muted: #1a202c;
     --muted-foreground: #94a3b8;
 
-    --accent: #1a202c;
-    --accent-foreground: #f4f4f5;
+    --accent: hsl(42 75% 52%);
+    --accent-foreground: #0d0f14;
+
+    --chart-1: hsl(42 75% 52%);
+    --chart-2: hsl(300 35% 50%);
 
     --border: #242b38;
     --input: #242b38;
-    --ring: #c084fc;
+    --ring: hsl(285 55% 62%);
 
     color-scheme: dark;
   }
 
   /* ==========================================
-     Theme 4: Nordic Salt (Scandinavian Slate & Teal)
+     Theme 4: Matcha Pistachio (Ceremonial Tea & Yuzu)
      ========================================== */
+  :root[data-theme='matcha-pistachio'],
+  :root[data-culinary-theme='matcha-pistachio'],
+  [data-theme='matcha-pistachio'],
+  [data-culinary-theme='matcha-pistachio'],
   :root[data-theme='nordic'],
   :root[data-culinary-theme='nordic'] {
-    --accent-primary: #22d3ee;
-    --accent-success: #10b981;
-    --accent-warning: #fb923c;
-    --accent-brand: #22d3ee;
+    --accent-primary: hsl(154 38% 34%);
+    --accent-brand: hsl(154 38% 34%);
+    --accent-success: hsl(170 25% 40%);
+    --accent-warning: hsl(48 88% 52%);
+    --accent-secondary: hsl(170 25% 45%);
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
@@ -335,7 +381,7 @@
     --popover: #ffffff;
     --popover-foreground: #09090b;
 
-    --primary: #083344;
+    --primary: hsl(154 38% 34%);
     --primary-foreground: #ffffff;
 
     --secondary: #f4f4f5;
@@ -344,22 +390,32 @@
     --muted: #f4f4f5;
     --muted-foreground: #71717a;
 
-    --accent: #f4f4f5;
+    --accent: hsl(48 88% 52%);
     --accent-foreground: #09090b;
+
+    --chart-1: hsl(48 88% 52%);
+    --chart-2: hsl(170 25% 45%);
 
     --border: #e4e4e7;
     --input: #e4e4e7;
-    --ring: #22d3ee;
+    --ring: hsl(154 38% 34%);
+
+    --radius: 1rem;
 
     color-scheme: light;
   }
 
+  .dark[data-theme='matcha-pistachio'],
+  .dark[data-culinary-theme='matcha-pistachio'],
+  .dark [data-theme='matcha-pistachio'],
+  .dark [data-culinary-theme='matcha-pistachio'],
   .dark[data-theme='nordic'],
   .dark[data-culinary-theme='nordic'] {
-    --accent-primary: #22d3ee;
-    --accent-success: #10b981;
-    --accent-warning: #fb923c;
-    --accent-brand: #22d3ee;
+    --accent-primary: hsl(154 42% 52%);
+    --accent-brand: hsl(154 42% 52%);
+    --accent-success: hsl(170 25% 45%);
+    --accent-warning: hsl(48 88% 52%);
+    --accent-secondary: hsl(170 25% 45%);
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
@@ -373,7 +429,7 @@
     --popover: #11161d;
     --popover-foreground: #f4f4f5;
 
-    --primary: #f4f4f5;
+    --primary: hsl(154 42% 52%);
     --primary-foreground: #0a0e13;
 
     --secondary: #17202c;
@@ -382,12 +438,15 @@
     --muted: #17202c;
     --muted-foreground: #94a3b8;
 
-    --accent: #17202c;
-    --accent-foreground: #f4f4f5;
+    --accent: hsl(48 88% 52%);
+    --accent-foreground: #0a0e13;
+
+    --chart-1: hsl(48 88% 52%);
+    --chart-2: hsl(170 25% 45%);
 
     --border: #1e2633;
     --input: #1e2633;
-    --ring: #22d3ee;
+    --ring: hsl(154 42% 52%);
 
     color-scheme: dark;
   }

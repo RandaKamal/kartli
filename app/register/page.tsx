@@ -15,18 +15,15 @@ export default async function RegisterPage({
     : "/login";
 
   return (
-    <main className="relative flex-1 flex items-center justify-center overflow-hidden py-4 sm:py-6 px-4 -my-6 sm:-my-8">
-      {/* 1. Ambient Multi-Color Radial Glow */}
-      <div className="absolute inset-0 -z-20 flex items-center justify-center pointer-events-none overflow-hidden">
-        <div className="w-[620px] h-[620px] max-w-full rounded-full bg-gradient-to-tr from-emerald-500/10 via-cyan-500/10 to-amber-500/10 blur-[130px] opacity-60" />
+    <main className="relative flex-1 flex flex-col items-center justify-center min-h-[calc(100dvh-8rem)] px-4 py-8">
+      {/* Ambient Glow */}
+      <div className="absolute inset-0 -z-10 flex items-center justify-center pointer-events-none">
+        <div className="w-[320px] sm:w-[460px] h-[320px] sm:h-[460px] bg-gradient-to-tr from-emerald-500/20 via-teal-400/15 to-cyan-500/20 dark:from-emerald-500/15 dark:via-teal-400/10 dark:to-cyan-500/15 rounded-full blur-[80px] sm:blur-[110px]" />
       </div>
 
-      {/* Elevated Card Container with Optical Centering */}
-      <div className="relative w-full max-w-md -translate-y-2">
-        {/* Landing Page Ambient Backlight */}
-        <div className="absolute -inset-2 -z-10 rounded-[2.5rem] bg-gradient-to-tr from-amber-500/25 via-emerald-500/20 to-cyan-500/25 blur-3xl opacity-90 pointer-events-none" />
-
-        <div className="relative rounded-3xl border border-border/80 bg-card/85 p-6 sm:p-7 backdrop-blur-xl shadow-2xl space-y-4">
+      {/* Card Container */}
+      <div className="relative w-full max-w-[400px] sm:max-w-md">
+        <div className="relative rounded-3xl border border-border/70 dark:border-border/50 bg-card/90 dark:bg-card/75 text-card-foreground p-6 sm:p-7 backdrop-blur-xl shadow-xl space-y-4">
           {/* 2. Mini Terminal Header on the Card */}
           <div className="flex items-center border-b border-border/40 pb-3 mb-4">
             <div className="flex items-center gap-1.5">
@@ -41,9 +38,9 @@ export default async function RegisterPage({
 
           {/* 3. Punchy Headline & Landing Page Typography */}
           <div className="text-center">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white text-center">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground text-center">
               Kitchen management with{" "}
-              <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent font-extrabold">
+              <span className="bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500 dark:from-emerald-400 dark:via-teal-300 dark:to-cyan-400 bg-clip-text text-transparent font-extrabold">
                 zero drama
               </span>.
             </h1>
