@@ -23,6 +23,7 @@ import {
   Package,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { CardCarousel } from "@/components/CardCarousel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -55,40 +56,6 @@ export default async function HomePage() {
         <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
           Track pantry staples, resolve ad-hoc grocery runs, split mixed supermarket receipts with Gemini Vision AI, and settle refunds transparently. Designed for flatshares, families, and studios.
         </p>
-
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center justify-center gap-3.5 pt-2">
-          {session?.user ? (
-            <>
-              <Button asChild size="lg" className="rounded-2xl font-bold shadow-md h-12 px-6 text-sm gap-2">
-                <Link href="/dashboard">
-                  <span>Go to Dashboard</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="rounded-2xl font-semibold h-12 px-5 text-sm gap-2 border-border/80 hover:bg-muted/50">
-                <Link href="/kitchen/new">
-                  <Plus className="w-4 h-4" />
-                  <span>Create New Space</span>
-                </Link>
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button asChild size="lg" className="rounded-2xl font-bold shadow-md h-12 px-6 text-sm gap-2">
-                <Link href="/register">
-                  <span>Start Your Kitchen</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="rounded-2xl font-semibold h-12 px-5 text-sm gap-2 border-border/80 hover:bg-muted/50">
-                <Link href="/login">
-                  <span>Sign In</span>
-                </Link>
-              </Button>
-            </>
-          )}
-        </div>
 
         {/* Trust / Privacy micro-copy */}
         <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-1">
@@ -195,6 +162,40 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center justify-center gap-3.5 pt-2">
+          {session?.user ? (
+            <>
+              <Button asChild size="lg" className="rounded-2xl font-bold shadow-md h-12 px-6 text-sm gap-2">
+                <Link href="/dashboard">
+                  <span>Go to Dashboard</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="rounded-2xl font-semibold h-12 px-5 text-sm gap-2 border-border/80 hover:bg-muted/50">
+                <Link href="/kitchen/new">
+                  <Plus className="w-4 h-4" />
+                  <span>Create New Space</span>
+                </Link>
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button asChild size="lg" className="rounded-2xl font-bold shadow-md h-12 px-6 text-sm gap-2">
+                <Link href="/register">
+                  <span>Start Your Kitchen</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="rounded-2xl font-semibold h-12 px-5 text-sm gap-2 border-border/80 hover:bg-muted/50">
+                <Link href="/login">
+                  <span>Sign In</span>
+                </Link>
+              </Button>
+            </>
+          )}
+        </div>
       </section>
 
       {/* 2. DYNAMIC SPACES SHOWCASE (THE 4 PRESETS) */}
@@ -211,71 +212,71 @@ export default async function HomePage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <CardCarousel>
           {/* Preset 1: Flatshare */}
-          <Card className="border border-border bg-card rounded-2xl p-5 space-y-3 shadow-xs hover:border-border transition-all">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center">
-              <Home className="w-5 h-5" />
+          <Card className="border border-border bg-card rounded-[28px] p-0 overflow-hidden shadow-xs hover:border-border transition-all flex flex-col">
+            <div className="h-[130px] flex items-center justify-center bg-gradient-to-br from-amber-400/20 to-amber-400/5">
+              <Home className="w-11 h-11 text-amber-400" />
             </div>
-            <div>
+            <div className="p-6 flex flex-col gap-2.5 flex-1">
               <h3 className="text-base font-bold text-foreground">Flatshare (WG)</h3>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 Roommates coordinating shared essentials like oat milk, oil, and detergent without messy group chats.
               </p>
-            </div>
-            <div className="pt-2 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
-              &ldquo;Roommates&rdquo; &bull; Shared Cart
+              <div className="mt-auto pt-2 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
+                &ldquo;Roommates&rdquo; &bull; Shared Cart
+              </div>
             </div>
           </Card>
 
           {/* Preset 2: Family */}
-          <Card className="border border-border bg-card rounded-2xl p-5 space-y-3 shadow-xs hover:border-border transition-all">
-            <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center">
-              <Heart className="w-5 h-5" />
+          <Card className="border border-border bg-card rounded-[28px] p-0 overflow-hidden shadow-xs hover:border-border transition-all flex flex-col">
+            <div className="h-[130px] flex items-center justify-center bg-gradient-to-br from-rose-400/20 to-rose-400/5">
+              <Heart className="w-11 h-11 text-rose-400" />
             </div>
-            <div>
+            <div className="p-6 flex flex-col gap-2.5 flex-1">
               <h3 className="text-base font-bold text-foreground">Family Home</h3>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 A central grocery board for busy households. Keep track of what is running low before heading to the store.
               </p>
-            </div>
-            <div className="pt-2 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
-              &ldquo;Family Members&rdquo; &bull; Household List
+              <div className="mt-auto pt-2 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
+                &ldquo;Family Members&rdquo; &bull; Household List
+              </div>
             </div>
           </Card>
 
           {/* Preset 3: Studio / Office */}
-          <Card className="border border-border bg-card rounded-2xl p-5 space-y-3 shadow-xs hover:border-border transition-all">
-            <div className="w-10 h-10 rounded-xl bg-teal-500/10 text-teal-400 border border-teal-500/20 flex items-center justify-center">
-              <Briefcase className="w-5 h-5" />
+          <Card className="border border-border bg-card rounded-[28px] p-0 overflow-hidden shadow-xs hover:border-border transition-all flex flex-col">
+            <div className="h-[130px] flex items-center justify-center bg-gradient-to-br from-teal-400/20 to-teal-400/5">
+              <Briefcase className="w-11 h-11 text-teal-400" />
             </div>
-            <div>
+            <div className="p-6 flex flex-col gap-2.5 flex-1">
               <h3 className="text-base font-bold text-foreground">Studio &amp; Office</h3>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 Team spaces managing shared coffee beans, fruit baskets, and meeting snacks with quick refund tracking.
               </p>
-            </div>
-            <div className="pt-2 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
-              &ldquo;Team Members&rdquo; &bull; Shared Expenses
+              <div className="mt-auto pt-2 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
+                &ldquo;Team Members&rdquo; &bull; Shared Expenses
+              </div>
             </div>
           </Card>
 
           {/* Preset 4: Neutral */}
-          <Card className="border border-border bg-card rounded-2xl p-5 space-y-3 shadow-xs hover:border-border transition-all">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center">
-              <Layers className="w-5 h-5" />
+          <Card className="border border-border bg-card rounded-[28px] p-0 overflow-hidden shadow-xs hover:border-border transition-all flex flex-col">
+            <div className="h-[130px] flex items-center justify-center bg-gradient-to-br from-indigo-400/20 to-indigo-400/5">
+              <Layers className="w-11 h-11 text-indigo-400" />
             </div>
-            <div>
+            <div className="p-6 flex flex-col gap-2.5 flex-1">
               <h3 className="text-base font-bold text-foreground">Neutral Space</h3>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 Coliving, shared studios, or community hubs needing simple, unbranded communal inventory.
               </p>
-            </div>
-            <div className="pt-2 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
-              &ldquo;Members&rdquo; &bull; Shared Pantry
+              <div className="mt-auto pt-2 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
+                &ldquo;Members&rdquo; &bull; Shared Pantry
+              </div>
             </div>
           </Card>
-        </div>
+        </CardCarousel>
       </section>
 
       {/* 3. CORE CAPABILITIES BENTO GRID */}
@@ -292,73 +293,85 @@ export default async function HomePage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardCarousel>
           {/* Bento Item 1: Instant Inventory */}
-          <Card className="border border-border bg-card rounded-3xl p-6 space-y-3 shadow-xs md:col-span-1">
-            <div className="w-10 h-10 rounded-2xl bg-muted border border-border flex items-center justify-center text-foreground">
-              <Zap className="w-5 h-5 text-amber-400" />
+          <Card className="border border-border bg-card rounded-[28px] p-0 overflow-hidden shadow-xs flex flex-col">
+            <div className="h-[130px] flex items-center justify-center bg-gradient-to-br from-amber-400/20 to-amber-400/5">
+              <Zap className="w-11 h-11 text-amber-400" />
             </div>
-            <h3 className="text-lg font-bold text-foreground">Instant Trigger Restocks</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Mark a staple like Coffee or Sourdough as empty with a single tap. It instantly queues into the active needed shopping list.
-            </p>
+            <div className="p-6 flex flex-col gap-2.5 flex-1">
+              <h3 className="text-lg font-bold text-foreground">Instant Trigger Restocks</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Mark a staple like Coffee or Sourdough as empty with a single tap. It instantly queues into the active needed shopping list.
+              </p>
+            </div>
           </Card>
 
           {/* Bento Item 2: Real-time Staged Carts */}
-          <Card className="border border-border bg-card rounded-3xl p-6 space-y-3 shadow-xs md:col-span-2">
-            <div className="w-10 h-10 rounded-2xl bg-muted border border-border flex items-center justify-center text-foreground">
-              <ShoppingCart className="w-5 h-5 text-emerald-400" />
+          <Card className="border border-border bg-card rounded-[28px] p-0 overflow-hidden shadow-xs flex flex-col">
+            <div className="h-[130px] flex items-center justify-center bg-gradient-to-br from-emerald-400/20 to-emerald-400/5">
+              <ShoppingCart className="w-11 h-11 text-emerald-400" />
             </div>
-            <h3 className="text-lg font-bold text-foreground">Member Staged Carts &amp; Guest Reservations</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Prevent duplicate shopping. When someone is physically at the supermarket putting items into their cart, roommates see real-time reserved badges so nobody buys the same milk twice.
-            </p>
+            <div className="p-6 flex flex-col gap-2.5 flex-1">
+              <h3 className="text-lg font-bold text-foreground">Member Staged Carts &amp; Guest Reservations</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Prevent duplicate shopping. When someone is physically at the supermarket putting items into their cart, roommates see real-time reserved badges so nobody buys the same milk twice.
+              </p>
+            </div>
           </Card>
 
           {/* Bento Item 3: Disposable Guest Links */}
-          <Card className="border border-border bg-card rounded-3xl p-6 space-y-3 shadow-xs md:col-span-2">
-            <div className="w-10 h-10 rounded-2xl bg-muted border border-border flex items-center justify-center text-foreground">
-              <QrCode className="w-5 h-5 text-teal-400" />
+          <Card className="border border-border bg-card rounded-[28px] p-0 overflow-hidden shadow-xs flex flex-col">
+            <div className="h-[130px] flex items-center justify-center bg-gradient-to-br from-teal-400/20 to-teal-400/5">
+              <QrCode className="w-11 h-11 text-teal-400" />
             </div>
-            <h3 className="text-lg font-bold text-foreground">Disposable Supermarket Guest Links</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Send a friend, partner, or guest to the grocery store with a zero-auth read-only link. They see the live shopping list without needing an account or app install.
-            </p>
+            <div className="p-6 flex flex-col gap-2.5 flex-1">
+              <h3 className="text-lg font-bold text-foreground">Disposable Supermarket Guest Links</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Send a friend, partner, or guest to the grocery store with a zero-auth read-only link. They see the live shopping list without needing an account or app install.
+              </p>
+            </div>
           </Card>
 
           {/* Bento Item 4: AI Receipt Ingestion */}
-          <Card className="border border-border bg-card rounded-3xl p-6 space-y-3 shadow-xs md:col-span-1">
-            <div className="w-10 h-10 rounded-2xl bg-muted border border-border flex items-center justify-center text-foreground">
-              <ScanLine className="w-5 h-5 text-purple-400" />
+          <Card className="border border-border bg-card rounded-[28px] p-0 overflow-hidden shadow-xs flex flex-col">
+            <div className="h-[130px] flex items-center justify-center bg-gradient-to-br from-purple-400/20 to-purple-400/5">
+              <ScanLine className="w-11 h-11 text-purple-400" />
             </div>
-            <h3 className="text-lg font-bold text-foreground">AI Receipt Ingestion</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Gemini Vision OCR reads paper receipts, matches line items to staged cart entries, and extracts store names and currency automatically.
-            </p>
+            <div className="p-6 flex flex-col gap-2.5 flex-1">
+              <h3 className="text-lg font-bold text-foreground">AI Receipt Ingestion</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Gemini Vision OCR reads paper receipts, matches line items to staged cart entries, and extracts store names and currency automatically.
+              </p>
+            </div>
           </Card>
 
           {/* Bento Item 5: Multi-Currency Engine */}
-          <Card className="border border-border bg-card rounded-3xl p-6 space-y-3 shadow-xs md:col-span-1">
-            <div className="w-10 h-10 rounded-2xl bg-muted border border-border flex items-center justify-center text-foreground">
-              <Coins className="w-5 h-5 text-emerald-400" />
+          <Card className="border border-border bg-card rounded-[28px] p-0 overflow-hidden shadow-xs flex flex-col">
+            <div className="h-[130px] flex items-center justify-center bg-gradient-to-br from-emerald-400/20 to-emerald-400/5">
+              <Coins className="w-11 h-11 text-emerald-400" />
             </div>
-            <h3 className="text-lg font-bold text-foreground">All European Currencies + USD</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Support for EUR, CHF, GBP, USD, SEK, NOK, DKK, PLN, CZK, HUF, RON, BGN, and ISK with automatic FX conversion in admin refund views.
-            </p>
+            <div className="p-6 flex flex-col gap-2.5 flex-1">
+              <h3 className="text-lg font-bold text-foreground">All European Currencies + USD</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Support for EUR, CHF, GBP, USD, SEK, NOK, DKK, PLN, CZK, HUF, RON, BGN, and ISK with automatic FX conversion in admin refund views.
+              </p>
+            </div>
           </Card>
 
           {/* Bento Item 6: Artisanal Culinary Palettes */}
-          <Card className="border border-border bg-card rounded-3xl p-6 space-y-3 shadow-xs md:col-span-2">
-            <div className="w-10 h-10 rounded-2xl bg-muted border border-border flex items-center justify-center text-foreground">
-              <Palette className="w-5 h-5 text-pink-400" />
+          <Card className="border border-border bg-card rounded-[28px] p-0 overflow-hidden shadow-xs flex flex-col">
+            <div className="h-[130px] flex items-center justify-center bg-gradient-to-br from-pink-400/20 to-pink-400/5">
+              <Palette className="w-11 h-11 text-pink-400" />
             </div>
-            <h3 className="text-lg font-bold text-foreground">Dark Artisanal Culinary Themes</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Personalize your workspace with Saffron Citrus (warm Mediterranean), Black Truffle (high-contrast luxury), Midnight Plum (neo-bistro), or Nordic Salt (slate &amp; teal).
-            </p>
+            <div className="p-6 flex flex-col gap-2.5 flex-1">
+              <h3 className="text-lg font-bold text-foreground">Dark Artisanal Culinary Themes</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Personalize your workspace with Saffron Citrus (warm Mediterranean), Black Truffle (high-contrast luxury), Midnight Plum (neo-bistro), or Nordic Salt (slate &amp; teal).
+              </p>
+            </div>
           </Card>
-        </div>
+        </CardCarousel>
       </section>
 
       {/* 4. AI SCANNER DEEP DIVE */}
