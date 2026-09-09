@@ -106,11 +106,11 @@ export default async function RootLayout({
               </div>
             </header>
 
-            <main className="w-full flex-1 pb-32 max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+            <main className="w-full max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
               {children}
             </main>
 
-            <footer className="bg-muted/30 border-t border-border/60 py-6 text-xs text-muted-foreground">
+            <footer className="bg-muted/30 border-t border-border/60 py-6 text-xs text-muted-foreground mt-8 mb-28 sm:mb-0">
               <div className="max-w-6xl mx-auto px-4 space-y-4">
                 <p className="text-center text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">
                   Setup &amp; Feedback

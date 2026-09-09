@@ -55,13 +55,13 @@ export function UserDropdown({ user }: UserDropdownProps) {
           Signed in as <strong className="text-foreground">@{user.username}</strong>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild className="hover:bg-white/10 dark:hover:bg-white/5 hover:text-foreground transition-colors duration-150 rounded-lg">
           <Link href="/dashboard" className="flex items-center gap-2 w-full cursor-pointer">
             <UtensilsCrossed className="w-3.5 h-3.5" />
             <span>My Kitchens</span>
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild className="hover:bg-white/10 dark:hover:bg-white/5 hover:text-foreground transition-colors duration-150 rounded-lg">
           <Link href="/profile" className="flex items-center gap-2 w-full cursor-pointer">
             <Settings className="w-3.5 h-3.5" />
             <span>Settings &amp; Profile</span>
@@ -74,7 +74,7 @@ export function UserDropdown({ user }: UserDropdownProps) {
             handleLogout();
           }}
           disabled={isLoggingOut}
-          className="flex items-center gap-2 w-full text-destructive focus:text-destructive cursor-pointer text-xs"
+          className="flex items-center gap-2 w-full text-destructive focus:text-destructive hover:bg-white/10 dark:hover:bg-white/5 hover:text-destructive focus:bg-white/10 dark:focus:bg-white/5 data-[highlighted]:bg-white/10 dark:data-[highlighted]:bg-white/5 cursor-pointer text-xs transition-colors duration-150 rounded-lg"
         >
           {isLoggingOut ? (
             <>

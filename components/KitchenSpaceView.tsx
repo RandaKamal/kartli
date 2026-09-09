@@ -454,7 +454,7 @@ export function KitchenSpaceView({
   };
 
   return (
-    <div className="w-full space-y-6 pb-6 sm:pb-8">
+    <div className="w-full space-y-6">
       <GuestCartHandoverListener kitchenId={initialKitchen.id} />
 
       {/* Sleek Single-Row Page Header */}
@@ -809,8 +809,8 @@ export function KitchenSpaceView({
         </nav>
 
         {/* Tab 1: Kitchen (Daily Core) */}
-        <TabsContent value="kitchen" className="space-y-6 animate-in fade-in-50">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <TabsContent value="kitchen" className="flex flex-col gap-4 justify-start animate-in fade-in-50">
+          <div className="flex flex-col gap-4 justify-start lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
             <PantrySection
               kitchenId={initialKitchen.id}
               items={localPantryItems}
