@@ -14,6 +14,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "kartli - Shared Kitchens",
   description: "Lean, email-free shared kitchen management and grocery lists.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "kartli",
+  },
 };
 
 export default async function RootLayout({

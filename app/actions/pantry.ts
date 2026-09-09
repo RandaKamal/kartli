@@ -3,7 +3,8 @@
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { getUserMembership } from "@/lib/kitchen";
+import { getUserMembership, getKitchenMembersWithUsers } from "@/lib/kitchen";
+import { sendPushToUsers } from "@/lib/push";
 import { getGuestCartCookieName } from "@/lib/guestCart";
 import {
   getPantryItems,
@@ -56,9 +57,22 @@ export async function setPantryItemStockAction(
   itemId: string,
   isOutOfStock: boolean
 ) {
-  await requireMembership(kitchenId);
+  const userId = await requireMembership(kitchenId);
   const item = await setPantryItemStock(kitchenId, itemId, isOutOfStock);
   revalidateKitchen(kitchenId);
+
+  if (isOutOfStock) {
+    const members = await getKitchenMembersWithUsers(kitchenId);
+    const otherUserIds = members
+      .map((m) => m.user_id)
+      .filter((id): id is string => !!id && id !== userId);
+    sendPushToUsers(otherUserIds, {
+      title: "Item out of stock",
+      body: `${item.name} just ran out — added to the shopping list.`,
+      url: `/kitchen/${kitchenId}`,
+    }).catch((err) => console.error("Push notification failed:", err));
+  }
+
   return item;
 }
 

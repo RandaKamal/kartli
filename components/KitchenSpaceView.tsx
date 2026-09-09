@@ -72,6 +72,8 @@ import {
 } from "lucide-react";
 import { capitalize } from "@/lib/utils";
 import { toast } from "sonner";
+import { NotificationToggle } from "@/components/NotificationToggle";
+
 
 export function MembersSkeleton() {
   return (
@@ -1067,6 +1069,14 @@ export function KitchenSpaceView({
 
         {/* Tab 5: Settings */}
         <TabsContent value="settings" className="space-y-6 animate-in fade-in-50">
+          <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Push Notifications</h3>
+              <p className="text-xs text-muted-foreground">Get alerted when items run low, someone checks out, or your refund is settled.</p>
+            </div>
+            <NotificationToggle />
+          </Card>
+
           {isAdmin ? (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               {/* Left Column (Col 7/12) — "General Settings" Card */}
