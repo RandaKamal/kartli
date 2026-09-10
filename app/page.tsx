@@ -29,11 +29,12 @@ export default async function HomePage() {
   return (
     <div className="space-y-32 sm:space-y-32 pb-16">
       {/* 1. HERO SECTION */}
-      <section className="relative pt-6 sm:pt-12 text-center max-w-4xl mx-auto space-y-6">
-        {/* Pill Badge */}
-        <div className="self-center inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-border/80 bg-card/80 backdrop-blur-md shadow-xs text-xs font-medium text-muted-foreground animate-in fade-in slide-in-from-top-3 duration-500">
-          <span className="flex h-2 w-2 rounded-full bg-accent-primary animate-pulse" />
-          <span className="text-foreground font-semibold">Introducing kartli 1.0</span>
+      <section className="relative pt-6 sm:pt-12 pb-12 sm:pb-16 text-center max-w-4xl mx-auto space-y-6">
+        {/* Editorial Badge */}
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border/80 bg-secondary/50 backdrop-blur-sm text-xs font-medium text-muted-foreground mb-4">
+          <span className="text-[10px] uppercase tracking-wider font-semibold text-primary">v1.0</span>
+          <span className="w-1 h-1 rounded-full bg-border" />
+          <span>Artisanal Kitchen Workspace</span>
         </div>
 
         {/* Hero Title */}
@@ -50,9 +51,11 @@ export default async function HomePage() {
         {/* FLOATING PRODUCT PREVIEW MOCKUP */}
         <div className="relative pt-6 max-w-3xl mx-auto">
           {/* Subtle Glow Backdrop */}
-          <div className="absolute -inset-4 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-cyan-500/10 rounded-3xl blur-2xl pointer-events-none" />
+          <div className="absolute inset-0 -z-10 flex items-center justify-center pointer-events-none">
+            <div className="w-full h-full bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-cyan-500/10 rounded-3xl blur-2xl" />
+          </div>
 
-          <div className="relative border border-border/80 bg-card/90 backdrop-blur-xl rounded-3xl p-4 sm:p-6 shadow-2xl space-y-4 text-left">
+          <div className="relative border border-border/80 bg-card/90 backdrop-blur-xl rounded-3xl p-4 sm:p-6 shadow-2xl shadow-black/10 dark:shadow-black/40 space-y-4 text-left">
             {/* Mock Window Top Bar */}
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <div className="flex items-center gap-2">
@@ -158,66 +161,70 @@ export default async function HomePage() {
 
         <CardCarousel>
           {/* Preset 1: Flatshare */}
-          <Card className="border border-border bg-card rounded-[28px] p-0 overflow-hidden shadow-xs hover:border-border transition-all flex flex-col">
-            <div className="h-[130px] flex items-center justify-center bg-gradient-to-br from-amber-400/20 to-amber-400/5">
-              <Home className="w-11 h-11 text-amber-400" />
-            </div>
-            <div className="p-6 flex flex-col gap-2.5 flex-1">
-              <h3 className="text-base font-bold text-foreground">Flatshare (WG)</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+          <Card className="bg-card border border-border/70 shadow-sm hover:shadow-md transition-shadow rounded-2xl p-6 flex flex-col justify-between h-full">
+            <div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary border border-primary/20 mb-4">
+                <Home className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground">Flatshare (WG)</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mt-2">
                 Roommates coordinating shared essentials like oat milk, oil, and detergent without messy group chats.
               </p>
-              <div className="mt-auto pt-2 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
-                &ldquo;Roommates&rdquo; &bull; Shared Cart
-              </div>
+            </div>
+            <div className="text-xs font-mono text-muted-foreground/80 pt-4 border-t border-border/40 flex items-center justify-between mt-6">
+              <span>&ldquo;Roommates&rdquo;</span>
+              <span>Shared Cart</span>
             </div>
           </Card>
 
           {/* Preset 2: Family */}
-          <Card className="border border-border bg-card rounded-[28px] p-0 overflow-hidden shadow-xs hover:border-border transition-all flex flex-col">
-            <div className="h-[130px] flex items-center justify-center bg-gradient-to-br from-rose-400/20 to-rose-400/5">
-              <Heart className="w-11 h-11 text-rose-400" />
-            </div>
-            <div className="p-6 flex flex-col gap-2.5 flex-1">
-              <h3 className="text-base font-bold text-foreground">Family Home</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+          <Card className="bg-card border border-border/70 shadow-sm hover:shadow-md transition-shadow rounded-2xl p-6 flex flex-col justify-between h-full">
+            <div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary border border-primary/20 mb-4">
+                <Heart className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground">Family Home</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mt-2">
                 A central grocery board for busy households. Keep track of what is running low before heading to the store.
               </p>
-              <div className="mt-auto pt-2 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
-                &ldquo;Family Members&rdquo; &bull; Household List
-              </div>
+            </div>
+            <div className="text-xs font-mono text-muted-foreground/80 pt-4 border-t border-border/40 flex items-center justify-between mt-6">
+              <span>&ldquo;Family Members&rdquo;</span>
+              <span>Household List</span>
             </div>
           </Card>
 
           {/* Preset 3: Studio / Office */}
-          <Card className="border border-border bg-card rounded-[28px] p-0 overflow-hidden shadow-xs hover:border-border transition-all flex flex-col">
-            <div className="h-[130px] flex items-center justify-center bg-gradient-to-br from-teal-400/20 to-teal-400/5">
-              <Briefcase className="w-11 h-11 text-teal-400" />
-            </div>
-            <div className="p-6 flex flex-col gap-2.5 flex-1">
-              <h3 className="text-base font-bold text-foreground">Studio &amp; Office</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+          <Card className="bg-card border border-border/70 shadow-sm hover:shadow-md transition-shadow rounded-2xl p-6 flex flex-col justify-between h-full">
+            <div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary border border-primary/20 mb-4">
+                <Briefcase className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground">Studio &amp; Office</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mt-2">
                 Team spaces managing shared coffee beans, fruit baskets, and meeting snacks with quick refund tracking.
               </p>
-              <div className="mt-auto pt-2 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
-                &ldquo;Team Members&rdquo; &bull; Shared Expenses
-              </div>
+            </div>
+            <div className="text-xs font-mono text-muted-foreground/80 pt-4 border-t border-border/40 flex items-center justify-between mt-6">
+              <span>&ldquo;Team Members&rdquo;</span>
+              <span>Shared Expenses</span>
             </div>
           </Card>
 
           {/* Preset 4: Neutral */}
-          <Card className="border border-border bg-card rounded-[28px] p-0 overflow-hidden shadow-xs hover:border-border transition-all flex flex-col">
-            <div className="h-[130px] flex items-center justify-center bg-gradient-to-br from-indigo-400/20 to-indigo-400/5">
-              <Layers className="w-11 h-11 text-indigo-400" />
-            </div>
-            <div className="p-6 flex flex-col gap-2.5 flex-1">
-              <h3 className="text-base font-bold text-foreground">Neutral Space</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+          <Card className="bg-card border border-border/70 shadow-sm hover:shadow-md transition-shadow rounded-2xl p-6 flex flex-col justify-between h-full">
+            <div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary border border-primary/20 mb-4">
+                <Layers className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground">Neutral Space</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mt-2">
                 Coliving, shared studios, or community hubs needing simple, unbranded communal inventory.
               </p>
-              <div className="mt-auto pt-2 border-t border-border/60 text-[11px] font-mono text-muted-foreground">
-                &ldquo;Members&rdquo; &bull; Shared Pantry
-              </div>
+            </div>
+            <div className="text-xs font-mono text-muted-foreground/80 pt-4 border-t border-border/40 flex items-center justify-between mt-6">
+              <span>&ldquo;Members&rdquo;</span>
+              <span>Shared Pantry</span>
             </div>
           </Card>
         </CardCarousel>

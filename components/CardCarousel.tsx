@@ -82,9 +82,9 @@ export function CardCarousel({ children }: { children: React.ReactNode[] }) {
                 slideRefs.current[i]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
               }
             }}
-            className={`w-[78%] sm:w-[34%] shrink-0 snap-center transition-all duration-300 ${
+            className={`w-[78%] sm:w-[34%] shrink-0 snap-center transition-all duration-300 flex flex-col ${
               i === activeIndex
-                ? "opacity-100 scale-105 ring-2 ring-foreground/15 shadow-2xl rounded-[28px]"
+                ? "opacity-100 scale-105 ring-2 ring-foreground/15 shadow-2xl rounded-2xl"
                 : "opacity-40 scale-85 cursor-pointer"
             }`}
           >
@@ -104,8 +104,10 @@ export function CardCarousel({ children }: { children: React.ReactNode[] }) {
             type="button"
             aria-label={`Go to slide ${i + 1}`}
             onClick={() => slideRefs.current[i]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" })}
-            className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-              i === activeIndex ? "w-5 bg-foreground" : "w-1.5 bg-foreground/25"
+            className={`cursor-pointer ${
+              i === activeIndex
+                ? "bg-primary w-5 h-1.5 rounded-full transition-all"
+                : "bg-border w-1.5 h-1.5 rounded-full transition-all"
             }`}
           />
         ))}

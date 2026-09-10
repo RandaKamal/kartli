@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LogOut, Settings, Loader2, UtensilsCrossed } from "lucide-react";
+import { LogOut, Settings, Loader2, LayoutDashboard } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,8 +57,8 @@ export function UserDropdown({ user }: UserDropdownProps) {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild className="hover:bg-white/10 dark:hover:bg-white/5 hover:text-foreground transition-colors duration-150 rounded-lg">
           <Link href="/dashboard" className="flex items-center gap-2 w-full cursor-pointer">
-            <UtensilsCrossed className="w-3.5 h-3.5" />
-            <span>My Kitchens</span>
+            <LayoutDashboard className="w-3.5 h-3.5" />
+            <span>Dashboard</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild className="hover:bg-white/10 dark:hover:bg-white/5 hover:text-foreground transition-colors duration-150 rounded-lg">

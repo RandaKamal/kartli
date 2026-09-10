@@ -79,16 +79,16 @@ export default async function RootLayout({
 
                   {session?.user ? (
                     <>
-                      <Button asChild size="sm" variant="ghost" className="rounded-xl font-medium text-xs hidden sm:inline-flex">
-                        <Link href="/dashboard">Dashboard</Link>
-                      </Button>
-
-                      <Button asChild size="sm" variant="default" className="rounded-xl font-medium shadow-sm">
+                      <Button asChild size="sm" variant="outline" className="rounded-xl font-medium shadow-xs hidden sm:inline-flex">
                         <Link href="/kitchen/new" className="flex items-center gap-1.5">
                           <Plus className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">New Kitchen</span>
+                          <span>New Kitchen</span>
                         </Link>
                       </Button>
+
+                      <Link className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm" href="/dashboard">
+                        Dashboard →
+                      </Link>
 
                       <UserDropdown user={{ username: session.user.username }} />
                     </>
