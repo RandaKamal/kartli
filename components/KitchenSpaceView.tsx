@@ -70,7 +70,7 @@ import {
   Receipt,
   Activity,
 } from "lucide-react";
-import { capitalize } from "@/lib/utils";
+import { capitalize, cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export function MembersSkeleton() {
@@ -189,6 +189,7 @@ export function KitchenSpaceView({
     ? urlTab
     : (validTabs.includes(initialTab) ? initialTab : "kitchen");
   const [activeTab, setActiveTab] = useState(defaultTab);
+  const [mobileKitchenView, setMobileKitchenView] = useState<"pantry" | "shopping">("pantry");
 
   useEffect(() => {
     if (urlTab && validTabs.includes(urlTab)) {
@@ -348,6 +349,9 @@ export function KitchenSpaceView({
     (i) => i.is_purchased && !i.is_guest_staged && !i.checkout_id && i.purchased_by === currentUserId
   );
   const myCartCount = myCartItems.length;
+  const neededItemsCount = localShoppingListItems.filter(
+    (i) => !i.is_purchased && !i.is_guest_staged
+  ).length;
 
   const origin = typeof window !== "undefined" ? window.location.origin : baseUrl;
   const publicGuestUrl = origin ? `${origin}/kitchen/view/${publicViewToken}` : `/kitchen/view/${publicViewToken}`;
@@ -809,42 +813,90 @@ export function KitchenSpaceView({
         </nav>
 
         {/* Tab 1: Kitchen (Daily Core) */}
-        <TabsContent value="kitchen" className="flex flex-col gap-4 justify-start animate-in fade-in-50">
-          <div className="flex flex-col gap-4 justify-start lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
-            <PantrySection
-              kitchenId={initialKitchen.id}
-              items={localPantryItems}
-              onItemEmptied={handlePantryItemEmptied}
-              onItemRestocked={handlePantryItemRestocked}
-              onItemAdded={(item) =>
-                setLocalPantryItems((prev) =>
-                  [...prev, item].sort((a, b) => a.name.localeCompare(b.name))
-                )
-              }
-              onItemDeleted={(itemId) =>
-                setLocalPantryItems((prev) => prev.filter((p) => p.id !== itemId))
-              }
-            />
-            <ShoppingListSection
-              kitchenId={initialKitchen.id}
-              items={localShoppingListItems}
-              currentUserId={currentUserId}
-              isAdmin={isAdmin}
-              spaceType={spaceType}
-              onViewCart={() => handleTabChange("cart")}
-              onItemMovedToCart={handleItemMovedToCart}
-              onAllItemsMovedToCart={handleAllItemsMovedToCart}
-              onPantryItemEmptied={(pantryId) => {
-                setLocalPantryItems((prev) =>
-                  prev.map((p) => (p.id === pantryId ? { ...p, is_out_of_stock: true } : p))
-                );
-              }}
-              onItemReturnedToList={handleItemReturnedToList}
-              onItemRemoved={handleItemRemoved}
-              onItemAdded={(item) =>
-                setLocalShoppingListItems((prev) => [item, ...prev])
-              }
-            />
+        <TabsContent value="kitchen" className="space-y-6 animate-in fade-in-50">
+          {/* Mobile-Only Segmented View Switcher (< md) */}
+          <div className="md:hidden flex justify-center w-full">
+            <div className="bg-muted/80 border border-border/80 rounded-2xl p-1 inline-flex items-center gap-1 w-full max-w-xs shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setMobileKitchenView("pantry")}
+                className={cn(
+                  "flex-1 py-1.5 px-3 text-xs font-semibold rounded-xl transition-all cursor-pointer text-center",
+                  mobileKitchenView === "pantry"
+                    ? "bg-background text-foreground shadow-xs border border-border/60"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                aria-pressed={mobileKitchenView === "pantry"}
+              >
+                Pantry &amp; Vorrat
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileKitchenView("shopping")}
+                className={cn(
+                  "flex-1 py-1.5 px-3 text-xs font-semibold rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5",
+                  mobileKitchenView === "shopping"
+                    ? "bg-background text-foreground shadow-xs border border-border/60"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                aria-pressed={mobileKitchenView === "shopping"}
+              >
+                <span>Shopping List</span>
+                {neededItemsCount > 0 && (
+                  <span
+                    className={cn(
+                      "px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full",
+                      mobileKitchenView === "shopping"
+                        ? "bg-primary/10 text-primary border border-primary/20"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {neededItemsCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            <div className={cn("w-full", mobileKitchenView !== "pantry" && "hidden md:block")}>
+              <PantrySection
+                kitchenId={initialKitchen.id}
+                items={localPantryItems}
+                onItemEmptied={handlePantryItemEmptied}
+                onItemRestocked={handlePantryItemRestocked}
+                onItemAdded={(item) =>
+                  setLocalPantryItems((prev) =>
+                    [...prev, item].sort((a, b) => a.name.localeCompare(b.name))
+                  )
+                }
+                onItemDeleted={(itemId) =>
+                  setLocalPantryItems((prev) => prev.filter((p) => p.id !== itemId))
+                }
+              />
+            </div>
+            <div className={cn("w-full", mobileKitchenView !== "shopping" && "hidden md:block")}>
+              <ShoppingListSection
+                kitchenId={initialKitchen.id}
+                items={localShoppingListItems}
+                currentUserId={currentUserId}
+                isAdmin={isAdmin}
+                spaceType={spaceType}
+                onViewCart={() => handleTabChange("cart")}
+                onItemMovedToCart={handleItemMovedToCart}
+                onAllItemsMovedToCart={handleAllItemsMovedToCart}
+                onPantryItemEmptied={(pantryId) => {
+                  setLocalPantryItems((prev) =>
+                    prev.map((p) => (p.id === pantryId ? { ...p, is_out_of_stock: true } : p))
+                  );
+                }}
+                onItemReturnedToList={handleItemReturnedToList}
+                onItemRemoved={handleItemRemoved}
+                onItemAdded={(item) =>
+                  setLocalShoppingListItems((prev) => [item, ...prev])
+                }
+              />
+            </div>
           </div>
 
           <Suspense fallback={<MyPurchasesSkeleton />}>

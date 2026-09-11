@@ -15,7 +15,6 @@ import {
   AlertTriangle,
   Check,
   Loader2,
-  ChevronDown,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -57,7 +56,6 @@ export function PantrySection({
   );
   const [newItemName, setNewItemName] = useState("");
   const [itemToDelete, setItemToDelete] = useState<PantryItem | null>(null);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [, startTransition] = useTransition();
@@ -139,11 +137,8 @@ export function PantrySection({
   return (
     <>
       <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-        {/* Header - Clickable on mobile to toggle expansion */}
-        <div
-          onClick={() => setIsMobileOpen((prev) => !prev)}
-          className="flex items-center justify-between cursor-pointer md:cursor-default select-none group"
-        >
+        {/* Header */}
+        <div className="flex items-center justify-between select-none">
           <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
             <Package className="w-4 h-4 text-muted-foreground" />
             <span>Pantry &amp; Inventory</span>
@@ -151,20 +146,10 @@ export function PantrySection({
               {optimisticItems.length}
             </Badge>
           </h2>
-
-          {/* Mobile-only Chevron Indicator */}
-          <div className="p-1 rounded-lg text-muted-foreground group-hover:text-foreground transition md:hidden">
-            <ChevronDown
-              className={cn(
-                "w-4 h-4 transition-transform duration-200",
-                isMobileOpen && "rotate-180"
-              )}
-            />
-          </div>
         </div>
 
-        {/* Content Body - Collapsible on mobile (< md), always expanded on desktop (md:) */}
-        <div className={cn("space-y-4 pt-1 md:pt-0", isMobileOpen ? "block" : "hidden md:block")}>
+        {/* Content Body */}
+        <div className="space-y-4 pt-1">
           <form onSubmit={handleAdd} className="flex items-center gap-2">
             <Input
               type="text"
@@ -201,11 +186,6 @@ export function PantrySection({
                       {outOfStockCount}
                     </span>
                   </div>
-                  {outOfStockCount > 0 && (
-                    <span className="text-[11px] text-muted-foreground/60 hidden sm:inline">
-                      Auto-added to shopping list
-                    </span>
-                  )}
                 </div>
 
                 {outOfStockCount === 0 ? (
