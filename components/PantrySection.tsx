@@ -200,18 +200,17 @@ export function PantrySection({
                       .map((item) => (
                         <div
                           key={item.id}
-                          className="bg-amber-500/[0.04] border border-amber-500/15 rounded-xl px-3 py-2 flex items-center justify-between gap-3 text-sm transition hover:border-amber-500/25"
+                          className="bg-white/[0.025] hover:bg-white/[0.045] border border-white/[0.05] rounded-xl px-3 py-2 flex items-center justify-between gap-3 text-sm transition-all"
                         >
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <span className="font-medium truncate text-muted-foreground line-through decoration-muted-foreground/50">
+                            <span className="w-2 h-2 rounded-full bg-amber-400/80 shrink-0" />
+                            <span className="font-medium truncate text-foreground text-sm">
                               {item.name}
                             </span>
                             <span
-                              className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-medium px-2 py-0.5 rounded-md shrink-0 flex items-center gap-1"
-                              title="Out of stock - on shopping list"
+                              className="text-[11px] font-mono tracking-wide px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0"
                             >
-                              <AlertTriangle className="w-3 h-3" />
-                              <span>Empty</span>
+                              Empty
                             </span>
                           </div>
 
@@ -220,9 +219,9 @@ export function PantrySection({
                               type="button"
                               onClick={() => handleToggleStock(item)}
                               title="Restock item (removes from shopping list)"
-                              className="h-8 px-3 text-xs font-medium bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                              className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 rounded-lg shadow-xs hover:opacity-90 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
                             >
-                              <Check className="w-3.5 h-3.5" />
+                              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                               <span>Restock</span>
                             </button>
 
@@ -231,7 +230,7 @@ export function PantrySection({
                               variant="ghost"
                               size="icon-sm"
                               onClick={() => setItemToDelete(item)}
-                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
+                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer transition-colors"
                               title="Delete item from pantry"
                               aria-label={`Delete ${item.name}`}
                             >
@@ -245,7 +244,7 @@ export function PantrySection({
               </div>
 
               {/* Section B: In Stock */}
-              <div className="space-y-2 border-t border-border/40 pt-4 mt-3">
+              <div className="space-y-2 border-t border-white/[0.06] pt-4 mt-3">
                 <div className="flex items-center justify-between px-1 pb-0.5">
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground">
@@ -262,24 +261,18 @@ export function PantrySection({
                     <span>No items currently marked in stock.</span>
                   </div>
                 ) : (
-                  <div className="divide-y divide-border">
+                  <div className="space-y-1">
                     {optimisticItems
                       .filter((i) => !i.is_out_of_stock)
                       .map((item) => (
                         <div
                           key={item.id}
-                          className="py-2.5 px-2 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 rounded-xl transition"
+                          className="bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.04] rounded-xl px-3 py-2 flex items-center justify-between gap-3 text-sm transition-all group"
                         >
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <span className="font-medium truncate text-foreground">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400/80 shrink-0" />
+                            <span className="font-medium truncate text-foreground text-sm">
                               {item.name}
-                            </span>
-                            <span
-                              className="bg-secondary text-muted-foreground border border-border text-[10px] px-2 py-0.5 rounded-md font-medium shrink-0 flex items-center gap-1"
-                              title="In stock"
-                            >
-                              <Check className="w-3 h-3 text-muted-foreground/70" />
-                              <span>In Stock</span>
                             </span>
                           </div>
 
@@ -288,9 +281,8 @@ export function PantrySection({
                               type="button"
                               onClick={() => handleToggleStock(item)}
                               title="Mark as empty (adds to shopping list)"
-                              className="h-8 px-2.5 text-xs text-muted-foreground hover:text-amber-400 hover:border-amber-500/30 hover:bg-amber-500/10 border border-transparent rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                              className="text-xs text-muted-foreground hover:text-foreground hover:bg-white/5 px-2.5 py-1 rounded-md transition-colors cursor-pointer"
                             >
-                              <AlertTriangle className="w-3.5 h-3.5" />
                               <span>Mark Empty</span>
                             </button>
 
@@ -299,7 +291,7 @@ export function PantrySection({
                               variant="ghost"
                               size="icon-sm"
                               onClick={() => setItemToDelete(item)}
-                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
+                              className="text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer transition-colors"
                               title="Delete item from pantry"
                               aria-label={`Delete ${item.name}`}
                             >

@@ -170,7 +170,7 @@ export function MyPurchasesSection({
 
                     {checkout.is_refunded ? (
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <Badge variant="success" className="gap-1 font-semibold text-xs py-1 px-2.5">
+                        <Badge variant="outline" className="gap-1 font-semibold text-xs py-1 px-2.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           Refunded
                         </Badge>
@@ -179,8 +179,7 @@ export function MyPurchasesSection({
                         )}
                       </div>
                     ) : (
-
-                      <Badge variant="pending" className="gap-1 font-semibold text-xs py-1 px-2.5 shrink-0">
+                      <Badge variant="outline" className="gap-1 font-semibold text-xs py-1 px-2.5 shrink-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
                         <Clock className="w-3.5 h-3.5" />
                         Pending Refund
                       </Badge>

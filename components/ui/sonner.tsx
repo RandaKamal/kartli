@@ -15,20 +15,20 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-card group-[.toaster]:text-card-foreground group-[.toaster]:border-border group-[.toaster]:shadow-xl group-[.toaster]:rounded-2xl group-[.toaster]:text-xs font-sans",
+            "group toast group-[.toaster]:bg-card/95 group-[.toaster]:text-foreground group-[.toaster]:border group-[.toaster]:border-white/10 group-[.toaster]:shadow-2xl group-[.toaster]:rounded-xl group-[.toaster]:backdrop-blur-xl group-[.toaster]:p-3 group-[.toaster]:text-xs font-medium font-sans",
           description: "group-[.toast]:text-muted-foreground text-xs",
           actionButton:
-            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground group-[.toast]:font-semibold group-[.toast]:rounded-xl",
+            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground group-[.toast]:font-semibold group-[.toast]:rounded-lg group-[.toast]:text-xs",
           cancelButton:
-            "group-[.toast]:bg-secondary group-[.toast]:text-secondary-foreground group-[.toast]:rounded-xl",
+            "group-[.toast]:bg-secondary group-[.toast]:text-secondary-foreground group-[.toast]:rounded-lg group-[.toast]:text-xs",
           error:
-            "group-[.toaster]:border-destructive/40 group-[.toaster]:text-destructive",
+            "group-[.toaster]:border-destructive/30 group-[.toaster]:text-foreground",
           success:
-            "group-[.toaster]:border-accent-success/40 group-[.toaster]:text-accent-success",
+            "group-[.toaster]:border-emerald-500/30 group-[.toaster]:text-foreground",
           warning:
-            "group-[.toaster]:border-accent-warning/40 group-[.toaster]:text-accent-warning",
+            "group-[.toaster]:border-amber-500/30 group-[.toaster]:text-foreground",
           info:
-            "group-[.toaster]:border-accent-brand/40 group-[.toaster]:text-accent-brand",
+            "group-[.toaster]:border-white/10 group-[.toaster]:text-foreground",
         },
       }}
       {...props}

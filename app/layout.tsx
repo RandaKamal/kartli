@@ -173,7 +173,7 @@ export default async function RootLayout({
               </div>
             </footer>
 
-            <Toaster position="top-right" richColors />
+            <Toaster position="top-right" />
           </TooltipProvider>
         </ThemeProvider>
       </body>

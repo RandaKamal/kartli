@@ -129,23 +129,23 @@
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
-    /* Base Dark: #000000, Card: #0d0d10, Border: #222226 */
-    --background: #000000;
+    /* Layered Dark Elevation: Canvas: hsl(240 10% 3.9%), Card: hsl(240 6% 8%), Popover: hsl(240 6% 11%), Secondary: hsl(240 6% 13%) */
+    --background: hsl(240 10% 3.9%);
     --foreground: #f4f4f5;
 
-    --card: #0d0d10;
+    --card: hsl(240 6% 8%);
     --card-foreground: #f4f4f5;
 
-    --popover: #0d0d10;
+    --popover: hsl(240 6% 11%);
     --popover-foreground: #f4f4f5;
 
     --primary: #f4f4f5;
     --primary-foreground: #000000;
 
-    --secondary: #18181b;
+    --secondary: hsl(240 6% 13%);
     --secondary-foreground: #f4f4f5;
 
-    --muted: #18181b;
+    --muted: hsl(240 6% 13%);
     --muted-foreground: #a1a1aa;
 
     --accent: #34d399;
@@ -154,8 +154,8 @@
     --chart-1: #34d399;
     --chart-2: #fbbf24;
 
-    --border: #222226;
-    --input: #222226;
+    --border: hsl(240 5% 17%);
+    --input: hsl(240 5% 19%);
     --ring: #f4f4f5;
 
     --radius: 1rem;
@@ -227,23 +227,23 @@
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
-    /* Base Dark: #0c0c0e, Card: #141418, Border: #27272a */
-    --background: #0c0c0e;
+    /* Layered Dark Elevation: Canvas: hsl(240 10% 3.9%), Card: hsl(240 6% 8%), Popover: hsl(240 6% 11%), Secondary: hsl(240 6% 13%) */
+    --background: hsl(240 10% 3.9%);
     --foreground: #f4f4f5;
 
-    --card: #141418;
+    --card: hsl(240 6% 8%);
     --card-foreground: #f4f4f5;
 
-    --popover: #141418;
+    --popover: hsl(240 6% 11%);
     --popover-foreground: #f4f4f5;
 
     --primary: hsl(356 78% 58%);
-    --primary-foreground: #0c0c0e;
+    --primary-foreground: #ffffff;
 
-    --secondary: #18181b;
+    --secondary: hsl(240 6% 13%);
     --secondary-foreground: #f4f4f5;
 
-    --muted: #18181b;
+    --muted: hsl(240 6% 13%);
     --muted-foreground: #a1a1aa;
 
     --accent: hsl(22 92% 54%);
@@ -252,9 +252,9 @@
     --chart-1: hsl(22 92% 54%);
     --chart-2: hsl(38 85% 58%);
 
-    --border: #27272a;
-    --input: #27272a;
-    --ring: hsl(22 92% 54%);
+    --border: hsl(240 5% 17%);
+    --input: hsl(240 5% 19%);
+    --ring: hsl(356 78% 58%);
 
     color-scheme: dark;
   }
@@ -323,23 +323,23 @@
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
-    /* Base Dark: #0d0f14, Card: #131720, Border: #242b38 */
-    --background: #0d0f14;
+    /* Layered Dark Elevation: Canvas: hsl(240 10% 3.9%), Card: hsl(240 6% 8%), Popover: hsl(240 6% 11%), Secondary: hsl(240 6% 13%) */
+    --background: hsl(240 10% 3.9%);
     --foreground: #f4f4f5;
 
-    --card: #131720;
+    --card: hsl(240 6% 8%);
     --card-foreground: #f4f4f5;
 
-    --popover: #131720;
+    --popover: hsl(240 6% 11%);
     --popover-foreground: #f4f4f5;
 
     --primary: hsl(285 55% 62%);
     --primary-foreground: #0d0f14;
 
-    --secondary: #1a202c;
+    --secondary: hsl(240 6% 13%);
     --secondary-foreground: #f4f4f5;
 
-    --muted: #1a202c;
+    --muted: hsl(240 6% 13%);
     --muted-foreground: #94a3b8;
 
     --accent: hsl(42 75% 52%);
@@ -348,8 +348,8 @@
     --chart-1: hsl(42 75% 52%);
     --chart-2: hsl(300 35% 50%);
 
-    --border: #242b38;
-    --input: #242b38;
+    --border: hsl(240 5% 17%);
+    --input: hsl(240 5% 19%);
     --ring: hsl(285 55% 62%);
 
     color-scheme: dark;
@@ -419,23 +419,23 @@
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
-    /* Base Dark: #0a0e13, Card: #11161d, Border: #1e2633 */
-    --background: #0a0e13;
+    /* Layered Dark Elevation: Canvas: hsl(240 10% 3.9%), Card: hsl(240 6% 8%), Popover: hsl(240 6% 11%), Secondary: hsl(240 6% 13%) */
+    --background: hsl(240 10% 3.9%);
     --foreground: #f4f4f5;
 
-    --card: #11161d;
+    --card: hsl(240 6% 8%);
     --card-foreground: #f4f4f5;
 
-    --popover: #11161d;
+    --popover: hsl(240 6% 11%);
     --popover-foreground: #f4f4f5;
 
     --primary: hsl(154 42% 52%);
     --primary-foreground: #0a0e13;
 
-    --secondary: #17202c;
+    --secondary: hsl(240 6% 13%);
     --secondary-foreground: #f4f4f5;
 
-    --muted: #17202c;
+    --muted: hsl(240 6% 13%);
     --muted-foreground: #94a3b8;
 
     --accent: hsl(48 88% 52%);
@@ -444,8 +444,8 @@
     --chart-1: hsl(48 88% 52%);
     --chart-2: hsl(170 25% 45%);
 
-    --border: #1e2633;
-    --input: #1e2633;
+    --border: hsl(240 5% 17%);
+    --input: hsl(240 5% 19%);
     --ring: hsl(154 42% 52%);
 
     color-scheme: dark;

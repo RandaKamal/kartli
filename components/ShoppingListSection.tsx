@@ -312,13 +312,13 @@ export function ShoppingListSection({
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-border">
+          <div className="space-y-1.5">
             {openItems.map((item) => {
               const isChecked = item.is_purchased || checkedVisualIds.has(item.id);
               return (
                 <div
                   key={item.id}
-                  className="py-2.5 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition"
+                  className="bg-white/[0.025] hover:bg-white/[0.045] border border-white/[0.05] rounded-xl px-3 py-2 flex items-center justify-between gap-3 text-sm transition-all"
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <button
@@ -330,7 +330,7 @@ export function ShoppingListSection({
                         "w-5 h-5 rounded-md border flex items-center justify-center transition-all cursor-pointer shrink-0",
                         isChecked
                           ? "bg-accent-success text-white border-accent-success shadow-xs"
-                          : "border-border hover:border-accent-success/80 hover:bg-accent-success/10"
+                          : "border-border/80 dark:border-white/10 hover:border-accent-success/80 hover:bg-accent-success/10"
                       )}
                       title={isChecked ? "Checked (staged in cart)" : "Check off item into cart"}
                     >
@@ -339,7 +339,7 @@ export function ShoppingListSection({
 
                     <span
                       className={cn(
-                        "font-medium truncate transition-all cursor-pointer select-none",
+                        "font-medium truncate transition-all cursor-pointer select-none text-sm",
                         isChecked
                           ? "text-muted-foreground line-through decoration-muted-foreground/50"
                           : "text-foreground"

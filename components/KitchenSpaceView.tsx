@@ -522,14 +522,14 @@ export function KitchenSpaceView({
       <Tabs defaultValue={defaultTab} value={activeTab} onValueChange={handleTabChange} className="w-full space-y-6">
         {/* Desktop Experience: Surface Pill Segmented Bar */}
         <div className="hidden sm:flex justify-center w-full">
-          <TabsList className="bg-muted/80 border border-border/80 rounded-2xl p-1.5 inline-flex items-center gap-1 h-auto shadow-sm">
+          <TabsList className="bg-card/90 border border-white/[0.08] backdrop-blur-md rounded-xl p-1 inline-flex items-center gap-1 h-auto shadow-sm">
             {/* Tab 1: Pantry / Kitchen */}
             <TabsTrigger
               value="kitchen"
               aria-label="Pantry"
-              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs data-[state=active]:border data-[state=active]:border-border/60"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/25 data-[state=active]:font-semibold data-[state=active]:shadow-xs"
             >
-              <UtensilsCrossed className="w-4 h-4 shrink-0" />
+              <UtensilsCrossed className="w-3.5 h-3.5 shrink-0" />
               <span>Pantry</span>
             </TabsTrigger>
 
@@ -537,9 +537,9 @@ export function KitchenSpaceView({
             <TabsTrigger
               value="pulse"
               aria-label="Pulse"
-              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs data-[state=active]:border data-[state=active]:border-border/60"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/25 data-[state=active]:font-semibold data-[state=active]:shadow-xs"
             >
-              <Activity className="w-4 h-4 shrink-0" />
+              <Activity className="w-3.5 h-3.5 shrink-0" />
               <span>Pulse</span>
             </TabsTrigger>
 
@@ -547,17 +547,17 @@ export function KitchenSpaceView({
             <TabsTrigger
               value="cart"
               aria-label="Cart"
-              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs data-[state=active]:border data-[state=active]:border-border/60 relative"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/25 data-[state=active]:font-semibold data-[state=active]:shadow-xs relative"
             >
               <div className="relative flex items-center shrink-0">
-                <CartIcon className="w-4 h-4" />
+                <CartIcon className="w-3.5 h-3.5" />
                 {myCartCount > 0 && (
                   <span className="w-1.5 h-1.5 rounded-full bg-primary absolute -top-0.5 -right-0.5 shadow-xs" />
                 )}
               </div>
               <span>Cart</span>
               {myCartCount > 0 && (
-                <span className="px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full bg-primary/10 text-primary border border-primary/20">
+                <span className="px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full bg-primary text-primary-foreground">
                   {myCartCount}
                 </span>
               )}
@@ -567,9 +567,9 @@ export function KitchenSpaceView({
             <TabsTrigger
               value="members"
               aria-label={terminology.memberTab}
-              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs data-[state=active]:border data-[state=active]:border-border/60"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/25 data-[state=active]:font-semibold data-[state=active]:shadow-xs"
             >
-              <Users className="w-4 h-4 shrink-0" />
+              <Users className="w-3.5 h-3.5 shrink-0" />
               <span>{terminology.memberTab}</span>
             </TabsTrigger>
 
@@ -578,10 +578,10 @@ export function KitchenSpaceView({
               <TabsTrigger
                 value="refunds"
                 aria-label="Refunds"
-                className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs data-[state=active]:border data-[state=active]:border-border/60 relative"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/25 data-[state=active]:font-semibold data-[state=active]:shadow-xs relative"
               >
                 <div className="relative flex items-center shrink-0">
-                  <Receipt className="w-4 h-4" />
+                  <Receipt className="w-3.5 h-3.5" />
                   {pendingRefundsCount > 0 && (
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 absolute -top-0.5 -right-0.5 shadow-xs animate-pulse" />
                   )}
@@ -600,9 +600,9 @@ export function KitchenSpaceView({
             <TabsTrigger
               value="settings"
               aria-label="Settings"
-              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/60 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs data-[state=active]:border data-[state=active]:border-border/60"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/25 data-[state=active]:font-semibold data-[state=active]:shadow-xs"
             >
-              <Settings className="w-4 h-4 shrink-0" />
+              <Settings className="w-3.5 h-3.5 shrink-0" />
               <span>Settings</span>
             </TabsTrigger>
           </TabsList>
@@ -1502,14 +1502,14 @@ export function KitchenSpaceView({
       {/* Floating Cart Bottom Bar (Sticky UX when user has items in cart) */}
       {myCartCount > 0 && activeTab === "kitchen" && (
         <div className="fixed bottom-20 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-lg animate-in slide-in-from-bottom-5 duration-300 pointer-events-auto">
-          <div className="bg-card/95 backdrop-blur-md border border-border text-card-foreground rounded-2xl p-3 sm:px-5 sm:py-3.5 shadow-2xl flex items-center justify-between gap-3">
+          <div className="bg-card/90 border border-white/10 backdrop-blur-xl rounded-2xl px-4 py-2.5 shadow-2xl flex items-center justify-between gap-3 text-card-foreground">
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="relative flex h-2.5 w-2.5 shrink-0">
+              <span className="relative flex h-2 w-2 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary shadow-xs" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary shadow-xs" />
               </span>
               <p className="text-xs sm:text-sm font-medium text-foreground truncate">
-                You have <strong className="text-foreground font-bold">{myCartCount}</strong> item{myCartCount === 1 ? "" : "s"} staged in your cart
+                <strong className="text-foreground font-semibold">{myCartCount}</strong> item{myCartCount === 1 ? "" : "s"} in cart
               </p>
             </div>
 
@@ -1517,9 +1517,9 @@ export function KitchenSpaceView({
               type="button"
               size="sm"
               onClick={() => handleTabChange("cart")}
-              className="rounded-xl text-xs font-semibold shrink-0 gap-1.5 h-8.5 px-3.5 shadow-sm cursor-pointer"
+              className="bg-primary text-primary-foreground font-semibold text-xs px-3.5 py-1.5 rounded-xl shadow-sm hover:opacity-90 transition-all shrink-0 gap-1.5 cursor-pointer active:scale-95"
             >
-              <span>View Cart &amp; Checkout</span>
+              <span>View Cart</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           </div>
