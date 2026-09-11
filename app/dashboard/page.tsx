@@ -29,13 +29,13 @@ import { capitalize } from "@/lib/utils";
 function getSpaceIcon(spaceType?: string) {
   switch (spaceType) {
     case "FAMILY":
-      return <Heart className="w-3.5 h-3.5 text-rose-400" />;
+      return <Heart className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />;
     case "OFFICE":
-      return <Briefcase className="w-3.5 h-3.5 text-teal-400" />;
+      return <Briefcase className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />;
     case "NEUTRAL":
-      return <Layers className="w-3.5 h-3.5 text-indigo-400" />;
+      return <Layers className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />;
     default:
-      return <Home className="w-3.5 h-3.5 text-amber-400" />;
+      return <Home className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />;
   }
 }
 
@@ -68,56 +68,51 @@ export default async function DashboardPage() {
   const rawName = session.user.name || session.user.username || "there";
   const cleanName = rawName.replace(/^@/, "");
   const displayName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+  const isSingleSpace = userKitchens.length === 1;
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto py-2 sm:py-4">
-      {/* 1. ELEVATED HEADER & GREETING */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/70 pb-6">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+    <div className="relative w-full py-4 sm:py-6">
+      {/* Ambient Glow: Subtle, centered background radial blur behind the greeting */}
+      <div className="w-[500px] h-[300px] bg-primary/10 rounded-full blur-[120px] -z-10 pointer-events-none absolute top-6 left-1/2 -translate-x-1/2" />
+
+      {/* 1. EDITORIAL HEADER & GREETING */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-8 border-b border-border/60">
+        <div>
+          <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
               Welcome back, {displayName}
             </h1>
-            <Badge
-              variant="secondary"
-              className="text-[11px] font-mono px-2 py-0.5 bg-muted/60"
-            >
+            <span className="text-[11px] font-mono font-medium px-2.5 py-0.5 rounded-full bg-secondary text-muted-foreground border border-border/80">
               {userKitchens.length} {userKitchens.length === 1 ? "Space" : "Spaces"}
-            </Badge>
+            </span>
           </div>
           <p className="text-sm text-muted-foreground">
-            Your shared homes, studios, and spaces.
+            Your shared kitchens, studios, and culinary spaces.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="rounded-xl font-semibold text-xs border-border/80 hover:bg-muted"
+        <div className="flex items-center gap-2.5">
+          <Link
+            href="/profile"
+            className="text-xs font-semibold px-3 py-2 rounded-xl border border-border/80 bg-secondary/40 hover:bg-secondary text-foreground transition-all flex items-center gap-1.5 shadow-2xs"
           >
-            <Link href="/profile" className="flex items-center gap-1.5">
-              <Settings className="w-3.5 h-3.5 text-muted-foreground" />
-              <span>Settings</span>
-            </Link>
-          </Button>
-
+            <Settings className="w-3.5 h-3.5 text-muted-foreground" />
+            <span>Settings</span>
+          </Link>
           <Button
             asChild
-            size="sm"
-            className="rounded-xl font-semibold text-xs shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 ring-1 ring-primary/20"
+            className="text-xs font-semibold px-3.5 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all flex items-center gap-1.5 shadow-2xs"
           >
             <Link href="/kitchen/new">
               <Plus className="w-3.5 h-3.5" />
-              <span>Create New Space</span>
+              <span>New Space</span>
             </Link>
           </Button>
         </div>
       </div>
 
       {/* 2. SPACES GRID OR EMPTY STATE */}
-      <div className="space-y-6">
+      <div className="mt-8">
         {userKitchens.length === 0 ? (
           /* EMPTY STATE */
           <div className="space-y-6 max-w-xl mx-auto py-6">
@@ -155,14 +150,22 @@ export default async function DashboardPage() {
           </div>
         ) : (
           /* ACTIVE SPACES GRID */
-          <div className="space-y-5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground font-semibold">
                 Active Spaces
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div
+              className={
+                isSingleSpace
+                  ? "grid grid-cols-1 max-w-2xl"
+                  : userKitchens.length === 2
+                  ? "grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl"
+                  : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              }
+            >
               {userKitchens.map(
                 ({
                   kitchen,
@@ -171,123 +174,145 @@ export default async function DashboardPage() {
                   neededItemCount,
                   sampleNeededItems,
                 }) => {
-                  const isAdmin = membership.role === "ADMIN";
                   const targetUrl = `/kitchen/${kitchen.id}`;
                   const guestUrl = `${baseUrl}/kitchen/view/${kitchen.public_view_token}`;
 
                   return (
                     <div
                       key={kitchen.id}
-                      className="relative rounded-2xl border border-border bg-card p-5 transition-colors hover:border-foreground/20 flex flex-col justify-between group overflow-hidden space-y-5"
+                      className="group relative flex flex-col justify-between rounded-2xl bg-card dark:bg-[#121215] border border-border/75 dark:border-white/[0.08] hover:border-foreground/20 dark:hover:border-white/20 shadow-xs hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/40 transition-all duration-300 overflow-hidden w-full min-w-0 md:min-w-[340px]"
                     >
-                      {/* Entire Card Overlay Link for accessibility and smooth navigation */}
-                      <Link
-                        href={targetUrl}
-                        className="absolute inset-0 z-0 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        aria-label={`Open ${kitchen.name}`}
-                      />
+                      {/* Top Micro-border Highlight: understated accent line reacting to hover */}
+                      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent group-hover:via-primary group-hover:h-[2.5px] transition-all duration-300 pointer-events-none z-20" />
 
-                      {/* Card Content Top */}
-                      <div className="space-y-4 relative z-0 pointer-events-none">
-                        {/* Header Row: Space Context + Role */}
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-foreground bg-muted/60 px-2.5 py-1 rounded-xl border border-border/60">
-                              {getSpaceIcon(kitchen.space_type)}
-                              <span>{getSpaceLabel(kitchen.space_type)}</span>
-                            </span>
+                      {/* Terminal-Style Header Row */}
+                      <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-border/50 dark:border-white/[0.06] bg-muted/25 dark:bg-white/[0.02]">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium text-foreground bg-background/90 dark:bg-white/[0.05] border border-border/70 dark:border-white/[0.08] px-2.5 py-0.5 rounded-md shadow-2xs">
+                            {getSpaceIcon(kitchen.space_type)}
+                            <span>{getSpaceLabel(kitchen.space_type)}</span>
+                          </span>
 
-                            <Badge
-                              variant={isAdmin ? "accent" : "secondary"}
-                              className="font-semibold text-[10px] uppercase tracking-wider px-2 py-0.5"
-                            >
-                              {membership.role}
-                            </Badge>
-                          </div>
+                          <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-secondary text-muted-foreground font-semibold border border-border/40 dark:border-white/[0.04]">
+                            {membership.role}
+                          </span>
+                        </div>
 
-                          <span className="text-[11px] text-muted-foreground font-mono">
+                        <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground/70">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
+                          <span>
                             {new Date(kitchen.created_at).toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
                             })}
                           </span>
                         </div>
+                      </div>
 
-                        {/* Title & Display Name */}
-                        <div>
-                          <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors tracking-tight line-clamp-1">
-                            {kitchen.name}
-                          </h3>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            As <strong className="text-foreground font-medium">{capitalize(membership.kitchen_display_name)}</strong>
-                          </p>
-                        </div>
+                      {/* Card Content Body */}
+                      <div
+                        className={`flex flex-col justify-between flex-1 relative z-0 ${
+                          isSingleSpace ? "p-6 sm:p-7 space-y-6" : "p-5 sm:p-6 space-y-5"
+                        }`}
+                      >
+                        {/* Entire Card Overlay Link for smooth whole-card navigation */}
+                        <Link
+                          href={targetUrl}
+                          className="absolute inset-0 z-0 rounded-b-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label={`Open ${kitchen.name}`}
+                        />
 
-                        {/* Live Contextual Stats Row */}
-                        <div className="flex items-center gap-3 text-xs pt-1 border-t border-border/50">
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <Users className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span>{memberCount} {memberCount === 1 ? "member" : "members"}</span>
+                        <div className="space-y-4 relative z-0 pointer-events-none">
+                          {/* Space Name Hero Title & User Identity */}
+                          <div className="space-y-1">
+                            <h3
+                              className={`font-black tracking-tight text-foreground group-hover:text-primary transition-colors line-clamp-1 ${
+                                isSingleSpace ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl"
+                              }`}
+                            >
+                              {kitchen.name}
+                            </h3>
+                            <p className="text-xs text-muted-foreground">
+                              Connected as <span className="text-foreground font-semibold">{capitalize(membership.kitchen_display_name)}</span>
+                            </p>
                           </div>
-                          <span>&middot;</span>
-                          <div className="flex items-center gap-1.5">
-                            {neededItemCount > 0 ? (
-                              <span className="text-amber-500 font-medium flex items-center gap-1">
-                                <ShoppingCart className="w-3.5 h-3.5" />
-                                <span>{neededItemCount} needed</span>
-                              </span>
-                            ) : (
-                              <span className="text-primary font-medium flex items-center gap-1">
-                                <PackageCheck className="w-3.5 h-3.5" />
-                                <span>Stocked</span>
-                              </span>
-                            )}
-                          </div>
-                        </div>
 
-                        {/* Quick Peek: Needed Restock Items Pills */}
-                        {sampleNeededItems.length > 0 ? (
-                          <div className="space-y-1.5 pt-0.5">
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block">
-                              Restock Queue:
-                            </span>
-                            <div className="flex flex-wrap gap-1.5 max-h-14 overflow-hidden">
-                              {sampleNeededItems.slice(0, 3).map((item, idx) => (
-                                <span
-                                  key={idx}
-                                  className="text-[11px] font-medium bg-muted/70 border border-border/70 text-foreground px-2 py-0.5 rounded-lg truncate max-w-[120px]"
-                                >
-                                  {item}
+                          {/* Metrics / Status Row */}
+                          <div className="flex items-center gap-3 text-xs pt-1">
+                            <div className="flex items-center gap-1.5 text-muted-foreground font-medium">
+                              <Users className="w-3.5 h-3.5 text-muted-foreground/80" />
+                              <span>{memberCount} {memberCount === 1 ? "member" : "members"}</span>
+                            </div>
+                            <span className="text-muted-foreground/30 font-mono">&bull;</span>
+                            <div className="flex items-center gap-1.5">
+                              {neededItemCount > 0 ? (
+                                <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs px-2 py-0.5 rounded-md font-medium flex items-center gap-1">
+                                  <ShoppingCart className="w-3.5 h-3.5" />
+                                  <span>{neededItemCount} {neededItemCount === 1 ? "item needed" : "needed"}</span>
                                 </span>
-                              ))}
-                              {neededItemCount > 3 && (
-                                <span className="text-[11px] text-muted-foreground font-mono self-center px-1">
-                                  +{neededItemCount - 3} more
+                              ) : (
+                                <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5 text-xs">
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  <span>Stocked</span>
                                 </span>
                               )}
                             </div>
                           </div>
-                        ) : (
-                          <div className="py-1 flex items-center gap-1.5 text-[11px] text-muted-foreground italic">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
-                            <span>No urgent groceries on the list.</span>
+
+                          {/* Restock Queue Activity Preview Row */}
+                          {sampleNeededItems.length > 0 ? (
+                            <div className="rounded-xl bg-muted/40 dark:bg-white/[0.03] border border-border/60 dark:border-white/[0.06] p-3 transition-colors group-hover:border-border/90 dark:group-hover:border-white/10">
+                              <div className="flex items-center gap-2.5">
+                                <span className="relative flex h-2 w-2 shrink-0">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+                                </span>
+                                <span className="text-[11px] font-mono font-medium text-muted-foreground shrink-0">
+                                  Needs restock:
+                                </span>
+                                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                  {sampleNeededItems.slice(0, 3).map((item, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="text-[11px] font-medium text-foreground bg-background dark:bg-[#18181c] border border-border/70 dark:border-white/[0.08] px-2 py-0.5 rounded-md truncate max-w-[130px] shadow-2xs"
+                                    >
+                                      {item}
+                                    </span>
+                                  ))}
+                                  {neededItemCount > 3 && (
+                                    <span className="text-[10px] font-mono text-muted-foreground/80 px-1.5 py-0.5 rounded bg-background/60 dark:bg-white/[0.04] border border-border/40">
+                                      +{neededItemCount - 3} more
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="rounded-xl bg-muted/30 dark:bg-white/[0.02] border border-border/40 dark:border-white/[0.04] px-3.5 py-2.5 flex items-center gap-2 text-xs text-muted-foreground">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                              <span className="font-mono text-[11px] text-muted-foreground">Queue clear:</span>
+                              <span className="text-foreground/80 font-medium text-xs">All essential supplies stocked</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Card Action Footer */}
+                        <div className="pt-4 border-t border-border/60 dark:border-white/[0.06] flex items-center justify-between gap-3 relative z-0 pointer-events-none">
+                          {/* Open Space: Inviting primary action button */}
+                          <span className="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl bg-primary text-primary-foreground shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5 transition-all duration-200">
+                            <span>Open Space</span>
+                            <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
+                          </span>
+
+                          {/* Copy Guest Link: Refined secondary button */}
+                          <div className="relative z-10 pointer-events-auto">
+                            <CopyButton
+                              text={guestUrl}
+                              label="Copy Guest Link"
+                              size="sm"
+                              className="text-xs font-medium px-3 py-2 rounded-xl bg-secondary/80 hover:bg-secondary border border-border/70 hover:border-border text-foreground transition-all duration-200 shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                            />
                           </div>
-                        )}
-                      </div>
-
-                      {/* Card Action Footer */}
-                      <div className="pt-4 border-t border-border/70 flex items-center justify-between relative z-0 pointer-events-none">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
-                          <span>Open Space</span>
-                          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:translate-x-1 group-hover:text-primary transition-all" />
-                        </span>
-
-                        <div className="pointer-events-auto relative z-10 flex items-center gap-1.5">
-                          <CopyButton
-                            text={guestUrl}
-                            label="Copy Guest Link"
-                            size="sm"
-                          />
                         </div>
                       </div>
                     </div>
