@@ -110,7 +110,7 @@ export default async function RootLayout({
               {children}
             </main>
 
-            <footer className="bg-muted/30 border-t border-border/60 py-6 text-xs text-muted-foreground mt-8 mb-28 sm:mb-0">
+            <footer className="hidden md:block bg-muted/30 border-t border-border/60 py-6 text-xs text-muted-foreground mt-8">
               <div className="max-w-6xl mx-auto px-4 space-y-4">
                 <p className="text-center text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">
                   Setup &amp; Feedback
