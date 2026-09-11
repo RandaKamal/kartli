@@ -106,7 +106,7 @@ export default async function RootLayout({
               </div>
             </header>
 
-            <main className="w-full max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+            <main className="w-full flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
               {children}
             </main>
 

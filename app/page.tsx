@@ -40,7 +40,7 @@ export default async function HomePage() {
         {/* Hero Title */}
         <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground leading-[1.12]">
           Kitchen management for spaces that love{" "}
-          <span className="bg-gradient-to-r from-amber-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent font-extrabold">
             good food
           </span>{" "}
           and zero drama.

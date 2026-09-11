@@ -232,17 +232,17 @@ export function AdminKitchenHeader({
                 <button
                   type="button"
                   onClick={() => setDraftSpaceType("FLATSHARE")}
-                  className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs border transition-all cursor-pointer ${
+                  className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1 text-xs border transition-all cursor-pointer ${
                     draftSpaceType === "FLATSHARE"
-                      ? "bg-secondary text-foreground border-foreground/25 shadow-xs"
-                      : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted/40"
+                      ? "border-primary/50 bg-primary/[0.04] ring-1 ring-primary/30 shadow-xs"
+                      : "border-white/[0.06] bg-secondary/30 hover:bg-secondary/60"
                   }`}
                 >
                   <div className="flex items-center gap-1.5">
-                    <Home className="w-3.5 h-3.5" />
-                    <span>Flatshare</span>
+                    <Home className={`w-3.5 h-3.5 ${draftSpaceType === "FLATSHARE" ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className="text-xs text-foreground font-semibold">Flatshare</span>
                   </div>
-                  <span className="text-[10px] font-normal text-muted-foreground">
+                  <span className="text-xs text-muted-foreground font-normal">
                     Term: Roommates
                   </span>
                 </button>
@@ -250,17 +250,17 @@ export function AdminKitchenHeader({
                 <button
                   type="button"
                   onClick={() => setDraftSpaceType("FAMILY")}
-                  className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs border transition-all cursor-pointer ${
+                  className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1 text-xs border transition-all cursor-pointer ${
                     draftSpaceType === "FAMILY"
-                      ? "bg-secondary text-foreground border-foreground/25 shadow-xs"
-                      : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted/40"
+                      ? "border-primary/50 bg-primary/[0.04] ring-1 ring-primary/30 shadow-xs"
+                      : "border-white/[0.06] bg-secondary/30 hover:bg-secondary/60"
                   }`}
                 >
                   <div className="flex items-center gap-1.5">
-                    <Heart className="w-3.5 h-3.5" />
-                    <span>Family</span>
+                    <Heart className={`w-3.5 h-3.5 ${draftSpaceType === "FAMILY" ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className="text-xs text-foreground font-semibold">Family</span>
                   </div>
-                  <span className="text-[10px] font-normal text-muted-foreground">
+                  <span className="text-xs text-muted-foreground font-normal">
                     Term: Family
                   </span>
                 </button>
@@ -268,17 +268,17 @@ export function AdminKitchenHeader({
                 <button
                   type="button"
                   onClick={() => setDraftSpaceType("OFFICE")}
-                  className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs border transition-all cursor-pointer ${
+                  className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1 text-xs border transition-all cursor-pointer ${
                     draftSpaceType === "OFFICE"
-                      ? "bg-secondary text-foreground border-foreground/25 shadow-xs"
-                      : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted/40"
+                      ? "border-primary/50 bg-primary/[0.04] ring-1 ring-primary/30 shadow-xs"
+                      : "border-white/[0.06] bg-secondary/30 hover:bg-secondary/60"
                   }`}
                 >
                   <div className="flex items-center gap-1.5">
-                    <Briefcase className="w-3.5 h-3.5" />
-                    <span>Office</span>
+                    <Briefcase className={`w-3.5 h-3.5 ${draftSpaceType === "OFFICE" ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className="text-xs text-foreground font-semibold">Office</span>
                   </div>
-                  <span className="text-[10px] font-normal text-muted-foreground">
+                  <span className="text-xs text-muted-foreground font-normal">
                     Term: Team
                   </span>
                 </button>
@@ -286,17 +286,17 @@ export function AdminKitchenHeader({
                 <button
                   type="button"
                   onClick={() => setDraftSpaceType("NEUTRAL")}
-                  className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1 font-semibold text-xs border transition-all cursor-pointer ${
+                  className={`h-16 rounded-2xl flex flex-col items-center justify-center gap-1 text-xs border transition-all cursor-pointer ${
                     draftSpaceType === "NEUTRAL"
-                      ? "bg-secondary text-foreground border-foreground/25 shadow-xs"
-                      : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:bg-muted/40"
+                      ? "border-primary/50 bg-primary/[0.04] ring-1 ring-primary/30 shadow-xs"
+                      : "border-white/[0.06] bg-secondary/30 hover:bg-secondary/60"
                   }`}
                 >
                   <div className="flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5" />
-                    <span>Neutral</span>
+                    <Building2 className={`w-3.5 h-3.5 ${draftSpaceType === "NEUTRAL" ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className="text-xs text-foreground font-semibold">Neutral</span>
                   </div>
-                  <span className="text-[10px] font-normal text-muted-foreground">
+                  <span className="text-xs text-muted-foreground font-normal">
                     Term: Members
                   </span>
                 </button>

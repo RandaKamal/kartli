@@ -458,11 +458,11 @@ export function KitchenSpaceView({
   };
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full flex flex-col gap-4 pb-28 md:pb-12">
       <GuestCartHandoverListener kitchenId={initialKitchen.id} />
 
       {/* Sleek Single-Row Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-2">
         {/* Left Side: Back Navigation & Kitchen Title */}
         <div className="flex items-center gap-3 min-w-0">
           <Button
@@ -527,7 +527,7 @@ export function KitchenSpaceView({
             <TabsTrigger
               value="kitchen"
               aria-label="Pantry"
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/25 data-[state=active]:font-semibold data-[state=active]:shadow-xs"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:text-foreground data-[state=active]:bg-white/[0.05] data-[state=active]:border data-[state=active]:border-white/10 data-[state=active]:font-semibold data-[state=active]:shadow-sm"
             >
               <UtensilsCrossed className="w-3.5 h-3.5 shrink-0" />
               <span>Pantry</span>
@@ -537,7 +537,7 @@ export function KitchenSpaceView({
             <TabsTrigger
               value="pulse"
               aria-label="Pulse"
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/25 data-[state=active]:font-semibold data-[state=active]:shadow-xs"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:text-foreground data-[state=active]:bg-white/[0.05] data-[state=active]:border data-[state=active]:border-white/10 data-[state=active]:font-semibold data-[state=active]:shadow-sm"
             >
               <Activity className="w-3.5 h-3.5 shrink-0" />
               <span>Pulse</span>
@@ -547,7 +547,7 @@ export function KitchenSpaceView({
             <TabsTrigger
               value="cart"
               aria-label="Cart"
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/25 data-[state=active]:font-semibold data-[state=active]:shadow-xs relative"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:text-foreground data-[state=active]:bg-white/[0.05] data-[state=active]:border data-[state=active]:border-white/10 data-[state=active]:font-semibold data-[state=active]:shadow-sm relative"
             >
               <div className="relative flex items-center shrink-0">
                 <CartIcon className="w-3.5 h-3.5" />
@@ -557,7 +557,7 @@ export function KitchenSpaceView({
               </div>
               <span>Cart</span>
               {myCartCount > 0 && (
-                <span className="px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full bg-primary text-primary-foreground">
+                <span className="bg-primary text-primary-foreground font-bold text-[10px] px-1.5 py-0.5 rounded-full leading-none">
                   {myCartCount}
                 </span>
               )}
@@ -567,7 +567,7 @@ export function KitchenSpaceView({
             <TabsTrigger
               value="members"
               aria-label={terminology.memberTab}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/25 data-[state=active]:font-semibold data-[state=active]:shadow-xs"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:text-foreground data-[state=active]:bg-white/[0.05] data-[state=active]:border data-[state=active]:border-white/10 data-[state=active]:font-semibold data-[state=active]:shadow-sm"
             >
               <Users className="w-3.5 h-3.5 shrink-0" />
               <span>{terminology.memberTab}</span>
@@ -578,7 +578,7 @@ export function KitchenSpaceView({
               <TabsTrigger
                 value="refunds"
                 aria-label="Refunds"
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/25 data-[state=active]:font-semibold data-[state=active]:shadow-xs relative"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:text-foreground data-[state=active]:bg-white/[0.05] data-[state=active]:border data-[state=active]:border-white/10 data-[state=active]:font-semibold data-[state=active]:shadow-sm relative"
               >
                 <div className="relative flex items-center shrink-0">
                   <Receipt className="w-3.5 h-3.5" />
@@ -600,7 +600,7 @@ export function KitchenSpaceView({
             <TabsTrigger
               value="settings"
               aria-label="Settings"
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/25 data-[state=active]:font-semibold data-[state=active]:shadow-xs"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:text-foreground data-[state=active]:bg-white/[0.05] data-[state=active]:border data-[state=active]:border-white/10 data-[state=active]:font-semibold data-[state=active]:shadow-sm"
             >
               <Settings className="w-3.5 h-3.5 shrink-0" />
               <span>Settings</span>
@@ -1190,19 +1190,17 @@ export function KitchenSpaceView({
                           onClick={() => handleSelectSpaceType("FLATSHARE")}
                           className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
                             draftSpaceType === "FLATSHARE"
-                              ? "border-primary/50 bg-primary/10 shadow-xs text-foreground"
-                              : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                              ? "border-primary/50 bg-primary/[0.04] ring-1 ring-primary/30 shadow-xs"
+                              : "border-white/[0.06] bg-secondary/30 hover:bg-secondary/60"
                           }`}
                         >
                           <div className="flex items-center gap-1.5">
                             <Home className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "FLATSHARE" ? "text-primary" : "text-muted-foreground"}`} />
-                            <span className={`text-xs leading-none ${draftSpaceType === "FLATSHARE" ? "text-foreground font-semibold" : "font-bold"}`}>
+                            <span className="text-xs text-foreground font-semibold leading-none">
                               Flatshare
                             </span>
                           </div>
-                          <span className={`text-[10px] font-normal leading-tight transition-colors ${
-                            draftSpaceType === "FLATSHARE" ? "text-primary/80" : "text-muted-foreground"
-                          }`}>
+                          <span className="text-xs text-muted-foreground font-normal leading-tight">
                             Roommates
                           </span>
                         </button>
@@ -1213,19 +1211,17 @@ export function KitchenSpaceView({
                           onClick={() => handleSelectSpaceType("FAMILY")}
                           className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
                             draftSpaceType === "FAMILY"
-                              ? "border-primary/50 bg-primary/10 shadow-xs text-foreground"
-                              : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                              ? "border-primary/50 bg-primary/[0.04] ring-1 ring-primary/30 shadow-xs"
+                              : "border-white/[0.06] bg-secondary/30 hover:bg-secondary/60"
                           }`}
                         >
                           <div className="flex items-center gap-1.5">
                             <Heart className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "FAMILY" ? "text-primary" : "text-muted-foreground"}`} />
-                            <span className={`text-xs leading-none ${draftSpaceType === "FAMILY" ? "text-foreground font-semibold" : "font-bold"}`}>
+                            <span className="text-xs text-foreground font-semibold leading-none">
                               Family
                             </span>
                           </div>
-                          <span className={`text-[10px] font-normal leading-tight transition-colors ${
-                            draftSpaceType === "FAMILY" ? "text-primary/80" : "text-muted-foreground"
-                          }`}>
+                          <span className="text-xs text-muted-foreground font-normal leading-tight">
                             Family
                           </span>
                         </button>
@@ -1236,19 +1232,17 @@ export function KitchenSpaceView({
                           onClick={() => handleSelectSpaceType("OFFICE")}
                           className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
                             draftSpaceType === "OFFICE"
-                              ? "border-primary/50 bg-primary/10 shadow-xs text-foreground"
-                              : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                              ? "border-primary/50 bg-primary/[0.04] ring-1 ring-primary/30 shadow-xs"
+                              : "border-white/[0.06] bg-secondary/30 hover:bg-secondary/60"
                           }`}
                         >
                           <div className="flex items-center gap-1.5">
                             <Briefcase className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "OFFICE" ? "text-primary" : "text-muted-foreground"}`} />
-                            <span className={`text-xs leading-none ${draftSpaceType === "OFFICE" ? "text-foreground font-semibold" : "font-bold"}`}>
+                            <span className="text-xs text-foreground font-semibold leading-none">
                               Office
                             </span>
                           </div>
-                          <span className={`text-[10px] font-normal leading-tight transition-colors ${
-                            draftSpaceType === "OFFICE" ? "text-primary/80" : "text-muted-foreground"
-                          }`}>
+                          <span className="text-xs text-muted-foreground font-normal leading-tight">
                             Team
                           </span>
                         </button>
@@ -1259,19 +1253,17 @@ export function KitchenSpaceView({
                           onClick={() => handleSelectSpaceType("NEUTRAL")}
                           className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
                             draftSpaceType === "NEUTRAL"
-                              ? "border-primary/50 bg-primary/10 shadow-xs text-foreground"
-                              : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                              ? "border-primary/50 bg-primary/[0.04] ring-1 ring-primary/30 shadow-xs"
+                              : "border-white/[0.06] bg-secondary/30 hover:bg-secondary/60"
                           }`}
                         >
                           <div className="flex items-center gap-1.5">
                             <Building2 className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "NEUTRAL" ? "text-primary" : "text-muted-foreground"}`} />
-                            <span className={`text-xs leading-none ${draftSpaceType === "NEUTRAL" ? "text-foreground font-semibold" : "font-bold"}`}>
+                            <span className="text-xs text-foreground font-semibold leading-none">
                               Neutral
                             </span>
                           </div>
-                          <span className={`text-[10px] font-normal leading-tight transition-colors ${
-                            draftSpaceType === "NEUTRAL" ? "text-primary/80" : "text-muted-foreground"
-                          }`}>
+                          <span className="text-xs text-muted-foreground font-normal leading-tight">
                             Members
                           </span>
                         </button>
@@ -1464,6 +1456,32 @@ export function KitchenSpaceView({
                 </div>
               </Card>
 
+              {/* Mobile-Only Footer Link in Settings View */}
+              <div className="md:hidden pt-2 pb-4 text-center space-y-2 text-xs text-muted-foreground">
+                <a
+                  href="https://github.com/randakamal/kartli"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors px-3 py-1.5 rounded-xl bg-muted/40 border border-border/60"
+                >
+                  <svg
+                    className="w-3.5 h-3.5 fill-current"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      clipRule="evenodd"
+                      d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                    />
+                  </svg>
+                  <span>kartli &middot; Open Source on GitHub</span>
+                </a>
+                <p className="text-[11px] text-muted-foreground/70">
+                  © {new Date().getFullYear()} kartli. All rights reserved.
+                </p>
+              </div>
+
               {/* Leave Kitchen Confirmation Dialog */}
               <AlertDialog open={isLeaveModalOpen} onOpenChange={setIsLeaveModalOpen}>
                 <AlertDialogContent>
@@ -1499,9 +1517,9 @@ export function KitchenSpaceView({
         </TabsContent>
       </Tabs>
 
-      {/* Floating Cart Bottom Bar (Sticky UX when user has items in cart) */}
+      {/* Floating Cart Bottom Bar (Sticky UX when user has items in cart - desktop only) */}
       {myCartCount > 0 && activeTab === "kitchen" && (
-        <div className="fixed bottom-20 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-lg animate-in slide-in-from-bottom-5 duration-300 pointer-events-auto">
+        <div className="hidden md:block fixed bottom-5 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-lg animate-in slide-in-from-bottom-5 duration-300 pointer-events-auto">
           <div className="bg-card/90 border border-white/10 backdrop-blur-xl rounded-2xl px-4 py-2.5 shadow-2xl flex items-center justify-between gap-3 text-card-foreground">
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="relative flex h-2 w-2 shrink-0">
