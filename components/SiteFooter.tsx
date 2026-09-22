@@ -8,8 +8,14 @@ export function SiteFooter() {
   // On landing page, the minimal footer is embedded inside the 100dvh desktop layout
   if (pathname === "/") return null;
 
+  const isKitchen = pathname?.startsWith("/kitchen") ?? false;
+
   return (
-    <footer className="bg-muted/30 border-t border-border/60 py-5 text-xs text-muted-foreground">
+    <footer
+      className={`bg-muted/30 border-t border-border/60 py-5 text-xs text-muted-foreground ${
+        isKitchen ? "hidden md:block" : ""
+      }`}
+    >
       <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
         <p>© {new Date().getFullYear()} kartli. All rights reserved.</p>
         <a

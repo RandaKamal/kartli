@@ -201,11 +201,6 @@ export function PantrySection({
                       {outOfStockCount}
                     </span>
                   </div>
-                  {outOfStockCount > 0 && (
-                    <span className="text-[11px] text-muted-foreground/60 hidden sm:inline">
-                      Auto-added to shopping list
-                    </span>
-                  )}
                 </div>
 
                 {outOfStockCount === 0 ? (

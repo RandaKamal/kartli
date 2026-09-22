@@ -30,12 +30,9 @@ export default async function RootLayout({
     cookieStore.get("culinary-theme")?.value ||
     "black-truffle";
 
-  const normalizeTheme = (t?: string) => {
-    if (!t || t === "truffle" || t === "black_truffle") return "black-truffle";
-    if (t === "saffron" || t === "olive") return "campari-bitter";
-    if (t === "plum") return "velvet-fig";
-    if (t === "nordic") return "matcha-pistachio";
-    return t;
+  const normalizeTheme = (t?: string): "black-truffle" | "velvet-fig" => {
+    if (t === "velvet-fig" || t === "plum") return "velvet-fig";
+    return "black-truffle";
   };
 
   const initialTheme = normalizeTheme(culinaryTheme);
@@ -50,7 +47,7 @@ export default async function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('kartli-theme')||localStorage.getItem('culinary-theme')||(document.cookie.match(/(?:kartli-theme|culinary-theme)=([^;]+)/)||[])[1]||'${initialTheme}';if(t==='truffle'||t==='black_truffle')t='black-truffle';else if(t==='saffron'||t==='olive')t='campari-bitter';else if(t==='plum')t='velvet-fig';else if(t==='nordic')t='matcha-pistachio';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-culinary-theme',t);}catch(e){}})()`,
+            __html: `(function(){try{var raw=localStorage.getItem('kartli-theme')||localStorage.getItem('culinary-theme')||(document.cookie.match(/(?:kartli-theme|culinary-theme)=([^;]+)/)||[])[1]||'${initialTheme}';var t=(raw==='velvet-fig'||raw==='plum')?'velvet-fig':'black-truffle';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-culinary-theme',t);}catch(e){}})()`,
           }}
         />
       </head>
