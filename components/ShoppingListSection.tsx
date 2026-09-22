@@ -9,24 +9,22 @@ import {
   moveAllNeededToCartAction,
 } from "@/app/actions/pantry";
 import type { ShoppingListItem, KitchenSpaceType } from "@/types";
-import { getSpaceWording } from "@/lib/space-wording";
 import { cn } from "@/lib/utils";
 import {
   ShoppingCart as CartIcon,
   Trash2,
-  CheckCheck,
   Check,
   Loader2,
   Plus,
   ShoppingBag,
   ArrowRight,
 } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
-interface ShoppingListSectionProps {
+export interface ShoppingListSectionProps {
   kitchenId: string;
   items: ShoppingListItem[];
   currentUserId?: string;
@@ -39,6 +37,7 @@ interface ShoppingListSectionProps {
   onItemReturnedToList?: (item: ShoppingListItem) => void;
   onItemRemoved?: (item: ShoppingListItem) => void;
   onItemAdded?: (item: ShoppingListItem) => void;
+  hideInput?: boolean;
 }
 
 type OptimisticUpdate =
@@ -50,16 +49,14 @@ export function ShoppingListSection({
   items,
   currentUserId,
   isAdmin = false,
-  spaceType = "FLATSHARE",
   onViewCart,
   onItemMovedToCart,
   onAllItemsMovedToCart,
-  onPantryItemEmptied,
   onItemReturnedToList,
   onItemRemoved,
   onItemAdded,
+  hideInput = false,
 }: ShoppingListSectionProps) {
-  const wording = getSpaceWording(spaceType);
   const [optimisticListItems, setOptimisticListItems] = useOptimistic(
     items,
     (state: ShoppingListItem[], update: OptimisticUpdate) => {
@@ -77,7 +74,6 @@ export function ShoppingListSection({
   );
   const [customItemName, setCustomItemName] = useState("");
   const [isAdding, setIsAdding] = useState(false);
-  const [isMovingAll, setIsMovingAll] = useState(false);
   const [checkedVisualIds, setCheckedVisualIds] = useState<Set<string>>(new Set());
   const [, startTransition] = useTransition();
 
@@ -92,7 +88,7 @@ export function ShoppingListSection({
         const newItem = await addCustomShoppingItemAction(kitchenId, name);
         onItemAdded?.(newItem);
         setCustomItemName("");
-        toast.success(`Added "${name}" to shopping list`);
+        toast.success(`Added "${name}" to shopping queue`);
       } catch (err: any) {
         toast.error(err.message || "Failed to add item.");
       } finally {
@@ -106,7 +102,7 @@ export function ShoppingListSection({
     const nextPurchased = !isCurrentlyPurchased;
 
     if (nextPurchased) {
-      // Immediately mark as checked and strikethrough in UI (0ms feedback)
+      // 0ms feedback: immediately check and strikethrough
       setCheckedVisualIds((prev) => new Set(prev).add(item.id));
 
       startTransition(async () => {
@@ -117,18 +113,17 @@ export function ShoppingListSection({
         });
         onItemMovedToCart?.(item);
 
-        // Keep strikethrough visible briefly so user sees the completed checkmark before moving to cart
         setTimeout(() => {
           setCheckedVisualIds((prev) => {
             const next = new Set(prev);
             next.delete(item.id);
             return next;
           });
-        }, 300);
+        }, 280);
 
         try {
           await moveToCartAction(kitchenId, item.id);
-          toast.success(`Moved "${item.name}" to cart`);
+          toast.success(`Bought "${item.name}" — moved to cart`);
         } catch (err: any) {
           setCheckedVisualIds((prev) => {
             const next = new Set(prev);
@@ -140,7 +135,6 @@ export function ShoppingListSection({
         }
       });
     } else {
-      // Uncheck / return to needed list
       setCheckedVisualIds((prev) => {
         const next = new Set(prev);
         next.delete(item.id);
@@ -157,7 +151,7 @@ export function ShoppingListSection({
 
         try {
           await returnToShoppingListAction(kitchenId, item.id);
-          toast.success(`Returned "${item.name}" to shopping list`);
+          toast.success(`Returned "${item.name}" to queue`);
         } catch (err: any) {
           onItemMovedToCart?.(item);
           toast.error(err.message || "Failed to return item to list.");
@@ -181,9 +175,9 @@ export function ShoppingListSection({
       try {
         await removeShoppingListItemAction(kitchenId, item.id);
         if (isCustom) {
-          toast.success(`Deleted "${item.name}" from shopping list`);
+          toast.success(`Deleted "${item.name}" from queue`);
         } else {
-          toast.success(`Removed "${item.name}" from list & restocked in pantry`);
+          toast.success(`Restocked "${item.name}" in staples`);
         }
       } catch (err: any) {
         onItemReturnedToList?.(item);
@@ -195,216 +189,144 @@ export function ShoppingListSection({
   const openItems = optimisticListItems.filter(
     (i) => !i.is_purchased && !i.is_guest_staged
   );
-  const myStagedItemsCount = optimisticListItems.filter(
-    (i) =>
-      i.is_purchased &&
-      !i.is_guest_staged &&
-      !i.checkout_id &&
-      i.purchased_by === currentUserId
-  ).length;
-
-  const handleMoveAllToCart = () => {
-    if (openItems.length === 0 || isMovingAll) return;
-    const itemsToMove = [...openItems];
-    setIsMovingAll(true);
-
-    startTransition(async () => {
-      // Optimistically update all open items
-      for (const item of itemsToMove) {
-        setOptimisticListItems({
-          type: "UPDATE",
-          id: item.id,
-          changes: { is_purchased: true, purchased_by: currentUserId || null, is_guest_staged: false },
-        });
-      }
-      onAllItemsMovedToCart?.(itemsToMove);
-
-      try {
-        await moveAllNeededToCartAction(kitchenId);
-        toast.success(`Moved all ${itemsToMove.length} items to cart`);
-      } catch (err: any) {
-        for (const item of itemsToMove) {
-          setOptimisticListItems({
-            type: "UPDATE",
-            id: item.id,
-            changes: { is_purchased: false, purchased_by: null, is_guest_staged: false },
-          });
-          onItemReturnedToList?.(item);
-        }
-        toast.error(err.message || "Failed to move items to cart.");
-      } finally {
-        setIsMovingAll(false);
-      }
-    });
-  };
 
   return (
-    <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-5">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2">
-          <ShoppingBag className="w-4 h-4 text-muted-foreground" />
-          <h2 className="text-base font-semibold text-foreground">Shopping List</h2>
-        </div>
-
-        {openItems.length > 0 && (
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={handleMoveAllToCart}
-            disabled={isMovingAll}
-            className="h-8 px-3 rounded-xl text-xs font-semibold gap-1.5 border border-border/80 hover:border-primary/40 hover:bg-secondary text-foreground hover:text-primary transition-all cursor-pointer shadow-2xs active:scale-95"
-            title="Move all needed items directly into your cart"
-          >
-            {isMovingAll ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <CartIcon className="w-3.5 h-3.5 text-primary" />
-            )}
-            <span>Add All to Cart</span>
-          </Button>
-        )}
-      </div>
-
-      {/* Add Custom Item Input */}
-      <form onSubmit={handleAddCustomItem} className="flex gap-2">
-        <Input
-          type="text"
-          placeholder="Add extra item (e.g. Oat Milk, Coffee)..."
-          value={customItemName}
-          onChange={(e) => setCustomItemName(e.target.value)}
-          disabled={isAdding}
-          className="text-sm h-9 rounded-xl bg-background border-border text-foreground"
-        />
-        <Button
-          type="submit"
-          disabled={isAdding || !customItemName.trim()}
-          size="sm"
-          className="h-9 px-3 shrink-0 rounded-xl"
-        >
-          {isAdding ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Plus className="w-4 h-4 mr-1" />
-          )}
-          <span>Add</span>
-        </Button>
-      </form>
-
-      {/* Needed Items List */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 px-1">
-          <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground">
-            Needed Items
-          </span>
-          <span className="bg-secondary text-muted-foreground px-2 py-0.5 rounded-full text-[10px] font-medium">
-            {openItems.length}
-          </span>
-        </div>
-
-        {openItems.length === 0 ? (
-          <div className="py-8 text-center rounded-2xl border border-dashed border-border bg-muted/30">
-            <CheckCheck className="w-6 h-6 text-accent-success mx-auto mb-1.5 opacity-80" />
-            <p className="text-sm font-medium text-foreground">{wording.emptyListHeading}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {wording.emptyListSub}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-1.5">
-            {openItems.map((item) => {
-              const isChecked = item.is_purchased || checkedVisualIds.has(item.id);
-              return (
-                <div
-                  key={item.id}
-                  className="bg-white/[0.025] hover:bg-white/[0.045] border border-white/[0.05] rounded-xl px-3 py-2 flex items-center justify-between gap-3 text-sm transition-all"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <button
-                      type="button"
-                      role="checkbox"
-                      aria-checked={isChecked}
-                      onClick={() => handleToggleCheckmark(item)}
-                      className={cn(
-                        "w-5 h-5 rounded-md border flex items-center justify-center transition-all cursor-pointer shrink-0",
-                        isChecked
-                          ? "bg-accent-success text-white border-accent-success shadow-xs"
-                          : "border-border/80 dark:border-white/10 hover:border-accent-success/80 hover:bg-accent-success/10"
-                      )}
-                      title={isChecked ? "Checked (staged in cart)" : "Check off item into cart"}
-                    >
-                      {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                    </button>
-
-                    <span
-                      className={cn(
-                        "font-medium truncate transition-all cursor-pointer select-none text-sm",
-                        isChecked
-                          ? "text-muted-foreground line-through decoration-muted-foreground/50"
-                          : "text-foreground"
-                      )}
-                      onClick={() => handleToggleCheckmark(item)}
-                    >
-                      {item.name}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => handleRemove(item)}
-                      className="text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer transition-colors"
-                      title={
-                        item.pantry_item_id
-                          ? "Remove from list and mark in-stock"
-                          : "Delete item"
-                      }
-                      aria-label={`Remove ${item.name}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Compact In-Cart Callout Bar (Strictly Current User's Staged Items) */}
-      {myStagedItemsCount > 0 && (
-        <div className="pt-2 border-t border-border">
-          <div className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-muted/40 border border-border">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="w-2 h-2 rounded-full bg-accent-success shrink-0 shadow-xs" />
-              <span className="text-xs text-muted-foreground font-medium truncate">
-                <strong className="text-foreground font-semibold">{myStagedItemsCount}</strong> {myStagedItemsCount === 1 ? "item" : "items"} staged in your cart
-              </span>
-            </div>
-
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (onViewCart) {
-                  onViewCart();
-                } else if (typeof window !== "undefined") {
-                  const url = new URL(window.location.href);
-                  url.searchParams.set("tab", "cart");
-                  window.history.replaceState({}, "", url.toString());
-                }
-              }}
-              className="h-7 text-xs text-foreground hover:bg-muted gap-1 px-2.5 shrink-0 rounded-lg font-medium cursor-pointer"
+    <div className="bg-[#121215] border border-white/[0.08] rounded-3xl p-6 shadow-2xl backdrop-blur-xl space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between select-none">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+            <ShoppingBag className="w-4 h-4 text-muted-foreground" />
+            <h2 className="text-lg font-bold text-white tracking-tight">Active Shopping Queue</h2>
+            <Badge
+              variant={openItems.length > 0 ? "accent" : "secondary"}
+              className="text-xs font-mono font-medium"
             >
-              <span>View Cart Tab</span>
-              <ArrowRight className="w-3 h-3" />
-            </Button>
+              {openItems.length}
+            </Badge>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Items to purchase right now · Tap any row to mark bought
+          </p>
+        </div>
+      </div>
+
+      {/* Optional Quick Add Input */}
+      {!hideInput && (
+        <form onSubmit={handleAddCustomItem} className="flex items-center gap-2">
+          <Input
+            type="text"
+            placeholder="Add one-off item (e.g. Lemons, Party Snacks)..."
+            value={customItemName}
+            onChange={(e) => setCustomItemName(e.target.value)}
+            disabled={isAdding}
+            className="flex-1 rounded-xl h-10 bg-background border-border text-foreground text-sm"
+          />
+          <Button
+            type="submit"
+            disabled={isAdding || !customItemName.trim()}
+            className="rounded-xl h-10 px-4 font-semibold shrink-0 cursor-pointer"
+          >
+            {isAdding ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4 mr-1" />
+            )}
+            <span>Add</span>
+          </Button>
+        </form>
+      )}
+
+      {/* Checklist Queue */}
+      {openItems.length === 0 ? (
+        <div className="py-8 px-4 text-center rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.02] space-y-1.5 select-none">
+          <p className="text-sm font-semibold text-white">Queue is clear</p>
+          <p className="text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">
+            All staples are stocked and no ad-hoc items are pending.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {openItems.map((item) => {
+            const isChecked = item.is_purchased || checkedVisualIds.has(item.id);
+            const isStaple = !!item.pantry_item_id;
+
+            return (
+              <div
+                key={item.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleToggleCheckmark(item)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleToggleCheckmark(item);
+                  }
+                }}
+                className={cn(
+                  "group w-full flex items-center justify-between rounded-2xl px-4 py-3.5 transition-all cursor-pointer select-none active:scale-[0.99] border",
+                  isChecked
+                    ? "bg-emerald-500/10 border-emerald-500/25 opacity-60"
+                    : "bg-white/[0.03] hover:bg-white/[0.06] border-white/[0.07] hover:border-white/[0.14]"
+                )}
+              >
+                {/* Left: Circular Checkbox + Item Name */}
+                <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                  <div
+                    className={cn(
+                      "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0",
+                      isChecked
+                        ? "bg-accent-success text-white border-accent-success shadow-xs scale-105"
+                        : "border-white/30 group-hover:border-primary group-hover:bg-primary/10"
+                    )}
+                  >
+                    {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                  </div>
+
+                  <span
+                    className={cn(
+                      "text-base font-bold truncate transition-all",
+                      isChecked
+                        ? "line-through text-muted-foreground"
+                        : "text-white"
+                    )}
+                  >
+                    {item.name}
+                  </span>
+                </div>
+
+                {/* Right: Chip + Hover Trash Button */}
+                <div className="flex items-center gap-2.5 shrink-0">
+                  {isStaple ? (
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                      Staple
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-white/[0.06] text-muted-foreground border border-white/[0.08]">
+                      {item.purchased_by_name ? `@${item.purchased_by_name}` : "One-off"}
+                    </span>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemove(item);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                    title="Delete item"
+                    aria-label={`Delete ${item.name}`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
-    </Card>
+    </div>
   );
 }
+
+export default ShoppingListSection;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect, Suspense } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type {
@@ -13,259 +13,222 @@ import type {
   KitchenSpaceType,
 } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
-import { updateKitchenSettings, regeneratePublicViewToken, addMemberAction, leaveKitchenAction, getKitchenMembersAction } from "@/app/actions/kitchen";
+import {
+  addPantryItemAction,
+  addCustomShoppingItemAction,
+} from "@/app/actions/pantry";
 import { getPendingRefundsCountAction } from "@/app/actions/checkout";
 import { PantrySection } from "@/components/PantrySection";
 import { ShoppingListSection } from "@/components/ShoppingListSection";
-import { ShoppingCart } from "@/components/ShoppingCart";
-import { CopyButton } from "@/components/CopyButton";
-import { AdminActiveMembersList } from "@/components/AdminActiveMembersList";
-import { AdminPendingInvitesList } from "@/components/AdminPendingInvitesList";
-import { MyPurchasesSection, MyPurchasesSkeleton } from "@/components/MyPurchasesSection";
-import { AdminRefundsSection, AdminRefundsSkeleton } from "@/components/AdminRefundsSection";
 import { ActiveCartSection } from "@/components/ActiveCartSection";
+import { RoommatesView } from "@/components/kitchen/RoommatesView";
+import { AdminRefundsSection } from "@/components/AdminRefundsSection";
+import { MyPurchasesSection } from "@/components/MyPurchasesSection";
+import { CopyButton } from "@/components/CopyButton";
 import { GuestCartHandoverListener } from "@/components/GuestCartHandoverListener";
-import { KitchenPulse } from "@/components/kitchen/KitchenPulse";
-import type { KitchenPulseStats } from "@/lib/actions/stats";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
-  ArrowLeft,
-  ArrowRight,
-  ShoppingBag,
-  ShoppingCart as CartIcon,
-  ExternalLink,
-  Share2,
+  UtensilsCrossed,
+  ShoppingCart,
   Users,
-  Mail,
-  UserPlus,
-  Shield,
   Settings,
+  ExternalLink,
+  Plus,
+  CheckCircle2,
+  CreditCard,
+  ArrowRight,
   Home,
   Heart,
   Briefcase,
-  Building2,
-  RefreshCw,
+  Layers,
   Loader2,
-  AlertTriangle,
-  LogOut,
-  UtensilsCrossed,
+  Sparkles,
   Receipt,
-  Activity,
+  RotateCcw,
 } from "lucide-react";
-import { capitalize, cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 
-export function MembersSkeleton() {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-pulse">
-      <div className="lg:col-span-2 space-y-6">
-        <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-6 w-36 rounded-md" />
-            <Skeleton className="h-5 w-6 rounded-full" />
-          </div>
-          <div className="space-y-3 pt-2">
-            <Skeleton className="h-12 w-full rounded-xl" />
-            <Skeleton className="h-12 w-full rounded-xl" />
-            <Skeleton className="h-12 w-full rounded-xl" />
-          </div>
-        </Card>
-        <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-6 w-36 rounded-md" />
-            <Skeleton className="h-5 w-6 rounded-full" />
-          </div>
-          <div className="space-y-3 pt-2">
-            <Skeleton className="h-12 w-full rounded-xl" />
-          </div>
-        </Card>
-      </div>
-      <div>
-        <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-          <Skeleton className="h-6 w-32 rounded-md" />
-          <Skeleton className="h-4 w-48 rounded-md" />
-          <Skeleton className="h-10 w-full rounded-xl" />
-          <Skeleton className="h-10 w-full rounded-xl" />
-        </Card>
-      </div>
-    </div>
-  );
-}
-
 export interface KitchenSpaceViewProps {
-  kitchen: Kitchen;
-  membership: KitchenMember;
+  kitchen?: Kitchen;
+  initialKitchen?: Kitchen;
+  membership?: KitchenMember;
   members?: KitchenMemberWithUser[];
   pantryItems: PantryItem[];
   shoppingListItems: ShoppingListItem[];
-  myCheckouts?: CheckoutWithDetails[];
-  adminCheckouts?: CheckoutWithDetails[];
-  initialPulseStats?: KitchenPulseStats;
   currentUserId: string;
+  isAdmin?: boolean;
+  baseUrl: string;
+  defaultTab?: string;
+  initialTab?: string;
+  initialPulseStats?: any;
   preferredCurrency?: string;
   userPreferredCurrency?: string;
-  baseUrl: string;
-  initialTab?: string;
+  myCheckouts?: CheckoutWithDetails[];
+}
+
+function getSpaceIcon(spaceType?: string) {
+  switch (spaceType) {
+    case "FAMILY":
+      return <Heart className="w-3.5 h-3.5 text-rose-400" />;
+    case "OFFICE":
+      return <Briefcase className="w-3.5 h-3.5 text-teal-400" />;
+    case "NEUTRAL":
+      return <Layers className="w-3.5 h-3.5 text-indigo-400" />;
+    default:
+      return <Home className="w-3.5 h-3.5 text-amber-400" />;
+  }
+}
+
+function getSpaceLabel(spaceType?: string) {
+  switch (spaceType) {
+    case "FAMILY":
+      return "Family Home";
+    case "OFFICE":
+      return "Studio & Office";
+    case "NEUTRAL":
+      return "Neutral Space";
+    default:
+      return "Flatshare (WG)";
+  }
 }
 
 export function KitchenSpaceView({
-  kitchen: initialKitchen,
+  kitchen,
+  initialKitchen: propInitialKitchen,
   membership,
-  members: initialMembers,
-  pantryItems,
-  shoppingListItems,
-  myCheckouts,
-  adminCheckouts,
-  initialPulseStats,
+  members: propMembers = [],
+  pantryItems: initialPantryItems,
+  shoppingListItems: initialShoppingListItems,
   currentUserId,
-  preferredCurrency,
-  userPreferredCurrency = "EUR",
+  isAdmin: propIsAdmin,
   baseUrl,
-  initialTab = "kitchen",
+  defaultTab = "kitchen",
+  initialTab,
+  myCheckouts = [],
 }: KitchenSpaceViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [kitchenName, setKitchenName] = useState(initialKitchen.name);
-  const [spaceType, setSpaceType] = useState<KitchenSpaceType>(initialKitchen.space_type || "FLATSHARE");
-  const [publicViewToken, setPublicViewToken] = useState(initialKitchen.public_view_token);
+  const initialKitchen = kitchen || propInitialKitchen!;
+  const isAdmin = propIsAdmin !== undefined ? propIsAdmin : membership?.role === "ADMIN";
+  const initialMembers = propMembers;
 
-  // Synchronized optimistic state for pantry and shopping list items
-  const [localPantryItems, setLocalPantryItems] = useState<PantryItem[]>(pantryItems);
-  const [localShoppingListItems, setLocalShoppingListItems] = useState<ShoppingListItem[]>(shoppingListItems);
+  const effectiveTab = initialTab || defaultTab;
+  // 2-Mode Kitchen Workspace: "board" (Kitchen Board) vs "supermarket" (Supermarket Run)
+  const initialMode =
+    effectiveTab === "cart" || searchParams?.get("tab") === "cart" || searchParams?.get("mode") === "supermarket"
+      ? "supermarket"
+      : "board";
 
-  // Lazy tab state for members and checkouts
-  const [members, setMembers] = useState<KitchenMemberWithUser[]>(initialMembers || []);
-  const [isMembersLoading, setIsMembersLoading] = useState(initialMembers === undefined);
-  const [pendingRefundsCount, setPendingRefundsCount] = useState<number>(() => {
-    if (adminCheckouts) {
-      return adminCheckouts.filter((c) => !c.is_refunded).length;
-    }
-    return 0;
-  });
+  const [mode, setMode] = useState<"board" | "supermarket">(initialMode);
+  const [localPantryItems, setLocalPantryItems] = useState<PantryItem[]>(initialPantryItems);
+  const [localShoppingListItems, setLocalShoppingListItems] = useState<ShoppingListItem[]>(initialShoppingListItems);
+  const [localMembers, setLocalMembers] = useState<KitchenMemberWithUser[]>(initialMembers);
 
-  // Settings form drafts
-  const [draftName, setDraftName] = useState(initialKitchen.name);
-  const [draftSpaceType, setDraftSpaceType] = useState<KitchenSpaceType>(initialKitchen.space_type || "FLATSHARE");
+  // Universal Command Bar State
+  const [commandInput, setCommandInput] = useState("");
+  const [commandType, setCommandType] = useState<"one-off" | "staple">("one-off");
+  const [isSubmittingCommand, setIsSubmittingCommand] = useState(false);
 
-  // Invite state
-  const [inviteMemberName, setInviteMemberName] = useState("");
-  const [isInviting, setIsInviting] = useState(false);
-
-  // Async transitions
-  const [isSavingSettings, setIsSavingSettings] = useState(false);
-  const [isRegenerating, setIsRegenerating] = useState(false);
-  const [isLeaving, setIsLeaving] = useState(false);
-  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
+  // Overlays State
+  const [isRoommatesOpen, setIsRoommatesOpen] = useState(false);
+  const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const [pendingRefundsCount, setPendingRefundsCount] = useState(0);
   const [, startTransition] = useTransition();
 
-  const terminology = getSpaceTerminology(spaceType);
-  const isAdmin = membership.role === "ADMIN";
-  const validTabs = isAdmin
-    ? ["kitchen", "pulse", "cart", "members", "refunds", "settings"]
-    : ["kitchen", "pulse", "cart", "members", "settings"];
+  const terminology = getSpaceTerminology(initialKitchen.space_type);
+  const activeMembers = localMembers.filter((m) => m.joined_at !== null);
 
-  // Tab state syncing
-  const urlTab = searchParams.get("tab");
-  const defaultTab = urlTab && validTabs.includes(urlTab)
-    ? urlTab
-    : (validTabs.includes(initialTab) ? initialTab : "kitchen");
-  const [activeTab, setActiveTab] = useState(defaultTab);
-  const [mobileKitchenView, setMobileKitchenView] = useState<"pantry" | "shopping">("pantry");
+  const neededItemsCount = localShoppingListItems.filter(
+    (i) => !i.is_purchased && !i.is_guest_staged
+  ).length;
 
+  const origin = typeof window !== "undefined" ? window.location.origin : baseUrl;
+  const publicGuestUrl = origin
+    ? `${origin}/kitchen/view/${initialKitchen.public_view_token}`
+    : `/kitchen/view/${initialKitchen.public_view_token}`;
+
+  // Fetch pending refunds count on mount
   useEffect(() => {
-    if (urlTab && validTabs.includes(urlTab)) {
-      setActiveTab(urlTab);
-    } else if (urlTab && !validTabs.includes(urlTab)) {
-      setActiveTab("kitchen");
+    let isMounted = true;
+    getPendingRefundsCountAction(initialKitchen.id)
+      .then((count) => {
+        if (isMounted) setPendingRefundsCount(count);
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [initialKitchen.id]);
+
+  const handleModeChange = (newMode: "board" | "supermarket") => {
+    setMode(newMode);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (newMode === "supermarket") {
+        url.searchParams.set("tab", "cart");
+      } else {
+        url.searchParams.delete("tab");
+      }
+      window.history.replaceState({}, "", url.toString());
     }
-  }, [urlTab, validTabs]);
+  };
 
-  useEffect(() => {
-    setKitchenName(initialKitchen.name);
-    setDraftName(initialKitchen.name);
-    setSpaceType(initialKitchen.space_type || "FLATSHARE");
-    setDraftSpaceType(initialKitchen.space_type || "FLATSHARE");
-    setPublicViewToken(initialKitchen.public_view_token);
-  }, [initialKitchen.name, initialKitchen.space_type, initialKitchen.public_view_token]);
+  // Universal Command Bar Add Handler
+  const handleCommandSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = commandInput.trim();
+    if (!name || isSubmittingCommand) return;
 
-  useEffect(() => {
-    setLocalPantryItems(pantryItems);
-  }, [pantryItems]);
+    setIsSubmittingCommand(true);
+    startTransition(async () => {
+      try {
+        if (commandType === "staple") {
+          const item = await addPantryItemAction(initialKitchen.id, name);
+          setLocalPantryItems((prev) =>
+            [...prev, item].sort((a, b) => a.name.localeCompare(b.name))
+          );
+          toast.success(`Tracked "${name}" in household staples`);
+        } else {
+          const newItem = await addCustomShoppingItemAction(initialKitchen.id, name);
+          setLocalShoppingListItems((prev) => [newItem, ...prev]);
+          toast.success(`Added "${name}" to shopping queue`);
+        }
+        setCommandInput("");
+      } catch (err: any) {
+        toast.error(err.message || "Failed to stage item.");
+      } finally {
+        setIsSubmittingCommand(false);
+      }
+    });
+  };
 
-  useEffect(() => {
-    setLocalShoppingListItems(shoppingListItems);
-  }, [shoppingListItems]);
-
-  useEffect(() => {
-    if (initialMembers !== undefined) {
-      setMembers(initialMembers);
-      setIsMembersLoading(false);
-      return;
-    }
-
-    if (activeTab === "members" || activeTab === "refunds") {
-      let isMounted = true;
-      setIsMembersLoading(true);
-      getKitchenMembersAction(initialKitchen.id)
-        .then((data) => {
-          if (isMounted) {
-            setMembers(data);
-            setIsMembersLoading(false);
-          }
-        })
-        .catch((err) => {
-          console.error("Failed to load members:", err);
-          if (isMounted) setIsMembersLoading(false);
-        });
-
-      return () => {
-        isMounted = false;
-      };
-    }
-  }, [activeTab, initialKitchen.id, initialMembers]);
-
-  useEffect(() => {
-    if (isAdmin && !adminCheckouts) {
-      getPendingRefundsCountAction(initialKitchen.id)
-        .then((count) => setPendingRefundsCount(count))
-        .catch(() => {});
-    }
-  }, [isAdmin, initialKitchen.id, adminCheckouts]);
-
-  // Optimistic event handlers
+  // State sync handlers between Pantry & Shopping List
   const handlePantryItemEmptied = (item: PantryItem) => {
     setLocalPantryItems((prev) =>
       prev.map((p) => (p.id === item.id ? { ...p, is_out_of_stock: true } : p))
     );
     setLocalShoppingListItems((prev) => {
-      const exists = prev.some((i) => i.pantry_item_id === item.id && !i.is_purchased);
-      if (exists) return prev;
+      if (prev.some((i) => i.pantry_item_id === item.id && !i.is_purchased)) {
+        return prev;
+      }
       const newItem: ShoppingListItem = {
-        id: `temp-${item.id}-${Date.now()}`,
+        id: `temp-${Date.now()}`,
         kitchen_id: initialKitchen.id,
         pantry_item_id: item.id,
         name: item.name,
         item_price: null,
-        currency: "EUR",
         is_purchased: false,
         purchased_by: null,
         is_guest_staged: false,
@@ -300,24 +263,6 @@ export function KitchenSpaceView({
     }
   };
 
-  const handleAllItemsMovedToCart = (itemsMoved: ShoppingListItem[]) => {
-    const movedIds = new Set(itemsMoved.map((i) => i.id));
-    const pantryIds = new Set(itemsMoved.map((i) => i.pantry_item_id).filter(Boolean));
-
-    setLocalShoppingListItems((prev) =>
-      prev.map((i) =>
-        movedIds.has(i.id)
-          ? { ...i, is_purchased: true, purchased_by: currentUserId, is_guest_staged: false }
-          : i
-      )
-    );
-    if (pantryIds.size > 0) {
-      setLocalPantryItems((prev) =>
-        prev.map((p) => (pantryIds.has(p.id) ? { ...p, is_out_of_stock: false } : p))
-      );
-    }
-  };
-
   const handleItemReturnedToList = (item: ShoppingListItem) => {
     setLocalShoppingListItems((prev) =>
       prev.map((i) =>
@@ -342,1240 +287,395 @@ export function KitchenSpaceView({
     }
   };
 
-  const activeMembers = members.filter((m) => m.joined_at !== null);
-  const pendingInvites = members.filter((m) => m.joined_at === null && m.invite_token !== null);
-
-  const myCartItems = localShoppingListItems.filter(
-    (i) => i.is_purchased && !i.is_guest_staged && !i.checkout_id && i.purchased_by === currentUserId
-  );
-  const myCartCount = myCartItems.length;
-  const neededItemsCount = localShoppingListItems.filter(
-    (i) => !i.is_purchased && !i.is_guest_staged
-  ).length;
-
-  const origin = typeof window !== "undefined" ? window.location.origin : baseUrl;
-  const publicGuestUrl = origin ? `${origin}/kitchen/view/${publicViewToken}` : `/kitchen/view/${publicViewToken}`;
-
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      url.searchParams.set("tab", tab);
-      window.history.replaceState({}, "", url.toString());
-    }
-  };
-
-  const handleSelectSpaceType = (newType: KitchenSpaceType) => {
-    setDraftSpaceType(newType);
-    setSpaceType(newType);
-  };
-
-  const handleSaveSettings = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = draftName.trim();
-    if (!trimmed) {
-      toast.error("Kitchen name cannot be empty.");
-      return;
-    }
-
-    setIsSavingSettings(true);
-    startTransition(async () => {
-      try {
-        const updated = await updateKitchenSettings({
-          kitchenId: initialKitchen.id,
-          name: trimmed,
-          spaceType: draftSpaceType,
-          space_type: draftSpaceType,
-        });
-        setKitchenName(updated.name);
-        setSpaceType(updated.space_type);
-        setDraftName(updated.name);
-        setDraftSpaceType(updated.space_type);
-        toast.success("Kitchen settings saved successfully!");
-        router.refresh();
-      } catch (err: any) {
-        setSpaceType(initialKitchen.space_type || "FLATSHARE");
-        setDraftSpaceType(initialKitchen.space_type || "FLATSHARE");
-        toast.error(err.message || "Failed to update kitchen settings.");
-      } finally {
-        setIsSavingSettings(false);
-      }
-    });
-  };
-
-  const handleRegenerateGuestLink = () => {
-    setIsRegenerating(true);
-    startTransition(async () => {
-      try {
-        const res = await regeneratePublicViewToken(initialKitchen.id);
-        if (res.newToken) {
-          setPublicViewToken(res.newToken);
-          toast.success("Guest supermarket link regenerated! Previous link revoked.");
-          router.refresh();
-        }
-      } catch (err: any) {
-        toast.error(err.message || "Failed to regenerate link.");
-      } finally {
-        setIsRegenerating(false);
-      }
-    });
-  };
-
-  const handleAdminInvite = (e: React.FormEvent) => {
-    e.preventDefault();
-    const name = inviteMemberName.trim();
-    if (!name) return;
-
-    setIsInviting(true);
-    startTransition(async () => {
-      try {
-        const res = await addMemberAction(initialKitchen.id, name);
-        setInviteMemberName("");
-        setMembers((prev) => [...prev, { ...res.member, username: null }]);
-        toast.success(`Invite generated for ${res.member.kitchen_display_name}!`);
-        router.refresh();
-      } catch (err: any) {
-        toast.error(err.message || "Failed to generate invite.");
-      } finally {
-        setIsInviting(false);
-      }
-    });
-  };
-
-  const handleLeaveKitchen = () => {
-    setIsLeaving(true);
-    startTransition(async () => {
-      try {
-        await leaveKitchenAction(initialKitchen.id);
-        toast.success(`You left ${kitchenName}`);
-        router.push("/");
-      } catch (err: any) {
-        toast.error(err.message || "Failed to leave kitchen.");
-        setIsLeaving(false);
-        setIsLeaveModalOpen(false);
-      }
-    });
-  };
-
   return (
-    <div className="w-full flex flex-col gap-4 pb-32 md:pb-12">
+    <div className="min-h-[calc(100vh-4rem)] w-full flex flex-col bg-background text-foreground selection:bg-primary/20">
       <GuestCartHandoverListener kitchenId={initialKitchen.id} />
 
-      {/* Sleek Single-Row Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-2">
-        {/* Left Side: Back Navigation & Kitchen Title */}
-        <div className="flex items-center gap-3 min-w-0">
-          <Button
-            asChild
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 rounded-xl border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground shrink-0 transition-colors flex items-center justify-center cursor-pointer"
-            title="Back to Kitchens"
-            aria-label="Back to Kitchens"
-          >
-            <Link href="/dashboard">
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-          </Button>
-
-          <div className="flex items-center gap-2 min-w-0 flex-wrap">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground truncate">
-              {kitchenName}
-            </h1>
-            {isAdmin && (
-              <Badge
-                variant="secondary"
-                className="bg-muted text-muted-foreground border border-border font-medium text-[10px] tracking-wider uppercase px-2 py-0.5 rounded-md shrink-0"
-              >
-                Admin
-              </Badge>
-            )}
-          </div>
-        </div>
-
-        {/* Right Side: Share Actions & Space Settings */}
-        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-          <CopyButton
-            text={publicGuestUrl}
-            label="Guest Link"
-            size="sm"
-            variant="outline"
-            className="h-10 px-3.5 text-xs font-medium rounded-xl border-border/60 bg-muted/40 hover:bg-muted text-foreground transition-colors cursor-pointer"
-          />
-
-          <Button
-            asChild
-            variant="outline"
-            size="icon"
-            className="h-10 w-10 rounded-xl border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground shrink-0 transition-colors flex items-center justify-center cursor-pointer"
-            title="Open guest view in new tab"
-            aria-label="Open guest view in new tab"
-          >
-            <Link href={publicGuestUrl} target="_blank">
-              <ExternalLink className="w-4 h-4" />
-            </Link>
-          </Button>
-
-          <Button
-            asChild
-            variant="outline"
-            size="icon"
-            className="h-10 w-10 rounded-xl border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground shrink-0 transition-colors flex items-center justify-center cursor-pointer"
-            title="Kitchen Settings"
-            aria-label="Kitchen Settings"
-          >
-            <Link href={`/kitchen/${initialKitchen.id}/settings`}>
-              <Settings className="w-4 h-4" />
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      {/* Responsive Navigation System */}
-      <Tabs defaultValue={defaultTab} value={activeTab} onValueChange={handleTabChange} className="w-full space-y-6">
-        {/* Desktop Experience: Surface Pill Segmented Bar */}
-        <div className="hidden md:flex justify-center w-full">
-          <TabsList className="bg-card/90 border border-white/[0.08] backdrop-blur-md rounded-xl p-1 inline-flex items-center gap-1 h-auto shadow-sm">
-            {/* Tab 1: Pantry / Kitchen */}
-            <TabsTrigger
-              value="kitchen"
-              aria-label="Pantry"
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:text-foreground data-[state=active]:bg-white/[0.05] data-[state=active]:border data-[state=active]:border-white/10 data-[state=active]:font-semibold data-[state=active]:shadow-sm"
-            >
-              <UtensilsCrossed className="w-3.5 h-3.5 shrink-0" />
-              <span>Pantry</span>
-            </TabsTrigger>
-
-            {/* Tab 2: Pulse */}
-            <TabsTrigger
-              value="pulse"
-              aria-label="Pulse"
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:text-foreground data-[state=active]:bg-white/[0.05] data-[state=active]:border data-[state=active]:border-white/10 data-[state=active]:font-semibold data-[state=active]:shadow-sm"
-            >
-              <Activity className="w-3.5 h-3.5 shrink-0" />
-              <span>Pulse</span>
-            </TabsTrigger>
-
-            {/* Tab 3: Cart */}
-            <TabsTrigger
-              value="cart"
-              aria-label="Cart"
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:text-foreground data-[state=active]:bg-white/[0.05] data-[state=active]:border data-[state=active]:border-white/10 data-[state=active]:font-semibold data-[state=active]:shadow-sm relative"
-            >
-              <div className="relative flex items-center shrink-0">
-                <CartIcon className="w-3.5 h-3.5" />
-                {myCartCount > 0 && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary absolute -top-0.5 -right-0.5 shadow-xs" />
-                )}
-              </div>
-              <span>Cart</span>
-              {myCartCount > 0 && (
-                <span className="bg-primary text-primary-foreground font-bold text-[10px] px-1.5 py-0.5 rounded-full leading-none">
-                  {myCartCount}
+      {/* Main Grounded Hub Container */}
+      <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6 flex-1">
+        {/* 1. Header Context: Space Name + Household Tag + Roommate Avatars Stack */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-white/[0.06]">
+          <div className="space-y-1.5 min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white truncate">
+                {initialKitchen.name}
+              </h1>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-secondary text-muted-foreground border border-border/80">
+                {getSpaceIcon(initialKitchen.space_type)}
+                <span>{getSpaceLabel(initialKitchen.space_type)}</span>
+              </span>
+              {isAdmin && (
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                  Admin
                 </span>
               )}
-            </TabsTrigger>
-
-            {/* Tab 4: Roommates / Dynamic Context */}
-            <TabsTrigger
-              value="members"
-              aria-label={terminology.memberTab}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:text-foreground data-[state=active]:bg-white/[0.05] data-[state=active]:border data-[state=active]:border-white/10 data-[state=active]:font-semibold data-[state=active]:shadow-sm"
-            >
-              <Users className="w-3.5 h-3.5 shrink-0" />
-              <span>{terminology.memberTab}</span>
-            </TabsTrigger>
-
-            {/* Tab 5: Refunds (Admin Only) */}
-            {isAdmin && (
-              <TabsTrigger
-                value="refunds"
-                aria-label="Refunds"
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:text-foreground data-[state=active]:bg-white/[0.05] data-[state=active]:border data-[state=active]:border-white/10 data-[state=active]:font-semibold data-[state=active]:shadow-sm relative"
-              >
-                <div className="relative flex items-center shrink-0">
-                  <Receipt className="w-3.5 h-3.5" />
-                  {pendingRefundsCount > 0 && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 absolute -top-0.5 -right-0.5 shadow-xs animate-pulse" />
-                  )}
-                </div>
-                <span>Refunds</span>
-                {pendingRefundsCount > 0 && (
-                  <span className="inline-flex items-center gap-1 ml-1 px-1.5 py-0.2 text-[10px] font-mono font-medium rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                    <span>{pendingRefundsCount}</span>
-                  </span>
-                )}
-              </TabsTrigger>
-            )}
-
-            {/* Tab 6: Settings */}
-            <TabsTrigger
-              value="settings"
-              aria-label="Settings"
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/[0.04] data-[state=active]:text-foreground data-[state=active]:bg-white/[0.05] data-[state=active]:border data-[state=active]:border-white/10 data-[state=active]:font-semibold data-[state=active]:shadow-sm"
-            >
-              <Settings className="w-3.5 h-3.5 shrink-0" />
-              <span>Settings</span>
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        {/* Mobile Experience: Floating Navigation Dock */}
-        <nav
-          aria-label="Mobile Bottom Navigation"
-          className="block md:hidden fixed bottom-3 inset-x-3 sm:inset-x-4 max-w-lg mx-auto z-50 pointer-events-auto bg-card/90 sm:bg-card/95 backdrop-blur-xl border border-border/80 shadow-2xl rounded-2xl py-1.5 px-1"
-        >
-          <div className={`grid ${isAdmin ? "grid-cols-6" : "grid-cols-5"} items-center max-w-md mx-auto`}>
-            {/* Tab 1: Pantry */}
-            <button
-              type="button"
-              onClick={() => handleTabChange("kitchen")}
-              className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl select-none active:scale-95 transition-all cursor-pointer ${
-                activeTab === "kitchen" ? "bg-primary/10" : ""
-              }`}
-              aria-label="Pantry"
-              aria-pressed={activeTab === "kitchen"}
-            >
-              <div className="relative flex items-center justify-center">
-                <UtensilsCrossed
-                  className={`w-5 h-5 stroke-[1.75] transition-colors ${
-                    activeTab === "kitchen" ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                />
-              </div>
-              <span
-                className={`text-[10px] tracking-tight leading-tight truncate max-w-full transition-colors ${
-                  activeTab === "kitchen" ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground font-medium"
-                }`}
-              >
-                Pantry
-              </span>
-              <span
-                className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                  activeTab === "kitchen" ? "bg-primary mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
-                }`}
-              />
-            </button>
-
-            {/* Tab 2: Pulse */}
-            <button
-              type="button"
-              onClick={() => handleTabChange("pulse")}
-              className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl select-none active:scale-95 transition-all cursor-pointer ${
-                activeTab === "pulse" ? "bg-primary/10" : ""
-              }`}
-              aria-label="Pulse"
-              aria-pressed={activeTab === "pulse"}
-            >
-              <div className="relative flex items-center justify-center">
-                <Activity
-                  className={`w-5 h-5 stroke-[1.75] transition-colors ${
-                    activeTab === "pulse" ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                />
-              </div>
-              <span
-                className={`text-[10px] tracking-tight leading-tight truncate max-w-full transition-colors ${
-                  activeTab === "pulse" ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground font-medium"
-                }`}
-              >
-                Pulse
-              </span>
-              <span
-                className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                  activeTab === "pulse" ? "bg-primary mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
-                }`}
-              />
-            </button>
-
-            {/* Tab 3: Cart */}
-            <button
-              type="button"
-              onClick={() => handleTabChange("cart")}
-              className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl select-none active:scale-95 transition-all cursor-pointer ${
-                activeTab === "cart" ? "bg-primary/10" : ""
-              }`}
-              aria-label="Cart"
-              aria-pressed={activeTab === "cart"}
-            >
-              <div className="relative flex items-center justify-center">
-                <CartIcon
-                  className={`w-5 h-5 stroke-[1.75] transition-colors ${
-                    activeTab === "cart" ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                />
-                {myCartCount > 0 && (
-                  <span className="absolute -top-1 -right-2 min-w-[14px] h-3.5 px-1 rounded-full bg-primary text-[9px] font-bold text-primary-foreground flex items-center justify-center leading-none">
-                    {myCartCount > 9 ? "9+" : myCartCount}
-                  </span>
-                )}
-              </div>
-              <span
-                className={`text-[10px] tracking-tight leading-tight truncate max-w-full transition-colors ${
-                  activeTab === "cart" ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground font-medium"
-                }`}
-              >
-                Cart
-              </span>
-              <span
-                className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                  activeTab === "cart" ? "bg-primary mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
-                }`}
-              />
-            </button>
-
-            {/* Tab 4: Roommates (Flat micro-label on mobile) */}
-            <button
-              type="button"
-              onClick={() => handleTabChange("members")}
-              className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl select-none active:scale-95 transition-all cursor-pointer ${
-                activeTab === "members" ? "bg-primary/10" : ""
-              }`}
-              aria-label={spaceType === "FLATSHARE" ? "Flat" : terminology.memberTab}
-              aria-pressed={activeTab === "members"}
-            >
-              <div className="relative flex items-center justify-center">
-                <Users
-                  className={`w-5 h-5 stroke-[1.75] transition-colors ${
-                    activeTab === "members" ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                />
-              </div>
-              <span
-                className={`text-[10px] tracking-tight leading-tight truncate max-w-full transition-colors ${
-                  activeTab === "members" ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground font-medium"
-                }`}
-              >
-                {spaceType === "FLATSHARE" ? "Flat" : terminology.memberTab}
-              </span>
-              <span
-                className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                  activeTab === "members" ? "bg-primary mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
-                }`}
-              />
-            </button>
-
-            {/* Tab 5: Refunds (Admin Only) */}
-            {isAdmin && (
-              <button
-                type="button"
-                onClick={() => handleTabChange("refunds")}
-                className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl select-none active:scale-95 transition-all cursor-pointer ${
-                  activeTab === "refunds" ? "bg-primary/10" : ""
-                }`}
-                aria-label="Refunds"
-                aria-pressed={activeTab === "refunds"}
-              >
-                <div className="relative flex items-center justify-center">
-                  <Receipt
-                    className={`w-5 h-5 stroke-[1.75] transition-colors ${
-                      activeTab === "refunds" ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  />
-                  {pendingRefundsCount > 0 && (
-                    <span className="w-2 h-2 rounded-full bg-amber-400 absolute -top-0.5 -right-1 shadow-[0_0_6px_rgba(251,191,36,0.8)] animate-pulse" />
-                  )}
-                </div>
-                <span
-                  className={`text-[10px] tracking-tight leading-tight truncate max-w-full transition-colors ${
-                    activeTab === "refunds" ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground font-medium"
-                  }`}
-                >
-                  Refunds
-                </span>
-                <span
-                  className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                    activeTab === "refunds" ? "bg-primary mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
-                  }`}
-                />
-              </button>
-            )}
-
-            {/* Tab 6: Settings */}
-            <button
-              type="button"
-              onClick={() => handleTabChange("settings")}
-              className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl select-none active:scale-95 transition-all cursor-pointer ${
-                activeTab === "settings" ? "bg-primary/10" : ""
-              }`}
-              aria-label="Settings"
-              aria-pressed={activeTab === "settings"}
-            >
-              <div className="relative flex items-center justify-center">
-                <Settings
-                  className={`w-5 h-5 stroke-[1.75] transition-colors ${
-                    activeTab === "settings" ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                />
-              </div>
-              <span
-                className={`text-[10px] tracking-tight leading-tight truncate max-w-full transition-colors ${
-                  activeTab === "settings" ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground font-medium"
-                }`}
-              >
-                Settings
-              </span>
-              <span
-                className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                  activeTab === "settings" ? "bg-primary mt-0.5 opacity-100 scale-100" : "bg-transparent mt-0.5 opacity-0 scale-50"
-                }`}
-              />
-            </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Shared household operating board · {activeMembers.length} active {activeMembers.length === 1 ? "roommate" : "roommates"}
+            </p>
           </div>
-        </nav>
 
-        {/* Tab 1: Kitchen (Daily Core) */}
-        <TabsContent value="kitchen" className="space-y-6 animate-in fade-in-50">
-          {/* Mobile-Only Segmented View Switcher (< md) */}
-          <div className="md:hidden flex justify-center w-full">
-            <div className="bg-muted/80 border border-border/80 rounded-2xl p-1 inline-flex items-center gap-1 w-full max-w-sm shadow-2xs">
-              <button
-                type="button"
-                onClick={() => setMobileKitchenView("pantry")}
-                className={cn(
-                  "flex-1 min-h-[44px] py-2 px-3.5 text-xs font-semibold rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-2 active:scale-[0.98]",
-                  mobileKitchenView === "pantry"
-                    ? "bg-background text-foreground shadow-xs border border-border/70"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                aria-pressed={mobileKitchenView === "pantry"}
-              >
-                <UtensilsCrossed className="w-4 h-4 shrink-0" />
-                <span>Pantry</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setMobileKitchenView("shopping")}
-                className={cn(
-                  "flex-1 min-h-[44px] py-2 px-3.5 text-xs font-semibold rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-2 active:scale-[0.98]",
-                  mobileKitchenView === "shopping"
-                    ? "bg-background text-foreground shadow-xs border border-border/70"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                aria-pressed={mobileKitchenView === "shopping"}
-              >
-                <ShoppingBag className="w-4 h-4 shrink-0" />
-                <span>Shopping List</span>
-                {neededItemsCount > 0 && (
-                  <span
-                    className={cn(
-                      "px-2 py-0.5 text-[10px] font-mono font-bold rounded-full",
-                      mobileKitchenView === "shopping"
-                        ? "bg-primary/15 text-primary border border-primary/25"
-                        : "bg-muted text-muted-foreground"
-                    )}
+          {/* Right Header Actions: Avatar Stack (Opens Drawer), Guest Link, Settings */}
+          <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-center">
+            {/* Clickable Roommates Avatar Stack */}
+            <button
+              type="button"
+              onClick={() => setIsRoommatesOpen(true)}
+              className="flex items-center -space-x-2 py-1 px-2 rounded-2xl hover:bg-white/[0.05] border border-white/[0.08] transition-all cursor-pointer shadow-sm group"
+              title="Click to view roommates & invites"
+              aria-label="View roommates and household invites"
+            >
+              <div className="flex items-center -space-x-2 overflow-hidden py-0.5">
+                {activeMembers.slice(0, 3).map((m) => (
+                  <div
+                    key={m.id}
+                    className="w-7 h-7 rounded-full bg-secondary text-foreground border-2 border-background flex items-center justify-center text-[10px] font-bold uppercase shadow-2xs group-hover:scale-105 transition-transform select-none"
                   >
-                    {neededItemsCount}
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-            <div className={cn("w-full", mobileKitchenView !== "pantry" && "hidden md:block")}>
-              <PantrySection
-                kitchenId={initialKitchen.id}
-                items={localPantryItems}
-                onItemEmptied={handlePantryItemEmptied}
-                onItemRestocked={handlePantryItemRestocked}
-                onItemAdded={(item) =>
-                  setLocalPantryItems((prev) =>
-                    [...prev, item].sort((a, b) => a.name.localeCompare(b.name))
-                  )
-                }
-                onItemDeleted={(itemId) =>
-                  setLocalPantryItems((prev) => prev.filter((p) => p.id !== itemId))
-                }
-              />
-            </div>
-            <div className={cn("w-full", mobileKitchenView !== "shopping" && "hidden md:block")}>
-              <ShoppingListSection
-                kitchenId={initialKitchen.id}
-                items={localShoppingListItems}
-                currentUserId={currentUserId}
-                isAdmin={isAdmin}
-                spaceType={spaceType}
-                onViewCart={() => handleTabChange("cart")}
-                onItemMovedToCart={handleItemMovedToCart}
-                onAllItemsMovedToCart={handleAllItemsMovedToCart}
-                onPantryItemEmptied={(pantryId) => {
-                  setLocalPantryItems((prev) =>
-                    prev.map((p) => (p.id === pantryId ? { ...p, is_out_of_stock: true } : p))
-                  );
-                }}
-                onItemReturnedToList={handleItemReturnedToList}
-                onItemRemoved={handleItemRemoved}
-                onItemAdded={(item) =>
-                  setLocalShoppingListItems((prev) => [item, ...prev])
-                }
-              />
-            </div>
-          </div>
-
-          <Suspense fallback={<MyPurchasesSkeleton />}>
-            <MyPurchasesSection kitchenId={initialKitchen.id} checkouts={myCheckouts} />
-          </Suspense>
-        </TabsContent>
-
-        {/* Tab: Pulse (Kitchen Stats & Analytics) */}
-        <TabsContent value="pulse" className="space-y-6 animate-in fade-in-50">
-          <KitchenPulse
-            kitchenId={initialKitchen.id}
-            kitchenName={kitchenName}
-            currentUserId={currentUserId}
-            initialStats={initialPulseStats}
-          />
-        </TabsContent>
-
-        {/* Tab 3: Cart (Full Workspace) */}
-        <TabsContent value="cart" className="space-y-6 animate-in fade-in-50">
-          <ActiveCartSection
-            kitchenId={initialKitchen.id}
-            items={localShoppingListItems}
-            currentUserId={currentUserId}
-            spaceType={spaceType}
-            onSwitchTab={handleTabChange}
-          />
-        </TabsContent>
-
-        {/* Tab 3: Members (Dynamic Label based on space_type) */}
-        <TabsContent value="members" className="space-y-6 animate-in fade-in-50">
-          {activeTab === "members" && (
-            isMembersLoading ? (
-              <MembersSkeleton />
-            ) : isAdmin ? (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left 2 Cols: Active members & Pending invites */}
-              <div className="lg:col-span-2 space-y-6">
-                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2.5">
-                      <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-xs shrink-0">
-                        <Users className="w-4 h-4" />
-                      </div>
-                      <span>{terminology.activeMembersTitle}</span>
-                      <Badge variant="secondary" className="text-xs font-mono">
-                        {activeMembers.length}
-                      </Badge>
-                    </h2>
+                    {m.kitchen_display_name.slice(0, 2)}
                   </div>
-
-                  <AdminActiveMembersList
-                    kitchenId={initialKitchen.id}
-                    members={activeMembers}
-                    currentUserId={currentUserId}
-                    spaceType={spaceType}
-                  />
-                </Card>
-
-                {pendingInvites.length > 0 ? (
-                  <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-base font-semibold text-foreground flex items-center gap-2.5">
-                        <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-xs shrink-0">
-                          <Mail className="w-4 h-4" />
-                        </div>
-                        <span>Pending Invites</span>
-                        <Badge variant="secondary" className="text-xs font-mono">
-                          {pendingInvites.length}
-                        </Badge>
-                      </h2>
-                    </div>
-
-                    <AdminPendingInvitesList
-                      kitchenId={initialKitchen.id}
-                      invites={pendingInvites}
-                      baseUrl={baseUrl}
-                      spaceType={spaceType}
-                    />
-                  </Card>
-                ) : (
-                  <div className="px-4 py-3 rounded-2xl bg-muted/20 border border-border/60 text-xs text-muted-foreground flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Mail className="w-3.5 h-3.5 text-muted-foreground/60" />
-                      <span>Pending Invites</span>
-                    </span>
-                    <span className="text-[11px] text-muted-foreground/70">0 pending &bull; All invites claimed</span>
-                  </div>
-                )}
+                ))}
               </div>
-
-              {/* Right Col: Add Member Form */}
-              <div className="space-y-6">
-                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-                  <CardHeader className="p-0 space-y-1">
-                    <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2.5">
-                      <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-xs shrink-0">
-                        <UserPlus className="w-4 h-4" />
-                      </div>
-                      <span>{terminology.inviteCardTitle}</span>
-                    </CardTitle>
-                    <CardDescription className="text-xs text-muted-foreground">
-                      {terminology.inviteCardDescription}
-                    </CardDescription>
-                  </CardHeader>
-
-                  <CardContent className="p-0">
-                    <form onSubmit={handleAdminInvite} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="admin-member-name" className="text-xs font-medium text-foreground">
-                          {terminology.memberLabel} Display Name
-                        </Label>
-                        <Input
-                          id="admin-member-name"
-                          type="text"
-                          value={inviteMemberName}
-                          onChange={(e) => setInviteMemberName(e.target.value)}
-                          required
-                          placeholder={terminology.namePlaceholder}
-                          className="rounded-xl h-10 bg-background border-border text-sm placeholder:text-muted-foreground/60 focus-visible:ring-1 focus-visible:ring-primary"
-                          disabled={isInviting}
-                        />
-                      </div>
-
-                      <Button
-                        type="submit"
-                        disabled={isInviting || !inviteMemberName.trim()}
-                        className="w-full h-10 rounded-xl font-semibold shadow-sm text-xs sm:text-sm gap-2 bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-[0.98] cursor-pointer"
-                      >
-                        {isInviting && <Loader2 className="w-4 h-4 animate-spin" />}
-                        <span>Invite {terminology.memberLabel} &amp; Generate Link</span>
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          ) : (
-            /* Member Read-Only View */
-            <div className="max-w-2xl mx-auto space-y-6">
-              <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-5">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-base font-semibold text-foreground flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-xs shrink-0">
-                      <Users className="w-4 h-4" />
-                    </div>
-                    <span>{terminology.kitchenMembersTitle}</span>
-                    <Badge variant="secondary" className="text-xs font-mono">
-                      {activeMembers.length}
-                    </Badge>
-                  </h2>
-                </div>
-
-                <div className="divide-y divide-border">
-                  {activeMembers.map((member) => (
-                    <div
-                      key={member.id}
-                      className="py-3 flex items-center justify-between text-sm hover:bg-muted/40 px-2 rounded-xl transition"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback
-                            className={
-                              member.user_id === currentUserId
-                                ? "bg-primary/15 text-primary border border-primary/25 font-semibold text-xs"
-                                : "bg-secondary border border-border text-foreground font-medium text-xs"
-                            }
-                          >
-                            {member.kitchen_display_name.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium text-foreground">
-                            {capitalize(member.kitchen_display_name)}
-                            {member.user_id === currentUserId && (
-                              <span className="ml-2 text-xs text-primary/70 font-medium">(You)</span>
-                            )}
-                          </div>
-                          <div className="text-xs text-muted-foreground font-mono">
-                            @{member.username || "guest"}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-muted-foreground font-mono hidden sm:inline">
-                          {member.joined_at ? new Date(member.joined_at).toLocaleDateString() : ""}
-                        </span>
-                        {member.role === "ADMIN" ? (
-                          <span className="bg-primary/15 text-primary border border-primary/30 text-[10px] font-bold px-2 py-0.5 rounded-md inline-block">
-                            ADMIN
-                          </span>
-                        ) : (
-                          <span className="bg-secondary text-muted-foreground border border-border text-[10px] font-medium px-2 py-0.5 rounded-md inline-block">
-                            {member.role}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-muted/40 border border-border/70 text-xs text-muted-foreground flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <span>Only admins can manage invitations.</span>
-                </div>
-              </Card>
-            </div>
-          )
-        )}
-        </TabsContent>
-
-        {/* Tab 4: Admin Refunds (Visible only to Admin) */}
-        {isAdmin && (
-          <TabsContent value="refunds" className="space-y-6 animate-in fade-in-50">
-            {activeTab === "refunds" && (
-              <Suspense fallback={<AdminRefundsSkeleton />}>
-                <AdminRefundsSection
-                  kitchenId={initialKitchen.id}
-                  checkouts={adminCheckouts}
-                  members={members}
-                  spaceType={spaceType}
-                  onCheckoutsLoaded={(loaded) => {
-                    setPendingRefundsCount(loaded.filter((c) => !c.is_refunded).length);
-                  }}
-                />
-              </Suspense>
-            )}
-          </TabsContent>
-        )}
-
-        {/* Tab 5: Settings */}
-        <TabsContent value="settings" className="space-y-6 animate-in fade-in-50">
-          {isAdmin ? (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Left Column (Col 7/12) — "General Settings" Card */}
-              <div className="lg:col-span-7">
-                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-5">
-                  <form onSubmit={handleSaveSettings} className="space-y-5">
-                    {/* Header with Title and inline Save Button */}
-                    <div className="flex items-center justify-between gap-3 pb-3 border-b border-border">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-xs shrink-0">
-                          <Settings className="w-4 h-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <h3 className="text-base font-bold text-foreground tracking-tight truncate">
-                            General &amp; Wording
-                          </h3>
-                          <p className="text-xs text-muted-foreground truncate">
-                            Household configuration &amp; naming
-                          </p>
-                        </div>
-                      </div>
-
-                      <Button
-                        type="submit"
-                        disabled={isSavingSettings || !draftName.trim()}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-4 py-2 rounded-xl shadow-xs transition-all active:scale-95 text-xs h-8.5 cursor-pointer"
-                      >
-                        {isSavingSettings && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1 text-primary-foreground" />}
-                        <span>Save Changes</span>
-                      </Button>
-                    </div>
-
-                    {/* Field 1: Kitchen Name */}
-                    <div className="space-y-1.5">
-                      <Label htmlFor="admin-settings-kitchen-name" className="text-xs font-semibold text-foreground">
-                        Kitchen Name
-                      </Label>
-                      <Input
-                        id="admin-settings-kitchen-name"
-                        type="text"
-                        value={draftName}
-                        onChange={(e) => setDraftName(e.target.value)}
-                        required
-                        maxLength={255}
-                        placeholder="e.g. Baker Street Kitchen"
-                        className="rounded-xl h-10 bg-secondary/50 border-input text-foreground focus-visible:ring-ring text-xs sm:text-sm"
-                        disabled={isSavingSettings}
-                      />
-                      <span className="text-[11px] text-muted-foreground block">
-                        The public display name for this shared space.
-                      </span>
-                    </div>
-
-                    {/* Field 2: Space Context & Terminology in a 2x2 grid */}
-                    <div className="space-y-2 pt-1">
-                      <div className="space-y-0.5">
-                        <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">
-                          Space Context &amp; Terminology
-                        </Label>
-                        <p className="text-[11px] text-muted-foreground">
-                          Select how members and notifications are addressed across the app.
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2.5 pt-0.5">
-                        {/* Option 1: Flatshare */}
-                        <button
-                          type="button"
-                          onClick={() => handleSelectSpaceType("FLATSHARE")}
-                          className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
-                            draftSpaceType === "FLATSHARE"
-                              ? "border-primary/50 bg-primary/[0.04] ring-1 ring-primary/30 shadow-xs"
-                              : "border-white/[0.06] bg-secondary/30 hover:bg-secondary/60"
-                          }`}
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <Home className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "FLATSHARE" ? "text-primary" : "text-muted-foreground"}`} />
-                            <span className="text-xs text-foreground font-semibold leading-none">
-                              Flatshare
-                            </span>
-                          </div>
-                          <span className="text-xs text-muted-foreground font-normal leading-tight">
-                            Roommates
-                          </span>
-                        </button>
-
-                        {/* Option 2: Family */}
-                        <button
-                          type="button"
-                          onClick={() => handleSelectSpaceType("FAMILY")}
-                          className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
-                            draftSpaceType === "FAMILY"
-                              ? "border-primary/50 bg-primary/[0.04] ring-1 ring-primary/30 shadow-xs"
-                              : "border-white/[0.06] bg-secondary/30 hover:bg-secondary/60"
-                          }`}
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <Heart className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "FAMILY" ? "text-primary" : "text-muted-foreground"}`} />
-                            <span className="text-xs text-foreground font-semibold leading-none">
-                              Family
-                            </span>
-                          </div>
-                          <span className="text-xs text-muted-foreground font-normal leading-tight">
-                            Family
-                          </span>
-                        </button>
-
-                        {/* Option 3: Office */}
-                        <button
-                          type="button"
-                          onClick={() => handleSelectSpaceType("OFFICE")}
-                          className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
-                            draftSpaceType === "OFFICE"
-                              ? "border-primary/50 bg-primary/[0.04] ring-1 ring-primary/30 shadow-xs"
-                              : "border-white/[0.06] bg-secondary/30 hover:bg-secondary/60"
-                          }`}
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <Briefcase className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "OFFICE" ? "text-primary" : "text-muted-foreground"}`} />
-                            <span className="text-xs text-foreground font-semibold leading-none">
-                              Office
-                            </span>
-                          </div>
-                          <span className="text-xs text-muted-foreground font-normal leading-tight">
-                            Team
-                          </span>
-                        </button>
-
-                        {/* Option 4: Neutral */}
-                        <button
-                          type="button"
-                          onClick={() => handleSelectSpaceType("NEUTRAL")}
-                          className={`p-3 rounded-xl flex flex-col gap-1 border transition-all cursor-pointer text-left select-none active:scale-[0.98] ${
-                            draftSpaceType === "NEUTRAL"
-                              ? "border-primary/50 bg-primary/[0.04] ring-1 ring-primary/30 shadow-xs"
-                              : "border-white/[0.06] bg-secondary/30 hover:bg-secondary/60"
-                          }`}
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <Building2 className={`w-3.5 h-3.5 transition-colors ${draftSpaceType === "NEUTRAL" ? "text-primary" : "text-muted-foreground"}`} />
-                            <span className="text-xs text-foreground font-semibold leading-none">
-                              Neutral
-                            </span>
-                          </div>
-                          <span className="text-xs text-muted-foreground font-normal leading-tight">
-                            Members
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-                </Card>
-              </div>
-
-              {/* Right Column (Col 5/12) — Stacked Action Cards */}
-              <div className="lg:col-span-5 space-y-6">
-                {/* Card 1: Guest Supermarket Link */}
-                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-xs shrink-0">
-                        <Share2 className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <h4 className="text-sm font-bold text-foreground truncate">
-                          Guest Access
-                        </h4>
-                        <p className="text-xs text-muted-foreground truncate">
-                          Read-only access for guest grocery runs.
-                        </p>
-                      </div>
-                    </div>
-
-                    <Badge
-                      className="bg-primary/10 text-primary border border-primary/20 text-xs px-2.5 py-0.5 rounded-full font-medium shrink-0"
-                    >
-                      Active
-                    </Badge>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <Input
-                      type="text"
-                      readOnly
-                      value={publicGuestUrl}
-                      className="h-9 px-3 text-xs font-mono select-all rounded-xl bg-secondary/50 border-input text-foreground focus-visible:ring-ring truncate min-w-0"
-                    />
-                    <CopyButton
-                      text={publicGuestUrl}
-                      label="Copy"
-                      size="sm"
-                      variant="secondary"
-                      className="shrink-0 h-9 px-2.5"
-                    />
-                    <Button
-                      asChild
-                      variant="ghost"
-                      size="icon-sm"
-                      className="h-9 w-9 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted"
-                      title="Open guest view"
-                    >
-                      <Link href={publicGuestUrl} target="_blank">
-                        <ExternalLink className="w-4 h-4" />
-                      </Link>
-                    </Button>
-                  </div>
-
-                  <div className="pt-0.5">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRegenerateGuestLink}
-                      disabled={isRegenerating}
-                      className="rounded-xl text-xs font-medium gap-1.5 h-8 border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer w-full justify-center"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 ${isRegenerating ? "animate-spin" : ""}`} />
-                      <span>{isRegenerating ? "Regenerating..." : "Regenerate Link"}</span>
-                    </Button>
-                  </div>
-                </Card>
-
-                {/* Card 2: Financial & Ledger Quicklink */}
-                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-xs shrink-0">
-                      <Receipt className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="text-sm font-bold text-foreground truncate">
-                        Purchase History &amp; Refunds
-                      </h4>
-                      <p className="text-xs text-muted-foreground truncate">
-                        Receipts, checkouts &amp; grocery audits
-                      </p>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Review checkout receipts and audit member grocery expenditures directly from the ledger.
-                  </p>
-
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleTabChange("refunds")}
-                    className="group rounded-xl font-medium w-full justify-between h-9 text-xs px-3.5 border border-border/80 hover:border-border/80 hover:text-primary transition-all cursor-pointer"
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <Receipt className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
-                      <span>View Ledger</span>
-                    </span>
-                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:translate-x-0.5 group-hover:text-primary transition-all" />
-                  </Button>
-                </Card>
-              </div>
-            </div>
-          ) : (
-            /* Member Settings View */
-            <div className="w-full max-w-4xl mx-auto flex flex-col gap-6">
-              <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-6">
-                <CardHeader className="p-0 space-y-1">
-                  <CardTitle className="text-base font-bold text-foreground flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-xs shrink-0">
-                      <Settings className="w-4 h-4" />
-                    </div>
-                    <span>Kitchen Information</span>
-                  </CardTitle>
-                  <CardDescription className="text-xs text-muted-foreground">
-                    General details about your membership in this kitchen space.
-                  </CardDescription>
-                </CardHeader>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                  <div className="p-4 rounded-2xl bg-muted/40 border border-border/70 space-y-1">
-                    <span className="text-xs text-muted-foreground">Kitchen Name</span>
-                    <p className="text-sm font-semibold text-foreground">{kitchenName}</p>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-muted/40 border border-border/70 space-y-1">
-                    <span className="text-xs text-muted-foreground">Space Context</span>
-                    <p className="text-sm font-semibold text-foreground">{terminology.spaceLabel} Space</p>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-muted/40 border border-border/70 space-y-1">
-                    <span className="text-xs text-muted-foreground">Your Display Name</span>
-                    <p className="text-sm font-semibold text-foreground">
-                      {capitalize(membership.kitchen_display_name)}
-                    </p>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-muted/40 border border-border/70 space-y-1">
-                    <span className="text-xs text-muted-foreground">Joined Date</span>
-                    <p className="text-sm font-semibold text-foreground">
-                      {membership.joined_at ? new Date(membership.joined_at).toLocaleDateString() : "—"}
-                    </p>
-                  </div>
-                </div>
-
-                <Separator className="bg-border/60" />
-
-                {/* Danger Zone: Leave Kitchen */}
-                <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-destructive/10 text-destructive border border-destructive/20">
-                      <AlertTriangle className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-foreground">Leave Kitchen</h4>
-                      <p className="text-xs text-muted-foreground">
-                        Remove yourself from this kitchen space and revoke shared grocery access.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-                    <div className="space-y-0.5">
-                      <span className="text-xs font-semibold text-foreground">Leave this household</span>
-                      <p className="text-[11px] text-muted-foreground">
-                        You will need a new invite link from an admin to rejoin in the future.
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsLeaveModalOpen(true)}
-                      className="border-destructive/40 text-destructive hover:bg-destructive/10 rounded-xl font-medium"
-                    >
-                      <LogOut className="w-3.5 h-3.5 mr-1.5" />
-                      <span>Leave Kitchen</span>
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Understated GitHub Repository Link Card */}
-              <a
-                href="https://github.com/randakamal/kartli"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-center justify-between p-4 rounded-2xl border border-border/70 dark:border-white/[0.08] bg-card dark:bg-[#121215] hover:bg-muted/40 dark:hover:bg-[#16161b] hover:border-border dark:hover:border-white/20 transition-all duration-200 shadow-2xs cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-muted/60 dark:bg-white/[0.05] border border-border/60 dark:border-white/[0.08] text-muted-foreground group-hover:text-foreground transition-colors">
-                    <svg
-                      className="w-4 h-4 fill-current"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        clipRule="evenodd"
-                        d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                      />
-                    </svg>
-                  </div>
-                  <div className="space-y-0.5">
-                    <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5 font-mono">
-                      Open Source on GitHub
-                    </span>
-                    <p className="text-[11px] text-muted-foreground">
-                      kartli is free, transparent, and community-driven.
-                    </p>
-                  </div>
-                </div>
-
-                <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
-              </a>
-
-              {/* Leave Kitchen Confirmation Dialog */}
-              <AlertDialog open={isLeaveModalOpen} onOpenChange={setIsLeaveModalOpen}>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2.5 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive">
-                        <AlertTriangle className="w-5 h-5" />
-                      </div>
-                      <AlertDialogTitle>Leave {kitchenName}?</AlertDialogTitle>
-                    </div>
-                    <AlertDialogDescription>
-                      Are you sure you want to leave <strong className="text-foreground font-semibold">{kitchenName}</strong>? You will lose access to the shared grocery list and pantry inventory. You will need an invite link from an admin to regain access.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel disabled={isLeaving}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      disabled={isLeaving}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleLeaveKitchen();
-                      }}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-semibold"
-                    >
-                      {isLeaving && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />}
-                      <span>{isLeaving ? "Leaving..." : "Yes, Leave Kitchen"}</span>
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-
-      {/* Floating Cart Bottom Bar (Sticky UX when user has items in cart - desktop only) */}
-      {myCartCount > 0 && activeTab === "kitchen" && (
-        <div className="hidden md:block fixed bottom-5 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-lg animate-in slide-in-from-bottom-5 duration-300 pointer-events-auto">
-          <div className="bg-card/90 border border-white/10 backdrop-blur-xl rounded-2xl px-4 py-2.5 shadow-2xl flex items-center justify-between gap-3 text-card-foreground">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <span className="relative flex h-2 w-2 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary shadow-xs" />
+              <span className="text-xs font-mono font-semibold text-muted-foreground group-hover:text-white pl-3 pr-1">
+                {activeMembers.length}
               </span>
-              <p className="text-xs sm:text-sm font-medium text-foreground truncate">
-                <strong className="text-foreground font-semibold">{myCartCount}</strong> item{myCartCount === 1 ? "" : "s"} in cart
-              </p>
-            </div>
+            </button>
+
+            {/* Live Share / Guest Supermarket Link */}
+            <CopyButton
+              text={publicGuestUrl}
+              label="Share"
+              size="sm"
+              variant="outline"
+              className="h-9 px-3 text-xs font-semibold rounded-xl border border-white/[0.08] bg-card hover:bg-white/[0.06] text-white transition-all cursor-pointer"
+            />
 
             <Button
-              type="button"
-              size="sm"
-              onClick={() => handleTabChange("cart")}
-              className="bg-primary text-primary-foreground font-semibold text-xs px-3.5 py-1.5 rounded-xl shadow-sm hover:opacity-90 transition-all shrink-0 gap-1.5 cursor-pointer active:scale-95"
+              asChild
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-xl border border-white/[0.08] bg-card hover:bg-white/[0.06] text-muted-foreground hover:text-white shrink-0 transition-all cursor-pointer"
+              title="Open public guest view"
+              aria-label="Open public guest view in new tab"
             >
-              <span>View Cart</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <Link href={publicGuestUrl} target="_blank">
+                <ExternalLink className="w-4 h-4" />
+              </Link>
+            </Button>
+
+            {/* Kitchen Settings Button */}
+            <Button
+              asChild
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-xl border border-white/[0.08] bg-card hover:bg-white/[0.06] text-muted-foreground hover:text-white shrink-0 transition-all cursor-pointer"
+              title="Space Settings"
+              aria-label="Space Settings"
+            >
+              <Link href={`/kitchen/${initialKitchen.id}/settings`}>
+                <Settings className="w-4 h-4" />
+              </Link>
             </Button>
           </div>
+        </header>
+
+        {/* 2. Mode Switcher (Centered, Prominent Pill Dock) */}
+        <div className="flex justify-center w-full pt-1">
+          <div className="bg-[#121215] border border-white/[0.08] backdrop-blur-xl rounded-2xl p-1.5 inline-flex items-center gap-1.5 shadow-xl">
+            <button
+              type="button"
+              onClick={() => handleModeChange("board")}
+              className={cn(
+                "flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer select-none",
+                mode === "board"
+                  ? "bg-white text-black shadow-md font-extrabold scale-[1.02]"
+                  : "text-muted-foreground hover:text-white hover:bg-white/[0.05]"
+              )}
+            >
+              <UtensilsCrossed className="w-3.5 h-3.5" />
+              <span>Kitchen Board</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleModeChange("supermarket")}
+              className={cn(
+                "flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer select-none relative",
+                mode === "supermarket"
+                  ? "bg-primary text-primary-foreground shadow-md font-extrabold scale-[1.02]"
+                  : "text-muted-foreground hover:text-white hover:bg-white/[0.05]"
+              )}
+            >
+              <ShoppingCart className="w-3.5 h-3.5" />
+              <span>Supermarket Run</span>
+              {neededItemsCount > 0 && (
+                <span
+                  className={cn(
+                    "text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full leading-tight",
+                    mode === "supermarket"
+                      ? "bg-primary-foreground text-primary"
+                      : "bg-amber-500 text-black"
+                  )}
+                >
+                  {neededItemsCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
-      )}
+
+        {/* MODE 1: KITCHEN BOARD */}
+        {mode === "board" && (
+          <main className="space-y-6 animate-in fade-in-50 duration-200">
+            {/* A. Universal Command Bar */}
+            <form onSubmit={handleCommandSubmit} className="relative w-full">
+              <div className="relative flex items-center gap-2 rounded-2xl bg-[#121215] border border-white/[0.12] p-2 pl-4 shadow-xl focus-within:border-primary/60 transition-all">
+                <Plus className="w-4 h-4 text-muted-foreground shrink-0" />
+                <input
+                  type="text"
+                  value={commandInput}
+                  onChange={(e) => setCommandInput(e.target.value)}
+                  placeholder="Need something? Type item (e.g. Oat Milk, Lemons, Coffee)..."
+                  disabled={isSubmittingCommand}
+                  className="flex-1 bg-transparent border-0 text-white placeholder:text-muted-foreground/70 text-sm focus:outline-none min-w-0"
+                />
+
+                {/* Tag Type Toggle inside Command Bar */}
+                <div className="flex items-center gap-1 bg-black/40 border border-white/[0.08] p-1 rounded-xl shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setCommandType("one-off")}
+                    className={cn(
+                      "px-2.5 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer select-none",
+                      commandType === "one-off"
+                        ? "bg-white/[0.12] text-white shadow-xs"
+                        : "text-muted-foreground hover:text-white"
+                    )}
+                  >
+                    One-off
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCommandType("staple")}
+                    className={cn(
+                      "px-2.5 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer select-none",
+                      commandType === "staple"
+                        ? "bg-primary/20 text-primary border border-primary/30 shadow-xs"
+                        : "text-muted-foreground hover:text-white"
+                    )}
+                  >
+                    Staple
+                  </button>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isSubmittingCommand || !commandInput.trim()}
+                  size="sm"
+                  className="rounded-xl px-3.5 h-8 font-semibold shrink-0 cursor-pointer"
+                >
+                  {isSubmittingCommand ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <span>Add ↵</span>
+                  )}
+                </Button>
+              </div>
+            </form>
+
+            {/* B. The Restock Banner (Hero Alert) */}
+            {neededItemsCount > 0 ? (
+              <div className="relative overflow-hidden rounded-3xl bg-[#141418] border border-amber-500/30 p-5 sm:p-6 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 shadow-sm">
+                    <ShoppingCart className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-0.5 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
+                      </span>
+                      <h3 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
+                        {neededItemsCount} {neededItemsCount === 1 ? "item" : "items"} needed for next run
+                      </h3>
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">
+                      Active restock queue ready for the supermarket run.
+                    </p>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => handleModeChange("supermarket")}
+                  className="rounded-2xl px-5 py-2.5 bg-primary text-primary-foreground font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all text-sm shrink-0 flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+                >
+                  <span>Start Shopping Run →</span>
+                </Button>
+              </div>
+            ) : (
+              <div className="rounded-3xl bg-emerald-500/[0.06] border border-emerald-500/20 p-5 sm:p-6 flex items-center justify-between gap-4 shadow-sm">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400 shrink-0">
+                    <CheckCircle2 className="w-5 h-5 stroke-[2.5]" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white tracking-tight">
+                      Everything in stock
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Pantry primed. Tap any staple card below when running low.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* C. The Active Shopping Queue */}
+            <ShoppingListSection
+              kitchenId={initialKitchen.id}
+              items={localShoppingListItems}
+              currentUserId={currentUserId}
+              isAdmin={isAdmin}
+              spaceType={initialKitchen.space_type}
+              hideInput={true}
+              onItemMovedToCart={handleItemMovedToCart}
+              onItemReturnedToList={handleItemReturnedToList}
+              onItemRemoved={handleItemRemoved}
+              onViewCart={() => handleModeChange("supermarket")}
+            />
+
+            {/* D. The Household Staples Catalog (Interactive Bento Grid) */}
+            <PantrySection
+              kitchenId={initialKitchen.id}
+              items={localPantryItems}
+              hideInput={true}
+              onItemEmptied={handlePantryItemEmptied}
+              onItemRestocked={handlePantryItemRestocked}
+              onItemDeleted={(itemId) =>
+                setLocalPantryItems((prev) => prev.filter((p) => p.id !== itemId))
+              }
+            />
+
+            {/* 3. Balances & Refunds Minimalist Docked Summary Bar */}
+            <footer className="pt-2">
+              <div className="bg-[#121215] border border-white/[0.08] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xl">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-muted-foreground shrink-0">
+                    <CreditCard className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-semibold text-white truncate">
+                      {pendingRefundsCount > 0
+                        ? `${pendingRefundsCount} pending ${pendingRefundsCount === 1 ? "expense" : "expenses"} to settle`
+                        : "Household balances up to date"}
+                    </p>
+                    <p className="text-[11px] font-mono text-muted-foreground">
+                      {myCheckouts.length} logged receipts in space history
+                    </p>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsLedgerOpen(true)}
+                  className="h-8 px-3 rounded-xl text-xs font-semibold border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-white shrink-0 cursor-pointer"
+                >
+                  <span>Settle / Details →</span>
+                </Button>
+              </div>
+            </footer>
+          </main>
+        )}
+
+        {/* MODE 2: SUPERMARKET RUN (Active Cart Section) */}
+        {mode === "supermarket" && (
+          <main className="space-y-6 animate-in fade-in-50 duration-200">
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => handleModeChange("board")}
+                className="inline-flex items-center gap-2 text-xs font-mono text-muted-foreground hover:text-white transition-colors cursor-pointer py-1"
+              >
+                <span>← Back to Kitchen Board</span>
+              </button>
+            </div>
+
+            <ActiveCartSection
+              kitchenId={initialKitchen.id}
+              items={localShoppingListItems}
+              currentUserId={currentUserId}
+              spaceType={initialKitchen.space_type}
+              onSwitchTab={(tab) => {
+                if (tab === "kitchen") handleModeChange("board");
+              }}
+            />
+          </main>
+        )}
+      </div>
+
+      {/* OVERLAY 1: Roommates Slide-Over / Modal */}
+      <Dialog open={isRoommatesOpen} onOpenChange={setIsRoommatesOpen}>
+        <DialogContent className="max-w-md w-full bg-[#121215] border-white/[0.1] p-6 rounded-3xl shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              <span>{initialKitchen.name} Roommates</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Manage household members and active invite codes.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="pt-2">
+            <RoommatesView
+              kitchenId={initialKitchen.id}
+              kitchenName={initialKitchen.name}
+              members={localMembers}
+              currentUserId={currentUserId}
+              isAdmin={isAdmin}
+              spaceType={initialKitchen.space_type}
+              baseUrl={baseUrl}
+              onMemberAdded={(m) => setLocalMembers((prev) => [m, ...prev])}
+              onMemberRemoved={(id) => setLocalMembers((prev) => prev.filter((m) => m.id !== id))}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* OVERLAY 2: Expense & Refunds Ledger Modal */}
+      <Dialog open={isLedgerOpen} onOpenChange={setIsLedgerOpen}>
+        <DialogContent className="max-w-2xl w-full bg-[#121215] border-white/[0.1] p-6 rounded-3xl shadow-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+              <Receipt className="w-5 h-5 text-primary" />
+              <span>Expense &amp; Refund Ledger</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Shared household balances, receipt checkouts, and refund claims.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="pt-4 space-y-6">
+            {isAdmin && (
+              <AdminRefundsSection
+                kitchenId={initialKitchen.id}
+                spaceType={initialKitchen.space_type}
+                members={localMembers}
+              />
+            )}
+
+            <MyPurchasesSection
+              kitchenId={initialKitchen.id}
+              checkouts={myCheckouts}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+export default KitchenSpaceView;
