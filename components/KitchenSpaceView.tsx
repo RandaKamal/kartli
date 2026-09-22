@@ -521,7 +521,7 @@ export function KitchenSpaceView({
       {/* Responsive Navigation System */}
       <Tabs defaultValue={defaultTab} value={activeTab} onValueChange={handleTabChange} className="w-full space-y-6">
         {/* Desktop Experience: Surface Pill Segmented Bar */}
-        <div className="hidden sm:flex justify-center w-full">
+        <div className="hidden md:flex justify-center w-full">
           <TabsList className="bg-card/90 border border-white/[0.08] backdrop-blur-md rounded-xl p-1 inline-flex items-center gap-1 h-auto shadow-sm">
             {/* Tab 1: Pantry / Kitchen */}
             <TabsTrigger
@@ -611,7 +611,7 @@ export function KitchenSpaceView({
         {/* Mobile Experience: Floating Navigation Dock */}
         <nav
           aria-label="Mobile Bottom Navigation"
-          className="block sm:hidden fixed bottom-3 inset-x-3 sm:inset-x-4 max-w-lg mx-auto z-50 pointer-events-auto bg-card/90 sm:bg-card/95 backdrop-blur-xl border border-border/80 shadow-2xl rounded-2xl py-1.5 px-1"
+          className="block md:hidden fixed bottom-3 inset-x-3 sm:inset-x-4 max-w-lg mx-auto z-50 pointer-events-auto bg-card/90 sm:bg-card/95 backdrop-blur-xl border border-border/80 shadow-2xl rounded-2xl py-1.5 px-1"
         >
           <div className={`grid ${isAdmin ? "grid-cols-6" : "grid-cols-5"} items-center max-w-md mx-auto`}>
             {/* Tab 1: Pantry */}
@@ -821,14 +821,15 @@ export function KitchenSpaceView({
                 type="button"
                 onClick={() => setMobileKitchenView("pantry")}
                 className={cn(
-                  "flex-1 py-1.5 px-3 text-xs font-semibold rounded-xl transition-all cursor-pointer text-center",
+                  "flex-1 py-1.5 px-3 text-xs font-semibold rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5",
                   mobileKitchenView === "pantry"
                     ? "bg-background text-foreground shadow-xs border border-border/60"
                     : "text-muted-foreground hover:text-foreground"
                 )}
                 aria-pressed={mobileKitchenView === "pantry"}
               >
-                Pantry &amp; Vorrat
+                <UtensilsCrossed className="w-3.5 h-3.5 shrink-0" />
+                <span>Pantry &amp; Vorrat</span>
               </button>
               <button
                 type="button"
@@ -841,6 +842,7 @@ export function KitchenSpaceView({
                 )}
                 aria-pressed={mobileKitchenView === "shopping"}
               >
+                <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
                 <span>Shopping List</span>
                 {neededItemsCount > 0 && (
                   <span
@@ -955,26 +957,36 @@ export function KitchenSpaceView({
                   />
                 </Card>
 
-                <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2.5">
-                      <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-xs shrink-0">
-                        <Mail className="w-4 h-4" />
-                      </div>
-                      <span>Pending Invites</span>
-                      <Badge variant="secondary" className="text-xs font-mono">
-                        {pendingInvites.length}
-                      </Badge>
-                    </h2>
-                  </div>
+                {pendingInvites.length > 0 ? (
+                  <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-base font-semibold text-foreground flex items-center gap-2.5">
+                        <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-xs shrink-0">
+                          <Mail className="w-4 h-4" />
+                        </div>
+                        <span>Pending Invites</span>
+                        <Badge variant="secondary" className="text-xs font-mono">
+                          {pendingInvites.length}
+                        </Badge>
+                      </h2>
+                    </div>
 
-                  <AdminPendingInvitesList
-                    kitchenId={initialKitchen.id}
-                    invites={pendingInvites}
-                    baseUrl={baseUrl}
-                    spaceType={spaceType}
-                  />
-                </Card>
+                    <AdminPendingInvitesList
+                      kitchenId={initialKitchen.id}
+                      invites={pendingInvites}
+                      baseUrl={baseUrl}
+                      spaceType={spaceType}
+                    />
+                  </Card>
+                ) : (
+                  <div className="px-4 py-3 rounded-2xl bg-muted/20 border border-border/60 text-xs text-muted-foreground flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Mail className="w-3.5 h-3.5 text-muted-foreground/60" />
+                      <span>Pending Invites</span>
+                    </span>
+                    <span className="text-[11px] text-muted-foreground/70">0 pending &bull; All invites claimed</span>
+                  </div>
+                )}
               </div>
 
               {/* Right Col: Add Member Form */}
@@ -995,7 +1007,7 @@ export function KitchenSpaceView({
                   <CardContent className="p-0">
                     <form onSubmit={handleAdminInvite} className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="admin-member-name">
+                        <Label htmlFor="admin-member-name" className="text-xs font-medium text-foreground">
                           {terminology.memberLabel} Display Name
                         </Label>
                         <Input
@@ -1005,7 +1017,7 @@ export function KitchenSpaceView({
                           onChange={(e) => setInviteMemberName(e.target.value)}
                           required
                           placeholder={terminology.namePlaceholder}
-                          className="rounded-xl"
+                          className="rounded-xl h-10 bg-background border-border text-sm placeholder:text-muted-foreground/60 focus-visible:ring-1 focus-visible:ring-primary"
                           disabled={isInviting}
                         />
                       </div>

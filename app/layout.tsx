@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { cookies } from "next/headers";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { SiteFooter } from "@/components/SiteFooter";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -28,12 +29,9 @@ export default async function RootLayout({
     cookieStore.get("culinary-theme")?.value ||
     "black-truffle";
 
-  const normalizeTheme = (t?: string) => {
-    if (!t || t === "truffle" || t === "black_truffle") return "black-truffle";
-    if (t === "saffron" || t === "olive") return "campari-bitter";
-    if (t === "plum") return "velvet-fig";
-    if (t === "nordic") return "matcha-pistachio";
-    return t;
+  const normalizeTheme = (t?: string): "black-truffle" | "velvet-fig" => {
+    if (t === "velvet-fig" || t === "plum") return "velvet-fig";
+    return "black-truffle";
   };
 
   const initialTheme = normalizeTheme(culinaryTheme);
@@ -48,7 +46,7 @@ export default async function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('kartli-theme')||localStorage.getItem('culinary-theme')||(document.cookie.match(/(?:kartli-theme|culinary-theme)=([^;]+)/)||[])[1]||'${initialTheme}';if(t==='truffle'||t==='black_truffle')t='black-truffle';else if(t==='saffron'||t==='olive')t='campari-bitter';else if(t==='plum')t='velvet-fig';else if(t==='nordic')t='matcha-pistachio';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-culinary-theme',t);}catch(e){}})()`,
+            __html: `(function(){try{var raw=localStorage.getItem('kartli-theme')||localStorage.getItem('culinary-theme')||(document.cookie.match(/(?:kartli-theme|culinary-theme)=([^;]+)/)||[])[1]||'${initialTheme}';var t=(raw==='velvet-fig'||raw==='plum')?'velvet-fig':'black-truffle';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-culinary-theme',t);}catch(e){}})()`,
           }}
         />
       </head>
@@ -106,74 +104,13 @@ export default async function RootLayout({
               </div>
             </header>
 
-            <main className="w-full flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+            <main className="w-full flex-1 flex flex-col">
               {children}
             </main>
 
-            <footer className="hidden md:block bg-muted/30 border-t border-border/60 py-6 text-xs text-muted-foreground mt-8">
-              <div className="max-w-6xl mx-auto px-4 space-y-4">
-                <p className="text-center text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">
-                  Setup &amp; Feedback
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
-                  <div className="flex items-center gap-3 bg-card border border-border rounded-2xl p-3">
-                    <div className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center text-xs font-bold text-foreground shrink-0">
-                      R
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-foreground">Randa</p>
-                      <p className="text-[11px] text-muted-foreground">Setup help &amp; onboarding</p>
-                    </div>
-                    <a
-                      href="mailto:contact-randa@example.com"
-                      className="shrink-0 text-[11px] font-bold text-foreground bg-background border border-border rounded-lg px-2.5 py-1.5 hover:bg-secondary transition-colors"
-                    >
-                      Email
-                    </a>
-                  </div>
-                  <div className="flex items-center gap-3 bg-card border border-border rounded-2xl p-3">
-                    <div className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center text-xs font-bold text-foreground shrink-0">
-                      C
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-foreground">Colin</p>
-                      <p className="text-[11px] text-muted-foreground">Troubleshooting &amp; feedback</p>
-                    </div>
-                    <a
-                      href="mailto:contact-colin@example.com"
-                      className="shrink-0 text-[11px] font-bold text-foreground bg-background border border-border rounded-lg px-2.5 py-1.5 hover:bg-secondary transition-colors"
-                    >
-                      Email
-                    </a>
-                  </div>
-                </div>
+            <SiteFooter />
 
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left pt-3 border-t border-border/60">
-                  <p>© {new Date().getFullYear()} kartli. All rights reserved.</p>
-                  <a
-                    href="https://github.com/randakamal/kartli"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
-                  >
-                    <svg
-                      className="w-4 h-4 fill-current"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        clipRule="evenodd"
-                        d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                      />
-                    </svg>
-                    <span>Open Source on GitHub</span>
-                  </a>
-                </div>
-              </div>
-            </footer>
-
-            <Toaster position="top-right" />
+            <Toaster position="top-right" richColors />
           </TooltipProvider>
         </ThemeProvider>
       </body>

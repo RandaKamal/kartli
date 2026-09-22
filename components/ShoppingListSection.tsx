@@ -193,15 +193,14 @@ export function ShoppingListSection({
   };
 
   const openItems = optimisticListItems.filter(
-    (i) => (!i.is_purchased && !i.is_guest_staged) || checkedVisualIds.has(i.id)
+    (i) => !i.is_purchased && !i.is_guest_staged
   );
   const myStagedItemsCount = optimisticListItems.filter(
     (i) =>
       i.is_purchased &&
       !i.is_guest_staged &&
       !i.checkout_id &&
-      i.purchased_by === currentUserId &&
-      !checkedVisualIds.has(i.id)
+      i.purchased_by === currentUserId
   ).length;
 
   const handleMoveAllToCart = () => {
