@@ -17,25 +17,26 @@ export default async function ProfilePage() {
   const preferredCurrency = dbUser?.preferred_currency || session.user.preferred_currency || "EUR";
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Back Link & Header */}
-      <div className="space-y-4">
+    <div className="max-w-3xl mx-auto w-full px-6 pt-12 pb-24 space-y-6">
+      {/* Dedicated back-navigation row with mb-8 */}
+      <div className="mb-8">
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition px-1"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Kitchens</span>
+          <span>← Back to Kitchens</span>
         </Link>
+      </div>
 
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-            Settings &amp; Profile
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage your account credentials, notifications, preferred currency, and theme preferences.
-          </p>
-        </div>
+      {/* Page Header */}
+      <div className="space-y-1">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+          Settings &amp; Profile
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Manage your account credentials, notifications, preferred currency, and theme preferences.
+        </p>
       </div>
 
       <Suspense fallback={<div className="p-8 text-center text-xs text-muted-foreground">Loading settings...</div>}>

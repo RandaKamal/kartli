@@ -110,7 +110,7 @@ export function MembersSkeleton() {
   );
 }
 
-interface KitchenSpaceViewProps {
+export interface KitchenSpaceViewProps {
   kitchen: Kitchen;
   membership: KitchenMember;
   members?: KitchenMemberWithUser[];
@@ -458,7 +458,7 @@ export function KitchenSpaceView({
   };
 
   return (
-    <div className="w-full flex flex-col gap-4 pb-24 md:pb-12">
+    <div className="w-full flex flex-col gap-4 pb-32 md:pb-12">
       <GuestCartHandoverListener kitchenId={initialKitchen.id} />
 
       {/* Sleek Single-Row Page Header */}
@@ -469,7 +469,7 @@ export function KitchenSpaceView({
             asChild
             variant="ghost"
             size="icon"
-            className="h-9 w-9 rounded-xl border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground shrink-0 transition-colors"
+            className="h-10 w-10 rounded-xl border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground shrink-0 transition-colors flex items-center justify-center cursor-pointer"
             title="Back to Kitchens"
             aria-label="Back to Kitchens"
           >
@@ -493,26 +493,39 @@ export function KitchenSpaceView({
           </div>
         </div>
 
-        {/* Right Side: Share Actions */}
-        <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+        {/* Right Side: Share Actions & Space Settings */}
+        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
           <CopyButton
             text={publicGuestUrl}
             label="Guest Link"
             size="sm"
             variant="outline"
-            className="h-9 px-3 text-xs font-medium rounded-xl border-border/60 bg-muted/40 hover:bg-muted text-foreground transition-colors"
+            className="h-10 px-3.5 text-xs font-medium rounded-xl border-border/60 bg-muted/40 hover:bg-muted text-foreground transition-colors cursor-pointer"
           />
 
           <Button
             asChild
             variant="outline"
             size="icon"
-            className="h-9 w-9 rounded-xl border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground shrink-0 transition-colors"
+            className="h-10 w-10 rounded-xl border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground shrink-0 transition-colors flex items-center justify-center cursor-pointer"
             title="Open guest view in new tab"
             aria-label="Open guest view in new tab"
           >
             <Link href={publicGuestUrl} target="_blank">
               <ExternalLink className="w-4 h-4" />
+            </Link>
+          </Button>
+
+          <Button
+            asChild
+            variant="outline"
+            size="icon"
+            className="h-10 w-10 rounded-xl border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground shrink-0 transition-colors flex items-center justify-center cursor-pointer"
+            title="Kitchen Settings"
+            aria-label="Kitchen Settings"
+          >
+            <Link href={`/kitchen/${initialKitchen.id}/settings`}>
+              <Settings className="w-4 h-4" />
             </Link>
           </Button>
         </div>
@@ -816,40 +829,40 @@ export function KitchenSpaceView({
         <TabsContent value="kitchen" className="space-y-6 animate-in fade-in-50">
           {/* Mobile-Only Segmented View Switcher (< md) */}
           <div className="md:hidden flex justify-center w-full">
-            <div className="bg-muted/80 border border-border/80 rounded-2xl p-1 inline-flex items-center gap-1 w-full max-w-xs shadow-2xs">
+            <div className="bg-muted/80 border border-border/80 rounded-2xl p-1 inline-flex items-center gap-1 w-full max-w-sm shadow-2xs">
               <button
                 type="button"
                 onClick={() => setMobileKitchenView("pantry")}
                 className={cn(
-                  "flex-1 py-1.5 px-3 text-xs font-semibold rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5",
+                  "flex-1 min-h-[44px] py-2 px-3.5 text-xs font-semibold rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-2 active:scale-[0.98]",
                   mobileKitchenView === "pantry"
-                    ? "bg-background text-foreground shadow-xs border border-border/60"
+                    ? "bg-background text-foreground shadow-xs border border-border/70"
                     : "text-muted-foreground hover:text-foreground"
                 )}
                 aria-pressed={mobileKitchenView === "pantry"}
               >
-                <UtensilsCrossed className="w-3.5 h-3.5 shrink-0" />
-                <span>Pantry &amp; Vorrat</span>
+                <UtensilsCrossed className="w-4 h-4 shrink-0" />
+                <span>Pantry</span>
               </button>
               <button
                 type="button"
                 onClick={() => setMobileKitchenView("shopping")}
                 className={cn(
-                  "flex-1 py-1.5 px-3 text-xs font-semibold rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5",
+                  "flex-1 min-h-[44px] py-2 px-3.5 text-xs font-semibold rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-2 active:scale-[0.98]",
                   mobileKitchenView === "shopping"
-                    ? "bg-background text-foreground shadow-xs border border-border/60"
+                    ? "bg-background text-foreground shadow-xs border border-border/70"
                     : "text-muted-foreground hover:text-foreground"
                 )}
                 aria-pressed={mobileKitchenView === "shopping"}
               >
-                <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
+                <ShoppingBag className="w-4 h-4 shrink-0" />
                 <span>Shopping List</span>
                 {neededItemsCount > 0 && (
                   <span
                     className={cn(
-                      "px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full",
+                      "px-2 py-0.5 text-[10px] font-mono font-bold rounded-full",
                       mobileKitchenView === "shopping"
-                        ? "bg-primary/10 text-primary border border-primary/20"
+                        ? "bg-primary/15 text-primary border border-primary/25"
                         : "bg-muted text-muted-foreground"
                     )}
                   >
