@@ -135,23 +135,21 @@ export function PantrySection({
 
   return (
     <>
-      <div className="bg-[#121215] border border-white/[0.08] rounded-3xl p-6 shadow-2xl backdrop-blur-xl space-y-5">
-        {/* Header */}
-        <div className="flex items-center justify-between select-none">
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2">
-              <Package className="w-4 h-4 text-muted-foreground" />
-              <h2 className="text-lg font-bold text-white tracking-tight">
-                Household Staples Catalog
-              </h2>
-              <Badge variant="secondary" className="text-xs font-mono font-medium">
-                {optimisticItems.length}
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Permanent essentials · Tap any tile to toggle out-of-stock
-            </p>
+      <div className="space-y-2.5 select-none">
+        {/* Section Header */}
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <Package className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
+              Household Staples
+            </span>
+            <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-full bg-white/[0.06] text-muted-foreground border border-white/[0.08]">
+              {optimisticItems.length}
+            </span>
           </div>
+          <span className="text-[11px] text-muted-foreground/60">
+            Tap tile when empty
+          </span>
         </div>
 
         {/* Optional quick add input if not hidden */}
@@ -179,15 +177,15 @@ export function PantrySection({
 
         {/* Tactile Bento Grid */}
         {optimisticItems.length === 0 ? (
-          <div className="py-12 px-4 text-center rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.02] space-y-2">
-            <Package className="w-7 h-7 text-muted-foreground mx-auto opacity-70" />
-            <p className="text-sm font-semibold text-white">No staples tracked yet</p>
-            <p className="text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">
+          <div className="py-10 px-4 text-center rounded-2xl border border-dashed border-white/[0.08] bg-[#151518]/50 space-y-1.5">
+            <Package className="w-6 h-6 text-muted-foreground mx-auto opacity-60" />
+            <p className="text-xs font-semibold text-white">No staples tracked yet</p>
+            <p className="text-[11px] text-muted-foreground max-w-xs mx-auto leading-relaxed">
               Add permanent household essentials like Olive Oil, Salt, or Coffee that your kitchen should always have in stock.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {optimisticItems.map((item) => {
               const isOutOfStock = item.is_out_of_stock;
 
@@ -204,10 +202,10 @@ export function PantrySection({
                     }
                   }}
                   className={cn(
-                    "group relative flex flex-col justify-between rounded-2xl p-4 transition-all cursor-pointer select-none active:scale-[0.97] min-h-[100px]",
+                    "group relative flex flex-col justify-between rounded-2xl min-h-[96px] p-4 transition-all cursor-pointer select-none active:scale-[0.98]",
                     isOutOfStock
-                      ? "bg-amber-500/[0.12] hover:bg-amber-500/[0.18] border border-amber-500/35 shadow-md shadow-amber-500/5"
-                      : "bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] hover:border-white/[0.16] shadow-sm"
+                      ? "bg-amber-500/[0.10] hover:bg-amber-500/[0.14] border border-amber-500/30 shadow-sm"
+                      : "bg-[#121215] hover:bg-[#16161a] border border-white/[0.08] hover:border-white/20 shadow-sm"
                   )}
                   title={isOutOfStock ? "Tap to mark In Stock" : "Tap to mark Empty / Needed"}
                 >
@@ -225,9 +223,9 @@ export function PantrySection({
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0" />
-                        <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-emerald-400/90">
-                          In Stock
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)] shrink-0" />
+                        <span className="text-[10px] font-mono font-medium text-emerald-400/90">
+                          Stocked
                         </span>
                       </div>
                     )}
@@ -248,8 +246,8 @@ export function PantrySection({
                   </div>
 
                   {/* Bottom Staple Name */}
-                  <div className="pt-3">
-                    <span className="text-sm sm:text-base font-bold text-white truncate block leading-snug">
+                  <div className="pt-2">
+                    <span className="text-sm font-semibold text-white truncate block leading-snug">
                       {item.name}
                     </span>
                   </div>

@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 // Geometric Clean Offsets (Prevents cards from ever vanishing or getting swallowed)
 const TAB_HEIGHT = 52;
-const BODY_HEIGHT = 160;
+const BODY_HEIGHT = 150;
 
 export function FeatureDeck() {
   // Stable React state: defaults to card 3 (open at bottom in resting state)
@@ -370,27 +370,31 @@ export function FeatureDeck() {
             return (
               <div
                 key={card.id}
+                onClick={() => setActiveCard(index)}
                 style={{
                   top: `${topOffset}px`,
-                  zIndex: index + 10,
+                  zIndex: isActive ? 30 : index + 10,
                 }}
                 className={cn(
                   "group absolute left-0 right-0 w-full rounded-2xl p-4 border transition-all duration-300 ease-out will-change-transform",
                   // Unified Obsidian-Graphite Base
-                  "bg-[#121215]/95 backdrop-blur-xl border-white/10",
+                  "bg-[#121215]/95 backdrop-blur-xl",
                   // Top specular highlight
                   "border-t border-t-white/[0.16]",
                   // Subtle ambient hover glow on card border
                   card.accentBorder,
-                  // Dynamic shadow based on state
+                  // Dynamic shadow & surface polish based on active state
                   isActive
-                    ? "shadow-[0_20px_50px_rgba(0,0,0,0.85)] border-white/[0.14]"
-                    : "shadow-[0_-4px_24px_rgba(0,0,0,0.6)] cursor-pointer"
+                    ? "z-30 scale-[1.01] border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.85)]"
+                    : "border-white/10 shadow-[0_-4px_24px_rgba(0,0,0,0.6)] cursor-pointer"
                 )}
               >
                 {/* Header Trigger Zone: Clicking or hovering on top h-[52px] sets active card */}
                 <div
-                  className="h-[52px] flex items-center justify-between cursor-pointer select-none -m-4 p-4 mb-0"
+                  className={cn(
+                    "h-[52px] flex items-center justify-between cursor-pointer select-none -m-4 p-4 mb-0 transition-colors duration-200 hover:bg-white/[0.03]",
+                    isActive ? "rounded-t-2xl" : "rounded-2xl"
+                  )}
                   onMouseEnter={() => setActiveCard(index)}
                   onClick={() => setActiveCard(index)}
                 >
@@ -424,11 +428,11 @@ export function FeatureDeck() {
                   </span>
                 </div>
 
-                {/* Body Content: Fixed height h-[160px] when active, h-0 when inactive */}
+                {/* Body Content: Fixed height h-[150px] when active, h-0 when inactive */}
                 <div
                   className={cn(
                     isActive
-                      ? "h-[160px] opacity-100 transition-opacity duration-200 delay-100"
+                      ? "h-[150px] opacity-100 transition-opacity duration-200"
                       : "h-0 opacity-0 pointer-events-none overflow-hidden"
                   )}
                 >

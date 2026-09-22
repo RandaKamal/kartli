@@ -190,25 +190,26 @@ export function ShoppingListSection({
     (i) => !i.is_purchased && !i.is_guest_staged
   );
 
+  if (openItems.length === 0 && hideInput) {
+    return null;
+  }
+
   return (
-    <div className="bg-[#121215] border border-white/[0.08] rounded-3xl p-6 shadow-2xl backdrop-blur-xl space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between select-none">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <ShoppingBag className="w-4 h-4 text-muted-foreground" />
-            <h2 className="text-lg font-bold text-white tracking-tight">Active Shopping Queue</h2>
-            <Badge
-              variant={openItems.length > 0 ? "accent" : "secondary"}
-              className="text-xs font-mono font-medium"
-            >
-              {openItems.length}
-            </Badge>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Items to purchase right now · Tap any row to mark bought
-          </p>
+    <div className="space-y-2 select-none">
+      {/* Editorial Section Label */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <ShoppingBag className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
+            Shopping Queue
+          </span>
+          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">
+            {openItems.length}
+          </span>
         </div>
+        <span className="text-[11px] text-muted-foreground/60">
+          Tap row to mark bought
+        </span>
       </div>
 
       {/* Optional Quick Add Input */}
@@ -239,14 +240,14 @@ export function ShoppingListSection({
 
       {/* Checklist Queue */}
       {openItems.length === 0 ? (
-        <div className="py-8 px-4 text-center rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.02] space-y-1.5 select-none">
-          <p className="text-sm font-semibold text-white">Queue is clear</p>
-          <p className="text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">
+        <div className="py-6 px-4 text-center rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.02] space-y-1 select-none">
+          <p className="text-xs font-semibold text-white">Queue is clear</p>
+          <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
             All staples are stocked and no ad-hoc items are pending.
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {openItems.map((item) => {
             const isChecked = item.is_purchased || checkedVisualIds.has(item.id);
             const isStaple = !!item.pantry_item_id;
@@ -264,30 +265,30 @@ export function ShoppingListSection({
                   }
                 }}
                 className={cn(
-                  "group w-full flex items-center justify-between rounded-2xl px-4 py-3.5 transition-all cursor-pointer select-none active:scale-[0.99] border",
+                  "group w-full flex items-center justify-between rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5 transition-all cursor-pointer select-none active:scale-[0.98]",
                   isChecked
-                    ? "bg-emerald-500/10 border-emerald-500/25 opacity-60"
-                    : "bg-white/[0.03] hover:bg-white/[0.06] border-white/[0.07] hover:border-white/[0.14]"
+                    ? "bg-emerald-500/10 border border-emerald-500/20 opacity-50"
+                    : "bg-[#121215] hover:bg-[#16161a] border border-white/[0.08] hover:border-white/20 shadow-sm"
                 )}
               >
                 {/* Left: Circular Checkbox + Item Name */}
-                <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div
                     className={cn(
-                      "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0",
+                      "w-5 h-5 rounded-full border flex items-center justify-center transition-all shrink-0",
                       isChecked
-                        ? "bg-accent-success text-white border-accent-success shadow-xs scale-105"
-                        : "border-white/30 group-hover:border-primary group-hover:bg-primary/10"
+                        ? "bg-emerald-500 text-black border-emerald-500 shadow-xs scale-105"
+                        : "border-white/30 group-hover:border-emerald-400/60 bg-white/[0.02]"
                     )}
                   >
-                    {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                    {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                   </div>
 
                   <span
                     className={cn(
-                      "text-base font-bold truncate transition-all",
+                      "text-sm font-semibold truncate transition-all",
                       isChecked
-                        ? "line-through text-muted-foreground"
+                        ? "line-through text-muted-foreground/60"
                         : "text-white"
                     )}
                   >
@@ -295,14 +296,14 @@ export function ShoppingListSection({
                   </span>
                 </div>
 
-                {/* Right: Chip + Hover Trash Button */}
-                <div className="flex items-center gap-2.5 shrink-0">
+                {/* Right: Chip + Hover/Touch Trash Button */}
+                <div className="flex items-center gap-2 shrink-0">
                   {isStaple ? (
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                    <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/25">
                       Staple
                     </span>
                   ) : (
-                    <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-white/[0.06] text-muted-foreground border border-white/[0.08]">
+                    <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-white/[0.06] text-muted-foreground border border-white/[0.08]">
                       {item.purchased_by_name ? `@${item.purchased_by_name}` : "One-off"}
                     </span>
                   )}

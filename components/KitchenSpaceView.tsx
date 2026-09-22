@@ -55,6 +55,8 @@ import {
   Sparkles,
   Receipt,
   RotateCcw,
+  Share2,
+  Check,
 } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
@@ -172,6 +174,26 @@ export function KitchenSpaceView({
     };
   }, [initialKitchen.id]);
 
+  const handleShare = async () => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: `${initialKitchen.name} - kartli`,
+          url: publicGuestUrl,
+        });
+        return;
+      } catch (err: any) {
+        if (err.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(publicGuestUrl);
+      toast.success("Guest link copied to clipboard!");
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  };
+
   const handleModeChange = (newMode: "board" | "supermarket") => {
     setMode(newMode);
     if (typeof window !== "undefined") {
@@ -288,250 +310,236 @@ export function KitchenSpaceView({
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] w-full flex flex-col bg-background text-foreground selection:bg-primary/20">
+    <div className="min-h-[calc(100vh-4rem)] w-full flex flex-col bg-[#0c0c0e] text-foreground selection:bg-primary/20 pb-28 md:pb-16">
       <GuestCartHandoverListener kitchenId={initialKitchen.id} />
 
       {/* Main Grounded Hub Container */}
-      <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6 flex-1">
-        {/* 1. Header Context: Space Name + Household Tag + Roommate Avatars Stack */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-white/[0.06]">
-          <div className="space-y-1.5 min-w-0">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white truncate">
-                {initialKitchen.name}
-              </h1>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-secondary text-muted-foreground border border-border/80">
-                {getSpaceIcon(initialKitchen.space_type)}
-                <span>{getSpaceLabel(initialKitchen.space_type)}</span>
+      <div className="w-full max-w-lg md:max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex flex-col gap-6 sm:gap-8 flex-1">
+        {/* 1. NATIVE HEADER & SPACE IDENTITY */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 select-none pb-2 border-b border-white/[0.04]">
+          {/* Left: Space title + household badge */}
+          <div className="flex items-center gap-3 min-w-0 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white truncate">
+              {initialKitchen.name}
+            </h1>
+            <span className="font-mono text-[10px] sm:text-xs tracking-widest text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
+              {getSpaceLabel(initialKitchen.space_type)}
+            </span>
+            {isAdmin && (
+              <span className="font-mono text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">
+                Admin
               </span>
-              {isAdmin && (
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                  Admin
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Shared household operating board · {activeMembers.length} active {activeMembers.length === 1 ? "roommate" : "roommates"}
-            </p>
+            )}
           </div>
 
-          {/* Right Header Actions: Avatar Stack (Opens Drawer), Guest Link, Settings */}
-          <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-center">
-            {/* Clickable Roommates Avatar Stack */}
+          {/* Right: Roommate avatar cluster + Share button + Settings icon button */}
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 self-start sm:self-auto">
+            {/* Roommate Avatar Cluster */}
             <button
               type="button"
               onClick={() => setIsRoommatesOpen(true)}
-              className="flex items-center -space-x-2 py-1 px-2 rounded-2xl hover:bg-white/[0.05] border border-white/[0.08] transition-all cursor-pointer shadow-sm group"
-              title="Click to view roommates & invites"
+              className="flex items-center -space-x-1.5 py-1 px-2 rounded-full hover:bg-white/[0.05] border border-white/[0.06] transition-all cursor-pointer group"
+              title="View roommates & invites"
               aria-label="View roommates and household invites"
             >
-              <div className="flex items-center -space-x-2 overflow-hidden py-0.5">
+              <div className="flex items-center -space-x-1.5 overflow-hidden">
                 {activeMembers.slice(0, 3).map((m) => (
                   <div
                     key={m.id}
-                    className="w-7 h-7 rounded-full bg-secondary text-foreground border-2 border-background flex items-center justify-center text-[10px] font-bold uppercase shadow-2xs group-hover:scale-105 transition-transform select-none"
+                    className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#1e1e24] text-zinc-300 border-2 border-[#0c0c0e] flex items-center justify-center text-[9px] sm:text-[10px] font-bold uppercase group-hover:scale-105 transition-transform select-none"
                   >
                     {m.kitchen_display_name.slice(0, 2)}
                   </div>
                 ))}
               </div>
-              <span className="text-xs font-mono font-semibold text-muted-foreground group-hover:text-white pl-3 pr-1">
-                {activeMembers.length}
+              <span className="text-[11px] sm:text-xs font-mono text-muted-foreground/80 group-hover:text-white pl-2">
+                {activeMembers.length} {activeMembers.length === 1 ? "roommate" : "roommates"}
               </span>
             </button>
 
-            {/* Live Share / Guest Supermarket Link */}
-            <CopyButton
-              text={publicGuestUrl}
-              label="Share"
-              size="sm"
-              variant="outline"
-              className="h-9 px-3 text-xs font-semibold rounded-xl border border-white/[0.08] bg-card hover:bg-white/[0.06] text-white transition-all cursor-pointer"
-            />
-
-            <Button
-              asChild
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 rounded-xl border border-white/[0.08] bg-card hover:bg-white/[0.06] text-muted-foreground hover:text-white shrink-0 transition-all cursor-pointer"
-              title="Open public guest view"
-              aria-label="Open public guest view in new tab"
+            {/* Share icon button */}
+            <button
+              type="button"
+              onClick={handleShare}
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-muted-foreground hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              title="Share guest link"
+              aria-label="Share guest link"
             >
-              <Link href={publicGuestUrl} target="_blank">
-                <ExternalLink className="w-4 h-4" />
-              </Link>
-            </Button>
+              <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </button>
 
-            {/* Kitchen Settings Button */}
-            <Button
-              asChild
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 rounded-xl border border-white/[0.08] bg-card hover:bg-white/[0.06] text-muted-foreground hover:text-white shrink-0 transition-all cursor-pointer"
+            {/* Settings icon button */}
+            <Link
+              href={`/kitchen/${initialKitchen.id}/settings`}
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-muted-foreground hover:text-white flex items-center justify-center transition-colors cursor-pointer"
               title="Space Settings"
               aria-label="Space Settings"
             >
-              <Link href={`/kitchen/${initialKitchen.id}/settings`}>
-                <Settings className="w-4 h-4" />
-              </Link>
-            </Button>
+              <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </Link>
           </div>
         </header>
 
-        {/* 2. Mode Switcher (Centered, Prominent Pill Dock) */}
-        <div className="flex justify-center w-full pt-1">
-          <div className="bg-[#121215] border border-white/[0.08] backdrop-blur-xl rounded-2xl p-1.5 inline-flex items-center gap-1.5 shadow-xl">
-            <button
-              type="button"
-              onClick={() => handleModeChange("board")}
-              className={cn(
-                "flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer select-none",
-                mode === "board"
-                  ? "bg-white text-black shadow-md font-extrabold scale-[1.02]"
-                  : "text-muted-foreground hover:text-white hover:bg-white/[0.05]"
-              )}
-            >
-              <UtensilsCrossed className="w-3.5 h-3.5" />
-              <span>Kitchen Board</span>
-            </button>
+        {/* 2. SLEEK SEGMENTED SLIDER (KITCHEN BOARD VS SUPERMARKET RUN) */}
+        <div className="h-11 sm:h-12 w-full bg-white/[0.03] p-1 rounded-2xl border border-white/[0.08] backdrop-blur-xl flex items-center mb-1">
+          <button
+            type="button"
+            onClick={() => handleModeChange("board")}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm transition-all cursor-pointer select-none",
+              mode === "board"
+                ? "bg-[#1a1a1e] text-white shadow-[0_2px_12px_rgba(0,0,0,0.5)] border border-white/[0.12] font-semibold duration-200"
+                : "text-muted-foreground/70 hover:text-white font-medium transition-colors"
+            )}
+          >
+            <UtensilsCrossed className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Kitchen Board</span>
+          </button>
 
-            <button
-              type="button"
-              onClick={() => handleModeChange("supermarket")}
-              className={cn(
-                "flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer select-none relative",
-                mode === "supermarket"
-                  ? "bg-primary text-primary-foreground shadow-md font-extrabold scale-[1.02]"
-                  : "text-muted-foreground hover:text-white hover:bg-white/[0.05]"
-              )}
-            >
-              <ShoppingCart className="w-3.5 h-3.5" />
-              <span>Supermarket Run</span>
-              {neededItemsCount > 0 && (
-                <span
-                  className={cn(
-                    "text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full leading-tight",
-                    mode === "supermarket"
-                      ? "bg-primary-foreground text-primary"
-                      : "bg-amber-500 text-black"
-                  )}
-                >
-                  {neededItemsCount}
-                </span>
-              )}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => handleModeChange("supermarket")}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm transition-all cursor-pointer select-none",
+              mode === "supermarket"
+                ? "bg-[#1a1a1e] text-white shadow-[0_2px_12px_rgba(0,0,0,0.5)] border border-white/[0.12] font-semibold duration-200"
+                : "text-muted-foreground/70 hover:text-white font-medium transition-colors"
+            )}
+          >
+            <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Supermarket Run</span>
+            {neededItemsCount > 0 && (
+              <span
+                className={cn(
+                  "text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full leading-none transition-colors",
+                  mode === "supermarket"
+                    ? "bg-emerald-400 text-black font-extrabold"
+                    : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                )}
+              >
+                {neededItemsCount}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* MODE 1: KITCHEN BOARD */}
         {mode === "board" && (
-          <main className="space-y-6 animate-in fade-in-50 duration-200">
-            {/* A. Universal Command Bar */}
+          <main className="space-y-6 sm:space-y-8 animate-in fade-in-50 duration-200">
+            {/* HIGH-END INPUT AFFORDANCE (THE COMMAND BAR) */}
             <form onSubmit={handleCommandSubmit} className="relative w-full">
-              <div className="relative flex items-center gap-2 rounded-2xl bg-[#121215] border border-white/[0.12] p-2 pl-4 shadow-xl focus-within:border-primary/60 transition-all">
-                <Plus className="w-4 h-4 text-muted-foreground shrink-0" />
+              <div className="relative w-full h-12 sm:h-13 bg-[#121215] border border-white/10 rounded-2xl flex items-center px-3.5 sm:px-4 focus-within:border-emerald-500/40 focus-within:ring-2 focus-within:ring-emerald-500/10 shadow-lg transition-all">
+                <Plus className="w-4 h-4 text-muted-foreground/50 shrink-0 mr-2.5 sm:mr-3" />
                 <input
                   type="text"
                   value={commandInput}
                   onChange={(e) => setCommandInput(e.target.value)}
-                  placeholder="Need something? Type item (e.g. Oat Milk, Lemons, Coffee)..."
+                  placeholder="Need something? (e.g. Oat Milk, Lemons, Coffee)..."
                   disabled={isSubmittingCommand}
-                  className="flex-1 bg-transparent border-0 text-white placeholder:text-muted-foreground/70 text-sm focus:outline-none min-w-0"
+                  className="w-full bg-transparent border-none text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-0 min-w-0 pr-2 sm:pr-3"
                 />
 
-                {/* Tag Type Toggle inside Command Bar */}
-                <div className="flex items-center gap-1 bg-black/40 border border-white/[0.08] p-1 rounded-xl shrink-0">
+                {/* Right Actions: Micro segmented pill for [ One-off | Staple ] + Minimalist circular Enter button */}
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                  <div className="flex items-center gap-0.5 bg-white/[0.04] border border-white/[0.08] p-0.5 rounded-lg shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setCommandType("one-off")}
+                      className={cn(
+                        "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md font-mono text-[10px] sm:text-xs font-semibold transition-all cursor-pointer select-none",
+                        commandType === "one-off"
+                          ? "bg-white/[0.12] text-white shadow-2xs"
+                          : "text-muted-foreground/60 hover:text-white"
+                      )}
+                    >
+                      One-off
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCommandType("staple")}
+                      className={cn(
+                        "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md font-mono text-[10px] sm:text-xs font-semibold transition-all cursor-pointer select-none",
+                        commandType === "staple"
+                          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-2xs"
+                          : "text-muted-foreground/60 hover:text-white"
+                      )}
+                    >
+                      Staple
+                    </button>
+                  </div>
+
                   <button
-                    type="button"
-                    onClick={() => setCommandType("one-off")}
+                    type="submit"
+                    disabled={isSubmittingCommand || !commandInput.trim()}
                     className={cn(
-                      "px-2.5 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer select-none",
-                      commandType === "one-off"
-                        ? "bg-white/[0.12] text-white shadow-xs"
-                        : "text-muted-foreground hover:text-white"
+                      "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 transition-all cursor-pointer",
+                      commandInput.trim()
+                        ? "bg-emerald-500 text-black shadow-md shadow-emerald-500/20 active:scale-95"
+                        : "bg-white/[0.04] text-muted-foreground/30 cursor-not-allowed border border-white/[0.06]"
                     )}
+                    title="Add item"
+                    aria-label="Add item"
                   >
-                    One-off
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCommandType("staple")}
-                    className={cn(
-                      "px-2.5 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer select-none",
-                      commandType === "staple"
-                        ? "bg-primary/20 text-primary border border-primary/30 shadow-xs"
-                        : "text-muted-foreground hover:text-white"
+                    {isSubmittingCommand ? (
+                      <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
+                    ) : (
+                      <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
                     )}
-                  >
-                    Staple
                   </button>
                 </div>
-
-                <Button
-                  type="submit"
-                  disabled={isSubmittingCommand || !commandInput.trim()}
-                  size="sm"
-                  className="rounded-xl px-3.5 h-8 font-semibold shrink-0 cursor-pointer"
-                >
-                  {isSubmittingCommand ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <span>Add ↵</span>
-                  )}
-                </Button>
               </div>
             </form>
 
-            {/* B. The Restock Banner (Hero Alert) */}
+            {/* RESTING STATE OR URGENT RESTOCK BANNER */}
             {neededItemsCount > 0 ? (
-              <div className="relative overflow-hidden rounded-3xl bg-[#141418] border border-amber-500/30 p-5 sm:p-6 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 shadow-sm">
-                    <ShoppingCart className="w-6 h-6" />
+              <div className="rounded-2xl bg-amber-500/[0.06] border border-amber-500/20 p-4 sm:py-5 sm:px-6 flex items-center justify-between gap-4 shadow-sm">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                    <ShoppingCart className="w-5 h-5" />
                   </div>
-                  <div className="space-y-0.5 min-w-0">
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="relative flex h-2.5 w-2.5">
+                      <span className="relative flex h-2 w-2 shrink-0">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
                       </span>
-                      <h3 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
+                      <h3 className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
                         {neededItemsCount} {neededItemsCount === 1 ? "item" : "items"} needed for next run
                       </h3>
                     </div>
                     <p className="text-xs text-muted-foreground truncate">
-                      Active restock queue ready for the supermarket run.
+                      Active restock queue ready for supermarket run
                     </p>
                   </div>
                 </div>
 
                 <Button
                   type="button"
+                  size="sm"
                   onClick={() => handleModeChange("supermarket")}
-                  className="rounded-2xl px-5 py-2.5 bg-primary text-primary-foreground font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all text-sm shrink-0 flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+                  className="rounded-xl h-9 px-4 bg-primary text-primary-foreground font-semibold text-xs sm:text-sm shrink-0 flex items-center gap-1.5 cursor-pointer shadow-md hover:shadow-lg transition-all"
                 >
-                  <span>Start Shopping Run →</span>
+                  <span>Start Shopping Run</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               </div>
             ) : (
-              <div className="rounded-3xl bg-emerald-500/[0.06] border border-emerald-500/20 p-5 sm:p-6 flex items-center justify-between gap-4 shadow-sm">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400 shrink-0">
-                    <CheckCircle2 className="w-5 h-5 stroke-[2.5]" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-white tracking-tight">
-                      Everything in stock
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      Pantry primed. Tap any staple card below when running low.
-                    </p>
-                  </div>
+              <div className="rounded-2xl bg-emerald-500/[0.03] border border-emerald-500/15 py-6 px-8 text-center flex flex-col items-center justify-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                  <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">
+                    Kitchen is fully stocked
+                  </h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground max-w-sm mx-auto">
+                    Tap any staple below when running low.
+                  </p>
                 </div>
               </div>
             )}
 
-            {/* C. The Active Shopping Queue */}
+            {/* ACTIVE SHOPPING QUEUE (Auto-hidden when empty) */}
             <ShoppingListSection
               kitchenId={initialKitchen.id}
               items={localShoppingListItems}
@@ -545,7 +553,7 @@ export function KitchenSpaceView({
               onViewCart={() => handleModeChange("supermarket")}
             />
 
-            {/* D. The Household Staples Catalog (Interactive Bento Grid) */}
+            {/* HOUSEHOLD STAPLES BENTO GRID */}
             <PantrySection
               kitchenId={initialKitchen.id}
               items={localPantryItems}
@@ -557,12 +565,12 @@ export function KitchenSpaceView({
               }
             />
 
-            {/* 3. Balances & Refunds Minimalist Docked Summary Bar */}
-            <footer className="pt-2">
-              <div className="bg-[#121215] border border-white/[0.08] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xl">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="p-2 rounded-xl bg-white/[0.05] border border-white/[0.08] text-muted-foreground shrink-0">
-                    <CreditCard className="w-4 h-4" />
+            {/* BALANCES & REFUNDS MINIMALIST DOCKED BAR */}
+            <footer className="mt-8">
+              <div className="bg-[#121215] border border-white/10 rounded-2xl px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] text-muted-foreground flex items-center justify-center shrink-0">
+                    <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs sm:text-sm font-semibold text-white truncate">
@@ -570,7 +578,7 @@ export function KitchenSpaceView({
                         ? `${pendingRefundsCount} pending ${pendingRefundsCount === 1 ? "expense" : "expenses"} to settle`
                         : "Household balances up to date"}
                     </p>
-                    <p className="text-[11px] font-mono text-muted-foreground">
+                    <p className="text-[10px] sm:text-xs font-mono text-muted-foreground/70 truncate">
                       {myCheckouts.length} logged receipts in space history
                     </p>
                   </div>
@@ -581,9 +589,9 @@ export function KitchenSpaceView({
                   variant="outline"
                   size="sm"
                   onClick={() => setIsLedgerOpen(true)}
-                  className="h-8 px-3 rounded-xl text-xs font-semibold border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-white shrink-0 cursor-pointer"
+                  className="h-8 px-3.5 rounded-xl text-xs sm:text-sm font-medium border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-white shrink-0 cursor-pointer self-start sm:self-auto"
                 >
-                  <span>Settle / Details →</span>
+                  <span>Settle →</span>
                 </Button>
               </div>
             </footer>
@@ -592,12 +600,12 @@ export function KitchenSpaceView({
 
         {/* MODE 2: SUPERMARKET RUN (Active Cart Section) */}
         {mode === "supermarket" && (
-          <main className="space-y-6 animate-in fade-in-50 duration-200">
+          <main className="space-y-4 animate-in fade-in-50 duration-200">
             <div className="flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => handleModeChange("board")}
-                className="inline-flex items-center gap-2 text-xs font-mono text-muted-foreground hover:text-white transition-colors cursor-pointer py-1"
+                className="inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-white transition-colors cursor-pointer py-1"
               >
                 <span>← Back to Kitchen Board</span>
               </button>
