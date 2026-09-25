@@ -213,9 +213,9 @@ export function SpacePulseModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl sm:max-w-3xl w-[94vw] sm:w-full p-0 gap-0 overflow-hidden max-h-[88vh] flex flex-col rounded-3xl border border-border bg-card text-card-foreground shadow-2xl">
+      <DialogContent className="sm:max-w-3xl sm:w-full p-0 gap-0">
         {/* Modal Header */}
-        <DialogHeader className="p-5 sm:p-6 pb-4 border-b border-border/80 pr-12 flex flex-col space-y-1.5 shrink-0 bg-muted/20">
+        <DialogHeader className="p-5 sm:p-6 pb-3 border-b border-border/80 pr-12 flex flex-col space-y-1.5 shrink-0 bg-muted/20">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
               <Activity className="w-4 h-4" />
@@ -252,28 +252,28 @@ export function SpacePulseModal({
             </Button>
           </div>
 
-          {/* Navigation Tabs */}
+          {/* Sub-navigation Tray */}
           <div className="pt-2">
             <Tabs
               value={activeTab}
               onValueChange={(val) => setActiveTab(val as "spending" | "pantry" | "activity")}
               className="w-full"
             >
-              <TabsList className="grid grid-cols-3 w-full h-9 p-1 bg-muted/60 border border-border/70 rounded-xl">
+              <TabsList className="w-full flex items-center gap-1.5 p-1 bg-secondary/50 rounded-xl mb-1 overflow-x-auto no-scrollbar border-0 h-auto">
                 <TabsTrigger
                   value="spending"
-                  className="rounded-lg text-xs font-semibold gap-1.5 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+                  className="flex-1 py-1.5 px-3 text-xs font-medium rounded-lg text-center whitespace-nowrap transition-all data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 shrink-0"
                 >
-                  <CreditCard className="w-3.5 h-3.5" />
-                  <span className="truncate">Spend Balance</span>
+                  <CreditCard className="w-3.5 h-3.5 shrink-0" />
+                  <span>Spend Balance</span>
                 </TabsTrigger>
 
                 <TabsTrigger
                   value="pantry"
-                  className="rounded-lg text-xs font-semibold gap-1.5 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+                  className="flex-1 py-1.5 px-3 text-xs font-medium rounded-lg text-center whitespace-nowrap transition-all data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 shrink-0"
                 >
-                  <Package className="w-3.5 h-3.5" />
-                  <span className="truncate">Depleted Staples</span>
+                  <Package className="w-3.5 h-3.5 shrink-0" />
+                  <span>Depleted Staples</span>
                   {depletedStaples.length > 0 && (
                     <span className="px-1.5 py-0.2 text-[10px] font-mono rounded-full bg-destructive/15 text-destructive border border-destructive/25 shrink-0">
                       {depletedStaples.length}
@@ -283,10 +283,10 @@ export function SpacePulseModal({
 
                 <TabsTrigger
                   value="activity"
-                  className="rounded-lg text-xs font-semibold gap-1.5 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+                  className="flex-1 py-1.5 px-3 text-xs font-medium rounded-lg text-center whitespace-nowrap transition-all data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 shrink-0"
                 >
-                  <Receipt className="w-3.5 h-3.5" />
-                  <span className="truncate">Restock Feed</span>
+                  <Receipt className="w-3.5 h-3.5 shrink-0" />
+                  <span>Restock Feed</span>
                   {checkoutsList.length > 0 && (
                     <span className="px-1.5 py-0.2 text-[10px] font-mono rounded-full bg-muted text-muted-foreground border border-border shrink-0">
                       {checkoutsList.length}
@@ -299,7 +299,7 @@ export function SpacePulseModal({
         </DialogHeader>
 
         {/* Modal Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto px-5 pb-8 pt-2 sm:p-6 space-y-6 overscroll-contain">
           {isLoading ? (
             <SpacePulseModalSkeleton />
           ) : !stats ? (
@@ -325,122 +325,189 @@ export function SpacePulseModal({
               {/* TAB 1: Spending & Balance */}
               {activeTab === "spending" && (
                 <div className="space-y-5 animate-in fade-in-50 duration-200">
-                  {/* Hero Spend Card */}
-                  <Card className="border border-border bg-card rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                          Monthly Grocery Spend
-                        </span>
+                  {stats.totalReceiptsCount === 0 && stats.totalSpendCurrentMonth === 0 ? (
+                    <Card className="border border-border/70 bg-muted/20 rounded-2xl p-8 text-center space-y-3 shadow-xs">
+                      <div className="w-12 h-12 mx-auto rounded-2xl bg-muted border border-border/80 flex items-center justify-center text-muted-foreground">
+                        <CreditCard className="w-6 h-6" />
                       </div>
-                      <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs font-mono">
-                        {stats.monthLabel}
-                      </Badge>
-                    </div>
-
-                    <div className="flex items-baseline gap-3 flex-wrap">
-                      <span className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight font-mono">
-                        {formatCurrency(stats.totalSpendCurrentMonth, currency)}
-                      </span>
-
-                      {/* Month-over-month Trend Indicator */}
-                      {stats.spendTrendDirection === "down" && (
-                        <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-mono gap-1">
-                          <TrendingDown className="w-3 h-3 text-primary" />
-                          <span>-{stats.spendTrendPercentage}% vs last month</span>
-                        </Badge>
-                      )}
-
-                      {stats.spendTrendDirection === "up" && (
-                        <Badge className="bg-amber-500/10 text-amber-500 dark:text-amber-400 border border-amber-500/20 text-xs font-mono gap-1">
-                          <TrendingUp className="w-3 h-3 text-amber-500 dark:text-amber-400" />
-                          <span>+{stats.spendTrendPercentage}% vs last month</span>
-                        </Badge>
-                      )}
-
-                      {stats.spendTrendDirection === "flat" && (
-                        <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border gap-1">
-                          <Minus className="w-3 h-3" />
-                          <span>0% vs last month</span>
-                        </Badge>
-                      )}
-
-                      {stats.spendTrendDirection === "new" && (
-                        <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-mono gap-1">
-                          <Sparkles className="w-3 h-3" />
-                          <span>First month</span>
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Spend Velocity Area Chart */}
-                    <div className="w-full h-16 pt-1">
-                      <svg className="w-full h-full overflow-visible" viewBox="0 0 400 80" preserveAspectRatio="none">
-                        <defs>
-                          <linearGradient id="modalPulseGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.25" />
-                            <stop offset="60%" stopColor="var(--accent)" stopOpacity="0.08" />
-                            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                        <path
-                          d="M 0 65 Q 40 58, 80 42 T 160 36 T 240 52 T 320 24 T 400 10 L 400 80 L 0 80 Z"
-                          fill="url(#modalPulseGradient)"
-                        />
-                        <path
-                          d="M 0 65 Q 40 58, 80 42 T 160 36 T 240 52 T 320 24 T 400 10"
-                          fill="none"
-                          stroke="var(--primary)"
-                          strokeWidth="2.2"
-                          strokeLinecap="round"
-                        />
-                        <circle cx="400" cy="10" r="3" fill="var(--primary)" />
-                        <circle cx="400" cy="10" r="6" fill="var(--accent)" fillOpacity="0.3" />
-                      </svg>
-                    </div>
-
-                    {/* Comparison note & quick stats */}
-                    <div className="pt-1 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60">
-                      <span>Previous Month Spend:</span>
-                      <span className="font-mono font-medium text-foreground">
-                        {formatCurrency(stats.totalSpendPreviousMonth, currency)}
-                      </span>
-                    </div>
-                  </Card>
-
-                  {/* 2-Column Metrics */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Average Basket Size */}
-                    <Card className="border border-border bg-card rounded-2xl p-4 shadow-xs space-y-2">
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="font-medium">Avg. Basket Size</span>
-                        <ShoppingBag className="w-3.5 h-3.5" />
+                      <div className="space-y-1">
+                        <h3 className="text-base font-bold text-foreground">
+                          No grocery runs recorded yet this month.
+                        </h3>
+                        <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                          Check out your supermarket run or upload a receipt to track household spending and personal impact.
+                        </p>
                       </div>
-                      <div className="text-2xl font-bold font-mono text-foreground">
-                        {formatCurrency(stats.averageBasketSize, currency)}
-                      </div>
-                      <p className="text-[11px] text-muted-foreground">
-                        Across {stats.totalReceiptsCount} {stats.totalReceiptsCount === 1 ? "receipt" : "receipts"} logged this month
-                      </p>
                     </Card>
+                  ) : (
+                    <>
+                      {/* Hero Spend Card */}
+                      <Card className="border border-border bg-card rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
+                              Total Spend This Month
+                            </span>
+                          </div>
+                          <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs font-mono">
+                            {stats.monthLabel}
+                          </Badge>
+                        </div>
 
-                    {/* Personal Contribution Share */}
-                    <Card className="border border-border bg-card rounded-2xl p-4 shadow-xs space-y-2">
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="font-medium">Your Share</span>
-                        <Badge variant="secondary" className="text-[10px] font-mono bg-muted text-foreground">
-                          {stats.userSpendSharePercentage}%
-                        </Badge>
+                        <div className="flex items-baseline gap-3 flex-wrap">
+                          <span className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight font-mono">
+                            {formatCurrency(stats.totalSpendCurrentMonth, "EUR")}
+                          </span>
+
+                          {/* Month-over-month Trend Indicator */}
+                          {stats.spendTrendDirection === "down" && (
+                            <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-mono gap-1">
+                              <TrendingDown className="w-3 h-3 text-primary" />
+                              <span>-{stats.spendTrendPercentage}% vs last month</span>
+                            </Badge>
+                          )}
+
+                          {stats.spendTrendDirection === "up" && (
+                            <Badge className="bg-amber-500/10 text-amber-500 dark:text-amber-400 border border-amber-500/20 text-xs font-mono gap-1">
+                              <TrendingUp className="w-3 h-3 text-amber-500 dark:text-amber-400" />
+                              <span>+{stats.spendTrendPercentage}% vs last month</span>
+                            </Badge>
+                          )}
+
+                          {stats.spendTrendDirection === "flat" && (
+                            <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border gap-1">
+                              <Minus className="w-3 h-3" />
+                              <span>0% vs last month</span>
+                            </Badge>
+                          )}
+
+                          {stats.spendTrendDirection === "new" && (
+                            <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-mono gap-1">
+                              <Sparkles className="w-3 h-3" />
+                              <span>First month</span>
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* Comparison note & quick stats */}
+                        <div className="pt-2 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60">
+                          <span>Previous Month Spend:</span>
+                          <span className="font-mono font-medium text-foreground">
+                            {formatCurrency(stats.totalSpendPreviousMonth, "EUR")}
+                          </span>
+                        </div>
+                      </Card>
+
+                      {/* Real "My Impact" Checkout Breakdown */}
+                      <Card className="border border-border bg-card rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-primary" />
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
+                              My Impact &amp; Checkout Breakdown
+                            </h4>
+                          </div>
+                          {stats.userReceiptsCount > 0 && (
+                            <Badge variant="secondary" className="text-xs font-mono">
+                              {stats.userHabitRole.roleTitle}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {stats.userReceiptsCount === 0 && stats.userSpend === 0 && (!stats.userSettlement || stats.userSettlement.pendingRefundAmount === 0) ? (
+                          <div className="py-6 px-4 rounded-xl bg-muted/20 border border-dashed border-border/70 text-center space-y-1.5">
+                            <p className="text-xs font-semibold text-foreground">
+                              No checkouts logged by you yet this month.
+                            </p>
+                            <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
+                              When you complete a supermarket run or claim an expense, your personal spend, run share, and settlement balance will be tracked here.
+                            </p>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div className="p-3 rounded-xl bg-muted/40 border border-border/60 space-y-1">
+                                <span className="text-[11px] text-muted-foreground">Personal Spend</span>
+                                <div className="text-lg font-bold font-mono text-foreground">
+                                  {formatCurrency(stats.userSpend, "EUR")}
+                                </div>
+                                <span className="text-[10px] text-muted-foreground">
+                                  {stats.userSpendSharePercentage}% of total
+                                </span>
+                              </div>
+
+                              <div className="p-3 rounded-xl bg-muted/40 border border-border/60 space-y-1">
+                                <span className="text-[11px] text-muted-foreground">Personal Runs</span>
+                                <div className="text-lg font-bold font-mono text-foreground">
+                                  {stats.userReceiptsCount} <span className="text-xs font-normal text-muted-foreground">/ {stats.totalReceiptsCount}</span>
+                                </div>
+                                <span className="text-[10px] text-muted-foreground">
+                                  {stats.userHabitRole.runPercentage}% of household runs
+                                </span>
+                              </div>
+
+                              <div className="p-3 rounded-xl bg-muted/40 border border-border/60 space-y-1">
+                                <span className="text-[11px] text-muted-foreground">Settlement Status</span>
+                                <div className="text-lg font-bold font-mono text-foreground">
+                                  {stats.userSettlement.pendingRefundAmount > 0 ? (
+                                    <span className="text-amber-600 dark:text-amber-400">
+                                      +{formatCurrency(stats.userSettlement.pendingRefundAmount, "EUR")}
+                                    </span>
+                                  ) : (
+                                    <span className="text-emerald-600 dark:text-emerald-400">Balanced</span>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-muted-foreground">
+                                  {stats.userSettlement.pendingRefundAmount > 0
+                                    ? `Owed to you (${stats.userSettlement.pendingRefundsCount} pending)`
+                                    : "All refunds settled"}
+                                </span>
+                              </div>
+                            </div>
+
+                            <p className="text-xs text-muted-foreground">
+                              {stats.userHabitRole.roleDescription} (Avg contribution:{" "}
+                              <strong className="text-foreground">{formatCurrency(stats.userAverageContribution, "EUR")}</strong> per run)
+                            </p>
+                          </>
+                        )}
+                      </Card>
+
+                      {/* 2-Column Metrics: Basket Size & Category Footprint */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Average Basket Size */}
+                        <Card className="border border-border bg-card rounded-2xl p-4 shadow-xs space-y-2">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span className="font-medium">Avg. Household Basket</span>
+                            <ShoppingBag className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="text-2xl font-bold font-mono text-foreground">
+                            {formatCurrency(stats.averageBasketSize, "EUR")}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground">
+                            Across {stats.totalReceiptsCount} logged grocery {stats.totalReceiptsCount === 1 ? "run" : "runs"} this month
+                          </p>
+                        </Card>
+
+                        {/* Top Store Footprint */}
+                        <Card className="border border-border bg-card rounded-2xl p-4 shadow-xs space-y-2">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span className="font-medium">Primary Store Footprint</span>
+                            <Store className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="text-2xl font-bold text-foreground truncate">
+                            {stats.userCategoryFootprint ? stats.userCategoryFootprint.categoryName : (stats.categoryBreakdown[0]?.name || "Local Supermarket")}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground">
+                            {stats.userCategoryFootprint
+                              ? stats.userCategoryFootprint.displayText
+                              : `${stats.categoryBreakdown[0]?.percentage || 0}% of household spending`}
+                          </p>
+                        </Card>
                       </div>
-                      <div className="text-2xl font-bold font-mono text-foreground">
-                        {formatCurrency(stats.userSpend, currency)}
-                      </div>
-                      <p className="text-[11px] text-muted-foreground">
-                        {stats.userReceiptsCount} {stats.userReceiptsCount === 1 ? "checkout" : "checkouts"} by you (Avg: {formatCurrency(stats.userAverageContribution, currency)})
-                      </p>
-                    </Card>
-                  </div>
+                    </>
+                  )}
 
                   {/* Merchant & Category Spending Breakdown */}
                   <Card className="border border-border bg-card rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5">
@@ -802,18 +869,18 @@ export function SpacePulseModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 sm:p-5 border-t border-border/80 bg-muted/20 flex items-center justify-between text-xs text-muted-foreground shrink-0">
-          <div className="flex items-center gap-1.5 truncate">
+        <div className="p-3 sm:p-4 border-t border-border/80 bg-muted/20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 text-xs text-muted-foreground shrink-0">
+          <div className="hidden sm:flex items-center gap-1.5 truncate">
             <span className="w-2 h-2 rounded-full bg-primary" />
             <span className="truncate">Live data synchronized with household inventory</span>
           </div>
 
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             size="sm"
             onClick={() => onOpenChange(false)}
-            className="rounded-xl text-xs h-8 border-border shrink-0 cursor-pointer"
+            className="w-full sm:w-auto rounded-xl text-xs font-semibold h-9 px-4 border border-border shrink-0 cursor-pointer"
           >
             Close
           </Button>

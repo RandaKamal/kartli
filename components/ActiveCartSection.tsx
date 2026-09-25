@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import {
   returnToShoppingListAction,
   clearCartAction,
+  completeItemPurchaseAction,
 } from "@/app/actions/pantry";
 import type { ShoppingListItem, KitchenSpaceType } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
-import { capitalize } from "@/lib/utils";
+import { capitalize, cn } from "@/lib/utils";
 import { CheckoutDialog } from "@/components/CheckoutDialog";
 import {
   ShoppingCart as CartIcon,
@@ -20,6 +21,7 @@ import {
   ArrowRight,
   ShoppingBag,
   User,
+  Check,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +34,8 @@ interface ActiveCartSectionProps {
   currentUserId: string;
   spaceType?: KitchenSpaceType;
   onSwitchTab?: (tab: string) => void;
+  onItemReturnedToList?: (item: ShoppingListItem) => void;
+  onItemMovedToCart?: (item: ShoppingListItem) => void;
 }
 
 export function ActiveCartSection({
@@ -40,6 +44,8 @@ export function ActiveCartSection({
   currentUserId,
   spaceType = "FLATSHARE",
   onSwitchTab,
+  onItemReturnedToList,
+  onItemMovedToCart,
 }: ActiveCartSectionProps) {
   const router = useRouter();
   const [allItems, setAllItems] = useState<ShoppingListItem[]>(items);
@@ -53,11 +59,11 @@ export function ActiveCartSection({
   }, [items]);
 
   const myCartItems = allItems.filter(
-    (i) => i.is_purchased && !i.is_guest_staged && !i.checkout_id && i.purchased_by === currentUserId
+    (i) => (i.is_in_cart || i.is_purchased) && !i.is_guest_staged && !i.checkout_id && i.purchased_by === currentUserId
   );
   const otherCartItems = allItems.filter(
     (i) =>
-      (i.is_purchased || i.is_guest_staged) &&
+      (i.is_in_cart || i.is_purchased || i.is_guest_staged) &&
       !i.checkout_id &&
       (i.purchased_by !== currentUserId || i.is_guest_staged)
   );
@@ -70,19 +76,24 @@ export function ActiveCartSection({
       return;
     }
 
+    const updatedItem: ShoppingListItem = {
+      ...item,
+      is_in_cart: false,
+      is_purchased: false,
+      purchased_by: null,
+      is_guest_staged: false,
+    };
+
     setAllItems((prev) =>
-      prev.map((i) =>
-        i.id === item.id
-          ? { ...i, is_purchased: false, purchased_by: null, is_guest_staged: false }
-          : i
-      )
+      prev.map((i) => (i.id === item.id ? updatedItem : i))
     );
+
+    onItemReturnedToList?.(updatedItem);
 
     startTransition(async () => {
       try {
         await returnToShoppingListAction(kitchenId, item.id);
-        toast.success(`Returned "${item.name}" to shopping list`);
-        router.refresh();
+        toast.success(`Returned "${item.name}" to shopping queue`);
       } catch (err: any) {
         setAllItems(items);
         toast.error(err.message || "Failed to return item to list.");
@@ -94,22 +105,62 @@ export function ActiveCartSection({
     const count = myCartItems.length;
     if (count === 0) return;
 
+    const clearedItems = myCartItems.map((i) => ({
+      ...i,
+      is_in_cart: false,
+      is_purchased: false,
+      purchased_by: null,
+      is_guest_staged: false,
+    }));
+
     setAllItems((prev) =>
-      prev.map((i) =>
-        i.is_purchased && !i.is_guest_staged && !i.checkout_id && i.purchased_by === currentUserId
-          ? { ...i, is_purchased: false, purchased_by: null, is_guest_staged: false }
-          : i
-      )
+      prev.map((i) => {
+        if (
+          (i.is_in_cart || i.is_purchased) &&
+          !i.is_guest_staged &&
+          !i.checkout_id &&
+          i.purchased_by === currentUserId
+        ) {
+          return { ...i, is_in_cart: false, is_purchased: false, purchased_by: null, is_guest_staged: false };
+        }
+        return i;
+      })
     );
+
+    clearedItems.forEach((item) => onItemReturnedToList?.(item));
 
     startTransition(async () => {
       try {
         await clearCartAction(kitchenId);
-        toast.success(`Returned ${count} item${count === 1 ? "" : "s"} to shopping list`);
-        router.refresh();
+        toast.success(`Returned ${count} item${count === 1 ? "" : "s"} to shopping queue`);
       } catch (err: any) {
         setAllItems(items);
         toast.error(err.message || "Failed to clear cart.");
+      }
+    });
+  };
+
+  const handleToggleItemBought = (item: ShoppingListItem) => {
+    const nextPurchased = !item.is_purchased;
+    const updated: ShoppingListItem = {
+      ...item,
+      is_purchased: nextPurchased,
+      is_in_cart: true,
+    };
+
+    setAllItems((prev) =>
+      prev.map((i) => (i.id === item.id ? updated : i))
+    );
+
+    startTransition(async () => {
+      try {
+        await completeItemPurchaseAction(kitchenId, item.id, nextPurchased);
+        toast.success(
+          nextPurchased ? `Marked "${item.name}" as bought` : `Unchecked "${item.name}"`
+        );
+      } catch (err: any) {
+        setAllItems(items);
+        toast.error(err.message || "Failed to update item.");
       }
     });
   };
@@ -303,8 +354,25 @@ export function ActiveCartSection({
                       className="py-3 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition"
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <span className="w-2 h-2 rounded-full bg-accent-success shrink-0 shadow-[0_0_6px_rgba(129,178,154,0.4)]" />
-                        <span className="font-medium text-foreground truncate">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleItemBought(item)}
+                          aria-label={item.is_purchased ? `Mark ${item.name} as not bought` : `Mark ${item.name} as bought`}
+                          className={cn(
+                            "w-5 h-5 rounded-lg border flex items-center justify-center transition-all shrink-0 cursor-pointer",
+                            item.is_purchased
+                              ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                              : "border-border hover:border-primary/50 bg-background"
+                          )}
+                        >
+                          {item.is_purchased && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                        </button>
+                        <span
+                          className={cn(
+                            "font-medium truncate transition-all",
+                            item.is_purchased ? "line-through text-muted-foreground/60" : "text-foreground"
+                          )}
+                        >
                           {item.name}
                         </span>
                         {item.pantry_item_id ? (
@@ -331,7 +399,7 @@ export function ActiveCartSection({
                           variant="ghost"
                           onClick={() => handleReturnToList(item)}
                           disabled={isPending}
-                          className="h-8.5 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary gap-1.5 rounded-lg"
+                          className="h-8.5 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary gap-1.5 rounded-lg cursor-pointer"
                           title="Return item to shopping list"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />

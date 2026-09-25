@@ -155,14 +155,16 @@ export function KitchenSpaceView({
   const [, startTransition] = useTransition();
 
   const terminology = getSpaceTerminology(initialKitchen.space_type);
-  const activeMembers = localMembers.filter((m) => m.joined_at !== null);
+  const activeMembers = localMembers.filter((m) => m.joined_at !== null && m.joined_at !== undefined);
+  const displayMembers = activeMembers.length > 0 ? activeMembers : localMembers;
+  const roommatesCount = Math.max(displayMembers.length, 1);
 
   const neededItemsCount = localShoppingListItems.filter(
-    (i) => !i.is_purchased && !i.is_guest_staged
+    (i) => !i.is_in_cart && !i.is_purchased && !i.is_guest_staged
   ).length;
 
   const activeCartCount = localShoppingListItems.filter(
-    (i) => (i.is_purchased || i.is_guest_staged) && !i.checkout_id
+    (i) => (i.is_in_cart || i.is_purchased || i.is_guest_staged) && !i.checkout_id
   ).length;
 
   const origin = typeof window !== "undefined" ? window.location.origin : baseUrl;
@@ -283,15 +285,10 @@ export function KitchenSpaceView({
     setLocalShoppingListItems((prev) =>
       prev.map((i) =>
         i.id === item.id
-          ? { ...i, is_purchased: true, purchased_by: currentUserId, is_guest_staged: false }
+          ? { ...i, is_in_cart: true, is_purchased: false, purchased_by: currentUserId, is_guest_staged: false }
           : i
       )
     );
-    if (item.pantry_item_id) {
-      setLocalPantryItems((prev) =>
-        prev.map((p) => (p.id === item.pantry_item_id ? { ...p, is_out_of_stock: false } : p))
-      );
-    }
     // Trigger temporary scale and color pulse on the "Supermarket Run" tab badge
     setIsCartBadgePulsing(true);
     setTimeout(() => {
@@ -303,7 +300,7 @@ export function KitchenSpaceView({
     setLocalShoppingListItems((prev) =>
       prev.map((i) =>
         i.id === item.id
-          ? { ...i, is_purchased: false, purchased_by: null, is_guest_staged: false }
+          ? { ...i, is_in_cart: false, is_purchased: false, purchased_by: null, is_guest_staged: false }
           : i
       )
     );
@@ -352,22 +349,22 @@ export function KitchenSpaceView({
             <button
               type="button"
               onClick={() => setIsRoommatesOpen(true)}
-              className="flex items-center -space-x-1.5 py-1 px-2 rounded-full hover:bg-secondary/60 border border-border/70 bg-card/60 transition-all cursor-pointer group"
+              className="flex items-center py-1 px-2.5 rounded-full hover:bg-secondary/60 border border-border/70 bg-card/60 transition-all cursor-pointer group"
               title="View roommates & invites"
               aria-label="View roommates and household invites"
             >
-              <div className="flex items-center -space-x-1.5 overflow-hidden">
-                {activeMembers.slice(0, 3).map((m) => (
+              <div className="flex items-center overflow-hidden py-0.5">
+                {displayMembers.slice(0, 3).map((m) => (
                   <div
                     key={m.id}
-                    className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-secondary text-secondary-foreground border-2 border-background flex items-center justify-center text-[9px] sm:text-[10px] font-bold uppercase group-hover:scale-105 transition-transform select-none"
+                    className="inline-flex items-center justify-center h-7 w-7 rounded-full text-[11px] font-bold ring-2 ring-card bg-secondary text-foreground -ml-2 first:ml-0 shadow-sm uppercase group-hover:scale-105 transition-transform select-none"
                   >
                     {m.kitchen_display_name.slice(0, 2)}
                   </div>
                 ))}
               </div>
               <span className="text-[11px] sm:text-xs font-mono text-muted-foreground group-hover:text-foreground pl-2">
-                {activeMembers.length} {activeMembers.length === 1 ? "roommate" : "roommates"}
+                {roommatesCount} {roommatesCount === 1 ? "roommate" : "roommates"}
               </span>
             </button>
 
@@ -473,7 +470,7 @@ export function KitchenSpaceView({
                   type="text"
                   value={commandInput}
                   onChange={(e) => setCommandInput(e.target.value)}
-                  placeholder="Need something? (e.g. Oat Milk, Lemons, Coffee)..."
+                  placeholder="Add item (e.g. Oat Milk)..."
                   disabled={isSubmittingCommand}
                   className="w-full bg-transparent border-none text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-0 min-w-0 pr-2 sm:pr-3"
                 />
@@ -659,6 +656,8 @@ export function KitchenSpaceView({
               onSwitchTab={(tab) => {
                 if (tab === "kitchen") handleModeChange("board");
               }}
+              onItemReturnedToList={handleItemReturnedToList}
+              onItemMovedToCart={handleItemMovedToCart}
             />
           </main>
         )}
@@ -666,9 +665,9 @@ export function KitchenSpaceView({
 
       {/* OVERLAY 1: Roommates Slide-Over / Modal */}
       <Dialog open={isRoommatesOpen} onOpenChange={setIsRoommatesOpen}>
-        <DialogContent className="max-w-md w-full bg-card border-border/80 text-card-foreground p-6 rounded-3xl shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
+        <DialogContent className="sm:max-w-md w-full p-0 gap-0 overflow-hidden flex flex-col">
+          <DialogHeader className="p-5 sm:p-6 pb-3 border-b border-border/60 pr-12 text-left">
+            <DialogTitle className="text-lg sm:text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
               <Users className="w-5 h-5 text-primary" />
               <span>{initialKitchen.name} Roommates</span>
             </DialogTitle>
@@ -677,7 +676,7 @@ export function KitchenSpaceView({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="pt-2">
+          <div className="flex-1 overflow-y-auto px-5 pb-8 pt-3 overscroll-contain">
             <RoommatesView
               kitchenId={initialKitchen.id}
               kitchenName={initialKitchen.name}
@@ -690,14 +689,25 @@ export function KitchenSpaceView({
               onMemberRemoved={(id) => setLocalMembers((prev) => prev.filter((m) => m.id !== id))}
             />
           </div>
+
+          <div className="sm:hidden p-3 border-t border-border/60 bg-muted/20 shrink-0">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsRoommatesOpen(false)}
+              className="w-full h-10 rounded-xl text-xs font-semibold"
+            >
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* OVERLAY 2: Expense & Refunds Ledger Modal */}
       <Dialog open={isLedgerOpen} onOpenChange={setIsLedgerOpen}>
-        <DialogContent className="max-w-2xl w-full bg-card border-border/80 text-card-foreground p-6 rounded-3xl shadow-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
+        <DialogContent className="sm:max-w-2xl w-full p-0 gap-0 overflow-hidden flex flex-col">
+          <DialogHeader className="p-5 sm:p-6 pb-3 border-b border-border/60 pr-12 text-left">
+            <DialogTitle className="text-lg sm:text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
               <Receipt className="w-5 h-5 text-primary" />
               <span>Expense &amp; Refund Ledger</span>
             </DialogTitle>
@@ -706,7 +716,7 @@ export function KitchenSpaceView({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="pt-4 space-y-6">
+          <div className="flex-1 overflow-y-auto px-5 pb-8 pt-4 space-y-6 overscroll-contain">
             {isAdmin && (
               <AdminRefundsSection
                 kitchenId={initialKitchen.id}
@@ -719,6 +729,17 @@ export function KitchenSpaceView({
               kitchenId={initialKitchen.id}
               checkouts={myCheckouts}
             />
+          </div>
+
+          <div className="sm:hidden p-3 border-t border-border/60 bg-muted/20 shrink-0">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsLedgerOpen(false)}
+              className="w-full h-10 rounded-xl text-xs font-semibold"
+            >
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

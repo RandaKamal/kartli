@@ -224,9 +224,9 @@ export function KitchenSettingsView({
   };
 
   return (
-    <div className="max-w-3xl mx-auto w-full px-6 pt-12 pb-24 space-y-8">
+    <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 pt-8 sm:pt-12 pb-24 space-y-6 sm:space-y-8">
       {/* Dedicated back-navigation row with mb-8 */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <Link
           href={`/kitchen/${initialKitchen.id}`}
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
@@ -249,15 +249,15 @@ export function KitchenSettingsView({
             {isAdmin ? "Admin View" : "Member View"}
           </Badge>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs sm:text-sm text-muted-foreground">
           Manage configuration, guest access, member roster, and space preferences for{" "}
           <strong className="text-foreground font-semibold">{kitchenName}</strong>.
         </p>
       </div>
 
       {/* Distinct Card 1: General Space Details */}
-      <Card className="p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-5">
-        <div className="flex items-center justify-between gap-3 pb-3 border-b border-border/60">
+      <Card className="p-4 sm:p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/60">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0">
               <Settings className="w-4 h-4" />
@@ -278,7 +278,7 @@ export function KitchenSettingsView({
               form="general-space-form"
               disabled={isSavingGeneral || !kitchenName.trim()}
               size="sm"
-              className="rounded-xl font-semibold text-xs h-8.5 px-3.5"
+              className="rounded-xl font-semibold text-xs h-8.5 px-3.5 w-full sm:w-auto"
             >
               {isSavingGeneral ? (
                 <>
@@ -444,7 +444,7 @@ export function KitchenSettingsView({
       </Card>
 
       {/* Distinct Card 2: Invites & Access */}
-      <Card className="p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-6">
+      <Card className="p-4 sm:p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-6">
         <div className="flex items-center gap-2.5 pb-3 border-b border-border/60">
           <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">
             <Share2 className="w-4 h-4" />
@@ -461,7 +461,7 @@ export function KitchenSettingsView({
 
         {/* Section A: Public Guest / Supermarket link */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="space-y-0.5">
               <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <span>Public Guest / Supermarket Link</span>
@@ -481,7 +481,7 @@ export function KitchenSettingsView({
                 size="sm"
                 onClick={handleRegenerateGuestToken}
                 disabled={isRegeneratingToken}
-                className="rounded-xl text-xs h-8 border-border text-muted-foreground hover:text-foreground hover:bg-muted"
+                className="rounded-xl text-xs h-8 border-border text-muted-foreground hover:text-foreground hover:bg-muted self-start sm:self-auto"
                 title="Invalidates previous guest links"
               >
                 <RefreshCw
@@ -492,31 +492,33 @@ export function KitchenSettingsView({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <Input
               type="text"
               readOnly
               value={publicGuestUrl}
               className="h-10 px-3 text-xs font-mono select-all rounded-xl bg-secondary/30 border-input text-foreground truncate min-w-0"
             />
-            <CopyButton
-              text={publicGuestUrl}
-              label="Copy Link"
-              size="sm"
-              variant="secondary"
-              className="shrink-0 h-10 px-3 rounded-xl font-medium text-xs"
-            />
-            <Button
-              asChild
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted"
-              title="Open guest view in new tab"
-            >
-              <Link href={publicGuestUrl} target="_blank">
-                <ExternalLink className="w-4 h-4" />
-              </Link>
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              <CopyButton
+                text={publicGuestUrl}
+                label="Copy Link"
+                size="sm"
+                variant="secondary"
+                className="flex-1 sm:flex-none h-10 px-3 rounded-xl font-medium text-xs"
+              />
+              <Button
+                asChild
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted"
+                title="Open guest view in new tab"
+              >
+                <Link href={publicGuestUrl} target="_blank">
+                  <ExternalLink className="w-4 h-4" />
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -538,31 +540,33 @@ export function KitchenSettingsView({
 
           {primaryPendingInvite ? (
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <Input
                   type="text"
                   readOnly
                   value={primaryInviteUrl}
                   className="h-10 px-3 text-xs font-mono select-all rounded-xl bg-secondary/30 border-input text-foreground truncate min-w-0"
                 />
-                <CopyButton
-                  text={primaryInviteUrl}
-                  label="Copy Invite"
-                  size="sm"
-                  variant="default"
-                  className="shrink-0 h-10 px-3 rounded-xl font-semibold text-xs"
-                />
-                <Button
-                  asChild
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted"
-                  title="Open invite link"
-                >
-                  <Link href={primaryInviteUrl} target="_blank">
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
-                </Button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <CopyButton
+                    text={primaryInviteUrl}
+                    label="Copy Invite"
+                    size="sm"
+                    variant="default"
+                    className="flex-1 sm:flex-none h-10 px-3 rounded-xl font-semibold text-xs"
+                  />
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted"
+                    title="Open invite link"
+                  >
+                    <Link href={primaryInviteUrl} target="_blank">
+                      <ExternalLink className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                </div>
               </div>
 
               <div className="flex items-center justify-between text-[11px] text-muted-foreground px-1">
@@ -593,7 +597,7 @@ export function KitchenSettingsView({
               <Label htmlFor="new-invite-name" className="text-xs font-medium text-foreground block mb-1.5">
                 Generate New Invitation Link
               </Label>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <Input
                   id="new-invite-name"
                   placeholder="e.g. Alex (or Roommate Nickname)"
@@ -606,7 +610,7 @@ export function KitchenSettingsView({
                   type="submit"
                   size="sm"
                   disabled={isCreatingInvite || !newMemberName.trim()}
-                  className="rounded-xl h-10 px-3.5 font-semibold text-xs shrink-0"
+                  className="rounded-xl h-10 px-3.5 font-semibold text-xs shrink-0 w-full sm:w-auto"
                 >
                   {isCreatingInvite ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
@@ -622,7 +626,7 @@ export function KitchenSettingsView({
       </Card>
 
       {/* Distinct Card 3: Space Members List Summary */}
-      <Card className="p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-5">
+      <Card className="p-4 sm:p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-5">
         <div className="flex items-center justify-between gap-3 pb-3 border-b border-border/60">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
@@ -700,7 +704,7 @@ export function KitchenSettingsView({
       </Card>
 
       {/* Distinct Card 4: Danger Zone */}
-      <Card className="p-6 rounded-2xl border border-destructive/30 bg-destructive/5 space-y-5">
+      <Card className="p-4 sm:p-6 rounded-2xl border border-destructive/30 bg-destructive/5 space-y-5">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-destructive/10 text-destructive border border-destructive/20 shrink-0">
             <AlertTriangle className="w-5 h-5" />

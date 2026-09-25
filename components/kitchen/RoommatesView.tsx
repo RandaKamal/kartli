@@ -250,7 +250,7 @@ export function RoommatesView({
           <label className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono">
             Invite New Household Member
           </label>
-          <form onSubmit={handleAddMember} className="flex gap-2">
+          <form onSubmit={handleAddMember} className="flex flex-col sm:flex-row gap-2">
             <Input
               type="text"
               placeholder="Roommate name (e.g. Maya)..."
@@ -262,7 +262,7 @@ export function RoommatesView({
             <Button
               type="submit"
               disabled={isAdding || !newMemberName.trim()}
-              className="rounded-xl h-10 px-4 font-semibold shrink-0 cursor-pointer"
+              className="rounded-xl h-10 px-4 font-semibold shrink-0 cursor-pointer w-full sm:w-auto"
             >
               {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4 mr-1.5" />}
               <span>Generate Invite</span>

@@ -38,6 +38,7 @@ interface ShoppingCartProps {
   spaceType?: KitchenSpaceType;
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onItemReturnedToList?: (item: ShoppingListItem) => void;
 }
 
 export function ShoppingCart({
@@ -47,6 +48,7 @@ export function ShoppingCart({
   spaceType = "FLATSHARE",
   isOpen: controlledIsOpen,
   onOpenChange: setControlledIsOpen,
+  onItemReturnedToList,
 }: ShoppingCartProps) {
   const router = useRouter();
   const [internalIsOpen, setInternalIsOpen] = useState(false);
@@ -82,11 +84,11 @@ export function ShoppingCart({
   }, []);
 
   const myCartItems = allItems.filter(
-    (i) => i.is_purchased && !i.is_guest_staged && !i.checkout_id && i.purchased_by === currentUserId
+    (i) => (i.is_in_cart || i.is_purchased) && !i.is_guest_staged && !i.checkout_id && i.purchased_by === currentUserId
   );
   const otherCartItems = allItems.filter(
     (i) =>
-      (i.is_purchased || i.is_guest_staged) &&
+      (i.is_in_cart || i.is_purchased || i.is_guest_staged) &&
       !i.checkout_id &&
       (i.purchased_by !== currentUserId || i.is_guest_staged)
   );
@@ -101,19 +103,24 @@ export function ShoppingCart({
       return;
     }
 
+    const updatedItem: ShoppingListItem = {
+      ...item,
+      is_in_cart: false,
+      is_purchased: false,
+      purchased_by: null,
+      is_guest_staged: false,
+    };
+
     setAllItems((prev) =>
-      prev.map((i) =>
-        i.id === item.id
-          ? { ...i, is_purchased: false, purchased_by: null, is_guest_staged: false }
-          : i
-      )
+      prev.map((i) => (i.id === item.id ? updatedItem : i))
     );
+
+    onItemReturnedToList?.(updatedItem);
 
     startTransition(async () => {
       try {
         await returnToShoppingListAction(kitchenId, item.id);
-        toast.success(`Returned "${item.name}" to shopping list`);
-        router.refresh();
+        toast.success(`Returned "${item.name}" to shopping queue`);
       } catch (err: any) {
         setAllItems(items);
         toast.error(err.message || "Failed to return item to list.");
@@ -125,19 +132,28 @@ export function ShoppingCart({
     const count = myCartItems.length;
     if (count === 0) return;
 
+    const clearedItems = myCartItems.map((i) => ({
+      ...i,
+      is_in_cart: false,
+      is_purchased: false,
+      purchased_by: null,
+      is_guest_staged: false,
+    }));
+
     setAllItems((prev) =>
       prev.map((i) =>
-        i.is_purchased && !i.is_guest_staged && !i.checkout_id && i.purchased_by === currentUserId
-          ? { ...i, is_purchased: false, purchased_by: null, is_guest_staged: false }
+        (i.is_in_cart || i.is_purchased) && !i.is_guest_staged && !i.checkout_id && i.purchased_by === currentUserId
+          ? { ...i, is_in_cart: false, is_purchased: false, purchased_by: null, is_guest_staged: false }
           : i
       )
     );
 
+    clearedItems.forEach((item) => onItemReturnedToList?.(item));
+
     startTransition(async () => {
       try {
         await clearCartAction(kitchenId);
-        toast.success(`Returned ${count} item${count === 1 ? "" : "s"} to shopping list`);
-        router.refresh();
+        toast.success(`Returned ${count} item${count === 1 ? "" : "s"} to shopping queue`);
       } catch (err: any) {
         setAllItems(items);
         toast.error(err.message || "Failed to clear cart.");

@@ -73,28 +73,23 @@ function getAvatarPalette(name: string, index: number) {
 export function MemberAvatarCluster({
   members = [],
   totalCount,
-  size = "md",
 }: {
   members?: string[];
   totalCount: number;
   size?: "sm" | "md";
 }) {
-  const sizeClasses = size === "sm" ? "w-6 h-6 text-[10px]" : "w-8 h-8 text-xs";
   const displayMembers = members.length > 0 ? members : [];
-  const remaining = Math.max(0, totalCount - displayMembers.length);
+  const displayCount = Math.max(totalCount, displayMembers.length, 1);
+  const remaining = Math.max(0, displayCount - displayMembers.length);
 
   return (
     <div className="flex items-center gap-2.5">
-      <div className="flex items-center -space-x-2 overflow-hidden py-0.5">
+      <div className="flex items-center overflow-hidden py-0.5">
         {displayMembers.map((name, i) => (
           <Tooltip key={i}>
             <TooltipTrigger asChild>
               <span
-                className={cn(
-                  "inline-flex items-center justify-center rounded-full font-bold uppercase ring-2 ring-background border shadow-2xs shrink-0 cursor-default select-none",
-                  sizeClasses,
-                  getAvatarPalette(name, i)
-                )}
+                className="inline-flex items-center justify-center h-7 w-7 rounded-full text-[11px] font-bold ring-2 ring-card bg-secondary text-foreground -ml-2 first:ml-0 shadow-sm uppercase shrink-0 cursor-default select-none"
               >
                 {getInitials(name)}
               </span>
@@ -106,17 +101,14 @@ export function MemberAvatarCluster({
         ))}
         {remaining > 0 && (
           <span
-            className={cn(
-              "inline-flex items-center justify-center rounded-full font-mono font-semibold bg-secondary text-muted-foreground ring-2 ring-background border border-border/80 shadow-2xs shrink-0",
-              sizeClasses
-            )}
+            className="inline-flex items-center justify-center h-7 w-7 rounded-full text-[11px] font-bold ring-2 ring-card bg-secondary text-foreground -ml-2 first:ml-0 shadow-sm font-mono shrink-0"
           >
             +{remaining}
           </span>
         )}
       </div>
       <span className="text-xs text-muted-foreground font-medium">
-        {totalCount} {totalCount === 1 ? "member" : "members"}
+        {displayCount} {displayCount === 1 ? "member" : "members"}
       </span>
     </div>
   );

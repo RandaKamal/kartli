@@ -13,6 +13,9 @@ import {
   getShoppingListItems,
   addCustomShoppingItem,
   togglePurchased,
+  putItemInCart,
+  returnItemToShoppingList,
+  completeItemPurchase,
   removeShoppingListItem,
   clearUserCart,
   clearBoughtShoppingListItems,
@@ -92,12 +95,31 @@ export async function togglePurchasedAction(
   return item;
 }
 
-export async function moveToCartAction(kitchenId: string, itemId: string) {
-  return await togglePurchasedAction(kitchenId, itemId, true);
+export async function putItemInCartAction(kitchenId: string, itemId: string) {
+  const userId = await requireMembership(kitchenId);
+  const item = await putItemInCart(kitchenId, itemId, userId);
+  revalidateKitchen(kitchenId);
+  return item;
 }
 
+export const moveToCartAction = putItemInCartAction;
+
 export async function returnToShoppingListAction(kitchenId: string, itemId: string) {
-  return await togglePurchasedAction(kitchenId, itemId, false);
+  const userId = await requireMembership(kitchenId);
+  const item = await returnItemToShoppingList(kitchenId, itemId, userId);
+  revalidateKitchen(kitchenId);
+  return item;
+}
+
+export async function completeItemPurchaseAction(
+  kitchenId: string,
+  itemId: string,
+  isPurchased: boolean
+) {
+  const userId = await requireMembership(kitchenId);
+  const item = await completeItemPurchase(kitchenId, itemId, userId, isPurchased);
+  revalidateKitchen(kitchenId);
+  return item;
 }
 
 export async function moveAllNeededToCartAction(kitchenId: string) {
