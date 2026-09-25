@@ -143,7 +143,7 @@ export function PantrySection({
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
               Household Staples
             </span>
-            <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-full bg-white/[0.06] text-muted-foreground border border-white/[0.08]">
+            <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground border border-border/70">
               {optimisticItems.length}
             </span>
           </div>
@@ -177,9 +177,9 @@ export function PantrySection({
 
         {/* Tactile Bento Grid */}
         {optimisticItems.length === 0 ? (
-          <div className="py-10 px-4 text-center rounded-2xl border border-dashed border-white/[0.08] bg-[#151518]/50 space-y-1.5">
+          <div className="py-10 px-4 text-center rounded-2xl border border-dashed border-border/70 bg-card/40 space-y-1.5">
             <Package className="w-6 h-6 text-muted-foreground mx-auto opacity-60" />
-            <p className="text-xs font-semibold text-white">No staples tracked yet</p>
+            <p className="text-xs font-semibold text-foreground">No staples tracked yet</p>
             <p className="text-[11px] text-muted-foreground max-w-xs mx-auto leading-relaxed">
               Add permanent household essentials like Olive Oil, Salt, or Coffee that your kitchen should always have in stock.
             </p>
@@ -204,8 +204,8 @@ export function PantrySection({
                   className={cn(
                     "group relative flex flex-col justify-between rounded-2xl min-h-[96px] p-4 transition-all cursor-pointer select-none active:scale-[0.98]",
                     isOutOfStock
-                      ? "bg-amber-500/[0.10] hover:bg-amber-500/[0.14] border border-amber-500/30 shadow-sm"
-                      : "bg-[#121215] hover:bg-[#16161a] border border-white/[0.08] hover:border-white/20 shadow-sm"
+                      ? "bg-amber-500/[0.10] hover:bg-amber-500/[0.14] border border-amber-500/30 shadow-xs"
+                      : "bg-card hover:bg-muted/40 border border-border/70 hover:border-border shadow-xs"
                   )}
                   title={isOutOfStock ? "Tap to mark In Stock" : "Tap to mark Empty / Needed"}
                 >
@@ -217,14 +217,14 @@ export function PantrySection({
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
                         </span>
-                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                           Empty
                         </span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)] shrink-0" />
-                        <span className="text-[10px] font-mono font-medium text-emerald-400/90">
+                        <span className="text-[10px] font-mono font-medium text-emerald-600 dark:text-emerald-400/90">
                           Stocked
                         </span>
                       </div>
@@ -247,7 +247,7 @@ export function PantrySection({
 
                   {/* Bottom Staple Name */}
                   <div className="pt-2">
-                    <span className="text-sm font-semibold text-white truncate block leading-snug">
+                    <span className="text-sm font-semibold text-foreground truncate block leading-snug">
                       {item.name}
                     </span>
                   </div>

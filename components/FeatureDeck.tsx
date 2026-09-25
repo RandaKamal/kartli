@@ -34,10 +34,10 @@ export function FeatureDeck() {
       tag: "Always stocked",
       shortName: "Pantry",
       icon: Package,
-      accentText: "text-emerald-400",
-      accentBorder: "group-hover:border-emerald-500/30",
-      iconBg: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
-      tagBg: "bg-emerald-500/10 text-emerald-400/90 border-emerald-500/20",
+      accentText: "text-accent-brand",
+      accentBorder: "group-hover:border-accent-brand/40",
+      iconBg: "bg-accent-brand/10 border-accent-brand/20 text-accent-brand",
+      tagBg: "bg-accent-brand/10 text-accent-brand border-accent-brand/20",
     },
     {
       id: "cart",
@@ -45,10 +45,10 @@ export function FeatureDeck() {
       tag: "Live sync",
       shortName: "Cart",
       icon: ShoppingCart,
-      accentText: "text-teal-400",
-      accentBorder: "group-hover:border-teal-500/30",
-      iconBg: "bg-teal-500/10 border-teal-500/20 text-teal-400",
-      tagBg: "bg-teal-500/10 text-teal-400/90 border-teal-500/20",
+      accentText: "text-accent-secondary",
+      accentBorder: "group-hover:border-accent-secondary/40",
+      iconBg: "bg-accent-secondary/10 border-accent-secondary/20 text-accent-secondary",
+      tagBg: "bg-accent-secondary/10 text-accent-secondary border-accent-secondary/20",
     },
     {
       id: "receipt",
@@ -56,10 +56,10 @@ export function FeatureDeck() {
       tag: "AI Vision",
       shortName: "Receipt",
       icon: Receipt,
-      accentText: "text-amber-400",
-      accentBorder: "group-hover:border-amber-500/30",
-      iconBg: "bg-amber-500/10 border-amber-500/20 text-amber-400",
-      tagBg: "bg-amber-500/10 text-amber-400/90 border-amber-500/20",
+      accentText: "text-accent-warning",
+      accentBorder: "group-hover:border-accent-warning/40",
+      iconBg: "bg-accent-warning/10 border-accent-warning/20 text-accent-warning",
+      tagBg: "bg-accent-warning/10 text-accent-warning border-accent-warning/20",
     },
     {
       id: "settlement",
@@ -67,10 +67,10 @@ export function FeatureDeck() {
       tag: "Fair split",
       shortName: "Split",
       icon: Scale,
-      accentText: "text-cyan-400",
-      accentBorder: "group-hover:border-cyan-500/30",
-      iconBg: "bg-cyan-500/10 border-cyan-500/20 text-cyan-400",
-      tagBg: "bg-cyan-500/10 text-cyan-400/90 border-cyan-500/20",
+      accentText: "text-accent-primary",
+      accentBorder: "group-hover:border-accent-primary/40",
+      iconBg: "bg-accent-primary/10 border-accent-primary/20 text-accent-primary",
+      tagBg: "bg-accent-primary/10 text-accent-primary border-accent-primary/20",
     },
   ];
 
@@ -89,24 +89,24 @@ export function FeatureDeck() {
         return (
           <div className="space-y-1.5 pt-2">
             {/* Item 1 */}
-            <div className="flex items-center justify-between p-2 rounded-xl bg-white/[0.03] border border-white/[0.05] text-xs">
+            <div className="flex items-center justify-between p-2 rounded-xl bg-secondary/50 border border-border/70 text-xs">
               <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-brand" />
                 <span className="font-medium text-foreground">Oat Milk Barista</span>
               </div>
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-accent-brand/10 text-accent-brand border border-accent-brand/20">
                 In Stock
               </span>
             </div>
 
             {/* Item 2: Espresso Beans */}
-            <div className="flex items-center justify-between p-2 rounded-xl bg-white/[0.03] border border-white/[0.05] text-xs">
+            <div className="flex items-center justify-between p-2 rounded-xl bg-secondary/50 border border-border/70 text-xs">
               <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-warning animate-pulse" />
                 <span className="font-medium text-foreground">Espresso Beans</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-accent-warning/10 text-accent-warning border border-accent-warning/20">
                   Low
                 </span>
                 <button
@@ -118,13 +118,13 @@ export function FeatureDeck() {
                   className={cn(
                     "text-[11px] font-medium px-2 py-0.5 rounded-md border transition-all cursor-pointer flex items-center gap-1",
                     espressoAdded
-                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                      : "bg-white/[0.06] hover:bg-white/[0.12] text-foreground border-white/10"
+                      ? "bg-accent-brand/20 text-accent-brand border-accent-brand/30"
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80 border-border/70"
                   )}
                 >
                   {espressoAdded ? (
                     <>
-                      <Check className="w-3 h-3 text-emerald-400" />
+                      <Check className="w-3 h-3 text-accent-brand" />
                       <span>Added to Cart</span>
                     </>
                   ) : (
@@ -138,12 +138,12 @@ export function FeatureDeck() {
             </div>
 
             {/* Item 3 */}
-            <div className="flex items-center justify-between p-2 rounded-xl bg-white/[0.03] border border-white/[0.05] text-xs">
+            <div className="flex items-center justify-between p-2 rounded-xl bg-secondary/50 border border-border/70 text-xs">
               <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-brand" />
                 <span className="font-medium text-foreground">Olive Oil</span>
               </div>
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-accent-brand/10 text-accent-brand border border-accent-brand/20">
                 In Stock
               </span>
             </div>
@@ -154,23 +154,23 @@ export function FeatureDeck() {
         return (
           <div className="space-y-2 pt-2">
             {/* Item 1: Sourdough */}
-            <div className="flex items-center justify-between p-2 rounded-xl bg-white/[0.03] border border-white/[0.05] text-xs">
+            <div className="flex items-center justify-between p-2 rounded-xl bg-secondary/50 border border-border/70 text-xs">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="font-medium text-foreground truncate">Sourdough Loaf</span>
                 <span className="text-[11px] text-muted-foreground">&middot; Sophie</span>
               </div>
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/20 shrink-0">
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-accent-secondary/10 text-accent-secondary border border-accent-secondary/20 shrink-0">
                 Staged
               </span>
             </div>
 
             {/* Item 2: Feta */}
-            <div className="flex items-center justify-between p-2 rounded-xl bg-white/[0.03] border border-white/[0.05] text-xs">
+            <div className="flex items-center justify-between p-2 rounded-xl bg-secondary/50 border border-border/70 text-xs">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="font-medium text-foreground truncate">Feta Cheese</span>
                 <span className="text-[11px] text-muted-foreground">&middot; Lisa</span>
               </div>
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/20 shrink-0">
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-accent-secondary/10 text-accent-secondary border border-accent-secondary/20 shrink-0">
                 Staged
               </span>
             </div>
@@ -184,8 +184,10 @@ export function FeatureDeck() {
                   setCartCheckedOut((prev) => !prev);
                 }}
                 className={cn(
-                  "bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-90 text-zinc-950 font-bold text-xs py-2 px-4 rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer",
-                  cartCheckedOut && "from-emerald-600 to-teal-600 text-white"
+                  "font-bold text-xs py-2 px-4 rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer",
+                  cartCheckedOut
+                    ? "bg-accent-brand text-accent-foreground"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90"
                 )}
               >
                 {cartCheckedOut ? (
@@ -208,7 +210,7 @@ export function FeatureDeck() {
         return (
           <div className="space-y-2 pt-2">
             {/* Clean Receipt Snapshot */}
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.07] text-xs">
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-secondary/50 border border-border/70 text-xs">
               <div>
                 <span className="font-semibold text-foreground">Rewe Supermarkt</span>
                 <span className="text-muted-foreground ml-2 font-mono">€18.40</span>
@@ -220,16 +222,16 @@ export function FeatureDeck() {
                   setReceiptScanned(true);
                   setTimeout(() => setReceiptScanned(false), 1200);
                 }}
-                className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-foreground transition-colors cursor-pointer flex items-center gap-1"
+                className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-secondary hover:bg-secondary/80 border border-border/70 text-secondary-foreground transition-colors cursor-pointer flex items-center gap-1"
               >
-                <Sparkles className="w-3 h-3 text-amber-400" />
+                <Sparkles className="w-3 h-3 text-accent-warning" />
                 <span>{receiptScanned ? "Parsing..." : "Rescan"}</span>
               </button>
             </div>
 
             {/* Clean Stat Chip */}
-            <div className="flex items-center gap-2 p-2 rounded-xl bg-white/[0.02] border border-white/[0.04] text-xs text-amber-400 font-medium">
-              <Check className="w-3.5 h-3.5 text-amber-400" />
+            <div className="flex items-center gap-2 p-2 rounded-xl bg-accent-warning/10 border border-accent-warning/20 text-xs text-accent-warning font-medium">
+              <Check className="w-3.5 h-3.5 text-accent-warning" />
               <span>7 items parsed &amp; categorized automatically</span>
             </div>
           </div>
@@ -239,9 +241,9 @@ export function FeatureDeck() {
         return (
           <div className="space-y-2.5 pt-2">
             {/* Sleek Balance Row */}
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.07] text-xs">
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-secondary/50 border border-border/70 text-xs">
               <span className="font-medium text-foreground">Colin +€28.20</span>
-              <span className="text-zinc-500">&middot;</span>
+              <span className="text-muted-foreground/60">&middot;</span>
               <span className="font-medium text-foreground">Lisa -€14.10</span>
             </div>
 
@@ -253,8 +255,10 @@ export function FeatureDeck() {
                 setSettled((prev) => !prev);
               }}
               className={cn(
-                "w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-90 text-zinc-950 font-bold text-xs py-2.5 px-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer",
-                settled && "from-emerald-600 to-teal-600 text-white"
+                "w-full font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer",
+                settled
+                  ? "bg-accent-brand text-accent-foreground"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90"
               )}
             >
               {settled ? (
@@ -284,18 +288,18 @@ export function FeatureDeck() {
       {/* Touch-friendly tabs, zero overflow, no negative margins, zero clipping   */}
       {/* ========================================================================= */}
       <div className="block md:hidden w-full">
-        <div className="bg-[#121215]/95 border border-white/[0.08] rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-xl space-y-4">
+        <div className="bg-card text-card-foreground border border-border/70 rounded-2xl p-4 sm:p-5 shadow-sm backdrop-blur-xl space-y-4">
           {/* Header */}
-          <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+          <div className="flex items-center justify-between pb-2 border-b border-border/60">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-xs tracking-tight text-foreground">
                 Shared Kitchen OS
               </span>
               <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/80" />
-                <span className="w-1.5 h-1.5 rounded-full bg-teal-400/80" />
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400/80" />
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/80" />
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-brand" />
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-secondary" />
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-warning" />
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-primary" />
               </div>
             </div>
             <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-mono">
@@ -317,8 +321,8 @@ export function FeatureDeck() {
                   className={cn(
                     "flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all cursor-pointer gap-1 text-[11px] font-medium border",
                     isSelected
-                      ? "bg-white/[0.08] text-foreground border-white/20 shadow-xs"
-                      : "bg-white/[0.02] text-muted-foreground border-white/[0.05] hover:text-foreground hover:bg-white/[0.05]"
+                      ? "bg-secondary text-secondary-foreground border-border shadow-xs"
+                      : "bg-secondary/40 text-muted-foreground border-border/50 hover:text-foreground hover:bg-secondary/70"
                   )}
                 >
                   <Icon
@@ -334,12 +338,12 @@ export function FeatureDeck() {
           </div>
 
           {/* Active Mobile Feature Card */}
-          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-2">
+          <div className="rounded-xl border border-border/70 bg-card/60 p-3.5 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold text-foreground">
                 {cards[activeCard].label}
               </span>
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white/[0.06] text-muted-foreground border border-white/10">
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-secondary/80 text-secondary-foreground border border-border/70">
                 {cards[activeCard].tag}
               </span>
             </div>
@@ -357,8 +361,8 @@ export function FeatureDeck() {
       {/* Fixed absolute base position: calculated vertical offsets per activeCard */}
       {/* ========================================================================= */}
       <div className="hidden md:block relative w-full max-w-md h-[380px] mx-auto">
-        {/* Ambient Emerald Glow Blur Backdrop */}
-        <div className="absolute inset-0 bg-emerald-500/10 blur-[90px] pointer-events-none -z-10 rounded-3xl" />
+        {/* Ambient Accent Glow Blur Backdrop */}
+        <div className="absolute inset-0 bg-accent-brand/10 blur-[90px] pointer-events-none -z-10 rounded-3xl" />
 
         {/* Stable Cards Container (Zero Container Reflow) */}
         <div className="relative w-full h-full">
@@ -377,22 +381,17 @@ export function FeatureDeck() {
                 }}
                 className={cn(
                   "group absolute left-0 right-0 w-full rounded-2xl p-4 border transition-all duration-300 ease-out will-change-transform",
-                  // Unified Obsidian-Graphite Base
-                  "bg-[#121215]/95 backdrop-blur-xl",
-                  // Top specular highlight
-                  "border-t border-t-white/[0.16]",
-                  // Subtle ambient hover glow on card border
+                  "bg-card text-card-foreground backdrop-blur-xl",
                   card.accentBorder,
-                  // Dynamic shadow & surface polish based on active state
                   isActive
-                    ? "z-30 scale-[1.01] border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.85)]"
-                    : "border-white/10 shadow-[0_-4px_24px_rgba(0,0,0,0.6)] cursor-pointer"
+                    ? "z-30 scale-[1.01] border-border shadow-xl dark:shadow-2xl"
+                    : "border-border/70 shadow-sm hover:border-border cursor-pointer"
                 )}
               >
                 {/* Header Trigger Zone: Clicking or hovering on top h-[52px] sets active card */}
                 <div
                   className={cn(
-                    "h-[52px] flex items-center justify-between cursor-pointer select-none -m-4 p-4 mb-0 transition-colors duration-200 hover:bg-white/[0.03]",
+                    "h-[52px] flex items-center justify-between cursor-pointer select-none -m-4 p-4 mb-0 transition-colors duration-200 hover:bg-secondary/40",
                     isActive ? "rounded-t-2xl" : "rounded-2xl"
                   )}
                   onMouseEnter={() => setActiveCard(index)}
@@ -403,17 +402,17 @@ export function FeatureDeck() {
                       className={cn(
                         "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-200",
                         card.iconBg,
-                        isActive && "ring-1 ring-white/10 shadow-xs"
+                        isActive && "ring-1 ring-border shadow-xs"
                       )}
                     >
                       <Icon className="w-4 h-4" />
                     </div>
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-sm font-bold text-foreground tracking-tight truncate">
+                      <span className="text-sm font-bold text-card-foreground tracking-tight truncate">
                         {card.label}
                       </span>
                       {isActive && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent-brand animate-pulse shrink-0" />
                       )}
                     </div>
                   </div>
@@ -421,7 +420,9 @@ export function FeatureDeck() {
                   <span
                     className={cn(
                       "text-[11px] font-medium px-2.5 py-0.5 rounded-full border shrink-0 transition-colors",
-                      isActive ? card.tagBg : "bg-white/[0.05] text-zinc-400 border-white/10"
+                      isActive
+                        ? card.tagBg
+                        : "bg-secondary/80 text-secondary-foreground border-border/70"
                     )}
                   >
                     {card.tag}

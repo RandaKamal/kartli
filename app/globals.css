@@ -120,9 +120,14 @@
   .dark,
   .dark[data-theme='black-truffle'],
   .dark[data-theme='truffle'],
+  .dark [data-theme='black-truffle'],
+  .dark [data-theme='truffle'],
   .dark[data-culinary-theme='black-truffle'],
   .dark[data-culinary-theme='truffle'],
-  .dark.theme-black-truffle {
+  .dark [data-culinary-theme='black-truffle'],
+  .dark [data-culinary-theme='truffle'],
+  .dark.theme-black-truffle,
+  .dark .theme-black-truffle {
     --accent-primary: #34d399;
     --accent-brand: #34d399;
     --accent-success: #34d399;
@@ -228,7 +233,8 @@
   .dark[data-culinary-theme='plum'],
   .dark [data-theme='plum'],
   .dark [data-culinary-theme='plum'],
-  .dark.theme-velvet-fig {
+  .dark.theme-velvet-fig,
+  .dark .theme-velvet-fig {
     --accent-primary: hsl(285 45% 58%);
     --accent-brand: hsl(285 45% 58%);
     --accent-success: #34d399;

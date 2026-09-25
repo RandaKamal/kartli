@@ -28,7 +28,7 @@ export function ThemeToggle({
       <Button
         variant="ghost"
         size="icon"
-        className={`h-9 w-9 rounded-xl border border-border/70 dark:border-white/[0.08] text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors ${className || ""}`}
+        className={`h-9 w-9 rounded-xl border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors ${className || ""}`}
         aria-label="Toggle theme"
       >
         <Sun className="h-4 w-4" />
@@ -42,7 +42,7 @@ export function ThemeToggle({
         <Button
           variant="ghost"
           size="icon"
-          className={`h-9 w-9 rounded-xl border border-border/70 dark:border-white/[0.08] text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors ${className || ""}`}
+          className={`h-9 w-9 rounded-xl border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors ${className || ""}`}
           aria-label="Toggle theme"
         >
           <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />

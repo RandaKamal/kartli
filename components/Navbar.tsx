@@ -26,7 +26,7 @@ export function Navbar({ user }: NavbarProps) {
   const brandHref = user ? "/dashboard" : "/";
 
   return (
-    <header className="sticky top-0 z-40 bg-background/85 backdrop-blur-md border-b border-border/70 dark:border-white/[0.08]">
+    <header className="sticky top-0 z-40 bg-background/85 backdrop-blur-md border-b border-border/70">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Left: kartli brand mark + clean wordmark */}
         <Link
@@ -34,7 +34,7 @@ export function Navbar({ user }: NavbarProps) {
           className="flex items-center gap-2.5 font-bold text-lg text-foreground tracking-tight group"
           aria-label="kartli home"
         >
-          <span className="w-8 h-8 rounded-xl bg-card border border-border/80 dark:border-white/[0.1] flex items-center justify-center text-xs font-black relative shadow-xs group-hover:border-accent-brand/50 transition-colors">
+          <span className="w-8 h-8 rounded-xl bg-card border border-border/70 flex items-center justify-center text-xs font-black relative shadow-xs group-hover:border-accent-brand/50 transition-colors">
             <span className="text-foreground">k</span>
             <span className="w-1.5 h-1.5 rounded-full bg-accent-brand absolute top-1.5 right-1.5" />
           </span>
@@ -54,7 +54,7 @@ export function Navbar({ user }: NavbarProps) {
               <Button
                 asChild
                 variant="outline"
-                className="h-9 rounded-xl px-3.5 text-xs font-semibold hidden sm:inline-flex items-center gap-1.5 border-border/70 dark:border-white/[0.08] hover:border-border hover:-translate-y-px hover:shadow-xs transition-all"
+                className="h-9 rounded-xl px-3.5 text-xs font-semibold hidden sm:inline-flex items-center gap-1.5 border-border/70 hover:border-border hover:bg-secondary/60 hover:-translate-y-px hover:shadow-xs transition-all"
               >
                 <Link href="/kitchen/new">
                   <Plus className="w-3.5 h-3.5" />
@@ -85,7 +85,7 @@ export function Navbar({ user }: NavbarProps) {
               <Button
                 asChild
                 variant="secondary"
-                className="h-9 rounded-xl px-3.5 text-xs font-medium border border-border/70 dark:border-white/[0.08] hover:border-border transition-all"
+                className="h-9 rounded-xl px-3.5 text-xs font-medium border border-border/70 hover:bg-secondary transition-all"
               >
                 <Link href="/login">Log in</Link>
               </Button>

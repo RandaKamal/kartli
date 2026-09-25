@@ -13,17 +13,17 @@ export function Hero({ sessionUser }: HeroProps) {
   return (
     <div className="space-y-6 sm:space-y-7 text-left">
       {/* Editorial Pill Badge */}
-      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/[0.04] backdrop-blur-md text-xs font-medium text-zinc-300">
-        <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border/70 bg-secondary/60 backdrop-blur-md text-xs font-medium text-secondary-foreground">
+        <span className="flex h-2 w-2 rounded-full bg-accent-brand animate-pulse" />
         <span className="text-foreground font-semibold">kartli 1.0</span>
-        <span className="text-zinc-600">&middot;</span>
+        <span className="text-muted-foreground/50">&middot;</span>
         <span className="text-muted-foreground">Shared Kitchen OS</span>
       </div>
 
       {/* Main Headline */}
       <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight text-foreground leading-[1.12]">
         Kitchen management for spaces that love{" "}
-        <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
+        <span className="bg-gradient-to-r from-accent-brand via-accent-primary to-accent-secondary bg-clip-text text-transparent">
           good food
         </span>{" "}
         and zero drama.
@@ -41,7 +41,7 @@ export function Hero({ sessionUser }: HeroProps) {
             <Button
               asChild
               size="lg"
-              className="rounded-2xl font-bold shadow-lg shadow-emerald-500/10 h-11 sm:h-12 px-6 text-sm gap-2 bg-foreground text-background hover:bg-foreground/90"
+              className="rounded-2xl font-bold shadow-lg shadow-primary/10 h-11 sm:h-12 px-6 text-sm gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <Link href="/dashboard">
                 <span>Go to Dashboard</span>
@@ -52,7 +52,7 @@ export function Hero({ sessionUser }: HeroProps) {
               asChild
               variant="outline"
               size="lg"
-              className="rounded-2xl font-semibold h-11 sm:h-12 px-5 text-sm gap-2 border-white/10 bg-white/[0.02] hover:bg-white/[0.06] text-foreground"
+              className="rounded-2xl font-semibold h-11 sm:h-12 px-5 text-sm gap-2 border-border/70 bg-card/60 hover:bg-secondary text-foreground shadow-sm"
             >
               <Link href="/kitchen/new">
                 <Plus className="w-4 h-4" />
@@ -65,7 +65,7 @@ export function Hero({ sessionUser }: HeroProps) {
             <Button
               asChild
               size="lg"
-              className="rounded-2xl font-bold shadow-lg shadow-emerald-500/10 h-11 sm:h-12 px-6 text-sm gap-2 bg-foreground text-background hover:bg-foreground/90"
+              className="rounded-2xl font-bold shadow-lg shadow-primary/10 h-11 sm:h-12 px-6 text-sm gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <Link href="/register">
                 <span>Start Your Kitchen</span>
@@ -76,7 +76,7 @@ export function Hero({ sessionUser }: HeroProps) {
               asChild
               variant="outline"
               size="lg"
-              className="rounded-2xl font-semibold h-11 sm:h-12 px-5 text-sm gap-2 border-white/10 bg-white/[0.02] hover:bg-white/[0.06] text-foreground"
+              className="rounded-2xl font-semibold h-11 sm:h-12 px-5 text-sm gap-2 border-border/70 bg-card/60 hover:bg-secondary text-foreground shadow-sm"
             >
               <Link href="/login">
                 <span>Sign In</span>
@@ -89,15 +89,15 @@ export function Hero({ sessionUser }: HeroProps) {
       {/* Subtle Trust Indicators */}
       <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs text-muted-foreground pt-2">
         <span className="flex items-center gap-1.5">
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+          <CheckCircle2 className="w-3.5 h-3.5 text-accent-brand" />
           <span>Email-free setup</span>
         </span>
         <span className="flex items-center gap-1.5">
-          <Shield className="w-3.5 h-3.5 text-teal-400" />
+          <Shield className="w-3.5 h-3.5 text-accent-secondary" />
           <span>Self-hostable & Open Source</span>
         </span>
         <span className="flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+          <Sparkles className="w-3.5 h-3.5 text-accent-primary" />
           <span>Gemini Vision AI</span>
         </span>
       </div>

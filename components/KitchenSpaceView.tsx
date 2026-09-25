@@ -22,6 +22,7 @@ import { PantrySection } from "@/components/PantrySection";
 import { ShoppingListSection } from "@/components/ShoppingListSection";
 import { ActiveCartSection } from "@/components/ActiveCartSection";
 import { RoommatesView } from "@/components/kitchen/RoommatesView";
+import { SpacePulseModal } from "@/components/kitchen/SpacePulseModal";
 import { AdminRefundsSection } from "@/components/AdminRefundsSection";
 import { MyPurchasesSection } from "@/components/MyPurchasesSection";
 import { CopyButton } from "@/components/CopyButton";
@@ -42,6 +43,7 @@ import {
   ShoppingCart,
   Users,
   Settings,
+  BarChart3,
   ExternalLink,
   Plus,
   CheckCircle2,
@@ -117,6 +119,7 @@ export function KitchenSpaceView({
   baseUrl,
   defaultTab = "kitchen",
   initialTab,
+  initialPulseStats,
   myCheckouts = [],
 }: KitchenSpaceViewProps) {
   const router = useRouter();
@@ -146,6 +149,8 @@ export function KitchenSpaceView({
   // Overlays State
   const [isRoommatesOpen, setIsRoommatesOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const [isStatsFlyoutOpen, setIsStatsFlyoutOpen] = useState(false);
+  const [isCartBadgePulsing, setIsCartBadgePulsing] = useState(false);
   const [pendingRefundsCount, setPendingRefundsCount] = useState(0);
   const [, startTransition] = useTransition();
 
@@ -154,6 +159,10 @@ export function KitchenSpaceView({
 
   const neededItemsCount = localShoppingListItems.filter(
     (i) => !i.is_purchased && !i.is_guest_staged
+  ).length;
+
+  const activeCartCount = localShoppingListItems.filter(
+    (i) => (i.is_purchased || i.is_guest_staged) && !i.checkout_id
   ).length;
 
   const origin = typeof window !== "undefined" ? window.location.origin : baseUrl;
@@ -283,6 +292,11 @@ export function KitchenSpaceView({
         prev.map((p) => (p.id === item.pantry_item_id ? { ...p, is_out_of_stock: false } : p))
       );
     }
+    // Trigger temporary scale and color pulse on the "Supermarket Run" tab badge
+    setIsCartBadgePulsing(true);
+    setTimeout(() => {
+      setIsCartBadgePulsing(false);
+    }, 900);
   };
 
   const handleItemReturnedToList = (item: ShoppingListItem) => {
@@ -310,35 +324,35 @@ export function KitchenSpaceView({
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] w-full flex flex-col bg-[#0c0c0e] text-foreground selection:bg-primary/20 pb-28 md:pb-16">
+    <div className="min-h-[calc(100vh-4rem)] w-full flex flex-col bg-background text-foreground selection:bg-primary/20 pb-28 md:pb-16">
       <GuestCartHandoverListener kitchenId={initialKitchen.id} />
 
       {/* Main Grounded Hub Container */}
       <div className="w-full max-w-lg md:max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex flex-col gap-6 sm:gap-8 flex-1">
         {/* 1. NATIVE HEADER & SPACE IDENTITY */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 select-none pb-2 border-b border-white/[0.04]">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 select-none pb-2 border-b border-border/60">
           {/* Left: Space title + household badge */}
           <div className="flex items-center gap-3 min-w-0 flex-wrap">
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white truncate">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground truncate">
               {initialKitchen.name}
             </h1>
-            <span className="font-mono text-[10px] sm:text-xs tracking-widest text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
+            <span className="font-mono text-[10px] sm:text-xs tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
               {getSpaceLabel(initialKitchen.space_type)}
             </span>
             {isAdmin && (
-              <span className="font-mono text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">
+              <span className="font-mono text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">
                 Admin
               </span>
             )}
           </div>
 
-          {/* Right: Roommate avatar cluster + Share button + Settings icon button */}
+          {/* Right: Roommate avatar cluster + Stats button + Share button + Settings icon button */}
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 self-start sm:self-auto">
             {/* Roommate Avatar Cluster */}
             <button
               type="button"
               onClick={() => setIsRoommatesOpen(true)}
-              className="flex items-center -space-x-1.5 py-1 px-2 rounded-full hover:bg-white/[0.05] border border-white/[0.06] transition-all cursor-pointer group"
+              className="flex items-center -space-x-1.5 py-1 px-2 rounded-full hover:bg-secondary/60 border border-border/70 bg-card/60 transition-all cursor-pointer group"
               title="View roommates & invites"
               aria-label="View roommates and household invites"
             >
@@ -346,22 +360,33 @@ export function KitchenSpaceView({
                 {activeMembers.slice(0, 3).map((m) => (
                   <div
                     key={m.id}
-                    className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#1e1e24] text-zinc-300 border-2 border-[#0c0c0e] flex items-center justify-center text-[9px] sm:text-[10px] font-bold uppercase group-hover:scale-105 transition-transform select-none"
+                    className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-secondary text-secondary-foreground border-2 border-background flex items-center justify-center text-[9px] sm:text-[10px] font-bold uppercase group-hover:scale-105 transition-transform select-none"
                   >
                     {m.kitchen_display_name.slice(0, 2)}
                   </div>
                 ))}
               </div>
-              <span className="text-[11px] sm:text-xs font-mono text-muted-foreground/80 group-hover:text-white pl-2">
+              <span className="text-[11px] sm:text-xs font-mono text-muted-foreground group-hover:text-foreground pl-2">
                 {activeMembers.length} {activeMembers.length === 1 ? "roommate" : "roommates"}
               </span>
+            </button>
+
+            {/* Pulse / Stats Flyout Button */}
+            <button
+              type="button"
+              onClick={() => setIsStatsFlyoutOpen(true)}
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border border-border bg-secondary/30 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+              title="Space Pulse & Statistics"
+              aria-label="View space pulse and statistics"
+            >
+              <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
             {/* Share icon button */}
             <button
               type="button"
               onClick={handleShare}
-              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-muted-foreground hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border border-border bg-secondary/30 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
               title="Share guest link"
               aria-label="Share guest link"
             >
@@ -371,7 +396,7 @@ export function KitchenSpaceView({
             {/* Settings icon button */}
             <Link
               href={`/kitchen/${initialKitchen.id}/settings`}
-              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-muted-foreground hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border border-border bg-secondary/30 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
               title="Space Settings"
               aria-label="Space Settings"
             >
@@ -381,19 +406,31 @@ export function KitchenSpaceView({
         </header>
 
         {/* 2. SLEEK SEGMENTED SLIDER (KITCHEN BOARD VS SUPERMARKET RUN) */}
-        <div className="h-11 sm:h-12 w-full bg-white/[0.03] p-1 rounded-2xl border border-white/[0.08] backdrop-blur-xl flex items-center mb-1">
+        <div className="h-11 sm:h-12 w-full bg-secondary/40 p-1 rounded-2xl border border-border/70 backdrop-blur-xl flex items-center mb-1">
           <button
             type="button"
             onClick={() => handleModeChange("board")}
             className={cn(
               "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm transition-all cursor-pointer select-none",
               mode === "board"
-                ? "bg-[#1a1a1e] text-white shadow-[0_2px_12px_rgba(0,0,0,0.5)] border border-white/[0.12] font-semibold duration-200"
-                : "text-muted-foreground/70 hover:text-white font-medium transition-colors"
+                ? "bg-card text-foreground shadow-sm border border-border/70 font-semibold duration-200"
+                : "text-muted-foreground hover:text-foreground font-medium transition-colors"
             )}
           >
             <UtensilsCrossed className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>Kitchen Board</span>
+            {neededItemsCount > 0 && (
+              <span
+                className={cn(
+                  "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full leading-none transition-colors",
+                  mode === "board"
+                    ? "bg-secondary text-secondary-foreground border border-border"
+                    : "bg-muted text-muted-foreground border border-border/70"
+                )}
+              >
+                {neededItemsCount}
+              </span>
+            )}
           </button>
 
           <button
@@ -402,22 +439,24 @@ export function KitchenSpaceView({
             className={cn(
               "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm transition-all cursor-pointer select-none",
               mode === "supermarket"
-                ? "bg-[#1a1a1e] text-white shadow-[0_2px_12px_rgba(0,0,0,0.5)] border border-white/[0.12] font-semibold duration-200"
-                : "text-muted-foreground/70 hover:text-white font-medium transition-colors"
+                ? "bg-card text-foreground shadow-sm border border-border/70 font-semibold duration-200"
+                : "text-muted-foreground hover:text-foreground font-medium transition-colors"
             )}
           >
             <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>Supermarket Run</span>
-            {neededItemsCount > 0 && (
+            {(activeCartCount > 0 || isCartBadgePulsing) && (
               <span
                 className={cn(
-                  "text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full leading-none transition-colors",
-                  mode === "supermarket"
-                    ? "bg-emerald-400 text-black font-extrabold"
-                    : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                  "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full leading-none transition-all duration-300 transform",
+                  isCartBadgePulsing
+                    ? "scale-125 bg-primary text-primary-foreground shadow-md ring-2 ring-primary/40 animate-pulse duration-150"
+                    : mode === "supermarket"
+                      ? "bg-primary text-primary-foreground font-extrabold"
+                      : "bg-primary/15 text-primary border border-primary/20"
                 )}
               >
-                {neededItemsCount}
+                {activeCartCount}
               </span>
             )}
           </button>
@@ -428,7 +467,7 @@ export function KitchenSpaceView({
           <main className="space-y-6 sm:space-y-8 animate-in fade-in-50 duration-200">
             {/* HIGH-END INPUT AFFORDANCE (THE COMMAND BAR) */}
             <form onSubmit={handleCommandSubmit} className="relative w-full">
-              <div className="relative w-full h-12 sm:h-13 bg-[#121215] border border-white/10 rounded-2xl flex items-center px-3.5 sm:px-4 focus-within:border-emerald-500/40 focus-within:ring-2 focus-within:ring-emerald-500/10 shadow-lg transition-all">
+              <div className="relative w-full h-12 sm:h-13 bg-card border border-border/70 rounded-2xl flex items-center px-3.5 sm:px-4 focus-within:border-accent-brand/40 focus-within:ring-2 focus-within:ring-accent-brand/10 shadow-sm transition-all">
                 <Plus className="w-4 h-4 text-muted-foreground/50 shrink-0 mr-2.5 sm:mr-3" />
                 <input
                   type="text"
@@ -441,15 +480,15 @@ export function KitchenSpaceView({
 
                 {/* Right Actions: Micro segmented pill for [ One-off | Staple ] + Minimalist circular Enter button */}
                 <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                  <div className="flex items-center gap-0.5 bg-white/[0.04] border border-white/[0.08] p-0.5 rounded-lg shrink-0">
+                  <div className="flex items-center gap-0.5 bg-secondary/60 border border-border/70 p-0.5 rounded-lg shrink-0">
                     <button
                       type="button"
                       onClick={() => setCommandType("one-off")}
                       className={cn(
                         "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md font-mono text-[10px] sm:text-xs font-semibold transition-all cursor-pointer select-none",
                         commandType === "one-off"
-                          ? "bg-white/[0.12] text-white shadow-2xs"
-                          : "text-muted-foreground/60 hover:text-white"
+                          ? "bg-background text-foreground shadow-2xs border border-border/60"
+                          : "text-muted-foreground hover:text-foreground"
                       )}
                     >
                       One-off
@@ -460,8 +499,8 @@ export function KitchenSpaceView({
                       className={cn(
                         "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md font-mono text-[10px] sm:text-xs font-semibold transition-all cursor-pointer select-none",
                         commandType === "staple"
-                          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-2xs"
-                          : "text-muted-foreground/60 hover:text-white"
+                          ? "bg-accent-brand/15 text-accent-brand border border-accent-brand/25 shadow-2xs"
+                          : "text-muted-foreground hover:text-foreground"
                       )}
                     >
                       Staple
@@ -474,8 +513,8 @@ export function KitchenSpaceView({
                     className={cn(
                       "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 transition-all cursor-pointer",
                       commandInput.trim()
-                        ? "bg-emerald-500 text-black shadow-md shadow-emerald-500/20 active:scale-95"
-                        : "bg-white/[0.04] text-muted-foreground/30 cursor-not-allowed border border-white/[0.06]"
+                        ? "bg-accent-brand text-accent-foreground shadow-md shadow-accent-brand/20 active:scale-95"
+                        : "bg-muted text-muted-foreground/30 cursor-not-allowed border border-border/50"
                     )}
                     title="Add item"
                     aria-label="Add item"
@@ -503,7 +542,7 @@ export function KitchenSpaceView({
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
                       </span>
-                      <h3 className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
+                      <h3 className="text-sm sm:text-base font-bold text-foreground tracking-tight truncate">
                         {neededItemsCount} {neededItemsCount === 1 ? "item" : "items"} needed for next run
                       </h3>
                     </div>
@@ -529,7 +568,7 @@ export function KitchenSpaceView({
                   <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">
+                  <h3 className="text-sm sm:text-base font-bold text-foreground tracking-tight">
                     Kitchen is fully stocked
                   </h3>
                   <p className="text-xs sm:text-sm text-muted-foreground max-w-sm mx-auto">
@@ -547,6 +586,7 @@ export function KitchenSpaceView({
               isAdmin={isAdmin}
               spaceType={initialKitchen.space_type}
               hideInput={true}
+              onAddToCart={handleItemMovedToCart}
               onItemMovedToCart={handleItemMovedToCart}
               onItemReturnedToList={handleItemReturnedToList}
               onItemRemoved={handleItemRemoved}
@@ -567,13 +607,13 @@ export function KitchenSpaceView({
 
             {/* BALANCES & REFUNDS MINIMALIST DOCKED BAR */}
             <footer className="mt-8">
-              <div className="bg-[#121215] border border-white/10 rounded-2xl px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+              <div className="bg-card border border-border/70 rounded-2xl px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
                 <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] text-muted-foreground flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-secondary/60 border border-border/70 text-muted-foreground flex items-center justify-center shrink-0">
                     <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs sm:text-sm font-semibold text-white truncate">
+                    <p className="text-xs sm:text-sm font-semibold text-foreground truncate">
                       {pendingRefundsCount > 0
                         ? `${pendingRefundsCount} pending ${pendingRefundsCount === 1 ? "expense" : "expenses"} to settle`
                         : "Household balances up to date"}
@@ -589,7 +629,7 @@ export function KitchenSpaceView({
                   variant="outline"
                   size="sm"
                   onClick={() => setIsLedgerOpen(true)}
-                  className="h-8 px-3.5 rounded-xl text-xs sm:text-sm font-medium border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-white shrink-0 cursor-pointer self-start sm:self-auto"
+                  className="h-8 px-3.5 rounded-xl text-xs sm:text-sm font-medium border-border/70 bg-secondary/50 hover:bg-secondary text-foreground shrink-0 cursor-pointer self-start sm:self-auto"
                 >
                   <span>Settle →</span>
                 </Button>
@@ -605,7 +645,7 @@ export function KitchenSpaceView({
               <button
                 type="button"
                 onClick={() => handleModeChange("board")}
-                className="inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-white transition-colors cursor-pointer py-1"
+                className="inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors cursor-pointer py-1"
               >
                 <span>← Back to Kitchen Board</span>
               </button>
@@ -626,9 +666,9 @@ export function KitchenSpaceView({
 
       {/* OVERLAY 1: Roommates Slide-Over / Modal */}
       <Dialog open={isRoommatesOpen} onOpenChange={setIsRoommatesOpen}>
-        <DialogContent className="max-w-md w-full bg-[#121215] border-white/[0.1] p-6 rounded-3xl shadow-2xl">
+        <DialogContent className="max-w-md w-full bg-card border-border/80 text-card-foreground p-6 rounded-3xl shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+            <DialogTitle className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
               <Users className="w-5 h-5 text-primary" />
               <span>{initialKitchen.name} Roommates</span>
             </DialogTitle>
@@ -655,9 +695,9 @@ export function KitchenSpaceView({
 
       {/* OVERLAY 2: Expense & Refunds Ledger Modal */}
       <Dialog open={isLedgerOpen} onOpenChange={setIsLedgerOpen}>
-        <DialogContent className="max-w-2xl w-full bg-[#121215] border-white/[0.1] p-6 rounded-3xl shadow-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl w-full bg-card border-border/80 text-card-foreground p-6 rounded-3xl shadow-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+            <DialogTitle className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
               <Receipt className="w-5 h-5 text-primary" />
               <span>Expense &amp; Refund Ledger</span>
             </DialogTitle>
@@ -682,6 +722,18 @@ export function KitchenSpaceView({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* OVERLAY 3: Space Pulse & Analytics Modal */}
+      <SpacePulseModal
+        isOpen={isStatsFlyoutOpen}
+        onOpenChange={setIsStatsFlyoutOpen}
+        kitchenId={initialKitchen.id}
+        kitchenName={initialKitchen.name}
+        currentUserId={currentUserId}
+        initialStats={initialPulseStats}
+        pantryItems={localPantryItems}
+        myCheckouts={myCheckouts}
+      />
     </div>
   );
 }

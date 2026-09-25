@@ -45,11 +45,11 @@ export function UserDropdown({ user, className }: UserDropdownProps) {
         <Button
           variant="secondary"
           className={cn(
-            "h-9 flex items-center gap-2 rounded-xl border border-border/70 dark:border-white/[0.08] px-2.5 sm:px-3 text-xs font-medium shadow-xs hover:border-border hover:bg-secondary/80 transition-all",
+            "h-9 flex items-center gap-2 rounded-xl border border-border/70 px-2.5 sm:px-3 text-xs font-medium shadow-xs hover:border-border hover:bg-secondary/80 transition-all",
             className
           )}
         >
-          <Avatar className="h-5 w-5 border border-border/60 dark:border-white/[0.1] shadow-2xs">
+          <Avatar className="h-5 w-5 border border-border/60 shadow-2xs">
             <AvatarFallback className="bg-secondary-foreground/10 text-[10px] text-foreground font-bold flex items-center justify-center">
               {initial}
             </AvatarFallback>
