@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 export function ThemeToggle({
   className,
@@ -28,10 +29,13 @@ export function ThemeToggle({
       <Button
         variant="ghost"
         size="icon"
-        className={`h-9 w-9 rounded-xl border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors ${className || ""}`}
+        className={cn(
+          "h-7 w-7 rounded-lg border-0 md:h-9 md:w-9 md:rounded-xl md:border md:border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors",
+          className
+        )}
         aria-label="Toggle theme"
       >
-        <Sun className="h-4 w-4" />
+        <Sun className="h-3.5 w-3.5 md:h-4 md:w-4" />
       </Button>
     );
   }
@@ -42,11 +46,14 @@ export function ThemeToggle({
         <Button
           variant="ghost"
           size="icon"
-          className={`h-9 w-9 rounded-xl border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors ${className || ""}`}
+          className={cn(
+            "h-7 w-7 rounded-lg border-0 md:h-9 md:w-9 md:rounded-xl md:border md:border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors",
+            className
+          )}
           aria-label="Toggle theme"
         >
-          <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <Sun className="h-3.5 w-3.5 md:h-4 md:w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-3.5 w-3.5 md:h-4 md:w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
