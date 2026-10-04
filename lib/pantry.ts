@@ -71,8 +71,8 @@ export async function setPantryItemStock(
 
       if (existingRows.length === 0) {
         await client.query(
-          `INSERT INTO shopping_list_items (kitchen_id, pantry_item_id, name, is_purchased, created_at)
-           VALUES ($1, $2, $3, FALSE, NOW())`,
+          `INSERT INTO shopping_list_items (kitchen_id, pantry_item_id, name, is_purchased, is_in_cart, created_at)
+           VALUES ($1, $2, $3, FALSE, FALSE, NOW())`,
           [kitchenId, itemId, item.name]
         );
       }
@@ -183,7 +183,7 @@ export async function getShoppingListItems(kitchenId: string): Promise<ShoppingL
       sli.item_price,
       sli.currency,
       sli.is_purchased,
-      COALESCE(sli.is_in_cart, FALSE) AS is_in_cart,
+      sli.is_in_cart,
       sli.purchased_by,
       sli.is_guest_staged,
       sli.checkout_id,
@@ -203,7 +203,7 @@ export async function getShoppingListItems(kitchenId: string): Promise<ShoppingL
           ORDER BY sub.created_at DESC LIMIT 20
         )
       )
-    ORDER BY (COALESCE(sli.is_in_cart, FALSE) OR sli.is_purchased OR sli.is_guest_staged) ASC, sli.created_at ASC
+    ORDER BY (sli.is_in_cart OR sli.is_purchased OR sli.is_guest_staged) ASC, sli.created_at ASC
   `;
   const { rows } = await pool.query<ShoppingListItem>(sql, [kitchenId]);
   return rows;
@@ -588,6 +588,69 @@ export async function togglePurchased(
     return await putItemInCart(kitchenId, itemId, userId);
   } else {
     return await returnItemToShoppingList(kitchenId, itemId, userId);
+  }
+}
+
+/**
+ * Duplicates a shopping item so another roommate can also purchase / add it to their basket.
+ */
+export async function duplicateShoppingListItem(
+  kitchenId: string,
+  itemId: string,
+  userId: string,
+  addToCart: boolean = true
+): Promise<ShoppingListItem> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const { rows: sourceRows } = await client.query<ShoppingListItem>(
+      `SELECT id, pantry_item_id, name, item_price, currency
+       FROM shopping_list_items
+       WHERE id = $1 AND kitchen_id = $2`,
+      [itemId, kitchenId]
+    );
+
+    if (sourceRows.length === 0) {
+      throw new Error("Item to duplicate not found.");
+    }
+
+    const source = sourceRows[0];
+
+    const { rows } = await client.query<ShoppingListItem>(
+      `INSERT INTO shopping_list_items (kitchen_id, pantry_item_id, name, item_price, currency, is_purchased, is_in_cart, purchased_by, is_guest_staged, created_at)
+       VALUES ($1, $2, $3, $4, $5, FALSE, $6, $7, FALSE, NOW())
+       RETURNING id, kitchen_id, pantry_item_id, name, item_price, currency, is_purchased, is_in_cart, purchased_by, is_guest_staged, checkout_id, created_at`,
+      [
+        kitchenId,
+        source.pantry_item_id,
+        source.name,
+        source.item_price,
+        source.currency,
+        addToCart,
+        addToCart ? userId : null,
+      ]
+    );
+
+    let purchasedByName: string | null = null;
+    if (addToCart) {
+      const userRes = await client.query<{ name: string }>(
+        `SELECT COALESCE(km.kitchen_display_name, u.username) AS name
+         FROM users u
+         LEFT JOIN kitchen_members km ON km.kitchen_id = $1 AND km.user_id = u.id
+         WHERE u.id = $2`,
+        [kitchenId, userId]
+      );
+      purchasedByName = userRes.rows[0]?.name ?? null;
+    }
+
+    await client.query("COMMIT");
+    return { ...rows[0], purchased_by_name: purchasedByName };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
   }
 }
 

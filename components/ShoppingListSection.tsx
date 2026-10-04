@@ -7,6 +7,7 @@ import {
   moveToCartAction,
   returnToShoppingListAction,
   removeShoppingListItemAction,
+  duplicateShoppingListItemAction,
 } from "@/app/actions/pantry";
 import type { ShoppingListItem, KitchenSpaceType } from "@/types";
 import { cn } from "@/lib/utils";
@@ -170,11 +171,38 @@ export function ShoppingListSection({
     });
   };
 
+  const handleDuplicateItem = (item: ShoppingListItem) => {
+    const tempId = `temp-${Date.now()}`;
+    const duplicated: ShoppingListItem = {
+      ...item,
+      id: tempId,
+      is_in_cart: true,
+      is_purchased: false,
+      purchased_by: currentUserId || null,
+      is_guest_staged: false,
+    };
+    onItemAdded?.(duplicated);
+    toast.success(`Added duplicate "${item.name}" to your basket`);
+
+    startTransition(async () => {
+      try {
+        const newItem = await duplicateShoppingListItemAction(kitchenId, item.id, true);
+        onItemAdded?.(newItem);
+      } catch (err: any) {
+        toast.error(err.message || "Failed to duplicate item.");
+      }
+    });
+  };
+
   const openItems = optimisticListItems.filter(
     (i) => !i.is_in_cart && !i.is_purchased && !i.is_guest_staged
   );
 
-  if (openItems.length === 0 && hideInput) {
+  const inCartItems = optimisticListItems.filter(
+    (i) => (i.is_in_cart || i.is_guest_staged) && !i.checkout_id
+  );
+
+  if (openItems.length === 0 && inCartItems.length === 0 && hideInput) {
     return null;
   }
 
@@ -294,6 +322,79 @@ export function ShoppingListSection({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* In-Cart / Active Restock Section */}
+      {inCartItems.length > 0 && (
+        <div className="space-y-1.5 pt-3">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_6px_rgba(6,182,212,0.5)]" />
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
+                In Cart · Active Restock
+              </span>
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/25">
+                {inCartItems.length}
+              </span>
+            </div>
+            <span className="text-[11px] text-muted-foreground/70 hidden sm:inline">
+              Currently staged by household members in store
+            </span>
+          </div>
+
+          <div className="space-y-1.5">
+            {inCartItems.map((item) => {
+              const isMine = item.purchased_by === currentUserId && !item.is_guest_staged;
+              const stagedLabel = isMine
+                ? "In your cart"
+                : item.is_guest_staged
+                ? "In Cart · @guest"
+                : `In Cart · @${item.purchased_by_name || "roommate"}`;
+
+              return (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between py-2.5 px-4 rounded-2xl bg-cyan-500/[0.04] dark:bg-cyan-500/[0.06] border border-cyan-500/25 select-none gap-3"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5 min-w-0 flex-1">
+                    <span className="font-semibold text-sm text-foreground truncate">
+                      {item.name}
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-800 dark:text-cyan-200 border border-cyan-500/30 shrink-0 self-start sm:self-auto"
+                    >
+                      {stagedLabel}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isMine ? (
+                      <button
+                        type="button"
+                        onClick={() => onViewCart?.()}
+                        className="h-8 px-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <CartIcon className="w-3.5 h-3.5" />
+                        <span>View Cart</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleDuplicateItem(item)}
+                        className="h-8 px-3 rounded-xl bg-secondary/80 hover:bg-secondary text-foreground border border-border/80 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95"
+                        title="Add another to your cart"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-primary" />
+                        <span>+ Add Duplicate</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

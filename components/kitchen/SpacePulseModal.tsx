@@ -213,7 +213,7 @@ export function SpacePulseModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl sm:w-full p-0 gap-0">
+      <DialogContent onDismiss={() => onOpenChange(false)} className="sm:max-w-3xl sm:w-full p-0 gap-0">
         {/* Modal Header */}
         <DialogHeader className="p-5 sm:p-6 pb-3 border-b border-border/80 pr-12 flex flex-col space-y-1.5 shrink-0 bg-muted/20">
           <div className="flex items-center gap-2">

@@ -24,6 +24,7 @@ import {
   stageGuestShoppingItem as stageGuestShoppingItemDb,
   unstageGuestItem as unstageGuestItemDb,
   quickAddStapleToCart,
+  duplicateShoppingListItem,
 } from "@/lib/pantry";
 import type { PantryItem, ShoppingListItem } from "@/types";
 
@@ -115,6 +116,17 @@ export async function quickAddStapleToCartAction(kitchenId: string, pantryItemId
 export async function returnToShoppingListAction(kitchenId: string, itemId: string) {
   const userId = await requireMembership(kitchenId);
   const item = await returnItemToShoppingList(kitchenId, itemId, userId);
+  revalidateKitchen(kitchenId);
+  return item;
+}
+
+export async function duplicateShoppingListItemAction(
+  kitchenId: string,
+  itemId: string,
+  addToCart: boolean = true
+) {
+  const userId = await requireMembership(kitchenId);
+  const item = await duplicateShoppingListItem(kitchenId, itemId, userId, addToCart);
   revalidateKitchen(kitchenId);
   return item;
 }

@@ -24,6 +24,8 @@ import { PantrySection } from "@/components/PantrySection";
 import { ShoppingListSection } from "@/components/ShoppingListSection";
 import { ActiveCartSection } from "@/components/ActiveCartSection";
 import { RoommatesView } from "@/components/kitchen/RoommatesView";
+import { RoommatesModal } from "@/components/kitchen/RoommatesModal";
+import { ExpenseLedgerModal } from "@/components/kitchen/ExpenseLedgerModal";
 import { SpacePulseModal } from "@/components/kitchen/SpacePulseModal";
 import { AdminRefundsSection } from "@/components/AdminRefundsSection";
 import { MyPurchasesSection } from "@/components/MyPurchasesSection";
@@ -690,6 +692,7 @@ export function KitchenSpaceView({
               onItemMovedToCart={handleItemMovedToCart}
               onItemReturnedToList={handleItemReturnedToList}
               onItemRemoved={handleItemRemoved}
+              onItemAdded={(item) => setLocalShoppingListItems((prev) => [item, ...prev])}
               onViewCart={() => handleModeChange("supermarket")}
             />
 
@@ -697,6 +700,8 @@ export function KitchenSpaceView({
             <PantrySection
               kitchenId={initialKitchen.id}
               items={localPantryItems}
+              shoppingListItems={localShoppingListItems}
+              currentUserId={currentUserId}
               hideInput={true}
               onItemEmptied={handlePantryItemEmptied}
               onItemRestocked={handlePantryItemRestocked}
@@ -772,85 +777,30 @@ export function KitchenSpaceView({
       </div>
 
       {/* OVERLAY 1: Roommates Slide-Over / Modal */}
-      <Dialog open={isRoommatesOpen} onOpenChange={setIsRoommatesOpen}>
-        <DialogContent className="sm:max-w-md w-full p-0 gap-0 overflow-hidden flex flex-col">
-          <DialogHeader className="p-5 sm:p-6 pb-3 border-b border-border/60 pr-12 text-left">
-            <DialogTitle className="text-lg sm:text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" />
-              <span>{initialKitchen.name} Roommates</span>
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Manage household members and active invite codes.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-y-auto px-5 pb-8 pt-3 overscroll-contain">
-            <RoommatesView
-              kitchenId={initialKitchen.id}
-              kitchenName={initialKitchen.name}
-              members={localMembers}
-              currentUserId={currentUserId}
-              isAdmin={isAdmin}
-              spaceType={initialKitchen.space_type}
-              baseUrl={baseUrl}
-              onMemberAdded={(m) => setLocalMembers((prev) => [m, ...prev])}
-              onMemberRemoved={(id) => setLocalMembers((prev) => prev.filter((m) => m.id !== id))}
-            />
-          </div>
-
-          <div className="sm:hidden p-3 border-t border-border/60 bg-muted/20 shrink-0">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setIsRoommatesOpen(false)}
-              className="w-full h-10 rounded-xl text-xs font-semibold"
-            >
-              Close
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <RoommatesModal
+        isOpen={isRoommatesOpen}
+        onOpenChange={setIsRoommatesOpen}
+        kitchenId={initialKitchen.id}
+        kitchenName={initialKitchen.name}
+        members={localMembers}
+        currentUserId={currentUserId}
+        isAdmin={isAdmin}
+        spaceType={initialKitchen.space_type}
+        baseUrl={baseUrl}
+        onMemberAdded={(m) => setLocalMembers((prev) => [m, ...prev])}
+        onMemberRemoved={(id) => setLocalMembers((prev) => prev.filter((m) => m.id !== id))}
+      />
 
       {/* OVERLAY 2: Expense & Refunds Ledger Modal */}
-      <Dialog open={isLedgerOpen} onOpenChange={setIsLedgerOpen}>
-        <DialogContent className="sm:max-w-2xl w-full p-0 gap-0 overflow-hidden flex flex-col">
-          <DialogHeader className="p-5 sm:p-6 pb-3 border-b border-border/60 pr-12 text-left">
-            <DialogTitle className="text-lg sm:text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
-              <Receipt className="w-5 h-5 text-primary" />
-              <span>Expense &amp; Refund Ledger</span>
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Shared household balances, receipt checkouts, and refund claims.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-y-auto px-5 pb-8 pt-4 space-y-6 overscroll-contain">
-            {isAdmin && (
-              <AdminRefundsSection
-                kitchenId={initialKitchen.id}
-                spaceType={initialKitchen.space_type}
-                members={localMembers}
-              />
-            )}
-
-            <MyPurchasesSection
-              kitchenId={initialKitchen.id}
-              checkouts={myCheckouts}
-            />
-          </div>
-
-          <div className="sm:hidden p-3 border-t border-border/60 bg-muted/20 shrink-0">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setIsLedgerOpen(false)}
-              className="w-full h-10 rounded-xl text-xs font-semibold"
-            >
-              Close
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ExpenseLedgerModal
+        isOpen={isLedgerOpen}
+        onOpenChange={setIsLedgerOpen}
+        kitchenId={initialKitchen.id}
+        isAdmin={isAdmin}
+        spaceType={initialKitchen.space_type}
+        members={localMembers}
+        checkouts={myCheckouts}
+      />
 
       {/* OVERLAY 3: Space Pulse & Analytics Modal */}
       <SpacePulseModal

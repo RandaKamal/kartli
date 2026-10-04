@@ -8,6 +8,7 @@ import {
   completeItemPurchaseAction,
   moveToCartAction,
   moveAllNeededToCartAction,
+  duplicateShoppingListItemAction,
 } from "@/app/actions/pantry";
 import type { ShoppingListItem, KitchenSpaceType, PantryItem } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
@@ -216,6 +217,32 @@ export function ActiveCartSection({
     });
   };
 
+  // Duplicate an item staged by another roommate into current user's basket
+  const handleDuplicateItem = (item: ShoppingListItem) => {
+    const tempId = `temp-${Date.now()}`;
+    const duplicated: ShoppingListItem = {
+      ...item,
+      id: tempId,
+      is_in_cart: true,
+      is_purchased: false,
+      purchased_by: currentUserId,
+      is_guest_staged: false,
+    };
+    setAllItems((prev) => [duplicated, ...prev]);
+    onItemMovedToCart?.(duplicated);
+    toast.success(`Added duplicate "${item.name}" to your basket`);
+
+    startTransition(async () => {
+      try {
+        const newItem = await duplicateShoppingListItemAction(kitchenId, item.id, true);
+        setAllItems((prev) => prev.map((i) => (i.id === tempId ? newItem : i)));
+      } catch (err: any) {
+        setAllItems(items);
+        toast.error(err.message || "Failed to duplicate item.");
+      }
+    });
+  };
+
   // Clear all items in user's basket
   const handleClearCart = () => {
     const count = myCartItems.length;
@@ -322,15 +349,21 @@ export function ActiveCartSection({
                   const isNeeded = neededItems.some((i) => i.pantry_item_id === staple.id);
 
                   if (isInMyCart) {
+                    const cartItem = myCartItems.find((i) => i.pantry_item_id === staple.id);
                     return (
-                      <span
+                      <button
                         key={staple.id}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shadow-2xs select-none"
+                        type="button"
+                        onClick={() => cartItem && handleReturnToList(cartItem)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shadow-2xs select-none cursor-pointer transition-all group"
+                        title="Tap to remove from basket and return to queue"
                       >
-                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                        <span className="line-through opacity-85">{staple.name}</span>
-                        <span className="text-[10px] font-mono opacity-70 ml-0.5">In Basket</span>
-                      </span>
+                        <Check className="w-3.5 h-3.5 stroke-[2.5] group-hover:hidden" />
+                        <RotateCcw className="w-3.5 h-3.5 hidden group-hover:inline stroke-[2.5]" />
+                        <span className="line-through group-hover:no-underline">{staple.name}</span>
+                        <span className="text-[10px] font-mono opacity-70 ml-0.5 group-hover:hidden">In Basket</span>
+                        <span className="text-[10px] font-mono opacity-70 ml-0.5 hidden group-hover:inline">Remove</span>
+                      </button>
                     );
                   }
 
@@ -699,6 +732,18 @@ export function ActiveCartSection({
                           <span>In {attribution}&apos;s Cart</span>
                         </Badge>
                       )}
+
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDuplicateItem(item)}
+                        className="h-7 px-2 text-[11px] font-semibold text-primary hover:bg-primary/10 rounded-lg cursor-pointer"
+                        title="Add duplicate to my basket"
+                      >
+                        <Plus className="w-3 h-3 mr-0.5" />
+                        <span>Duplicate</span>
+                      </Button>
                     </div>
                   </div>
                 );
