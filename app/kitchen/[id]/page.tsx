@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import {
   getKitchenById,
   getUserMembership,
+  getKitchenMembersWithUsers,
 } from "@/lib/kitchen";
 import { getPantryItems, getShoppingListItems } from "@/lib/pantry";
 import { getKitchenStats } from "@/lib/actions/stats";
@@ -30,7 +31,7 @@ export default async function KitchenPage({
   const initialTab = resolvedSearchParams?.tab || "kitchen";
 
   // Concurrent execution of all primary data queries via Promise.all
-  const [membership, kitchen, pantryItems, shoppingListItems, initialPulseStats] = await Promise.all([
+  const [membership, kitchen, pantryItems, shoppingListItems, initialPulseStats, members] = await Promise.all([
     getUserMembership(id, session.user.id),
     getKitchenById(id),
     getPantryItems(id),
@@ -38,6 +39,7 @@ export default async function KitchenPage({
     initialTab === "pulse"
       ? getKitchenStats(id, session.user.id).catch(() => undefined)
       : Promise.resolve(undefined),
+    getKitchenMembersWithUsers(id),
   ]);
 
   if (!membership) {
@@ -58,6 +60,7 @@ export default async function KitchenPage({
     <KitchenSpaceView
       kitchen={kitchen}
       membership={membership}
+      members={members}
       pantryItems={pantryItems}
       shoppingListItems={shoppingListItems}
       initialPulseStats={initialPulseStats}

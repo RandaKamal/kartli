@@ -15,6 +15,7 @@ import {
   Check,
   UtensilsCrossed,
   DollarSign,
+  ExternalLink,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -53,26 +54,14 @@ const CULINARY_THEMES: CulinaryTheme[] = [
   {
     id: "black-truffle",
     name: "Black Truffle",
-    subtitle: "Minimalist High-Contrast Luxury",
-    colors: ["#f4f4f5", "#34d399", "#fbbf24"],
-  },
-  {
-    id: "campari-bitter",
-    name: "Campari Bitter",
-    subtitle: "Milanese Aperitivo & Blood Orange",
-    colors: ["#bf1b26", "#f65f1d", "#f0aa38"],
+    subtitle: "Minimalist High-Contrast Luxury & Emerald",
+    colors: ["#34d399", "#10b981", "#22d3ee"],
   },
   {
     id: "velvet-fig",
     name: "Velvet Fig",
     subtitle: "Warm French Bistro & Port Wine",
-    colors: ["#793994", "#e0a629", "#ab54ab"],
-  },
-  {
-    id: "matcha-pistachio",
-    name: "Matcha Pistachio",
-    subtitle: "Ceremonial Tea & Yuzu",
-    colors: ["#367856", "#ecc41e", "#569085"],
+    colors: ["#9e55b6", "#34d399", "#c084fc"],
   },
 ];
 
@@ -115,30 +104,18 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
         localStorage.getItem("culinary-theme") ||
         "black-truffle";
       const normalized =
-        active === "truffle" || active === "black_truffle"
-          ? "black-truffle"
-          : active === "saffron" || active === "olive"
-          ? "campari-bitter"
-          : active === "plum"
+        active === "plum" || active === "velvet-fig"
           ? "velvet-fig"
-          : active === "nordic"
-          ? "matcha-pistachio"
-          : active;
-      setSavedTheme(normalized || "black-truffle");
+          : "black-truffle";
+      setSavedTheme(normalized);
     }
   }, [userTheme]);
 
   const handleCulinaryThemeChange = (themeKey: string) => {
     const normalizedKey =
-      themeKey === "truffle" || themeKey === "black_truffle"
-        ? "black-truffle"
-        : themeKey === "saffron" || themeKey === "olive"
-        ? "campari-bitter"
-        : themeKey === "plum"
+      themeKey === "plum" || themeKey === "velvet-fig"
         ? "velvet-fig"
-        : themeKey === "nordic"
-        ? "matcha-pistachio"
-        : themeKey;
+        : "black-truffle";
     setSavedTheme(normalizedKey);
     if (typeof document !== "undefined") {
       document.documentElement.dataset.theme = normalizedKey;
@@ -190,7 +167,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
         {/* Tab 1: Account Info */}
         <TabsContent value="account" className="space-y-6 animate-in fade-in-50">
-          <Card className="border border-border/80 bg-card rounded-3xl p-6 sm:p-8 space-y-6">
+          <Card className="p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16 border border-border/80">
@@ -257,227 +234,222 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
         {/* Tab 2: Preferences */}
         <TabsContent value="preferences" className="space-y-6 animate-in fade-in-50">
-          <Card className="border border-border/80 bg-card rounded-3xl p-6 sm:p-8 space-y-6">
-            {/* 1. Appearance / Light & Dark Mode + Culinary Color Themes */}
-            <div className="space-y-6">
-              <div className="space-y-3">
-                <div className="space-y-0.5">
-                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                    <Palette className="w-5 h-5 text-accent-primary" />
-                    <span>Light &amp; Dark Mode</span>
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Choose your preferred contrast mode (Light, Dark, or System default).
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setTheme("light")}
-                    className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
-                      theme === "light"
-                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                        : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    <Sun className="w-4 h-4" />
-                    <span>Light</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTheme("dark")}
-                    className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
-                      theme === "dark"
-                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                        : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    <Moon className="w-4 h-4" />
-                    <span>Dark</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTheme("system")}
-                    className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
-                      theme === "system"
-                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                        : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    <Laptop className="w-4 h-4" />
-                    <span>System</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Culinary Color Themes Card Grid */}
-              <div className="space-y-3">
-                <div className="space-y-0.5">
-                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                    <UtensilsCrossed className="w-5 h-5 text-accent-primary" />
-                    <span>Culinary Color Themes</span>
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Choose an artisanal food-inspired palette for your personal kartli workspace.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  {CULINARY_THEMES.map((theme) => {
-                    const isSelected =
-                      theme.id === currentTheme ||
-                      (theme.id === "black-truffle" && (currentTheme === "truffle" || currentTheme === "black_truffle" || !currentTheme)) ||
-                      (theme.id === "campari-bitter" && (currentTheme === "saffron" || currentTheme === "olive")) ||
-                      (theme.id === "velvet-fig" && currentTheme === "plum") ||
-                      (theme.id === "matcha-pistachio" && currentTheme === "nordic");
-                    return (
-                      <button
-                        key={theme.id}
-                        type="button"
-                        onClick={() => handleCulinaryThemeChange(theme.id)}
-                        className={`flex flex-col justify-between p-4 rounded-xl border transition-all h-[110px] text-left cursor-pointer ${
-                          isSelected
-                            ? "border-accent-primary bg-accent-primary/5 ring-2 ring-accent-primary/20 shadow-xs"
-                            : "bg-card border-border hover:border-primary/60 hover:bg-muted/30"
-                        }`}
-                      >
-                        {/* Top Row */}
-                        <div className="flex items-start justify-between gap-2 w-full">
-                          <div>
-                            <div className="text-sm font-semibold text-foreground">
-                              {theme.name}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                              {theme.subtitle}
-                            </div>
-                          </div>
-
-                          {isSelected ? (
-                            <div className="w-5 h-5 rounded-full bg-accent-primary text-primary-foreground flex items-center justify-center shrink-0">
-                              <Check className="w-3 h-3 stroke-[3]" />
-                            </div>
-                          ) : (
-                            <div className="w-5 h-5 rounded-full border border-border shrink-0" />
-                          )}
-                        </div>
-
-                        {/* Bottom Row */}
-                        <div className="flex items-center justify-between pt-2 border-t border-border/40 mt-auto w-full">
-                          <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
-                            Palette
-                          </span>
-                          <div className="flex items-center gap-1.5">
-                            {theme.colors.map((hex, idx) => (
-                              <span
-                                key={idx}
-                                className="w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/10 shrink-0 shadow-xs"
-                                style={{ backgroundColor: hex }}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            <Separator className="bg-border/60" />
-
-            {/* 2. Notification Preferences & Alerts */}
-            <div className="space-y-4">
-              <CardHeader className="p-0 space-y-1">
-                <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-                  <Bell className="w-5 h-5 text-muted-foreground" />
-                  <span>Notification Preferences</span>
-                </CardTitle>
-                <CardDescription className="text-xs text-muted-foreground">
-                  Configure when and how you receive grocery and kitchen status alerts.
-                </CardDescription>
-              </CardHeader>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="notify-pantry" className="text-sm font-medium text-foreground cursor-pointer">
-                      Pantry Restock Alerts
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Get notified when an item in your kitchen is marked as Empty.
-                    </p>
-                  </div>
-                  <Switch
-                    id="notify-pantry"
-                    checked={notifyPantry}
-                    onCheckedChange={setNotifyPantry}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="notify-shopping" className="text-sm font-medium text-foreground cursor-pointer">
-                      Shopping Cart &amp; Checkout Updates
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Receive confirmation when a roommate checks out groceries.
-                    </p>
-                  </div>
-                  <Switch
-                    id="notify-shopping"
-                    checked={notifyShopping}
-                    onCheckedChange={setNotifyShopping}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="notify-members" className="text-sm font-medium text-foreground cursor-pointer">
-                      Member Activity
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Alert when a new member claims an invite link in your kitchen.
-                    </p>
-                  </div>
-                  <Switch
-                    id="notify-members"
-                    checked={notifyMembers}
-                    onCheckedChange={setNotifyMembers}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Separator className="bg-border/60" />
-
-            {/* 3. Preferred Currency (Pinned at bottom as secondary setting) */}
+          {/* Card 1: Appearance & Culinary Themes */}
+          <Card className="p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-6">
             <div className="space-y-3">
               <div className="space-y-0.5">
                 <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-accent-primary" />
-                  <span>Preferred Currency</span>
+                  <Palette className="w-5 h-5 text-accent-primary" />
+                  <span>Light &amp; Dark Mode</span>
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Set your default currency for receipts, shopping cart items, and automated refund conversions.
+                  Choose your preferred contrast mode (Light, Dark, or System default).
                 </p>
               </div>
 
-              <div className="pt-1 max-w-sm">
-                <select
-                  id="preferred-currency-select"
-                  value={preferredCurrency}
-                  onChange={(e) => setPreferredCurrency(e.target.value)}
-                  className="w-full h-10 rounded-xl bg-card border border-border px-3 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-xs"
-                  aria-label="Preferred Currency"
+              <div className="grid grid-cols-3 gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setTheme("light")}
+                  className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
+                    theme === "light"
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
+                  }`}
                 >
-                  {SUPPORTED_CURRENCIES.map((c) => (
-                    <option key={c.code} value={c.code} className="bg-card text-foreground">
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
+                  <Sun className="w-4 h-4" />
+                  <span>Light</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTheme("dark")}
+                  className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
+                    theme === "dark"
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <Moon className="w-4 h-4" />
+                  <span>Dark</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTheme("system")}
+                  className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
+                    theme === "system"
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <Laptop className="w-4 h-4" />
+                  <span>System</span>
+                </button>
               </div>
+            </div>
+
+            <Separator className="bg-border/60" />
+
+            {/* Culinary Color Themes Card Grid */}
+            <div className="space-y-3">
+              <div className="space-y-0.5">
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <UtensilsCrossed className="w-5 h-5 text-accent-primary" />
+                  <span>Culinary Color Themes</span>
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Choose an artisanal food-inspired palette for your personal kartli workspace.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {CULINARY_THEMES.map((theme) => {
+                  const isSelected =
+                    theme.id ===
+                    (currentTheme === "plum" || currentTheme === "velvet-fig"
+                      ? "velvet-fig"
+                      : "black-truffle");
+                  return (
+                    <button
+                      key={theme.id}
+                      type="button"
+                      onClick={() => handleCulinaryThemeChange(theme.id)}
+                      className={`flex flex-col justify-between p-4 rounded-xl border transition-all h-[110px] text-left cursor-pointer ${
+                        isSelected
+                          ? "border-accent-primary bg-accent-primary/5 ring-2 ring-accent-primary/20 shadow-xs"
+                          : "bg-card border-border hover:border-primary/60 hover:bg-muted/30"
+                      }`}
+                    >
+                      {/* Top Row */}
+                      <div className="flex items-start justify-between gap-2 w-full">
+                        <div>
+                          <div className="text-sm font-semibold text-foreground">
+                            {theme.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {theme.subtitle}
+                          </div>
+                        </div>
+
+                        {isSelected ? (
+                          <div className="w-5 h-5 rounded-full bg-accent-primary text-primary-foreground flex items-center justify-center shrink-0">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          </div>
+                        ) : (
+                          <div className="w-5 h-5 rounded-full border border-border shrink-0" />
+                        )}
+                      </div>
+
+                      {/* Bottom Row */}
+                      <div className="flex items-center justify-between pt-2 border-t border-border/40 mt-auto w-full">
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+                          Palette
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {theme.colors.map((hex, idx) => (
+                            <span
+                              key={idx}
+                              className="w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/10 shrink-0 shadow-xs"
+                              style={{ backgroundColor: hex }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </Card>
+
+          {/* Card 2: Notification Preferences & Alerts */}
+          <Card className="p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-4">
+            <CardHeader className="p-0 space-y-1">
+              <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                <Bell className="w-5 h-5 text-muted-foreground" />
+                <span>Notification Preferences</span>
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Configure when and how you receive grocery and kitchen status alerts.
+              </CardDescription>
+            </CardHeader>
+
+            <div className="space-y-3 pt-1">
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
+                <div className="space-y-0.5">
+                  <Label htmlFor="notify-pantry" className="text-sm font-medium text-foreground cursor-pointer">
+                    Pantry Restock Alerts
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Get notified when an item in your kitchen is marked as Empty.
+                  </p>
+                </div>
+                <Switch
+                  id="notify-pantry"
+                  checked={notifyPantry}
+                  onCheckedChange={setNotifyPantry}
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
+                <div className="space-y-0.5">
+                  <Label htmlFor="notify-shopping" className="text-sm font-medium text-foreground cursor-pointer">
+                    Shopping Cart &amp; Checkout Updates
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Receive confirmation when a roommate checks out groceries.
+                  </p>
+                </div>
+                <Switch
+                  id="notify-shopping"
+                  checked={notifyShopping}
+                  onCheckedChange={setNotifyShopping}
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
+                <div className="space-y-0.5">
+                  <Label htmlFor="notify-members" className="text-sm font-medium text-foreground cursor-pointer">
+                    Member Activity
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Alert when a new member claims an invite link in your kitchen.
+                  </p>
+                </div>
+                <Switch
+                  id="notify-members"
+                  checked={notifyMembers}
+                  onCheckedChange={setNotifyMembers}
+                />
+              </div>
+            </div>
+          </Card>
+
+          {/* Card 3: Preferred Currency */}
+          <Card className="p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-4">
+            <div className="space-y-0.5">
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-accent-primary" />
+                <span>Preferred Currency</span>
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Set your default currency for receipts, shopping cart items, and automated refund conversions.
+              </p>
+            </div>
+
+            <div className="pt-1 max-w-sm">
+              <select
+                id="preferred-currency-select"
+                value={preferredCurrency}
+                onChange={(e) => setPreferredCurrency(e.target.value)}
+                className="w-full h-10 rounded-xl bg-card border border-border px-3 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-xs"
+                aria-label="Preferred Currency"
+              >
+                {SUPPORTED_CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code} className="bg-card text-foreground">
+                    {c.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="pt-3 flex justify-end">
@@ -490,7 +462,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
         {/* Tab 3: Security & Danger Zone */}
         <TabsContent value="security" className="space-y-6 animate-in fade-in-50">
-          <Card className="border-border bg-card rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+          <Card className="p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-6">
             <CardHeader className="p-0 space-y-1">
               <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
                 <Key className="w-5 h-5 text-muted-foreground" />
@@ -601,6 +573,40 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Understated GitHub Repository Link Card */}
+      <a
+        href="https://github.com/randakamal/kartli"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group flex items-center justify-between p-4 rounded-2xl border border-border/80 bg-card hover:bg-muted/40 hover:border-border transition-all duration-200 shadow-2xs cursor-pointer mt-6"
+      >
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-muted/60 border border-border/60 text-muted-foreground group-hover:text-foreground transition-colors">
+            <svg
+              className="w-4 h-4 fill-current"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+              />
+            </svg>
+          </div>
+          <div className="space-y-0.5">
+            <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5 font-mono">
+              Open Source culinary operating system
+            </span>
+            <p className="text-[11px] text-muted-foreground">
+              kartli is free, transparent, and community-driven on GitHub.
+            </p>
+          </div>
+        </div>
+
+        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+      </a>
     </div>
   );
 }

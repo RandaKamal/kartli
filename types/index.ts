@@ -161,6 +161,7 @@ export interface ShoppingListItem {
   item_price: number | null;
   currency?: string;
   is_purchased: boolean;
+  is_in_cart: boolean;
   purchased_by: string | null;
   purchased_by_name?: string | null;
   is_guest_staged: boolean;

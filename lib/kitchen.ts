@@ -482,6 +482,8 @@ export interface UserKitchenWithStats {
   memberCount: number;
   neededItemCount: number;
   sampleNeededItems: string[];
+  sampleMembers: string[];
+  pendingInviteToken?: string | null;
 }
 
 /**
@@ -514,7 +516,22 @@ export async function getUserKitchensWithStats(userId: string): Promise<UserKitc
           ORDER BY created_at ASC
           LIMIT 4
         ) sub
-      ), ARRAY[]::TEXT[]) AS sample_needed_items
+      ), ARRAY[]::TEXT[]) AS sample_needed_items,
+      COALESCE((
+        SELECT ARRAY_AGG(sub_m.kitchen_display_name)
+        FROM (
+          SELECT kitchen_display_name FROM kitchen_members
+          WHERE kitchen_id = k.id AND joined_at IS NOT NULL
+          ORDER BY CASE WHEN role = 'ADMIN' THEN 0 ELSE 1 END, created_at ASC
+          LIMIT 5
+        ) sub_m
+      ), ARRAY[]::TEXT[]) AS sample_members,
+      (
+        SELECT invite_token FROM kitchen_members km_inv
+        WHERE km_inv.kitchen_id = k.id AND km_inv.user_id IS NULL AND km_inv.joined_at IS NULL
+        ORDER BY km_inv.created_at ASC
+        LIMIT 1
+      ) AS pending_invite_token
     FROM kitchens k
     JOIN kitchen_members m ON k.id = m.kitchen_id
     WHERE m.user_id = $1 AND m.joined_at IS NOT NULL
@@ -544,6 +561,10 @@ export async function getUserKitchensWithStats(userId: string): Promise<UserKitc
     memberCount: Number(row.member_count) || 1,
     neededItemCount: Number(row.needed_count) || 0,
     sampleNeededItems: Array.isArray(row.sample_needed_items) ? row.sample_needed_items : [],
+    sampleMembers: Array.isArray(row.sample_members) && row.sample_members.length > 0
+      ? row.sample_members
+      : [row.m_kitchen_display_name],
+    pendingInviteToken: row.pending_invite_token || null,
   }));
 }
 
@@ -684,6 +705,62 @@ export async function leaveKitchen(
   const result = await pool.query(deleteSql, [kitchenId, userId]);
   return (result.rowCount ?? 0) > 0;
 }
+
+/**
+ * Permanently deletes a kitchen and cascades all related data (Admin only action).
+ *
+ * @param kitchenId - UUID of the kitchen.
+ * @param adminUserId - UUID of the requesting admin.
+ * @returns True if kitchen was deleted.
+ */
+export async function deleteKitchen(
+  kitchenId: string,
+  adminUserId: string
+): Promise<boolean> {
+  const isAdmin = await isUserKitchenAdmin(kitchenId, adminUserId);
+  if (!isAdmin) {
+    throw new Error("Unauthorized: Only kitchen admins can delete this kitchen.");
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // 1. Delete checkout receipts (if table exists)
+    try {
+      await client.query(
+        `DELETE FROM checkout_receipts WHERE checkout_id IN (SELECT id FROM checkouts WHERE kitchen_id = $1)`,
+        [kitchenId]
+      );
+    } catch {
+      // Table may not exist or error ignored
+    }
+
+    // 2. Delete checkouts
+    await client.query(`DELETE FROM checkouts WHERE kitchen_id = $1`, [kitchenId]);
+
+    // 3. Delete shopping list items
+    await client.query(`DELETE FROM shopping_list_items WHERE kitchen_id = $1`, [kitchenId]);
+
+    // 4. Delete pantry items
+    await client.query(`DELETE FROM pantry_items WHERE kitchen_id = $1`, [kitchenId]);
+
+    // 5. Delete kitchen members
+    await client.query(`DELETE FROM kitchen_members WHERE kitchen_id = $1`, [kitchenId]);
+
+    // 6. Delete the kitchen record
+    const res = await client.query(`DELETE FROM kitchens WHERE id = $1`, [kitchenId]);
+
+    await client.query("COMMIT");
+    return (res.rowCount ?? 0) > 0;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 
 
 

@@ -13,6 +13,9 @@ import {
   getShoppingListItems,
   addCustomShoppingItem,
   togglePurchased,
+  putItemInCart,
+  returnItemToShoppingList,
+  completeItemPurchase,
   removeShoppingListItem,
   clearUserCart,
   clearBoughtShoppingListItems,
@@ -20,6 +23,8 @@ import {
   moveAllNeededToCart,
   stageGuestShoppingItem as stageGuestShoppingItemDb,
   unstageGuestItem as unstageGuestItemDb,
+  quickAddStapleToCart,
+  duplicateShoppingListItem,
 } from "@/lib/pantry";
 import type { PantryItem, ShoppingListItem } from "@/types";
 
@@ -92,12 +97,49 @@ export async function togglePurchasedAction(
   return item;
 }
 
-export async function moveToCartAction(kitchenId: string, itemId: string) {
-  return await togglePurchasedAction(kitchenId, itemId, true);
+export async function putItemInCartAction(kitchenId: string, itemId: string) {
+  const userId = await requireMembership(kitchenId);
+  const item = await putItemInCart(kitchenId, itemId, userId);
+  revalidateKitchen(kitchenId);
+  return item;
+}
+
+export const moveToCartAction = putItemInCartAction;
+
+export async function quickAddStapleToCartAction(kitchenId: string, pantryItemId: string) {
+  const userId = await requireMembership(kitchenId);
+  const item = await quickAddStapleToCart(kitchenId, pantryItemId, userId);
+  revalidateKitchen(kitchenId);
+  return item;
 }
 
 export async function returnToShoppingListAction(kitchenId: string, itemId: string) {
-  return await togglePurchasedAction(kitchenId, itemId, false);
+  const userId = await requireMembership(kitchenId);
+  const item = await returnItemToShoppingList(kitchenId, itemId, userId);
+  revalidateKitchen(kitchenId);
+  return item;
+}
+
+export async function duplicateShoppingListItemAction(
+  kitchenId: string,
+  itemId: string,
+  addToCart: boolean = true
+) {
+  const userId = await requireMembership(kitchenId);
+  const item = await duplicateShoppingListItem(kitchenId, itemId, userId, addToCart);
+  revalidateKitchen(kitchenId);
+  return item;
+}
+
+export async function completeItemPurchaseAction(
+  kitchenId: string,
+  itemId: string,
+  isPurchased: boolean
+) {
+  const userId = await requireMembership(kitchenId);
+  const item = await completeItemPurchase(kitchenId, itemId, userId, isPurchased);
+  revalidateKitchen(kitchenId);
+  return item;
 }
 
 export async function moveAllNeededToCartAction(kitchenId: string) {

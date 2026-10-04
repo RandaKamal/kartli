@@ -1,21 +1,21 @@
 "use client";
 
-import { useState, useTransition, useEffect, useOptimistic } from "react";
+import { useState, useTransition, useOptimistic } from "react";
+import { useRouter } from "next/navigation";
 import {
   addPantryItemAction,
   setPantryItemStockAction,
   deletePantryItemAction,
 } from "@/app/actions/pantry";
-import type { PantryItem } from "@/types";
+import type { PantryItem, ShoppingListItem } from "@/types";
 import { cn } from "@/lib/utils";
 import {
   Package,
   Trash2,
   Plus,
-  AlertTriangle,
-  Check,
   Loader2,
-  ChevronDown,
+  Check,
+  RotateCcw,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,23 +33,30 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
-interface PantrySectionProps {
+export interface PantrySectionProps {
   kitchenId: string;
   items: PantryItem[];
+  shoppingListItems?: ShoppingListItem[];
+  currentUserId?: string;
   onItemEmptied?: (item: PantryItem) => void;
   onItemRestocked?: (itemId: string) => void;
   onItemDeleted?: (itemId: string) => void;
   onItemAdded?: (item: PantryItem) => void;
+  hideInput?: boolean;
 }
 
 export function PantrySection({
   kitchenId,
   items,
+  shoppingListItems = [],
+  currentUserId,
   onItemEmptied,
   onItemRestocked,
   onItemDeleted,
   onItemAdded,
+  hideInput = false,
 }: PantrySectionProps) {
+  const router = useRouter();
   const [optimisticItems, setOptimisticItems] = useOptimistic(
     items,
     (state: PantryItem[], update: { id: string; is_out_of_stock: boolean }) =>
@@ -57,7 +64,6 @@ export function PantrySection({
   );
   const [newItemName, setNewItemName] = useState("");
   const [itemToDelete, setItemToDelete] = useState<PantryItem | null>(null);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [, startTransition] = useTransition();
@@ -73,9 +79,10 @@ export function PantrySection({
         const item = await addPantryItemAction(kitchenId, name);
         onItemAdded?.(item);
         setNewItemName("");
-        toast.success(`Added "${name}" to pantry`);
+        router.refresh();
+        toast.success(`Tracked "${name}" in staples`);
       } catch (err: any) {
-        toast.error(err.message || "Failed to add item.");
+        toast.error(err.message || "Failed to add staple.");
       } finally {
         setIsAdding(false);
       }
@@ -85,30 +92,29 @@ export function PantrySection({
   const handleToggleStock = (item: PantryItem) => {
     const nextValue = !item.is_out_of_stock;
 
-    // Instant optimistic update on local badge and memory list (0ms perceived latency)
+    // Instant local optimistic update
+    setOptimisticItems({ id: item.id, is_out_of_stock: nextValue });
+    if (nextValue) {
+      onItemEmptied?.(item);
+    } else {
+      onItemRestocked?.(item.id);
+    }
+
     startTransition(async () => {
-      setOptimisticItems({ id: item.id, is_out_of_stock: nextValue });
-
-      if (nextValue) {
-        onItemEmptied?.(item);
-      } else {
-        onItemRestocked?.(item.id);
-      }
-
       try {
         await setPantryItemStockAction(kitchenId, item.id, nextValue);
         if (nextValue) {
-          toast.warning(`Marked "${item.name}" as Empty — added to shopping list`);
+          toast.warning(`Marked "${item.name}" as Needed — queued on shopping list`);
         } else {
           toast.success(`Restocked "${item.name}"`);
         }
       } catch (err: any) {
-        // Rollback state on error
         if (nextValue) {
           onItemRestocked?.(item.id);
         } else {
           onItemEmptied?.(item);
         }
+        setOptimisticItems({ id: item.id, is_out_of_stock: !nextValue });
         toast.error(err.message || "Failed to update stock status.");
       }
     });
@@ -125,218 +131,170 @@ export function PantrySection({
         await deletePantryItemAction(kitchenId, itemId);
         onItemDeleted?.(itemId);
         setItemToDelete(null);
-        toast.success(`Deleted "${itemName}" from pantry`);
+        router.refresh();
+        toast.success(`Deleted "${itemName}" from staples`);
       } catch (err: any) {
-        toast.error(err.message || "Failed to delete item.");
+        toast.error(err.message || "Failed to delete staple.");
       } finally {
         setIsDeleting(false);
       }
     });
   };
 
-  const outOfStockCount = optimisticItems.filter((i) => i.is_out_of_stock).length;
-
   return (
     <>
-      <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-        {/* Header - Clickable on mobile to toggle expansion */}
-        <div
-          onClick={() => setIsMobileOpen((prev) => !prev)}
-          className="flex items-center justify-between cursor-pointer md:cursor-default select-none group"
-        >
-          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-            <Package className="w-4 h-4 text-muted-foreground" />
-            <span>Pantry &amp; Inventory</span>
-            <Badge variant="secondary" className="text-xs font-mono">
+      <div className="space-y-2.5 select-none">
+        {/* Section Header */}
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <Package className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
+              Household Staples
+            </span>
+            <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground border border-border/70">
               {optimisticItems.length}
-            </Badge>
-          </h2>
-
-          {/* Mobile-only Chevron Indicator */}
-          <div className="p-1 rounded-lg text-muted-foreground group-hover:text-foreground transition md:hidden">
-            <ChevronDown
-              className={cn(
-                "w-4 h-4 transition-transform duration-200",
-                isMobileOpen && "rotate-180"
-              )}
-            />
+            </span>
           </div>
+          <span className="text-[11px] text-muted-foreground/60">
+            Tap tile when empty
+          </span>
         </div>
 
-        {/* Content Body - Collapsible on mobile (< md), always expanded on desktop (md:) */}
-        <div className={cn("space-y-4 pt-1 md:pt-0", isMobileOpen ? "block" : "hidden md:block")}>
+        {/* Optional quick add input if not hidden */}
+        {!hideInput && (
           <form onSubmit={handleAdd} className="flex items-center gap-2">
             <Input
               type="text"
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
-              placeholder="e.g. Eggs, Milk, Rice, Coffee"
-              className="flex-1 rounded-xl h-10 bg-background border-border"
+              placeholder="Track new staple (e.g. Olive Oil)..."
+              disabled={isAdding}
+              className="flex-1 rounded-xl h-10 bg-background border-border text-foreground text-sm"
             />
             <Button
               type="submit"
               variant="secondary"
               disabled={isAdding || !newItemName.trim()}
-              className="rounded-xl h-10 px-4 font-medium shrink-0"
+              className="rounded-xl h-10 px-4 font-semibold shrink-0 cursor-pointer"
             >
-              {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4 mr-1" />}
               <span>Add</span>
             </Button>
           </form>
+        )}
 
-          {optimisticItems.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-4 text-center">
-              No pantry items yet. Add your first item above.
+        {/* Tactile Bento Grid */}
+        {optimisticItems.length === 0 ? (
+          <div className="py-10 px-4 text-center rounded-2xl border border-dashed border-border/70 bg-card/40 space-y-1.5">
+            <Package className="w-6 h-6 text-muted-foreground mx-auto opacity-60" />
+            <p className="text-xs font-semibold text-foreground">No staples tracked yet</p>
+            <p className="text-[11px] text-muted-foreground max-w-xs mx-auto leading-relaxed">
+              Add permanent household essentials like Olive Oil, Salt, or Coffee that your kitchen should always have in stock.
             </p>
-          ) : (
-            <div className="space-y-4">
-              {/* Section A: Needs Restock */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between px-1 pt-1 pb-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground">
-                      Needs Restock
-                    </span>
-                    <span className="bg-secondary text-muted-foreground px-2 py-0.5 rounded-full text-[10px] font-medium">
-                      {outOfStockCount}
-                    </span>
-                  </div>
-                  {outOfStockCount > 0 && (
-                    <span className="text-[11px] text-muted-foreground/60 hidden sm:inline">
-                      Auto-added to shopping list
-                    </span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+            {optimisticItems.map((item) => {
+              const isOutOfStock = item.is_out_of_stock;
+              const cartItem = shoppingListItems?.find(
+                (s) =>
+                  s.pantry_item_id === item.id &&
+                  !s.checkout_id &&
+                  (s.is_in_cart || s.is_purchased || s.is_guest_staged)
+              );
+              const isInCart = isOutOfStock && !!cartItem;
+              const isNeeded = isOutOfStock && !cartItem;
+              const isStocked = !isOutOfStock;
+
+              const stagedByName = cartItem?.purchased_by === currentUserId
+                ? "@you"
+                : cartItem?.is_guest_staged
+                ? "guest"
+                : cartItem?.purchased_by_name
+                ? `@${cartItem.purchased_by_name}`
+                : "cart";
+
+              return (
+                <div
+                  key={item.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleToggleStock(item)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleToggleStock(item);
+                    }
+                  }}
+                  className={cn(
+                    "group relative flex flex-col justify-between rounded-2xl min-h-[96px] p-4 transition-all cursor-pointer select-none active:scale-[0.98]",
+                    isStocked && "bg-card hover:bg-muted/40 border border-border/70 hover:border-border shadow-xs",
+                    isNeeded && "bg-amber-500/[0.08] hover:bg-amber-500/[0.12] border border-amber-500/35 shadow-xs",
+                    isInCart && "bg-cyan-500/[0.06] hover:bg-cyan-500/[0.10] border border-cyan-500/35 shadow-xs"
                   )}
-                </div>
+                  title={isStocked ? "Tap to mark Empty / Needed" : "Tap to mark Stocked"}
+                >
+                  {/* Top Status Indicator & Trash Button */}
+                  <div className="flex items-center justify-between gap-1 w-full">
+                    {isStocked && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)] shrink-0" />
+                        <span className="text-[10px] font-mono font-medium text-emerald-600 dark:text-emerald-400">
+                          Stocked
+                        </span>
+                      </div>
+                    )}
 
-                {outOfStockCount === 0 ? (
-                  <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl border border-border/60 bg-muted/20 text-xs text-muted-foreground">
-                    <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                    <span>All staples are in stock.</span>
+                    {isNeeded && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+                        </span>
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30">
+                          Empty / Needed
+                        </span>
+                      </div>
+                    )}
+
+                    {isInCart && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_6px_rgba(6,182,212,0.5)] shrink-0" />
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-800 dark:text-cyan-200 border border-cyan-500/30">
+                          In Cart · {stagedByName}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Subtle Delete Button (e.stopPropagation is critical) */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setItemToDelete(item);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                      title="Delete staple"
+                      aria-label={`Delete ${item.name}`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                ) : (
-                  <div className="space-y-1.5">
-                    {optimisticItems
-                      .filter((i) => i.is_out_of_stock)
-                      .map((item) => (
-                        <div
-                          key={item.id}
-                          className="bg-amber-500/[0.04] border border-amber-500/15 rounded-xl px-3 py-2 flex items-center justify-between gap-3 text-sm transition hover:border-amber-500/25"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <span className="font-medium truncate text-muted-foreground line-through decoration-muted-foreground/50">
-                              {item.name}
-                            </span>
-                            <span
-                              className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-medium px-2 py-0.5 rounded-md shrink-0 flex items-center gap-1"
-                              title="Out of stock - on shopping list"
-                            >
-                              <AlertTriangle className="w-3 h-3" />
-                              <span>Empty</span>
-                            </span>
-                          </div>
 
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleStock(item)}
-                              title="Restock item (removes from shopping list)"
-                              className="h-8 px-3 text-xs font-medium bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                              <span>Restock</span>
-                            </button>
-
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => setItemToDelete(item)}
-                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
-                              title="Delete item from pantry"
-                              aria-label={`Delete ${item.name}`}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Section B: In Stock */}
-              <div className="space-y-2 border-t border-border/40 pt-4 mt-3">
-                <div className="flex items-center justify-between px-1 pb-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground">
-                      In Stock
-                    </span>
-                    <span className="bg-secondary text-muted-foreground px-2 py-0.5 rounded-full text-[10px] font-medium">
-                      {optimisticItems.length - outOfStockCount}
+                  {/* Bottom Staple Name */}
+                  <div className="pt-2">
+                    <span className="text-sm font-semibold text-foreground truncate block leading-snug">
+                      {item.name}
                     </span>
                   </div>
                 </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
-                {optimisticItems.length - outOfStockCount === 0 ? (
-                  <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl border border-border/60 bg-muted/20 text-xs text-muted-foreground">
-                    <span>No items currently marked in stock.</span>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-border">
-                    {optimisticItems
-                      .filter((i) => !i.is_out_of_stock)
-                      .map((item) => (
-                        <div
-                          key={item.id}
-                          className="py-2.5 px-2 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 rounded-xl transition"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <span className="font-medium truncate text-foreground">
-                              {item.name}
-                            </span>
-                            <span
-                              className="bg-secondary text-muted-foreground border border-border text-[10px] px-2 py-0.5 rounded-md font-medium shrink-0 flex items-center gap-1"
-                              title="In stock"
-                            >
-                              <Check className="w-3 h-3 text-muted-foreground/70" />
-                              <span>In Stock</span>
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleStock(item)}
-                              title="Mark as empty (adds to shopping list)"
-                              className="h-8 px-2.5 text-xs text-muted-foreground hover:text-amber-400 hover:border-amber-500/30 hover:bg-amber-500/10 border border-transparent rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
-                            >
-                              <AlertTriangle className="w-3.5 h-3.5" />
-                              <span>Mark Empty</span>
-                            </button>
-
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => setItemToDelete(item)}
-                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer"
-                              title="Delete item from pantry"
-                              aria-label={`Delete ${item.name}`}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </Card>
-
-      {/* Deletion Confirmation Modal via shadcn AlertDialog */}
+      {/* Deletion Confirmation Modal */}
       <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -344,13 +302,13 @@ export function PantrySection({
               <div className="p-2.5 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive">
                 <Trash2 className="w-5 h-5" />
               </div>
-              <AlertDialogTitle>Delete Pantry Item</AlertDialogTitle>
+              <AlertDialogTitle>Delete Household Staple</AlertDialogTitle>
             </div>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong className="text-foreground font-semibold">&ldquo;{itemToDelete?.name}&rdquo;</strong> from the pantry?
+              Are you sure you want to delete <strong className="text-foreground font-semibold">&ldquo;{itemToDelete?.name}&rdquo;</strong> from permanent staples?
               {itemToDelete?.is_out_of_stock && (
                 <span className="block mt-1 text-accent-warning font-medium">
-                  This will also remove its pending entry from the shopping list.
+                  This will also remove its pending entry from the shopping queue.
                 </span>
               )}
             </AlertDialogDescription>
@@ -365,7 +323,7 @@ export function PantrySection({
               }}
             >
               {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>{isDeleting ? "Deleting..." : "Delete Item"}</span>
+              <span>{isDeleting ? "Deleting..." : "Delete Staple"}</span>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -373,3 +331,5 @@ export function PantrySection({
     </>
   );
 }
+
+export default PantrySection;

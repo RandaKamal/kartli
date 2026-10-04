@@ -16,6 +16,7 @@ import {
   updateKitchenSettings as updateKitchenSettingsDb,
   regeneratePublicViewToken as regeneratePublicViewTokenDb,
   leaveKitchen as leaveKitchenDb,
+  deleteKitchen as deleteKitchenDb,
 } from "@/lib/kitchen";
 import type {
   CreateKitchenInput,
@@ -265,5 +266,22 @@ export async function leaveKitchenAction(kitchenId: string): Promise<{ success: 
 }
 
 export const leaveKitchen = leaveKitchenAction;
+
+/**
+ * Server Action for an admin to permanently delete a kitchen.
+ */
+export async function deleteKitchenAction(kitchenId: string): Promise<{ success: boolean }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in to delete a kitchen.");
+  }
+
+  await deleteKitchenDb(kitchenId, session.user.id);
+  revalidatePath("/");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export const deleteKitchen = deleteKitchenAction;
 
 

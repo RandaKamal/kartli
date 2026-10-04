@@ -10,7 +10,7 @@
   --color-accent-sage: var(--accent-success);
   --color-accent-ochre: var(--accent-warning);
 
-  --color-accent-secondary: var(--accent-success);
+  --color-accent-secondary: var(--accent-secondary);
   --color-accent-warm: var(--accent-warning);
   --color-accent-muted-green: var(--accent-success);
   --color-accent-green: var(--accent-success);
@@ -18,7 +18,7 @@
   --color-accent-light: var(--muted);
 
   --color-brand-primary: var(--accent-primary);
-  --color-brand-secondary: var(--accent-success);
+  --color-brand-secondary: var(--accent-secondary);
   --color-brand-warm: var(--accent-warning);
   --color-brand-success: var(--accent-success);
   --color-brand-danger: var(--destructive);
@@ -63,6 +63,8 @@
 @layer base {
   /* ==========================================
      Theme 1: Black Truffle (Default)
+     Obsidian base (#000000), charcoal surfaces (#151518),
+     crisp neutral typography, emerald/cyan accents
      ========================================== */
   :root,
   :root[data-theme='black-truffle'],
@@ -74,11 +76,11 @@
   [data-culinary-theme='black-truffle'],
   [data-culinary-theme='truffle'],
   .theme-black-truffle {
-    --accent-primary: #18181b;
-    --accent-success: #34d399;
-    --accent-warning: #fbbf24;
-    --accent-brand: #18181b;
-    --accent-secondary: #34d399;
+    --accent-primary: #10b981;
+    --accent-brand: #10b981;
+    --accent-success: #10b981;
+    --accent-warning: #f59e0b;
+    --accent-secondary: #06b6d4;
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
@@ -100,15 +102,15 @@
     --muted: #f4f4f5;
     --muted-foreground: #71717a;
 
-    --accent: #34d399;
-    --accent-foreground: #09090b;
+    --accent: #10b981;
+    --accent-foreground: #ffffff;
 
     --chart-1: #10b981;
-    --chart-2: #f59e0b;
+    --chart-2: #06b6d4;
 
     --border: #e4e4e7;
     --input: #e4e4e7;
-    --ring: #18181b;
+    --ring: #10b981;
 
     --radius: 1rem;
 
@@ -118,45 +120,50 @@
   .dark,
   .dark[data-theme='black-truffle'],
   .dark[data-theme='truffle'],
+  .dark [data-theme='black-truffle'],
+  .dark [data-theme='truffle'],
   .dark[data-culinary-theme='black-truffle'],
   .dark[data-culinary-theme='truffle'],
-  .dark.theme-black-truffle {
-    --accent-primary: #f4f4f5;
+  .dark [data-culinary-theme='black-truffle'],
+  .dark [data-culinary-theme='truffle'],
+  .dark.theme-black-truffle,
+  .dark .theme-black-truffle {
+    --accent-primary: #34d399;
+    --accent-brand: #34d399;
     --accent-success: #34d399;
     --accent-warning: #fbbf24;
-    --accent-brand: #f4f4f5;
-    --accent-secondary: #34d399;
+    --accent-secondary: #22d3ee;
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
-    /* Base Dark: #000000, Card: #0d0d10, Border: #222226 */
-    --background: #000000;
+    /* Layered Dark Elevation: Canvas: hsl(240 10% 3.9%), Card: hsl(240 6% 8%), Popover: hsl(240 6% 11%), Secondary: hsl(240 6% 13%) */
+    --background: hsl(240 10% 3.9%);
     --foreground: #f4f4f5;
 
-    --card: #0d0d10;
+    --card: hsl(240 6% 8%);
     --card-foreground: #f4f4f5;
 
-    --popover: #0d0d10;
+    --popover: hsl(240 6% 11%);
     --popover-foreground: #f4f4f5;
 
-    --primary: #f4f4f5;
+    --primary: hsl(240 5% 96%);
     --primary-foreground: #000000;
 
-    --secondary: #18181b;
+    --secondary: hsl(240 6% 13%);
     --secondary-foreground: #f4f4f5;
 
-    --muted: #18181b;
+    --muted: hsl(240 6% 13%);
     --muted-foreground: #a1a1aa;
 
     --accent: #34d399;
     --accent-foreground: #000000;
 
     --chart-1: #34d399;
-    --chart-2: #fbbf24;
+    --chart-2: #22d3ee;
 
-    --border: #222226;
-    --input: #222226;
-    --ring: #f4f4f5;
+    --border: hsl(240 5% 17%);
+    --input: hsl(240 5% 19%);
+    --ring: #34d399;
 
     --radius: 1rem;
 
@@ -164,115 +171,24 @@
   }
 
   /* ==========================================
-     Theme 2: Campari Bitter (Milanese Aperitivo & Blood Orange)
-     ========================================== */
-  :root[data-theme='campari-bitter'],
-  :root[data-culinary-theme='campari-bitter'],
-  [data-theme='campari-bitter'],
-  [data-culinary-theme='campari-bitter'],
-  :root[data-theme='saffron'],
-  :root[data-culinary-theme='saffron'] {
-    --accent-primary: hsl(356 75% 42%);
-    --accent-brand: hsl(356 75% 42%);
-    --accent-success: hsl(38 85% 45%);
-    --accent-warning: hsl(22 92% 54%);
-    --accent-secondary: hsl(38 85% 58%);
-    --destructive: #ef4444;
-    --destructive-foreground: #ffffff;
-
-    --background: #ffffff;
-    --foreground: #09090b;
-
-    --card: #ffffff;
-    --card-foreground: #09090b;
-
-    --popover: #ffffff;
-    --popover-foreground: #09090b;
-
-    --primary: hsl(356 75% 42%);
-    --primary-foreground: #ffffff;
-
-    --secondary: #f4f4f5;
-    --secondary-foreground: #09090b;
-
-    --muted: #f4f4f5;
-    --muted-foreground: #71717a;
-
-    --accent: hsl(22 92% 54%);
-    --accent-foreground: #ffffff;
-
-    --chart-1: hsl(22 92% 54%);
-    --chart-2: hsl(38 85% 58%);
-
-    --border: #e4e4e7;
-    --input: #e4e4e7;
-    --ring: hsl(22 92% 54%);
-
-    --radius: 1rem;
-
-    color-scheme: light;
-  }
-
-  .dark[data-theme='campari-bitter'],
-  .dark[data-culinary-theme='campari-bitter'],
-  .dark [data-theme='campari-bitter'],
-  .dark [data-culinary-theme='campari-bitter'],
-  .dark[data-theme='saffron'],
-  .dark[data-culinary-theme='saffron'] {
-    --accent-primary: hsl(356 78% 58%);
-    --accent-brand: hsl(356 78% 58%);
-    --accent-success: hsl(38 85% 58%);
-    --accent-warning: hsl(22 92% 54%);
-    --accent-secondary: hsl(38 85% 58%);
-    --destructive: #ef4444;
-    --destructive-foreground: #ffffff;
-
-    /* Base Dark: #0c0c0e, Card: #141418, Border: #27272a */
-    --background: #0c0c0e;
-    --foreground: #f4f4f5;
-
-    --card: #141418;
-    --card-foreground: #f4f4f5;
-
-    --popover: #141418;
-    --popover-foreground: #f4f4f5;
-
-    --primary: hsl(356 78% 58%);
-    --primary-foreground: #0c0c0e;
-
-    --secondary: #18181b;
-    --secondary-foreground: #f4f4f5;
-
-    --muted: #18181b;
-    --muted-foreground: #a1a1aa;
-
-    --accent: hsl(22 92% 54%);
-    --accent-foreground: #0c0c0e;
-
-    --chart-1: hsl(22 92% 54%);
-    --chart-2: hsl(38 85% 58%);
-
-    --border: #27272a;
-    --input: #27272a;
-    --ring: hsl(22 92% 54%);
-
-    color-scheme: dark;
-  }
-
-  /* ==========================================
-     Theme 3: Velvet Fig (Warm French Bistro & Port Wine)
+     Theme 2: Velvet Fig
+     Deep bistro charcoal (#100e12), dark plum surfaces (#17141a),
+     crisp neutral typography, muted wine/fig plum secondary accents
      ========================================== */
   :root[data-theme='velvet-fig'],
   :root[data-culinary-theme='velvet-fig'],
   [data-theme='velvet-fig'],
   [data-culinary-theme='velvet-fig'],
   :root[data-theme='plum'],
-  :root[data-culinary-theme='plum'] {
-    --accent-primary: hsl(285 45% 40%);
-    --accent-brand: hsl(285 45% 40%);
-    --accent-success: hsl(300 35% 45%);
-    --accent-warning: hsl(42 75% 52%);
-    --accent-secondary: hsl(300 35% 50%);
+  :root[data-culinary-theme='plum'],
+  [data-theme='plum'],
+  [data-culinary-theme='plum'],
+  .theme-velvet-fig {
+    --accent-primary: hsl(285 45% 45%);
+    --accent-brand: hsl(285 45% 45%);
+    --accent-success: #10b981;
+    --accent-warning: #f59e0b;
+    --accent-secondary: hsl(285 45% 58%);
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
@@ -285,7 +201,7 @@
     --popover: #ffffff;
     --popover-foreground: #09090b;
 
-    --primary: hsl(285 45% 40%);
+    --primary: #09090b;
     --primary-foreground: #ffffff;
 
     --secondary: #f4f4f5;
@@ -294,15 +210,15 @@
     --muted: #f4f4f5;
     --muted-foreground: #71717a;
 
-    --accent: hsl(42 75% 52%);
-    --accent-foreground: #09090b;
+    --accent: hsl(285 45% 58%);
+    --accent-foreground: #ffffff;
 
-    --chart-1: hsl(42 75% 52%);
-    --chart-2: hsl(300 35% 50%);
+    --chart-1: hsl(285 45% 58%);
+    --chart-2: hsl(285 30% 75%);
 
     --border: #e4e4e7;
     --input: #e4e4e7;
-    --ring: hsl(285 45% 40%);
+    --ring: hsl(285 45% 45%);
 
     --radius: 1rem;
 
@@ -314,139 +230,49 @@
   .dark [data-theme='velvet-fig'],
   .dark [data-culinary-theme='velvet-fig'],
   .dark[data-theme='plum'],
-  .dark[data-culinary-theme='plum'] {
-    --accent-primary: hsl(285 55% 62%);
-    --accent-brand: hsl(285 55% 62%);
-    --accent-success: hsl(300 35% 55%);
-    --accent-warning: hsl(42 75% 52%);
-    --accent-secondary: hsl(300 35% 50%);
+  .dark[data-culinary-theme='plum'],
+  .dark [data-theme='plum'],
+  .dark [data-culinary-theme='plum'],
+  .dark.theme-velvet-fig,
+  .dark .theme-velvet-fig {
+    --accent-primary: hsl(285 45% 58%);
+    --accent-brand: hsl(285 45% 58%);
+    --accent-success: #34d399;
+    --accent-warning: #fbbf24;
+    --accent-secondary: hsl(285 45% 58%);
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
-    /* Base Dark: #0d0f14, Card: #131720, Border: #242b38 */
-    --background: #0d0f14;
-    --foreground: #f4f4f5;
+    /* Base Dark: hsl(280 10% 6%) / #100e12, Card: hsl(280 10% 9%) / #17141a, Border: hsl(280 8% 18%) */
+    --background: hsl(280 10% 6%);
+    --foreground: hsl(240 5% 96%);
 
-    --card: #131720;
-    --card-foreground: #f4f4f5;
+    --card: hsl(280 10% 9%);
+    --card-foreground: hsl(240 5% 96%);
 
-    --popover: #131720;
-    --popover-foreground: #f4f4f5;
+    --popover: hsl(280 10% 9%);
+    --popover-foreground: hsl(240 5% 96%);
 
-    --primary: hsl(285 55% 62%);
-    --primary-foreground: #0d0f14;
+    --primary: hsl(240 5% 96%);
+    --primary-foreground: hsl(280 10% 6%);
 
-    --secondary: #1a202c;
-    --secondary-foreground: #f4f4f5;
+    --secondary: hsl(280 8% 14%);
+    --secondary-foreground: hsl(240 5% 96%);
 
-    --muted: #1a202c;
-    --muted-foreground: #94a3b8;
+    --muted: hsl(280 8% 14%);
+    --muted-foreground: hsl(240 5% 65%);
 
-    --accent: hsl(42 75% 52%);
-    --accent-foreground: #0d0f14;
+    --accent: hsl(285 45% 58%);
+    --accent-foreground: #ffffff;
 
-    --chart-1: hsl(42 75% 52%);
-    --chart-2: hsl(300 35% 50%);
+    --chart-1: hsl(285 45% 58%);
+    --chart-2: hsl(285 30% 75%);
 
-    --border: #242b38;
-    --input: #242b38;
-    --ring: hsl(285 55% 62%);
-
-    color-scheme: dark;
-  }
-
-  /* ==========================================
-     Theme 4: Matcha Pistachio (Ceremonial Tea & Yuzu)
-     ========================================== */
-  :root[data-theme='matcha-pistachio'],
-  :root[data-culinary-theme='matcha-pistachio'],
-  [data-theme='matcha-pistachio'],
-  [data-culinary-theme='matcha-pistachio'],
-  :root[data-theme='nordic'],
-  :root[data-culinary-theme='nordic'] {
-    --accent-primary: hsl(154 38% 34%);
-    --accent-brand: hsl(154 38% 34%);
-    --accent-success: hsl(170 25% 40%);
-    --accent-warning: hsl(48 88% 52%);
-    --accent-secondary: hsl(170 25% 45%);
-    --destructive: #ef4444;
-    --destructive-foreground: #ffffff;
-
-    --background: #ffffff;
-    --foreground: #09090b;
-
-    --card: #ffffff;
-    --card-foreground: #09090b;
-
-    --popover: #ffffff;
-    --popover-foreground: #09090b;
-
-    --primary: hsl(154 38% 34%);
-    --primary-foreground: #ffffff;
-
-    --secondary: #f4f4f5;
-    --secondary-foreground: #09090b;
-
-    --muted: #f4f4f5;
-    --muted-foreground: #71717a;
-
-    --accent: hsl(48 88% 52%);
-    --accent-foreground: #09090b;
-
-    --chart-1: hsl(48 88% 52%);
-    --chart-2: hsl(170 25% 45%);
-
-    --border: #e4e4e7;
-    --input: #e4e4e7;
-    --ring: hsl(154 38% 34%);
+    --border: hsl(280 8% 18%);
+    --input: hsl(280 8% 18%);
+    --ring: hsl(285 45% 58%);
 
     --radius: 1rem;
-
-    color-scheme: light;
-  }
-
-  .dark[data-theme='matcha-pistachio'],
-  .dark[data-culinary-theme='matcha-pistachio'],
-  .dark [data-theme='matcha-pistachio'],
-  .dark [data-culinary-theme='matcha-pistachio'],
-  .dark[data-theme='nordic'],
-  .dark[data-culinary-theme='nordic'] {
-    --accent-primary: hsl(154 42% 52%);
-    --accent-brand: hsl(154 42% 52%);
-    --accent-success: hsl(170 25% 45%);
-    --accent-warning: hsl(48 88% 52%);
-    --accent-secondary: hsl(170 25% 45%);
-    --destructive: #ef4444;
-    --destructive-foreground: #ffffff;
-
-    /* Base Dark: #0a0e13, Card: #11161d, Border: #1e2633 */
-    --background: #0a0e13;
-    --foreground: #f4f4f5;
-
-    --card: #11161d;
-    --card-foreground: #f4f4f5;
-
-    --popover: #11161d;
-    --popover-foreground: #f4f4f5;
-
-    --primary: hsl(154 42% 52%);
-    --primary-foreground: #0a0e13;
-
-    --secondary: #17202c;
-    --secondary-foreground: #f4f4f5;
-
-    --muted: #17202c;
-    --muted-foreground: #94a3b8;
-
-    --accent: hsl(48 88% 52%);
-    --accent-foreground: #0a0e13;
-
-    --chart-1: hsl(48 88% 52%);
-    --chart-2: hsl(170 25% 45%);
-
-    --border: #1e2633;
-    --input: #1e2633;
-    --ring: hsl(154 42% 52%);
 
     color-scheme: dark;
   }
@@ -473,5 +299,15 @@
     padding-right: 0px !important;
     margin-right: 0px !important;
   }
+}
+
+.scrollbar-hide::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide,
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 

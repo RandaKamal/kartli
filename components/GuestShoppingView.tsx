@@ -38,7 +38,7 @@ import {
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import { toast } from "sonner";
 
-interface GuestShoppingViewProps {
+export interface GuestShoppingViewProps {
   kitchen: PublicKitchenContext;
   openItems: ShoppingListItem[];
   inCartItems: ShoppingListItem[];
@@ -211,23 +211,24 @@ export function GuestShoppingView({
     totalNeeded > 0 ? Math.round((checkedCount / totalNeeded) * 100) : 0;
 
   return (
-    <div className="max-w-xl mx-auto space-y-5 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-24">
+    <div className="max-w-2xl mx-auto w-full px-6 py-12 space-y-6 pb-32 sm:pb-32">
       {/* Top Header Card */}
-      <Card className="border border-border/80 bg-card rounded-3xl p-5 sm:p-6 space-y-4 shadow-sm">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Badge
-              variant="secondary"
-              className="gap-1.5 px-2.5 py-0.5 text-[10px] uppercase font-bold tracking-wider"
-            >
-              <ShoppingBag className="w-3 h-3 text-accent-brand" />
+      <Card className="relative overflow-hidden border border-border/80 bg-gradient-to-b from-card via-card to-card/95 rounded-3xl p-6 sm:p-7 space-y-5 shadow-lg shadow-black/5 dark:shadow-black/20">
+        {/* Subtle Backdrop Glow */}
+        <div className="absolute -top-16 -right-16 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-accent-success/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold uppercase tracking-wider shadow-xs">
+              <ShoppingBag className="w-3.5 h-3.5" />
               <span>Supermarket Mode</span>
-            </Badge>
+            </div>
             <Badge
               variant={sessionUser?.isMember ? "accent" : "outline"}
-              className="text-[10px]"
+              className="text-[11px] py-0.5 px-2.5 rounded-full font-medium"
             >
-              {sessionUser?.isMember ? "Live Sync Active" : "Guest View (7-day cookie cart)"}
+              {sessionUser?.isMember ? "Live Member Sync" : "Guest Shopping View"}
             </Badge>
           </div>
 
@@ -237,7 +238,7 @@ export function GuestShoppingView({
             size="sm"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="h-8 px-2.5 rounded-xl text-xs text-muted-foreground hover:text-foreground gap-1.5"
+            className="h-8 px-2.5 rounded-xl text-xs text-muted-foreground hover:text-foreground gap-1.5 transition-colors cursor-pointer"
             title="Refresh list"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
@@ -245,11 +246,14 @@ export function GuestShoppingView({
           </Button>
         </div>
 
-        <div className="space-y-1">
+        <div className="relative z-10 space-y-1.5">
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <span>Live shopping mode for {kitchen.name}</span>
+          </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground truncate">
             {kitchen.name}
           </h1>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground leading-relaxed">
             {sessionUser?.isMember
               ? "Tapping items puts them directly into your active cart."
               : "Tick off items while shopping. Your temporary cart is saved automatically."}
@@ -258,7 +262,7 @@ export function GuestShoppingView({
 
         {/* Live Progress Bar */}
         {totalNeeded > 0 && (
-          <div className="pt-2 border-t border-border/60 space-y-2">
+          <div className="relative z-10 pt-2 border-t border-border/60 space-y-2">
             <div className="flex items-center justify-between text-xs font-medium">
               <span className="text-foreground">
                 {sessionUser?.isMember
@@ -322,25 +326,27 @@ export function GuestShoppingView({
         </div>
 
         {filteredOpenItems.length === 0 ? (
-          <Card className="border border-dashed border-border/80 bg-card/60 rounded-3xl p-8 text-center space-y-2">
+          <Card className="border border-dashed border-border/80 bg-card/60 rounded-3xl py-16 px-6 text-center space-y-4 shadow-xs">
             {searchQuery ? (
               <p className="text-xs text-muted-foreground">
                 No items match &ldquo;{searchQuery}&rdquo;.
               </p>
             ) : (
               <>
-                <div className="w-10 h-10 rounded-2xl bg-accent-success/10 border border-accent-success/20 text-accent-success flex items-center justify-center mx-auto">
-                  <Sparkles className="w-5 h-5" />
+                <div className="w-16 h-16 rounded-3xl bg-accent-success/15 border border-accent-success/30 text-accent-success flex items-center justify-center mx-auto shadow-inner">
+                  <Sparkles className="w-8 h-8 animate-pulse" />
                 </div>
-                <h3 className="text-sm font-bold text-foreground">All Stocked Up</h3>
-                <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                  There are currently no open items on this kitchen&apos;s shopping list.
-                </p>
+                <div className="space-y-1.5 max-w-sm mx-auto">
+                  <h3 className="text-lg font-bold text-foreground tracking-tight">All Stocked Up!</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Every culinary essential is in house and your pantry is primed. There are no pending shopping items for this kitchen right now.
+                  </p>
+                </div>
               </>
             )}
           </Card>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {filteredOpenItems.map((item) => {
               const isChecked = !sessionUser?.isMember && checkedIds.has(item.id);
 
@@ -350,29 +356,33 @@ export function GuestShoppingView({
                   type="button"
                   onClick={() => handleToggleItem(item)}
                   disabled={isMutating}
-                  className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between gap-3.5 select-none cursor-pointer shadow-xs ${
+                  className={`w-full text-left p-4 rounded-2xl border transition-all duration-150 flex items-center justify-between gap-3.5 select-none cursor-pointer active:scale-[0.98] ${
                     isChecked
-                      ? "bg-secondary/30 border-border/40 text-muted-foreground"
-                      : "bg-card border-border/80 hover:border-border hover:bg-secondary/20 text-foreground"
+                      ? "bg-muted/40 border-border/50 text-muted-foreground opacity-75 shadow-none"
+                      : "bg-card border-border/80 hover:border-foreground/20 hover:bg-muted/30 text-foreground shadow-xs"
                   }`}
                 >
                   <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                    {/* Check Circle */}
+                    {/* High-Contrast Tactile Checkbox */}
                     <div
-                      className={`w-6 h-6 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                      className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all duration-150 ${
                         isChecked
-                          ? "bg-accent-success border-accent-success text-primary-foreground"
-                          : "border-border bg-secondary/40 text-transparent"
+                          ? "bg-accent-success border-accent-success text-white shadow-xs scale-105"
+                          : "border-foreground/40 dark:border-foreground/50 bg-background hover:border-accent-success text-transparent"
                       }`}
                     >
-                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      <Check
+                        className={`w-3.5 h-3.5 stroke-[3.5] transition-transform duration-150 ${
+                          isChecked ? "scale-100 opacity-100" : "scale-50 opacity-0"
+                        }`}
+                      />
                     </div>
 
                     <div className="min-w-0 flex-1">
                       <span
-                        className={`text-sm font-medium tracking-tight block truncate ${
+                        className={`text-sm font-medium tracking-tight block truncate transition-all duration-150 ${
                           isChecked
-                            ? "line-through text-muted-foreground decoration-muted-foreground/60"
+                            ? "line-through text-muted-foreground/80 decoration-muted-foreground/60"
                             : "text-foreground"
                         }`}
                       >
@@ -533,7 +543,7 @@ export function GuestShoppingView({
 
       {/* Persistent Floating Bottom Pill for Guests with Cart Items */}
       {!sessionUser?.isMember && checkedCount > 0 && (
-        <div className="fixed bottom-3 sm:bottom-4 inset-x-3 sm:inset-x-4 max-w-xl mx-auto z-40 pointer-events-auto p-3.5 sm:p-4 rounded-2xl bg-card/95 backdrop-blur-md border border-accent-brand/50 shadow-2xl flex items-center justify-between gap-3 text-xs">
+        <div className="fixed bottom-3 sm:bottom-4 inset-x-3 sm:inset-x-4 max-w-2xl mx-auto z-40 pointer-events-auto p-3.5 sm:p-4 rounded-2xl bg-card/95 backdrop-blur-md border border-accent-brand/50 shadow-2xl flex items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2.5 min-w-0">
             <span className="w-2.5 h-2.5 rounded-full bg-accent-brand shrink-0 animate-pulse" />
             <span className="text-foreground font-medium truncate">

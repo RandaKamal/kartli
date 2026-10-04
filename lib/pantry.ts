@@ -71,8 +71,8 @@ export async function setPantryItemStock(
 
       if (existingRows.length === 0) {
         await client.query(
-          `INSERT INTO shopping_list_items (kitchen_id, pantry_item_id, name, is_purchased, created_at)
-           VALUES ($1, $2, $3, FALSE, NOW())`,
+          `INSERT INTO shopping_list_items (kitchen_id, pantry_item_id, name, is_purchased, is_in_cart, created_at)
+           VALUES ($1, $2, $3, FALSE, FALSE, NOW())`,
           [kitchenId, itemId, item.name]
         );
       }
@@ -133,10 +133,10 @@ export async function clearUserCart(kitchenId: string, userId: string): Promise<
 
     const { rows } = await client.query<{ id: string; pantry_item_id: string | null }>(
       `UPDATE shopping_list_items
-       SET is_purchased = FALSE, purchased_by = NULL
+       SET is_in_cart = FALSE, is_purchased = FALSE, purchased_by = NULL
        WHERE kitchen_id = $1
          AND purchased_by = $2
-         AND is_purchased = TRUE
+         AND (is_in_cart = TRUE OR is_purchased = TRUE)
          AND checkout_id IS NULL
        RETURNING id, pantry_item_id`,
       [kitchenId, userId]
@@ -183,6 +183,7 @@ export async function getShoppingListItems(kitchenId: string): Promise<ShoppingL
       sli.item_price,
       sli.currency,
       sli.is_purchased,
+      sli.is_in_cart,
       sli.purchased_by,
       sli.is_guest_staged,
       sli.checkout_id,
@@ -202,7 +203,7 @@ export async function getShoppingListItems(kitchenId: string): Promise<ShoppingL
           ORDER BY sub.created_at DESC LIMIT 20
         )
       )
-    ORDER BY (sli.is_purchased OR sli.is_guest_staged) ASC, sli.created_at ASC
+    ORDER BY (sli.is_in_cart OR sli.is_purchased OR sli.is_guest_staged) ASC, sli.created_at ASC
   `;
   const { rows } = await pool.query<ShoppingListItem>(sql, [kitchenId]);
   return rows;
@@ -222,11 +223,12 @@ export async function moveAllNeededToCart(
 
     const { rows } = await client.query<ShoppingListItem>(
       `UPDATE shopping_list_items
-       SET is_purchased = TRUE, purchased_by = $1, is_guest_staged = FALSE
+       SET is_in_cart = TRUE, is_purchased = FALSE, purchased_by = $1, is_guest_staged = FALSE
        WHERE kitchen_id = $2
+         AND (is_in_cart = FALSE OR is_in_cart IS NULL)
          AND is_purchased = FALSE
          AND checkout_id IS NULL
-       RETURNING id, kitchen_id, pantry_item_id, name, item_price, currency, is_purchased, purchased_by, is_guest_staged, checkout_id, created_at`,
+       RETURNING id, kitchen_id, pantry_item_id, name, item_price, currency, is_purchased, is_in_cart, purchased_by, is_guest_staged, checkout_id, created_at`,
       [userId, kitchenId]
     );
 
@@ -278,24 +280,21 @@ export async function addCustomShoppingItem(
   }
 
   const sql = `
-    INSERT INTO shopping_list_items (kitchen_id, pantry_item_id, name, is_purchased, is_guest_staged, created_at)
-    VALUES ($1, NULL, $2, FALSE, FALSE, NOW())
-    RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, purchased_by, is_guest_staged, checkout_id, created_at
+    INSERT INTO shopping_list_items (kitchen_id, pantry_item_id, name, is_purchased, is_in_cart, is_guest_staged, created_at)
+    VALUES ($1, NULL, $2, FALSE, FALSE, FALSE, NOW())
+    RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, is_in_cart, purchased_by, is_guest_staged, checkout_id, created_at
   `;
   const { rows } = await pool.query<ShoppingListItem>(sql, [kitchenId, cleanName]);
   return rows[0];
 }
 
 /**
- * Marks a shopping list item as purchased/in-cart or unpurchased/needed.
- * If linked to a pantry item: marking purchased restocks it (is_out_of_stock = false),
- * unpurchased/returning to list marks it back as out-of-stock (is_out_of_stock = true).
- * Enforces ownership authorization: only the user who staged the item (or admin) can un-stage it.
+ * Puts an item into the user's active cart.
+ * Atomically updates is_in_cart = true, is_purchased = false, purchased_by = userId.
  */
-export async function togglePurchased(
+export async function putItemInCart(
   kitchenId: string,
   itemId: string,
-  isPurchased: boolean,
   userId: string
 ): Promise<ShoppingListItem> {
   const client = await pool.connect();
@@ -304,12 +303,158 @@ export async function togglePurchased(
 
     const { rows: existingRows } = await client.query<{
       id: string;
+      is_in_cart: boolean;
       is_purchased: boolean;
       purchased_by: string | null;
       is_guest_staged: boolean;
       checkout_id: string | null;
     }>(
-      `SELECT id, is_purchased, purchased_by, is_guest_staged, checkout_id FROM shopping_list_items WHERE id = $1 AND kitchen_id = $2`,
+      `SELECT id, COALESCE(is_in_cart, FALSE) AS is_in_cart, is_purchased, purchased_by, is_guest_staged, checkout_id 
+       FROM shopping_list_items WHERE id = $1 AND kitchen_id = $2`,
+      [itemId, kitchenId]
+    );
+    if (existingRows.length === 0) {
+      throw new Error("Shopping list item not found.");
+    }
+    const existing = existingRows[0];
+    if (existing.checkout_id) {
+      throw new Error("This item has already been checked out.");
+    }
+    if ((existing.is_in_cart || existing.is_purchased) && existing.purchased_by && existing.purchased_by !== userId) {
+      throw new Error("This item is already in another member's cart.");
+    }
+
+    const { rows } = await client.query<ShoppingListItem>(
+      `UPDATE shopping_list_items
+       SET is_in_cart = TRUE, is_purchased = FALSE, purchased_by = $1, is_guest_staged = FALSE
+       WHERE id = $2 AND kitchen_id = $3
+       RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, is_in_cart, purchased_by, is_guest_staged, checkout_id, created_at`,
+      [userId, itemId, kitchenId]
+    );
+    const item = rows[0];
+
+    let purchasedByName: string | null = null;
+    const userRes = await client.query<{ name: string }>(
+      `SELECT COALESCE(km.kitchen_display_name, u.username) AS name
+       FROM users u
+       LEFT JOIN kitchen_members km ON km.kitchen_id = $1 AND km.user_id = u.id
+       WHERE u.id = $2`,
+      [kitchenId, userId]
+    );
+    purchasedByName = userRes.rows[0]?.name ?? null;
+
+    await client.query("COMMIT");
+    return { ...item, purchased_by_name: purchasedByName };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Directly grabs a pantry staple into the active cart from the store view.
+ * Marks the staple as out_of_stock and creates or moves an unpurchased shopping item to cart.
+ */
+export async function quickAddStapleToCart(
+  kitchenId: string,
+  pantryItemId: string,
+  userId: string
+): Promise<ShoppingListItem> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // 1. Mark staple as out of stock
+    const { rows: pantryRows } = await client.query<{ id: string; name: string }>(
+      `UPDATE pantry_items
+       SET is_out_of_stock = TRUE, updated_at = NOW()
+       WHERE id = $1 AND kitchen_id = $2
+       RETURNING id, name`,
+      [pantryItemId, kitchenId]
+    );
+    if (pantryRows.length === 0) {
+      throw new Error("Pantry staple not found in this kitchen.");
+    }
+    const stapleName = pantryRows[0].name;
+
+    // 2. Check if an active unpurchased shopping list item exists for this pantry item
+    const { rows: existingRows } = await client.query<ShoppingListItem>(
+      `SELECT id, is_in_cart, is_purchased, purchased_by, checkout_id
+       FROM shopping_list_items
+       WHERE kitchen_id = $1 AND pantry_item_id = $2 AND checkout_id IS NULL AND is_purchased = FALSE
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [kitchenId, pantryItemId]
+    );
+
+    let item: ShoppingListItem;
+
+    if (existingRows.length > 0) {
+      const existing = existingRows[0];
+      const { rows } = await client.query<ShoppingListItem>(
+        `UPDATE shopping_list_items
+         SET is_in_cart = TRUE, is_purchased = FALSE, purchased_by = $1, is_guest_staged = FALSE
+         WHERE id = $2 AND kitchen_id = $3
+         RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, is_in_cart, purchased_by, is_guest_staged, checkout_id, created_at`,
+        [userId, existing.id, kitchenId]
+      );
+      item = rows[0];
+    } else {
+      const { rows } = await client.query<ShoppingListItem>(
+        `INSERT INTO shopping_list_items (kitchen_id, pantry_item_id, name, is_purchased, is_in_cart, purchased_by, is_guest_staged, created_at)
+         VALUES ($1, $2, $3, FALSE, TRUE, $4, FALSE, NOW())
+         RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, is_in_cart, purchased_by, is_guest_staged, checkout_id, created_at`,
+        [kitchenId, pantryItemId, stapleName, userId]
+      );
+      item = rows[0];
+    }
+
+    let purchasedByName: string | null = null;
+    const userRes = await client.query<{ name: string }>(
+      `SELECT COALESCE(km.kitchen_display_name, u.username) AS name
+       FROM users u
+       LEFT JOIN kitchen_members km ON km.kitchen_id = $1 AND km.user_id = u.id
+       WHERE u.id = $2`,
+      [kitchenId, userId]
+    );
+    purchasedByName = userRes.rows[0]?.name ?? null;
+
+    await client.query("COMMIT");
+    return { ...item, purchased_by_name: purchasedByName };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Returns an item from the cart back to the active shopping queue.
+ * Atomically updates is_in_cart = false, is_purchased = false, purchased_by = null.
+ * If linked to a pantry item, marks is_out_of_stock = true.
+ */
+export async function returnItemToShoppingList(
+  kitchenId: string,
+  itemId: string,
+  userId: string
+): Promise<ShoppingListItem> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const { rows: existingRows } = await client.query<{
+      id: string;
+      is_in_cart: boolean;
+      is_purchased: boolean;
+      purchased_by: string | null;
+      checkout_id: string | null;
+      pantry_item_id: string | null;
+    }>(
+      `SELECT id, COALESCE(is_in_cart, FALSE) AS is_in_cart, is_purchased, purchased_by, checkout_id, pantry_item_id 
+       FROM shopping_list_items WHERE id = $1 AND kitchen_id = $2`,
       [itemId, kitchenId]
     );
     if (existingRows.length === 0) {
@@ -320,8 +465,7 @@ export async function togglePurchased(
       throw new Error("This item has already been checked out.");
     }
 
-    // Authorization checks
-    if (!isPurchased && existing.is_purchased && existing.purchased_by && existing.purchased_by !== userId) {
+    if (existing.purchased_by && existing.purchased_by !== userId) {
       const adminRes = await client.query(
         `SELECT 1 FROM kitchen_members WHERE kitchen_id = $1 AND user_id = $2 AND role = 'ADMIN'`,
         [kitchenId, userId]
@@ -331,16 +475,73 @@ export async function togglePurchased(
       }
     }
 
-    if (isPurchased && existing.is_purchased && existing.purchased_by && existing.purchased_by !== userId) {
-      throw new Error("This item is already in another member's cart.");
+    const { rows } = await client.query<ShoppingListItem>(
+      `UPDATE shopping_list_items
+       SET is_in_cart = FALSE, is_purchased = FALSE, purchased_by = NULL, is_guest_staged = FALSE
+       WHERE id = $1 AND kitchen_id = $2
+       RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, is_in_cart, purchased_by, is_guest_staged, checkout_id, created_at`,
+      [itemId, kitchenId]
+    );
+    const item = rows[0];
+
+    if (item.pantry_item_id) {
+      await client.query(
+        `UPDATE pantry_items SET is_out_of_stock = TRUE, updated_at = NOW()
+         WHERE id = $1 AND kitchen_id = $2`,
+        [item.pantry_item_id, kitchenId]
+      );
+    }
+
+    await client.query("COMMIT");
+    return { ...item, purchased_by_name: null };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Completes a purchase or checks off an item in an active supermarket run.
+ * Marks is_purchased = true (or false) and restocks linked pantry item if purchased.
+ */
+export async function completeItemPurchase(
+  kitchenId: string,
+  itemId: string,
+  userId: string,
+  isPurchased: boolean
+): Promise<ShoppingListItem> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const { rows: existingRows } = await client.query<{
+      id: string;
+      is_in_cart: boolean;
+      is_purchased: boolean;
+      purchased_by: string | null;
+      checkout_id: string | null;
+      pantry_item_id: string | null;
+    }>(
+      `SELECT id, COALESCE(is_in_cart, FALSE) AS is_in_cart, is_purchased, purchased_by, checkout_id, pantry_item_id 
+       FROM shopping_list_items WHERE id = $1 AND kitchen_id = $2`,
+      [itemId, kitchenId]
+    );
+    if (existingRows.length === 0) {
+      throw new Error("Shopping list item not found.");
+    }
+    const existing = existingRows[0];
+    if (existing.checkout_id) {
+      throw new Error("This item has already been checked out.");
     }
 
     const { rows } = await client.query<ShoppingListItem>(
       `UPDATE shopping_list_items
-       SET is_purchased = $1, purchased_by = $2, is_guest_staged = FALSE
+       SET is_purchased = $1, is_in_cart = TRUE, purchased_by = $2, is_guest_staged = FALSE
        WHERE id = $3 AND kitchen_id = $4
-       RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, purchased_by, is_guest_staged, checkout_id, created_at`,
-      [isPurchased, isPurchased ? userId : null, itemId, kitchenId]
+       RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, is_in_cart, purchased_by, is_guest_staged, checkout_id, created_at`,
+      [isPurchased, userId, itemId, kitchenId]
     );
     const item = rows[0];
 
@@ -353,7 +554,86 @@ export async function togglePurchased(
     }
 
     let purchasedByName: string | null = null;
-    if (isPurchased && userId) {
+    const userRes = await client.query<{ name: string }>(
+      `SELECT COALESCE(km.kitchen_display_name, u.username) AS name
+       FROM users u
+       LEFT JOIN kitchen_members km ON km.kitchen_id = $1 AND km.user_id = u.id
+       WHERE u.id = $2`,
+      [kitchenId, userId]
+    );
+    purchasedByName = userRes.rows[0]?.name ?? null;
+
+    await client.query("COMMIT");
+    return { ...item, purchased_by_name: purchasedByName };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Legacy togglePurchased bridge:
+ * If isPurchased = true -> putItemInCart
+ * If isPurchased = false -> returnItemToShoppingList
+ */
+export async function togglePurchased(
+  kitchenId: string,
+  itemId: string,
+  isPurchased: boolean,
+  userId: string
+): Promise<ShoppingListItem> {
+  if (isPurchased) {
+    return await putItemInCart(kitchenId, itemId, userId);
+  } else {
+    return await returnItemToShoppingList(kitchenId, itemId, userId);
+  }
+}
+
+/**
+ * Duplicates a shopping item so another roommate can also purchase / add it to their basket.
+ */
+export async function duplicateShoppingListItem(
+  kitchenId: string,
+  itemId: string,
+  userId: string,
+  addToCart: boolean = true
+): Promise<ShoppingListItem> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const { rows: sourceRows } = await client.query<ShoppingListItem>(
+      `SELECT id, pantry_item_id, name, item_price, currency
+       FROM shopping_list_items
+       WHERE id = $1 AND kitchen_id = $2`,
+      [itemId, kitchenId]
+    );
+
+    if (sourceRows.length === 0) {
+      throw new Error("Item to duplicate not found.");
+    }
+
+    const source = sourceRows[0];
+
+    const { rows } = await client.query<ShoppingListItem>(
+      `INSERT INTO shopping_list_items (kitchen_id, pantry_item_id, name, item_price, currency, is_purchased, is_in_cart, purchased_by, is_guest_staged, created_at)
+       VALUES ($1, $2, $3, $4, $5, FALSE, $6, $7, FALSE, NOW())
+       RETURNING id, kitchen_id, pantry_item_id, name, item_price, currency, is_purchased, is_in_cart, purchased_by, is_guest_staged, checkout_id, created_at`,
+      [
+        kitchenId,
+        source.pantry_item_id,
+        source.name,
+        source.item_price,
+        source.currency,
+        addToCart,
+        addToCart ? userId : null,
+      ]
+    );
+
+    let purchasedByName: string | null = null;
+    if (addToCart) {
       const userRes = await client.query<{ name: string }>(
         `SELECT COALESCE(km.kitchen_display_name, u.username) AS name
          FROM users u
@@ -365,7 +645,7 @@ export async function togglePurchased(
     }
 
     await client.query("COMMIT");
-    return { ...item, purchased_by_name: purchasedByName };
+    return { ...rows[0], purchased_by_name: purchasedByName };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -469,7 +749,7 @@ export async function createCheckout(
 
     const { rows: cartRows } = await client.query<{ id: string; pantry_item_id: string | null }>(
       `SELECT id, pantry_item_id FROM shopping_list_items
-       WHERE kitchen_id = $1 AND purchased_by = $2 AND is_purchased = TRUE AND checkout_id IS NULL`,
+       WHERE kitchen_id = $1 AND purchased_by = $2 AND (is_in_cart = TRUE OR is_purchased = TRUE) AND checkout_id IS NULL`,
       [kitchenId, userId]
     );
     if (cartRows.length === 0) {
@@ -485,8 +765,8 @@ export async function createCheckout(
     const checkout = checkoutRows[0];
 
     await client.query(
-      `UPDATE shopping_list_items SET checkout_id = $1, currency = $2, is_guest_staged = FALSE
-       WHERE kitchen_id = $3 AND purchased_by = $4 AND is_purchased = TRUE AND checkout_id IS NULL`,
+      `UPDATE shopping_list_items SET checkout_id = $1, is_purchased = TRUE, is_in_cart = FALSE, currency = $2, is_guest_staged = FALSE
+       WHERE kitchen_id = $3 AND purchased_by = $4 AND (is_in_cart = TRUE OR is_purchased = TRUE) AND checkout_id IS NULL`,
       [checkout.id, currency, kitchenId, userId]
     );
 

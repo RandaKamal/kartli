@@ -249,13 +249,13 @@ export function AdminRefundsSection({
               onClick={() => setFilterStatus("pending")}
               className={`px-3.5 py-2 rounded-2xl border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
                 filterStatus === "pending"
-                  ? "bg-accent-ochre/25 text-accent-warning border-accent-ochre/60 shadow-sm"
-                  : "bg-accent-ochre/10 text-accent-warning border-accent-ochre/30 hover:bg-accent-ochre/20"
+                  ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/50 shadow-xs"
+                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/15"
               }`}
             >
               <Clock className="w-3.5 h-3.5" />
               <span>Pending</span>
-              <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-full bg-background/50 text-accent-warning">
+              <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-full bg-background/50 text-amber-600 dark:text-amber-400">
                 {pendingCheckouts.length}
               </span>
             </button>
@@ -265,13 +265,13 @@ export function AdminRefundsSection({
               onClick={() => setFilterStatus("settled")}
               className={`px-3.5 py-2 rounded-2xl border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
                 filterStatus === "settled"
-                  ? "bg-accent-sage/25 text-accent-success border-accent-sage/60 shadow-sm"
-                  : "bg-accent-sage/10 text-accent-success border-accent-sage/30 hover:bg-accent-sage/20"
+                  ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/50 shadow-xs"
+                  : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/15"
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Settled</span>
-              <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-full bg-background/50 text-accent-success">
+              <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-full bg-background/50 text-emerald-600 dark:text-emerald-400">
                 {settledCheckouts.length}
               </span>
             </button>
@@ -309,7 +309,7 @@ export function AdminRefundsSection({
             return (
               <Card
                 key={checkout.id}
-                className="border border-border bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm hover:border-border transition"
+                className="border border-border/70 bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs hover:border-border hover:bg-card/80 transition-colors"
               >
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   {/* Left Column: User & Context */}
@@ -414,8 +414,8 @@ export function AdminRefundsSection({
                     {/* Status Badge & Settle Action */}
                     {checkout.is_refunded ? (
                       <div className="flex items-center gap-1.5">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border bg-accent-sage/15 text-accent-success border-accent-sage/30">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-accent-success" />
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                           <span>Settled</span>
                         </div>
                         {checkout.receipts.length > 0 && checkout.refunded_at && (
@@ -424,8 +424,8 @@ export function AdminRefundsSection({
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border bg-accent-ochre/15 text-accent-warning border-accent-ochre/30">
-                          <span className="w-1.5 h-1.5 rounded-full bg-accent-warning shrink-0" />
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                           <span>Pending</span>
                         </div>
 
@@ -469,12 +469,12 @@ export function AdminRefundsSection({
                     </DialogTitle>
                   </div>
                   {selectedCheckout.is_refunded ? (
-                    <Badge variant="success" className="bg-accent-sage/15 text-accent-success border-accent-sage/30 w-fit shrink-0">
+                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 w-fit shrink-0">
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                       Settled
                     </Badge>
                   ) : (
-                    <Badge variant="warm" className="bg-accent-ochre/15 text-accent-warning border-accent-ochre/30 w-fit shrink-0">
+                    <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 w-fit shrink-0">
                       <Clock className="w-3.5 h-3.5 mr-1" />
                       Pending Refund
                     </Badge>

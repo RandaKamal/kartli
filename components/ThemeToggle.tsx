@@ -26,9 +26,9 @@ export function ThemeToggle({
   if (!mounted) {
     return (
       <Button
-        variant="secondary"
+        variant="ghost"
         size="icon"
-        className={`h-9 w-9 rounded-xl border border-border/80 bg-secondary/80 opacity-70 ${className || ""}`}
+        className={`h-9 w-9 rounded-xl border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors ${className || ""}`}
         aria-label="Toggle theme"
       >
         <Sun className="h-4 w-4" />
@@ -40,9 +40,9 @@ export function ThemeToggle({
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="secondary"
+          variant="ghost"
           size="icon"
-          className={`h-9 w-9 rounded-xl border border-border/80 bg-secondary/80 text-muted-foreground hover:text-foreground transition-colors ${className || ""}`}
+          className={`h-9 w-9 rounded-xl border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors ${className || ""}`}
           aria-label="Toggle theme"
         >
           <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
