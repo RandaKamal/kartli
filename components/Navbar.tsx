@@ -26,7 +26,7 @@ export function Navbar({ user }: NavbarProps) {
   const brandHref = user ? "/dashboard" : "/";
 
   return (
-    <header className="sticky top-0 z-40 bg-background/85 backdrop-blur-md border-b border-border/70">
+    <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/60">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Left: kartli brand mark + clean wordmark */}
         <Link

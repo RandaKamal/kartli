@@ -579,10 +579,10 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
         href="https://github.com/randakamal/kartli"
         target="_blank"
         rel="noopener noreferrer"
-        className="group flex items-center justify-between p-4 rounded-2xl border border-border/70 dark:border-white/[0.08] bg-card dark:bg-[#121215] hover:bg-muted/40 dark:hover:bg-[#16161b] hover:border-border dark:hover:border-white/20 transition-all duration-200 shadow-2xs cursor-pointer mt-6"
+        className="group flex items-center justify-between p-4 rounded-2xl border border-border/80 bg-card hover:bg-muted/40 hover:border-border transition-all duration-200 shadow-2xs cursor-pointer mt-6"
       >
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-muted/60 dark:bg-white/[0.05] border border-border/60 dark:border-white/[0.08] text-muted-foreground group-hover:text-foreground transition-colors">
+          <div className="p-2 rounded-xl bg-muted/60 border border-border/60 text-muted-foreground group-hover:text-foreground transition-colors">
             <svg
               className="w-4 h-4 fill-current"
               viewBox="0 0 24 24"

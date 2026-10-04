@@ -129,13 +129,11 @@ export function SpaceCard({
     kitchenWithStats;
 
   const targetUrl = `/kitchen/${kitchen.id}`;
-  const inviteLink = kitchenWithStats.pendingInviteToken
-    ? `${baseUrl}/invite/${kitchenWithStats.pendingInviteToken}`
-    : `${baseUrl}/kitchen/view/${kitchen.public_view_token}`;
+  const guestLink = `${baseUrl}/kitchen/view/${kitchen.public_view_token}`;
 
   if (variant === "hero") {
     return (
-      <div className="group relative w-full p-8 rounded-3xl bg-card border border-border/80 dark:border-white/10 shadow-2xl backdrop-blur-xl overflow-hidden transition-all duration-300">
+      <div className="group relative w-full p-8 rounded-3xl bg-card border border-border/80 shadow-2xl backdrop-blur-xl overflow-hidden transition-all duration-300">
         {/* Top Micro-border Highlight */}
         <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent pointer-events-none" />
 
@@ -146,11 +144,11 @@ export function SpaceCard({
           {/* Left Column: Hero Info */}
           <div className="lg:col-span-5 space-y-4">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-foreground bg-secondary/80 dark:bg-white/[0.05] border border-border/70 dark:border-white/[0.08] px-3 py-1 rounded-xl shadow-2xs">
+              <span className="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-foreground bg-secondary/80 border border-border/70 px-3 py-1 rounded-xl shadow-2xs">
                 {getSpaceIcon(kitchen.space_type, "w-3.5 h-3.5")}
                 <span>{getSpaceLabel(kitchen.space_type)}</span>
               </span>
-              <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-secondary text-muted-foreground font-semibold border border-border/40 dark:border-white/[0.04]">
+              <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-secondary text-muted-foreground font-semibold border border-border/40">
                 {membership.role}
               </span>
             </div>
@@ -183,7 +181,7 @@ export function SpaceCard({
 
           {/* Middle Column: Quick-Status / Live Pantry Health Gauge */}
           <div className="lg:col-span-4">
-            <div className="rounded-2xl bg-muted/40 dark:bg-white/[0.03] border border-border/70 dark:border-white/[0.06] p-5 space-y-3.5 transition-colors">
+            <div className="rounded-2xl bg-muted/40 border border-border/70 p-5 space-y-3.5 transition-colors">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5">
                   {neededItemCount === 0 ? (
@@ -229,13 +227,13 @@ export function SpaceCard({
                     {sampleNeededItems.slice(0, 3).map((item, idx) => (
                       <span
                         key={idx}
-                        className="text-xs font-medium text-foreground bg-background dark:bg-[#18181c] border border-border/80 dark:border-white/[0.08] px-2.5 py-1 rounded-lg truncate max-w-[130px] shadow-2xs"
+                        className="text-xs font-medium text-foreground bg-background border border-border/80 px-2.5 py-1 rounded-lg truncate max-w-[130px] shadow-2xs"
                       >
                         {item}
                       </span>
                     ))}
                     {neededItemCount > 3 && (
-                      <span className="text-[11px] font-mono text-muted-foreground px-2 py-1 rounded-lg bg-background/60 dark:bg-white/[0.04] border border-border/40">
+                      <span className="text-[11px] font-mono text-muted-foreground px-2 py-1 rounded-lg bg-background/60 border border-border/40">
                         +{neededItemCount - 3} more
                       </span>
                     )}
@@ -256,8 +254,9 @@ export function SpaceCard({
             </Link>
 
             <CopyButton
-              text={inviteLink}
-              label="Copy Invite Link"
+              text={guestLink}
+              label="Guest Link"
+              tooltip="Quick read-only supermarket view for household members and guests, not a member onboarding invite."
               size="sm"
               className="rounded-xl px-4 py-2.5 text-xs font-medium bg-secondary/80 hover:bg-secondary border border-border/80 text-foreground transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs w-full lg:w-auto"
             />
@@ -269,19 +268,19 @@ export function SpaceCard({
 
   // Standard Card Layout (Multiple Spaces Grid)
   return (
-    <div className="group relative flex flex-col justify-between rounded-3xl bg-card dark:bg-[#121215] border border-border/75 dark:border-white/[0.08] hover:border-foreground/20 dark:hover:border-white/20 shadow-xs hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/40 transition-all duration-300 overflow-hidden w-full">
+    <div className="group relative flex flex-col justify-between rounded-3xl bg-card border border-border/80 hover:border-foreground/20 shadow-xs hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/40 transition-all duration-300 overflow-hidden w-full">
       {/* Top Micro-border Highlight */}
       <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent group-hover:via-primary group-hover:h-[2.5px] transition-all duration-300 pointer-events-none z-20" />
 
       {/* Terminal-Style Header Row */}
-      <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-border/50 dark:border-white/[0.06] bg-muted/25 dark:bg-white/[0.02]">
+      <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-border/50 bg-muted/25">
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium text-foreground bg-background/90 dark:bg-white/[0.05] border border-border/70 dark:border-white/[0.08] px-2.5 py-0.5 rounded-md shadow-2xs">
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium text-foreground bg-background/90 border border-border/70 px-2.5 py-0.5 rounded-md shadow-2xs">
             {getSpaceIcon(kitchen.space_type)}
             <span>{getSpaceLabel(kitchen.space_type)}</span>
           </span>
 
-          <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-secondary text-muted-foreground font-semibold border border-border/40 dark:border-white/[0.04]">
+          <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-secondary text-muted-foreground font-semibold border border-border/40">
             {membership.role}
           </span>
         </div>
@@ -331,7 +330,7 @@ export function SpaceCard({
 
           {/* Restock Status / Pantry Gauge */}
           {neededItemCount > 0 ? (
-            <div className="rounded-xl bg-muted/40 dark:bg-white/[0.03] border border-border/60 dark:border-white/[0.06] p-3 transition-colors group-hover:border-border/90 dark:group-hover:border-white/10">
+            <div className="rounded-xl bg-muted/40 border border-border/60 p-3 transition-colors group-hover:border-border/90">
               <div className="flex items-center gap-2.5">
                 <span className="relative flex h-2 w-2 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
@@ -344,13 +343,13 @@ export function SpaceCard({
                   {sampleNeededItems.slice(0, 3).map((item, idx) => (
                     <span
                       key={idx}
-                      className="text-[11px] font-medium text-foreground bg-background dark:bg-[#18181c] border border-border/70 dark:border-white/[0.08] px-2 py-0.5 rounded-md truncate max-w-[130px] shadow-2xs"
+                      className="text-[11px] font-medium text-foreground bg-background border border-border/70 px-2 py-0.5 rounded-md truncate max-w-[130px] shadow-2xs"
                     >
                       {item}
                     </span>
                   ))}
                   {neededItemCount > 3 && (
-                    <span className="text-[10px] font-mono text-muted-foreground/80 px-1.5 py-0.5 rounded bg-background/60 dark:bg-white/[0.04] border border-border/40">
+                    <span className="text-[10px] font-mono text-muted-foreground/80 px-1.5 py-0.5 rounded bg-background/60 border border-border/40">
                       +{neededItemCount - 3} more
                     </span>
                   )}
@@ -358,7 +357,7 @@ export function SpaceCard({
               </div>
             </div>
           ) : (
-            <div className="rounded-xl bg-muted/30 dark:bg-white/[0.02] border border-border/40 dark:border-white/[0.04] px-3.5 py-2.5 flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="rounded-xl bg-muted/30 border border-border/40 px-3.5 py-2.5 flex items-center gap-2 text-xs text-muted-foreground">
               <span className="relative flex h-2 w-2 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
@@ -374,7 +373,7 @@ export function SpaceCard({
         </div>
 
         {/* Card Action Footer */}
-        <div className="pt-4 border-t border-border/60 dark:border-white/[0.06] flex items-center justify-between gap-3 relative z-0 pointer-events-none">
+        <div className="pt-4 border-t border-border/60 flex items-center justify-between gap-3 relative z-0 pointer-events-none">
           <span className="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl bg-primary text-primary-foreground shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5 transition-all duration-200">
             <span>Enter Kitchen</span>
             <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
@@ -382,8 +381,9 @@ export function SpaceCard({
 
           <div className="relative z-10 pointer-events-auto">
             <CopyButton
-              text={inviteLink}
-              label="Copy Invite Link"
+              text={guestLink}
+              label="Guest Link"
+              tooltip="Quick read-only supermarket view for household members and guests, not a member onboarding invite."
               size="sm"
               className="text-xs font-medium px-3 py-2 rounded-xl bg-secondary/80 hover:bg-secondary border border-border/70 hover:border-border text-foreground transition-all duration-200 shadow-2xs flex items-center gap-1.5 cursor-pointer"
             />

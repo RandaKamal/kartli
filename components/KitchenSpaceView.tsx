@@ -49,6 +49,7 @@ import {
   CheckCircle2,
   CreditCard,
   ArrowRight,
+  ArrowLeft,
   Home,
   Heart,
   Briefcase,
@@ -644,7 +645,8 @@ export function KitchenSpaceView({
                 onClick={() => handleModeChange("board")}
                 className="inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors cursor-pointer py-1"
               >
-                <span>← Back to Kitchen Board</span>
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back to Kitchen Board</span>
               </button>
             </div>
 

@@ -25,7 +25,7 @@ export default async function ProfilePage() {
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>← Back to Kitchens</span>
+          <span>Back to Kitchens</span>
         </Link>
       </div>
 

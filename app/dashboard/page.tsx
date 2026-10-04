@@ -77,7 +77,7 @@ export default async function DashboardPage() {
         {userKitchens.length === 0 ? (
           /* EMPTY STATE ONBOARDING */
           <div className="max-w-2xl mx-auto py-4 sm:py-6">
-            <div className="relative overflow-hidden rounded-3xl bg-card border border-border/80 dark:border-white/10 shadow-xl backdrop-blur-xl p-8 sm:p-10 text-center space-y-8">
+            <div className="relative overflow-hidden rounded-3xl bg-card border border-border/80 shadow-xl backdrop-blur-xl p-8 sm:p-10 text-center space-y-8">
               {/* Subtle top micro-border highlight */}
               <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent pointer-events-none" />
 
@@ -105,7 +105,7 @@ export default async function DashboardPage() {
               {/* Step-by-Step Onboarding Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left relative pt-1">
                 {/* Step 1: Create a kitchen */}
-                <div className="flex flex-col justify-between rounded-2xl bg-muted/30 dark:bg-white/[0.02] border border-border/80 dark:border-white/[0.06] p-6 space-y-5">
+                <div className="flex flex-col justify-between rounded-2xl bg-muted/30 border border-border/80 p-6 space-y-5">
                   <div className="space-y-2.5">
                     <div className="flex items-center gap-2.5">
                       <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold font-mono flex items-center justify-center shadow-xs">
@@ -132,7 +132,7 @@ export default async function DashboardPage() {
                 </div>
 
                 {/* Step 2: Paste invite code */}
-                <div className="flex flex-col justify-between rounded-2xl bg-muted/30 dark:bg-white/[0.02] border border-border/80 dark:border-white/[0.06] p-6 space-y-5">
+                <div className="flex flex-col justify-between rounded-2xl bg-muted/30 border border-border/80 p-6 space-y-5">
                   <div className="space-y-2.5">
                     <div className="flex items-center gap-2.5">
                       <span className="w-6 h-6 rounded-full bg-secondary text-foreground border border-border text-xs font-bold font-mono flex items-center justify-center shadow-xs">
