@@ -23,6 +23,7 @@ import {
   moveAllNeededToCart,
   stageGuestShoppingItem as stageGuestShoppingItemDb,
   unstageGuestItem as unstageGuestItemDb,
+  quickAddStapleToCart,
 } from "@/lib/pantry";
 import type { PantryItem, ShoppingListItem } from "@/types";
 
@@ -103,6 +104,13 @@ export async function putItemInCartAction(kitchenId: string, itemId: string) {
 }
 
 export const moveToCartAction = putItemInCartAction;
+
+export async function quickAddStapleToCartAction(kitchenId: string, pantryItemId: string) {
+  const userId = await requireMembership(kitchenId);
+  const item = await quickAddStapleToCart(kitchenId, pantryItemId, userId);
+  revalidateKitchen(kitchenId);
+  return item;
+}
 
 export async function returnToShoppingListAction(kitchenId: string, itemId: string) {
   const userId = await requireMembership(kitchenId);

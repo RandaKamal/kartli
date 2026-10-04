@@ -16,6 +16,8 @@ import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import {
   addPantryItemAction,
   addCustomShoppingItemAction,
+  quickAddStapleToCartAction,
+  moveAllNeededToCartAction,
 } from "@/app/actions/pantry";
 import { getPendingRefundsCountAction } from "@/app/actions/checkout";
 import { PantrySection } from "@/components/PantrySection";
@@ -142,6 +144,19 @@ export function KitchenSpaceView({
   const [localShoppingListItems, setLocalShoppingListItems] = useState<ShoppingListItem[]>(initialShoppingListItems);
   const [localMembers, setLocalMembers] = useState<KitchenMemberWithUser[]>(initialMembers);
 
+  // Keep local state in sync when server props refresh
+  useEffect(() => {
+    setLocalPantryItems(initialPantryItems);
+  }, [initialPantryItems]);
+
+  useEffect(() => {
+    setLocalShoppingListItems(initialShoppingListItems);
+  }, [initialShoppingListItems]);
+
+  useEffect(() => {
+    setLocalMembers(initialMembers);
+  }, [initialMembers]);
+
   // Universal Command Bar State
   const [commandInput, setCommandInput] = useState("");
   const [commandType, setCommandType] = useState<"one-off" | "staple">("one-off");
@@ -233,10 +248,12 @@ export function KitchenSpaceView({
           setLocalPantryItems((prev) =>
             [...prev, item].sort((a, b) => a.name.localeCompare(b.name))
           );
+          router.refresh();
           toast.success(`Tracked "${name}" in household staples`);
         } else {
           const newItem = await addCustomShoppingItemAction(initialKitchen.id, name);
           setLocalShoppingListItems((prev) => [newItem, ...prev]);
+          router.refresh();
           toast.success(`Added "${name}" to shopping queue`);
         }
         setCommandInput("");
@@ -265,6 +282,7 @@ export function KitchenSpaceView({
         item_price: null,
         is_purchased: false,
         purchased_by: null,
+        is_in_cart: false,
         is_guest_staged: false,
         checkout_id: null,
         created_at: new Date(),
@@ -310,6 +328,85 @@ export function KitchenSpaceView({
         prev.map((p) => (p.id === item.pantry_item_id ? { ...p, is_out_of_stock: true } : p))
       );
     }
+  };
+
+  const handleItemPurchasedToggle = (item: ShoppingListItem, isPurchased: boolean) => {
+    setLocalShoppingListItems((prev) =>
+      prev.map((i) => (i.id === item.id ? { ...i, is_purchased: isPurchased } : i))
+    );
+  };
+
+  const handleQuickAddStapleToCart = (staple: PantryItem) => {
+    const existing = localShoppingListItems.find(
+      (i) => i.pantry_item_id === staple.id && !i.is_purchased
+    );
+
+    const tempId = existing?.id || `temp-${Date.now()}`;
+    const targetItem: ShoppingListItem = existing || {
+      id: tempId,
+      kitchen_id: initialKitchen.id,
+      pantry_item_id: staple.id,
+      name: staple.name,
+      item_price: null,
+      is_purchased: false,
+      purchased_by: currentUserId,
+      is_in_cart: true,
+      is_guest_staged: false,
+      checkout_id: null,
+      created_at: new Date(),
+    };
+
+    setLocalPantryItems((prev) =>
+      prev.map((p) => (p.id === staple.id ? { ...p, is_out_of_stock: true } : p))
+    );
+
+    setLocalShoppingListItems((prev) => {
+      if (prev.some((i) => i.id === targetItem.id)) {
+        return prev.map((i) =>
+          i.id === targetItem.id
+            ? { ...i, is_in_cart: true, is_purchased: false, purchased_by: currentUserId }
+            : i
+        );
+      }
+      return [{ ...targetItem, is_in_cart: true, is_purchased: false, purchased_by: currentUserId }, ...prev];
+    });
+
+    setIsCartBadgePulsing(true);
+    setTimeout(() => setIsCartBadgePulsing(false), 900);
+    toast.success(`Added "${staple.name}" directly to your basket`);
+
+    startTransition(async () => {
+      try {
+        await quickAddStapleToCartAction(initialKitchen.id, staple.id);
+        router.refresh();
+      } catch (err: any) {
+        toast.error(err.message || "Failed to add staple to basket.");
+        router.refresh();
+      }
+    });
+  };
+
+  const handleAllItemsMovedToCart = () => {
+    setLocalShoppingListItems((prev) =>
+      prev.map((i) =>
+        !i.is_in_cart && !i.is_purchased && !i.is_guest_staged
+          ? { ...i, is_in_cart: true, is_purchased: false, purchased_by: currentUserId }
+          : i
+      )
+    );
+    setIsCartBadgePulsing(true);
+    setTimeout(() => setIsCartBadgePulsing(false), 900);
+    toast.success("Moved all needed items into your basket");
+
+    startTransition(async () => {
+      try {
+        await moveAllNeededToCartAction(initialKitchen.id);
+        router.refresh();
+      } catch (err: any) {
+        toast.error(err.message || "Failed to move items to basket.");
+        router.refresh();
+      }
+    });
   };
 
   const handleItemRemoved = (item: ShoppingListItem) => {
@@ -417,6 +514,9 @@ export function KitchenSpaceView({
           >
             <UtensilsCrossed className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>Kitchen Board</span>
+            <span className="hidden sm:inline text-[11px] opacity-70 font-normal">
+              (Inventory & Prep)
+            </span>
             {neededItemsCount > 0 && (
               <span
                 className={cn(
@@ -443,6 +543,9 @@ export function KitchenSpaceView({
           >
             <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>Supermarket Run</span>
+            <span className="hidden sm:inline text-[11px] opacity-70 font-normal">
+              (Store Checklist)
+            </span>
             {(activeCartCount > 0 || isCartBadgePulsing) && (
               <span
                 className={cn(
@@ -529,9 +632,9 @@ export function KitchenSpaceView({
 
             {/* RESTING STATE OR URGENT RESTOCK BANNER */}
             {neededItemsCount > 0 ? (
-              <div className="rounded-2xl bg-amber-500/[0.06] border border-amber-500/20 p-4 sm:py-5 sm:px-6 flex items-center justify-between gap-4 shadow-sm">
+              <div className="rounded-2xl bg-amber-500/[0.08] border border-amber-500/25 p-4 sm:py-5 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
                 <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-amber-500/20 border border-amber-500/35 flex items-center justify-center text-amber-500 shrink-0">
                     <ShoppingCart className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
@@ -541,23 +644,22 @@ export function KitchenSpaceView({
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
                       </span>
                       <h3 className="text-sm sm:text-base font-bold text-foreground tracking-tight truncate">
-                        {neededItemsCount} {neededItemsCount === 1 ? "item" : "items"} needed for next run
+                        {neededItemsCount} {neededItemsCount === 1 ? "item" : "items"} ready to restock
                       </h3>
                     </div>
                     <p className="text-xs text-muted-foreground truncate">
-                      Active restock queue ready for supermarket run
+                      Inventory updated • Ready for supermarket checklist
                     </p>
                   </div>
                 </div>
 
                 <Button
                   type="button"
-                  size="sm"
+                  size="default"
                   onClick={() => handleModeChange("supermarket")}
-                  className="rounded-xl h-9 px-4 bg-primary text-primary-foreground font-semibold text-xs sm:text-sm shrink-0 flex items-center gap-1.5 cursor-pointer shadow-md hover:shadow-lg transition-all"
+                  className="rounded-xl h-10 px-5 bg-accent-brand text-accent-foreground font-bold text-xs sm:text-sm shrink-0 flex items-center gap-2 cursor-pointer shadow-md hover:bg-accent-brand/90 hover:shadow-lg transition-all"
                 >
-                  <span>Start Shopping Run</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <span>Ready to buy? Open Supermarket Run →</span>
                 </Button>
               </div>
             ) : (
@@ -653,6 +755,7 @@ export function KitchenSpaceView({
             <ActiveCartSection
               kitchenId={initialKitchen.id}
               items={localShoppingListItems}
+              pantryItems={localPantryItems}
               currentUserId={currentUserId}
               spaceType={initialKitchen.space_type}
               onSwitchTab={(tab) => {
@@ -660,6 +763,9 @@ export function KitchenSpaceView({
               }}
               onItemReturnedToList={handleItemReturnedToList}
               onItemMovedToCart={handleItemMovedToCart}
+              onItemPurchasedToggle={handleItemPurchasedToggle}
+              onQuickAddStaple={handleQuickAddStapleToCart}
+              onAllItemsMovedToCart={handleAllItemsMovedToCart}
             />
           </main>
         )}

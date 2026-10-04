@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useOptimistic } from "react";
+import { useRouter } from "next/navigation";
 import {
   addPantryItemAction,
   setPantryItemStockAction,
@@ -51,6 +52,7 @@ export function PantrySection({
   onItemAdded,
   hideInput = false,
 }: PantrySectionProps) {
+  const router = useRouter();
   const [optimisticItems, setOptimisticItems] = useOptimistic(
     items,
     (state: PantryItem[], update: { id: string; is_out_of_stock: boolean }) =>
@@ -73,6 +75,7 @@ export function PantrySection({
         const item = await addPantryItemAction(kitchenId, name);
         onItemAdded?.(item);
         setNewItemName("");
+        router.refresh();
         toast.success(`Tracked "${name}" in staples`);
       } catch (err: any) {
         toast.error(err.message || "Failed to add staple.");
@@ -97,6 +100,7 @@ export function PantrySection({
 
       try {
         await setPantryItemStockAction(kitchenId, item.id, nextValue);
+        router.refresh();
         if (nextValue) {
           toast.warning(`Marked "${item.name}" as Needed — queued on shopping list`);
         } else {
@@ -124,6 +128,7 @@ export function PantrySection({
         await deletePantryItemAction(kitchenId, itemId);
         onItemDeleted?.(itemId);
         setItemToDelete(null);
+        router.refresh();
         toast.success(`Deleted "${itemName}" from staples`);
       } catch (err: any) {
         toast.error(err.message || "Failed to delete staple.");

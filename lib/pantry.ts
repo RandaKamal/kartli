@@ -354,6 +354,84 @@ export async function putItemInCart(
 }
 
 /**
+ * Directly grabs a pantry staple into the active cart from the store view.
+ * Marks the staple as out_of_stock and creates or moves an unpurchased shopping item to cart.
+ */
+export async function quickAddStapleToCart(
+  kitchenId: string,
+  pantryItemId: string,
+  userId: string
+): Promise<ShoppingListItem> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // 1. Mark staple as out of stock
+    const { rows: pantryRows } = await client.query<{ id: string; name: string }>(
+      `UPDATE pantry_items
+       SET is_out_of_stock = TRUE, updated_at = NOW()
+       WHERE id = $1 AND kitchen_id = $2
+       RETURNING id, name`,
+      [pantryItemId, kitchenId]
+    );
+    if (pantryRows.length === 0) {
+      throw new Error("Pantry staple not found in this kitchen.");
+    }
+    const stapleName = pantryRows[0].name;
+
+    // 2. Check if an active unpurchased shopping list item exists for this pantry item
+    const { rows: existingRows } = await client.query<ShoppingListItem>(
+      `SELECT id, is_in_cart, is_purchased, purchased_by, checkout_id
+       FROM shopping_list_items
+       WHERE kitchen_id = $1 AND pantry_item_id = $2 AND checkout_id IS NULL AND is_purchased = FALSE
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [kitchenId, pantryItemId]
+    );
+
+    let item: ShoppingListItem;
+
+    if (existingRows.length > 0) {
+      const existing = existingRows[0];
+      const { rows } = await client.query<ShoppingListItem>(
+        `UPDATE shopping_list_items
+         SET is_in_cart = TRUE, is_purchased = FALSE, purchased_by = $1, is_guest_staged = FALSE
+         WHERE id = $2 AND kitchen_id = $3
+         RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, is_in_cart, purchased_by, is_guest_staged, checkout_id, created_at`,
+        [userId, existing.id, kitchenId]
+      );
+      item = rows[0];
+    } else {
+      const { rows } = await client.query<ShoppingListItem>(
+        `INSERT INTO shopping_list_items (kitchen_id, pantry_item_id, name, is_purchased, is_in_cart, purchased_by, is_guest_staged, created_at)
+         VALUES ($1, $2, $3, FALSE, TRUE, $4, FALSE, NOW())
+         RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, is_in_cart, purchased_by, is_guest_staged, checkout_id, created_at`,
+        [kitchenId, pantryItemId, stapleName, userId]
+      );
+      item = rows[0];
+    }
+
+    let purchasedByName: string | null = null;
+    const userRes = await client.query<{ name: string }>(
+      `SELECT COALESCE(km.kitchen_display_name, u.username) AS name
+       FROM users u
+       LEFT JOIN kitchen_members km ON km.kitchen_id = $1 AND km.user_id = u.id
+       WHERE u.id = $2`,
+      [kitchenId, userId]
+    );
+    purchasedByName = userRes.rows[0]?.name ?? null;
+
+    await client.query("COMMIT");
+    return { ...item, purchased_by_name: purchasedByName };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Returns an item from the cart back to the active shopping queue.
  * Atomically updates is_in_cart = false, is_purchased = false, purchased_by = null.
  * If linked to a pantry item, marks is_out_of_stock = true.

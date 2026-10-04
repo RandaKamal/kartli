@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useOptimistic } from "react";
+import { useRouter } from "next/navigation";
 import {
   addCustomShoppingItemAction,
   moveToCartAction,
@@ -57,6 +58,7 @@ export function ShoppingListSection({
   onItemAdded,
   hideInput = false,
 }: ShoppingListSectionProps) {
+  const router = useRouter();
   const [optimisticListItems, setOptimisticListItems] = useOptimistic(
     items,
     (state: ShoppingListItem[], update: OptimisticUpdate) => {
@@ -87,6 +89,7 @@ export function ShoppingListSection({
         const newItem = await addCustomShoppingItemAction(kitchenId, name);
         onItemAdded?.(newItem);
         setCustomItemName("");
+        router.refresh();
         toast.success(`Added "${name}" to shopping queue`);
       } catch (err: any) {
         toast.error(err.message || "Failed to add item.");
@@ -114,6 +117,7 @@ export function ShoppingListSection({
 
       try {
         await moveToCartAction(kitchenId, item.id);
+        router.refresh();
         toast.success(`Added "${item.name}" to cart`, {
           action: onViewCart
             ? {
@@ -153,6 +157,7 @@ export function ShoppingListSection({
 
       try {
         await removeShoppingListItemAction(kitchenId, item.id);
+        router.refresh();
         if (isCustom) {
           toast.success(`Deleted "${item.name}" from queue`);
         } else {
