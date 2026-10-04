@@ -1,7 +1,5 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { getUserById } from "@/lib/auth-service";
 import { Suspense } from "react";

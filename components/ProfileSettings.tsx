@@ -53,25 +53,25 @@ interface CulinaryTheme {
   colors: [string, string, string]; // [Primary, Success/In-Cart, Warning/Needed]
 }
 
-const CULINARY_THEMES: CulinaryTheme[] = [
-  {
-    id: "black-truffle",
-    name: "Black Truffle",
-    subtitle: "Minimalist High-Contrast Luxury & Emerald",
-    colors: ["#34d399", "#10b981", "#22d3ee"],
-  },
-  {
-    id: "velvet-fig",
-    name: "Velvet Fig",
-    subtitle: "Warm French Bistro & Port Wine",
-    colors: ["#9e55b6", "#34d399", "#c084fc"],
-  },
-];
-
 export function ProfileSettings({ user }: ProfileSettingsProps) {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
+
+  const culinaryThemes: CulinaryTheme[] = [
+    {
+      id: "black-truffle",
+      name: t.profile.themeBlackTruffleTitle,
+      subtitle: t.profile.themeBlackTruffleDesc,
+      colors: ["#34d399", "#10b981", "#22d3ee"],
+    },
+    {
+      id: "velvet-fig",
+      name: t.profile.themeVelvetFigTitle,
+      subtitle: t.profile.themeVelvetFigDesc,
+      colors: ["#9e55b6", "#34d399", "#c084fc"],
+    },
+  ];
 
   const [activeTab, setActiveTab] = useState("account");
   const { theme, setTheme } = useTheme();
@@ -131,7 +131,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
       document.cookie = `kartli-theme=${normalizedKey}; path=/; max-age=31536000; SameSite=Lax`;
       document.cookie = `culinary-theme=${normalizedKey}; path=/; max-age=31536000; SameSite=Lax`;
     }
-    const selected = CULINARY_THEMES.find((t) => t.id === normalizedKey);
+    const selected = culinaryThemes.find((t) => t.id === normalizedKey);
     toast.success(`Theme updated to ${selected?.name || normalizedKey}`);
   };
 
@@ -268,7 +268,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   <span>{t.profile.themeLabel}</span>
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Choose your preferred contrast mode (Light, Dark, or System default).
+                  {t.profile.contrastModeSub}
                 </p>
               </div>
 
@@ -283,7 +283,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   }`}
                 >
                   <Sun className="w-4 h-4" />
-                  <span>Light</span>
+                  <span>{t.profile.lightMode}</span>
                 </button>
                 <button
                   type="button"
@@ -295,7 +295,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   }`}
                 >
                   <Moon className="w-4 h-4" />
-                  <span>Dark</span>
+                  <span>{t.profile.darkMode}</span>
                 </button>
                 <button
                   type="button"
@@ -307,7 +307,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   }`}
                 >
                   <Laptop className="w-4 h-4" />
-                  <span>System</span>
+                  <span>{t.profile.systemMode}</span>
                 </button>
               </div>
             </div>
@@ -319,15 +319,15 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               <div className="space-y-0.5">
                 <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                   <UtensilsCrossed className="w-5 h-5 text-accent-primary" />
-                  <span>Culinary Color Themes</span>
+                  <span>{t.profile.culinaryThemesTitle}</span>
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Choose an artisanal food-inspired palette for your personal kartli workspace.
+                  {t.profile.culinaryThemesSub}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                {CULINARY_THEMES.map((theme) => {
+                {culinaryThemes.map((theme) => {
                   const isSelected =
                     theme.id ===
                     (currentTheme === "plum" || currentTheme === "velvet-fig"
@@ -367,7 +367,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                       {/* Bottom Row */}
                       <div className="flex items-center justify-between pt-2 border-t border-border/40 mt-auto w-full">
                         <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
-                          Palette
+                          {t.profile.paletteLabel}
                         </span>
                         <div className="flex items-center gap-1.5">
                           {theme.colors.map((hex, idx) => (
@@ -391,10 +391,10 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
             <CardHeader className="p-0 space-y-1">
               <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
                 <Bell className="w-5 h-5 text-muted-foreground" />
-                <span>Notification Preferences</span>
+                <span>{t.profile.notifTitle}</span>
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                Configure when and how you receive grocery and kitchen status alerts.
+                {t.profile.notifSub}
               </CardDescription>
             </CardHeader>
 
@@ -402,10 +402,10 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
                 <div className="space-y-0.5">
                   <Label htmlFor="notify-pantry" className="text-sm font-medium text-foreground cursor-pointer">
-                    Pantry Restock Alerts
+                    {t.profile.notifRestockTitle}
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Get notified when an item in your kitchen is marked as Empty.
+                    {t.profile.notifRestockDesc}
                   </p>
                 </div>
                 <Switch
@@ -418,10 +418,10 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
                 <div className="space-y-0.5">
                   <Label htmlFor="notify-shopping" className="text-sm font-medium text-foreground cursor-pointer">
-                    Shopping Cart &amp; Checkout Updates
+                    {t.profile.notifCheckoutTitle}
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Receive confirmation when a roommate checks out groceries.
+                    {t.profile.notifCheckoutDesc}
                   </p>
                 </div>
                 <Switch
@@ -434,10 +434,10 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
                 <div className="space-y-0.5">
                   <Label htmlFor="notify-members" className="text-sm font-medium text-foreground cursor-pointer">
-                    Member Activity
+                    {t.profile.notifMemberTitle}
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Alert when a new member claims an invite link in your kitchen.
+                    {t.profile.notifMemberDesc}
                   </p>
                 </div>
                 <Switch
@@ -457,7 +457,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                 <span>{t.profile.currencyLabel}</span>
               </h3>
               <p className="text-xs text-muted-foreground">
-                Set your default currency for receipts, shopping cart items, and automated refund conversions.
+                {t.profile.currencyHelper}
               </p>
             </div>
 
@@ -467,7 +467,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                 value={preferredCurrency}
                 onChange={(e) => setPreferredCurrency(e.target.value)}
                 className="w-full h-10 rounded-xl bg-card border border-border px-3 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-xs"
-                aria-label="Preferred Currency"
+                aria-label={t.profile.currencyLabel}
               >
                 {SUPPORTED_CURRENCIES.map((c) => (
                   <option key={c.code} value={c.code} className="bg-card text-foreground">
@@ -491,16 +491,16 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
             <CardHeader className="p-0 space-y-1">
               <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
                 <Key className="w-5 h-5 text-muted-foreground" />
-                <span>Password &amp; Security</span>
+                <span>{t.profile.securitySectionTitle}</span>
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                Update your credentials or manage active sessions.
+                {t.profile.securitySectionSub}
               </CardDescription>
             </CardHeader>
 
             <form onSubmit={handleSaveSecurity} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="current-password">Current Password</Label>
+                <Label htmlFor="current-password">{t.profile.currentPasswordLabel}</Label>
                 <Input
                   id="current-password"
                   type="password"
@@ -511,20 +511,20 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="new-password">New Password</Label>
+                  <Label htmlFor="new-password">{t.profile.newPasswordLabel}</Label>
                   <Input
                     id="new-password"
                     type="password"
-                    placeholder="At least 6 characters"
+                    placeholder={t.profile.newPasswordPlaceholder}
                     className="rounded-xl"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirm-new-password">Confirm New Password</Label>
+                  <Label htmlFor="confirm-new-password">{t.profile.confirmPasswordLabel}</Label>
                   <Input
                     id="confirm-new-password"
                     type="password"
-                    placeholder="Repeat new password"
+                    placeholder={t.profile.confirmPasswordPlaceholder}
                     className="rounded-xl"
                   />
                 </div>
@@ -532,7 +532,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
               <div className="pt-2 flex justify-end">
                 <Button type="submit" variant="secondary" className="rounded-xl font-semibold">
-                  Update Password
+                  {t.profile.updatePasswordBtn}
                 </Button>
               </div>
             </form>
@@ -546,18 +546,18 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   <AlertOctagon className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-foreground">Danger Zone</h4>
+                  <h4 className="text-sm font-bold text-foreground">{t.profile.dangerZoneTitle}</h4>
                   <p className="text-xs text-muted-foreground">
-                    Irreversible actions related to your account sessions.
+                    {t.profile.dangerZoneSub}
                   </p>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                 <div className="space-y-0.5">
-                  <span className="text-xs font-semibold text-foreground">Sign Out of This Device</span>
+                  <span className="text-xs font-semibold text-foreground">{t.profile.signOutDeviceTitle}</span>
                   <p className="text-[11px] text-muted-foreground">
-                    End your current session and return to the login screen.
+                    {t.profile.signOutDeviceSub}
                   </p>
                 </div>
                 <Button
@@ -569,7 +569,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   }}
                   className="rounded-xl font-medium"
                 >
-                  Sign Out
+                  {t.profile.signOutBtn}
                 </Button>
               </div>
 
@@ -577,9 +577,9 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-0.5">
-                  <span className="text-xs font-semibold text-foreground">Sign Out of All Devices</span>
+                  <span className="text-xs font-semibold text-foreground">{t.profile.signOutAllTitle}</span>
                   <p className="text-[11px] text-muted-foreground">
-                    Invalidates active JWT tokens across other browsers.
+                    {t.profile.signOutAllSub}
                   </p>
                 </div>
                 <Button
@@ -591,7 +591,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   }}
                   className="border-destructive/40 text-destructive hover:bg-destructive/10 rounded-xl font-medium"
                 >
-                  Clear All Sessions
+                  {t.profile.clearAllSessionsBtn}
                 </Button>
               </div>
             </div>
