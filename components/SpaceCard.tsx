@@ -33,7 +33,19 @@ export function getSpaceIcon(spaceType?: string, className: string = "w-3.5 h-3.
   }
 }
 
-export function getSpaceLabel(spaceType?: string) {
+export function getSpaceLabel(spaceType?: string, t?: any) {
+  if (t?.kitchenSettings?.types) {
+    switch (spaceType) {
+      case "FAMILY":
+        return t.kitchenSettings.types.family;
+      case "OFFICE":
+        return t.kitchenSettings.types.office;
+      case "NEUTRAL":
+        return t.kitchenSettings.types.neutral;
+      default:
+        return t.kitchenSettings.types.flatshare;
+    }
+  }
   switch (spaceType) {
     case "FAMILY":
       return "Family Home";
@@ -128,7 +140,7 @@ export function SpaceCard({
   baseUrl,
   variant = "card",
 }: SpaceCardProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { kitchen, membership, memberCount, neededItemCount, sampleNeededItems } =
     kitchenWithStats;
 
@@ -150,10 +162,10 @@ export function SpaceCard({
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-foreground bg-secondary/80 border border-border/70 px-3 py-1 rounded-xl shadow-2xs">
                 {getSpaceIcon(kitchen.space_type, "w-3.5 h-3.5")}
-                <span>{getSpaceLabel(kitchen.space_type)}</span>
+                <span>{getSpaceLabel(kitchen.space_type, t)}</span>
               </span>
               <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-secondary text-muted-foreground font-semibold border border-border/40">
-                {membership.role}
+                {membership.role === "ADMIN" ? t.kitchen.header.admin : t.kitchen.header.member}
               </span>
             </div>
 
@@ -200,11 +212,11 @@ export function SpaceCard({
                     </span>
                   )}
                   <span className="text-[11px] font-mono uppercase tracking-wider font-semibold text-muted-foreground">
-                    Pantry Health
+                    {t.dashboard.card.pantryHealth}
                   </span>
                 </div>
                 <span className="text-[11px] font-mono text-muted-foreground/70">
-                  Live Status
+                  {t.dashboard.card.liveStatus}
                 </span>
               </div>
 
@@ -212,10 +224,10 @@ export function SpaceCard({
                 <div className="space-y-1">
                   <div className="text-base font-bold text-foreground flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>All essentials stocked</span>
+                    <span>{t.dashboard.card.allStocked}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Queue clear &bull; Kitchen ready for cooking
+                    {t.dashboard.card.allStockedSub}
                   </p>
                 </div>
               ) : (
@@ -223,8 +235,9 @@ export function SpaceCard({
                   <div className="text-base font-bold text-foreground flex items-center gap-2">
                     <ShoppingCart className="w-4 h-4 text-amber-500 shrink-0" />
                     <span>
-                      {neededItemCount}{" "}
-                      {neededItemCount === 1 ? "item needed" : "items needed"}
+                      {neededItemCount === 1
+                        ? t.dashboard.card.itemsDepletedSingular
+                        : t.dashboard.card.itemsDepleted.replace("{count}", String(neededItemCount))}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap">
@@ -281,18 +294,18 @@ export function SpaceCard({
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium text-foreground bg-background/90 border border-border/70 px-2.5 py-0.5 rounded-md shadow-2xs">
             {getSpaceIcon(kitchen.space_type)}
-            <span>{getSpaceLabel(kitchen.space_type)}</span>
+            <span>{getSpaceLabel(kitchen.space_type, t)}</span>
           </span>
 
           <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-secondary text-muted-foreground font-semibold border border-border/40">
-            {membership.role}
+            {membership.role === "ADMIN" ? t.kitchen.header.admin : t.kitchen.header.member}
           </span>
         </div>
 
         <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground/70">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
           <span>
-            {new Date(kitchen.created_at).toLocaleDateString("en-US", {
+            {new Date(kitchen.created_at).toLocaleDateString(locale === "de" ? "de-DE" : "en-US", {
               month: "short",
               day: "numeric",
             })}
@@ -341,7 +354,9 @@ export function SpaceCard({
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                 </span>
                 <span className="text-[11px] font-mono font-medium text-amber-600 dark:text-amber-400 shrink-0">
-                  {neededItemCount} {neededItemCount === 1 ? "needed" : "needed"}:
+                  {neededItemCount === 1
+                    ? t.dashboard.card.itemsDepletedSingular
+                    : t.dashboard.card.itemsDepleted.replace("{count}", String(neededItemCount))}:
                 </span>
                 <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                   {sampleNeededItems.slice(0, 3).map((item, idx) => (
@@ -367,10 +382,7 @@ export function SpaceCard({
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
               </span>
               <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                All stocked:
-              </span>
-              <span className="text-foreground/80 font-medium text-xs">
-                Pantry inventory ready
+                {t.dashboard.card.allStocked}
               </span>
             </div>
           )}

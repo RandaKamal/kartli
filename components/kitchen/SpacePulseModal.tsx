@@ -337,7 +337,7 @@ export function SpacePulseModal({
                           {t.kitchen.pulse.noRuns}
                         </h3>
                         <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                          Check out your supermarket run or upload a receipt to track household spending and personal impact.
+                          {t.pulse.emptyMonthSub}
                         </p>
                       </div>
                     </Card>
@@ -517,7 +517,7 @@ export function SpacePulseModal({
                       <div className="flex items-center gap-2">
                         <Store className="w-4 h-4 text-muted-foreground" />
                         <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                          Merchant Spending Breakdown
+                          {t.pulse.merchantBreakdown}
                         </h4>
                       </div>
                       <span className="text-xs font-mono text-muted-foreground">
@@ -527,7 +527,7 @@ export function SpacePulseModal({
 
                     {stats.categoryBreakdown.length === 0 ? (
                       <p className="text-xs text-muted-foreground py-4 text-center">
-                        No merchant spending categorized yet this month.
+                        {t.pulse.noMerchantData}
                       </p>
                     ) : (
                       <div className="space-y-3 pt-1">

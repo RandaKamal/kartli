@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   User,
   Shield,
@@ -16,7 +17,9 @@ import {
   UtensilsCrossed,
   DollarSign,
   ExternalLink,
+  ArrowLeft,
 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -66,6 +69,7 @@ const CULINARY_THEMES: CulinaryTheme[] = [
 ];
 
 export function ProfileSettings({ user }: ProfileSettingsProps) {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
 
@@ -152,16 +156,37 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
   return (
     <div className="space-y-6">
+      {/* Dedicated back-navigation row with mb-8 */}
+      <div className="mb-4">
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>{t.profile.backToKitchens}</span>
+        </Link>
+      </div>
+
+      {/* Page Header */}
+      <div className="space-y-1 pb-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+          {t.profile.title}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {t.profile.subtitle}
+        </p>
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto mb-6 bg-muted/70 border border-border/80 p-1 rounded-2xl">
           <TabsTrigger value="account" className="rounded-xl text-xs font-semibold">
-            Account
+            {t.profile.accountTab}
           </TabsTrigger>
           <TabsTrigger value="preferences" className="rounded-xl text-xs font-semibold">
-            Preferences
+            {t.profile.preferencesTab}
           </TabsTrigger>
           <TabsTrigger value="security" className="rounded-xl text-xs font-semibold">
-            Security
+            {t.profile.securityTab}
           </TabsTrigger>
         </TabsList>
 
@@ -202,7 +227,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="profile-username">Username</Label>
+                <Label htmlFor="profile-username">{t.profile.usernameLabel}</Label>
                 <Input
                   id="profile-username"
                   value={user.username}
@@ -211,12 +236,12 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   className="rounded-xl bg-muted/40 font-mono text-foreground"
                 />
                 <span className="text-[11px] text-muted-foreground block">
-                  Your unique identifier across all kitchens.
+                  {t.profile.usernameHelper}
                 </span>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="profile-auth-type">Authentication Method</Label>
+                <Label htmlFor="profile-auth-type">{t.profile.authMethodLabel}</Label>
                 <Input
                   id="profile-auth-type"
                   value="Credentials (Encrypted JWT Session)"
@@ -240,7 +265,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               <div className="space-y-0.5">
                 <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                   <Palette className="w-5 h-5 text-accent-primary" />
-                  <span>Light &amp; Dark Mode</span>
+                  <span>{t.profile.themeLabel}</span>
                 </h3>
                 <p className="text-xs text-muted-foreground">
                   Choose your preferred contrast mode (Light, Dark, or System default).
@@ -429,7 +454,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
             <div className="space-y-0.5">
               <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-accent-primary" />
-                <span>Preferred Currency</span>
+                <span>{t.profile.currencyLabel}</span>
               </h3>
               <p className="text-xs text-muted-foreground">
                 Set your default currency for receipts, shopping cart items, and automated refund conversions.
@@ -454,7 +479,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
             <div className="pt-3 flex justify-end">
               <Button onClick={handleSavePreferences} disabled={isSaving} className="rounded-xl font-semibold">
-                {isSaving ? "Saving..." : "Save Preferences"}
+                {isSaving ? "Saving..." : t.profile.savePreferences}
               </Button>
             </div>
           </Card>
@@ -600,7 +625,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               Open Source culinary operating system
             </span>
             <p className="text-[11px] text-muted-foreground">
-              kartli is free, transparent, and community-driven on GitHub.
+              {t.profile.openSourceNotice}
             </p>
           </div>
         </div>

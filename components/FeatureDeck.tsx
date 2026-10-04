@@ -12,12 +12,15 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 // Geometric Clean Offsets (Prevents cards from ever vanishing or getting swallowed)
 const TAB_HEIGHT = 52;
 const BODY_HEIGHT = 150;
 
 export function FeatureDeck() {
+  const { t } = useTranslation();
+
   // Stable React state: defaults to card 3 (open at bottom in resting state)
   const [activeCard, setActiveCard] = useState<number>(3);
 
@@ -30,8 +33,8 @@ export function FeatureDeck() {
   const cards = [
     {
       id: "pantry",
-      label: "Pantry Staples",
-      tag: "Always stocked",
+      label: t.landing.featureDeck.staplesTitle,
+      tag: t.landing.featureDeck.staplesBadge,
       shortName: "Pantry",
       icon: Package,
       accentText: "text-accent-brand",
@@ -41,8 +44,8 @@ export function FeatureDeck() {
     },
     {
       id: "cart",
-      label: "Shared Cart",
-      tag: "Live sync",
+      label: t.landing.featureDeck.cartTitle,
+      tag: t.landing.featureDeck.cartBadge,
       shortName: "Cart",
       icon: ShoppingCart,
       accentText: "text-accent-secondary",
@@ -52,8 +55,8 @@ export function FeatureDeck() {
     },
     {
       id: "receipt",
-      label: "Receipt Scanner",
-      tag: "AI Vision",
+      label: t.landing.featureDeck.scannerTitle,
+      tag: t.landing.featureDeck.scannerBadge,
       shortName: "Receipt",
       icon: Receipt,
       accentText: "text-accent-warning",
@@ -63,8 +66,8 @@ export function FeatureDeck() {
     },
     {
       id: "settlement",
-      label: "Settlement & Refunds",
-      tag: "Fair split",
+      label: t.landing.featureDeck.refundsTitle,
+      tag: t.landing.featureDeck.refundsBadge,
       shortName: "Split",
       icon: Scale,
       accentText: "text-accent-primary",
@@ -264,12 +267,12 @@ export function FeatureDeck() {
               {settled ? (
                 <>
                   <Check className="w-3.5 h-3.5" />
-                  <span>All Balances Settled</span>
+                  <span>{t.kitchen.ledger.balancesUpToDate}</span>
                 </>
               ) : (
                 <>
                   <Check className="w-3.5 h-3.5" />
-                  <span>Mark as Settled</span>
+                  <span>{t.landing.featureDeck.markSettled}</span>
                 </>
               )}
             </button>
