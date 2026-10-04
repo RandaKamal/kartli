@@ -11,6 +11,7 @@ import {
 } from "@/app/actions/pantry";
 import type { ShoppingListItem, KitchenSpaceType } from "@/types";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 import {
   ShoppingCart as CartIcon,
   Trash2,
@@ -59,6 +60,7 @@ export function ShoppingListSection({
   onItemAdded,
   hideInput = false,
 }: ShoppingListSectionProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [optimisticListItems, setOptimisticListItems] = useOptimistic(
     items,
@@ -213,14 +215,14 @@ export function ShoppingListSection({
         <div className="flex items-center gap-2">
           <ShoppingBag className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
           <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
-            Shopping Queue
+            {t.kitchen.queue.title}
           </span>
           <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25">
             {openItems.length}
           </span>
         </div>
         <span className="text-[11px] text-muted-foreground/70 hidden sm:inline">
-          Stage to cart for next grocery run
+          {t.kitchen.queue.subtitle}
         </span>
       </div>
 
@@ -229,7 +231,7 @@ export function ShoppingListSection({
         <form onSubmit={handleAddCustomItem} className="flex items-center gap-2">
           <Input
             type="text"
-            placeholder="Add item (e.g. Oat Milk)..."
+            placeholder={t.kitchen.commandBar.placeholder}
             value={customItemName}
             onChange={(e) => setCustomItemName(e.target.value)}
             disabled={isAdding}
@@ -245,7 +247,7 @@ export function ShoppingListSection({
             ) : (
               <Plus className="w-4 h-4 mr-1" />
             )}
-            <span>Add</span>
+            <span>{t.kitchen.commandBar.add}</span>
           </Button>
         </form>
       )}
@@ -253,9 +255,9 @@ export function ShoppingListSection({
       {/* Checklist Queue */}
       {openItems.length === 0 ? (
         <div className="py-6 px-4 text-center rounded-2xl border border-dashed border-border/70 bg-card/40 space-y-1 select-none">
-          <p className="text-xs font-semibold text-foreground">Queue is clear</p>
+          <p className="text-xs font-semibold text-foreground">{t.kitchen.queue.emptyState}</p>
           <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
-            All staples are stocked and no ad-hoc items are pending.
+            {t.kitchen.queue.emptyStateDesc}
           </p>
         </div>
       ) : (
@@ -279,14 +281,14 @@ export function ShoppingListSection({
                       variant="outline"
                       className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/25 shrink-0 self-start sm:self-auto"
                     >
-                      Staple
+                      {t.kitchen.queue.stapleBadge}
                     </Badge>
                   ) : (
                     <Badge
                       variant="outline"
                       className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground border-border shrink-0 self-start sm:self-auto"
                     >
-                      {item.purchased_by_name ? `@${item.purchased_by_name}` : "One-off"}
+                      {item.purchased_by_name ? `@${item.purchased_by_name}` : t.kitchen.queue.oneOffBadge}
                     </Badge>
                   )}
                 </div>
@@ -303,7 +305,7 @@ export function ShoppingListSection({
                     aria-label={`Put ${item.name} in cart`}
                   >
                     <CartIcon className="w-3.5 h-3.5" />
-                    <span>+ Put in Cart</span>
+                    <span>{t.kitchen.queue.putInCart}</span>
                   </button>
 
                   <button
@@ -332,14 +334,14 @@ export function ShoppingListSection({
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_6px_rgba(6,182,212,0.5)]" />
               <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
-                In Cart · Active Restock
+                {t.kitchen.queue.activeRestock}
               </span>
               <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/25">
                 {inCartItems.length}
               </span>
             </div>
             <span className="text-[11px] text-muted-foreground/70 hidden sm:inline">
-              Currently staged by household members in store
+              {t.kitchen.queue.activeRestockSub}
             </span>
           </div>
 
@@ -347,10 +349,10 @@ export function ShoppingListSection({
             {inCartItems.map((item) => {
               const isMine = item.purchased_by === currentUserId && !item.is_guest_staged;
               const stagedLabel = isMine
-                ? "In your cart"
+                ? t.kitchen.queue.inYourCart
                 : item.is_guest_staged
-                ? "In Cart · @guest"
-                : `In Cart · @${item.purchased_by_name || "roommate"}`;
+                ? `${t.kitchen.queue.inCartBy} · @guest`
+                : `${t.kitchen.queue.inCartBy} · @${item.purchased_by_name || "roommate"}`;
 
               return (
                 <div

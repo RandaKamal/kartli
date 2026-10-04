@@ -1,17 +1,8 @@
-import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { getUserKitchensWithStats } from "@/lib/kitchen";
-import {
-  Plus,
-  Settings,
-  UtensilsCrossed,
-  Sparkles,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { DashboardInviteJoin } from "@/components/DashboardInviteJoin";
-import { SpaceCard } from "@/components/SpaceCard";
+import { DashboardView } from "@/components/DashboardView";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -29,166 +20,12 @@ export default async function DashboardPage() {
   const rawName = session.user.name || session.user.username || "there";
   const cleanName = rawName.replace(/^@/, "");
   const displayName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
-  const isSingleSpace = userKitchens.length === 1;
 
   return (
-    <div className="relative max-w-5xl mx-auto w-full px-6 py-12">
-      {/* Ambient Glow: Centered background radial blur */}
-      <div className="w-[520px] h-[300px] bg-primary/10 rounded-full blur-[140px] -z-10 pointer-events-none absolute top-6 left-1/2 -translate-x-1/2" />
-
-      {/* 1. EDITORIAL HEADER & GREETING */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-8 border-b border-border/60">
-        <div>
-          <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Welcome back, {displayName}
-            </h1>
-            <span className="text-[11px] font-mono font-medium px-2.5 py-0.5 rounded-full bg-secondary text-muted-foreground border border-border/80">
-              {userKitchens.length} {userKitchens.length === 1 ? "Space" : "Spaces"}
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Your shared kitchens, studios, and culinary spaces.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <Link
-            href="/profile"
-            className="text-xs font-semibold px-3.5 py-2 rounded-xl border border-border/80 bg-secondary/40 hover:bg-secondary text-foreground transition-all flex items-center gap-1.5 shadow-2xs"
-          >
-            <Settings className="w-3.5 h-3.5 text-muted-foreground" />
-            <span>Settings</span>
-          </Link>
-          <Button
-            asChild
-            className="text-xs font-semibold px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all flex items-center gap-1.5 shadow-xs"
-          >
-            <Link href="/kitchen/new">
-              <Plus className="w-3.5 h-3.5" />
-              <span>New Space</span>
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      {/* 2. SPACES SECTION (EMPTY STATE, SINGLE-SPACE HERO, OR GRID) */}
-      <div className="mt-8">
-        {userKitchens.length === 0 ? (
-          /* EMPTY STATE ONBOARDING */
-          <div className="max-w-2xl mx-auto py-4 sm:py-6">
-            <div className="relative overflow-hidden rounded-3xl bg-card border border-border/80 shadow-xl backdrop-blur-xl p-8 sm:p-10 text-center space-y-8">
-              {/* Subtle top micro-border highlight */}
-              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent pointer-events-none" />
-
-              {/* Welcome culinary icon & badge */}
-              <div className="flex flex-col items-center space-y-3.5">
-                <div className="w-16 h-16 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-sm">
-                  <UtensilsCrossed className="w-8 h-8 text-primary" />
-                </div>
-
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary text-xs font-mono font-medium text-muted-foreground border border-border/70">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Welcome to kartli</span>
-                </div>
-
-                <div className="space-y-2 max-w-md">
-                  <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-                    Let&apos;s set up your kitchen
-                  </h2>
-                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                    Kartli connects flatshares, families, and studios to manage shared groceries, supplies, and kitchen inventory seamlessly.
-                  </p>
-                </div>
-              </div>
-
-              {/* Step-by-Step Onboarding Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left relative pt-1">
-                {/* Step 1: Create a kitchen */}
-                <div className="flex flex-col justify-between rounded-2xl bg-muted/30 border border-border/80 p-6 space-y-5">
-                  <div className="space-y-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold font-mono flex items-center justify-center shadow-xs">
-                        1
-                      </span>
-                      <h3 className="font-bold text-foreground text-sm tracking-tight">
-                        Create a kitchen
-                      </h3>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Start fresh. Set up a shared space for your household and invite your roommates or family members.
-                    </p>
-                  </div>
-
-                  <Button
-                    asChild
-                    className="rounded-xl font-semibold shadow-sm hover:shadow-md transition-all w-full text-xs h-10"
-                  >
-                    <Link href="/kitchen/new" className="flex items-center justify-center gap-1.5">
-                      <Plus className="w-4 h-4" />
-                      <span>Create New Space</span>
-                    </Link>
-                  </Button>
-                </div>
-
-                {/* Step 2: Paste invite code */}
-                <div className="flex flex-col justify-between rounded-2xl bg-muted/30 border border-border/80 p-6 space-y-5">
-                  <div className="space-y-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-6 h-6 rounded-full bg-secondary text-foreground border border-border text-xs font-bold font-mono flex items-center justify-center shadow-xs">
-                        2
-                      </span>
-                      <h3 className="font-bold text-foreground text-sm tracking-tight">
-                        Join with invite code
-                      </h3>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Already have an invite from a roommate? Paste their invite link or code below to join immediately.
-                    </p>
-                  </div>
-
-                  <div className="w-full">
-                    <DashboardInviteJoin />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : isSingleSpace ? (
-          /* SINGLE SPACE COMMAND CENTER HERO CARD */
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground font-semibold">
-                Your Kitchen Command Center
-              </h2>
-            </div>
-            <SpaceCard
-              kitchenWithStats={userKitchens[0]}
-              baseUrl={baseUrl}
-              variant="hero"
-            />
-          </div>
-        ) : (
-          /* MULTIPLE SPACES GRID */
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground font-semibold">
-                Active Spaces ({userKitchens.length})
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {userKitchens.map((kitchenWithStats) => (
-                <SpaceCard
-                  key={kitchenWithStats.kitchen.id}
-                  kitchenWithStats={kitchenWithStats}
-                  baseUrl={baseUrl}
-                  variant="card"
-                />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+    <DashboardView
+      userKitchens={userKitchens}
+      displayName={displayName}
+      baseUrl={baseUrl}
+    />
   );
 }

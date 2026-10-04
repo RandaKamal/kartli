@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight, Plus, CheckCircle2, Shield, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
 
 interface HeroProps {
   sessionUser?: {
@@ -10,28 +13,31 @@ interface HeroProps {
 }
 
 export function Hero({ sessionUser }: HeroProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-6 sm:space-y-7 text-left">
       {/* Editorial Pill Badge */}
-      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border/70 bg-secondary/60 backdrop-blur-md text-xs font-medium text-secondary-foreground">
-        <span className="flex h-2 w-2 rounded-full bg-accent-brand animate-pulse" />
+      <div className="inline-flex items-center text-xs font-mono text-muted-foreground px-3 py-1 rounded-full border border-border/60 bg-secondary/30">
         <span className="text-foreground font-semibold">kartli 1.0</span>
-        <span className="text-muted-foreground/50">&middot;</span>
-        <span className="text-muted-foreground">Shared Kitchen OS</span>
+        <span className="mx-1.5 opacity-60">&middot;</span>
+        <span>
+          {t.landing.badge.replace(/^kartli 1\.0\s*·\s*/, "")}
+        </span>
       </div>
 
       {/* Main Headline */}
       <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight text-foreground leading-[1.12]">
-        Kitchen management for spaces that love{" "}
-        <span className="bg-gradient-to-r from-accent-brand via-accent-primary to-accent-secondary bg-clip-text text-transparent">
-          good food
-        </span>{" "}
-        and zero drama.
+        {t.landing.heroTitlePrefix}
+        <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent font-extrabold">
+          {t.landing.heroTitleAccent}
+        </span>
+        {t.landing.heroTitleSuffix}
       </h1>
 
       {/* Subheading */}
       <p className="text-base sm:text-lg text-muted-foreground max-w-xl leading-relaxed">
-        Track pantry staples, coordinate grocery runs with flatmates in real time, split supermarket receipts with Gemini Vision, and balance household expenses with one tap.
+        {t.landing.heroSubtitle}
       </p>
 
       {/* Action Buttons */}
@@ -44,7 +50,7 @@ export function Hero({ sessionUser }: HeroProps) {
               className="rounded-2xl font-bold shadow-lg shadow-primary/10 h-11 sm:h-12 px-6 text-sm gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <Link href="/dashboard">
-                <span>Go to Dashboard</span>
+                <span>{t.landing.ctaDashboard}</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </Button>
@@ -56,7 +62,7 @@ export function Hero({ sessionUser }: HeroProps) {
             >
               <Link href="/kitchen/new">
                 <Plus className="w-4 h-4" />
-                <span>Create Space</span>
+                <span>{t.landing.ctaCreate}</span>
               </Link>
             </Button>
           </>
@@ -68,7 +74,7 @@ export function Hero({ sessionUser }: HeroProps) {
               className="rounded-2xl font-bold shadow-lg shadow-primary/10 h-11 sm:h-12 px-6 text-sm gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <Link href="/register">
-                <span>Start Your Kitchen</span>
+                <span>{t.landing.startKitchen}</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </Button>
@@ -79,7 +85,7 @@ export function Hero({ sessionUser }: HeroProps) {
               className="rounded-2xl font-semibold h-11 sm:h-12 px-5 text-sm gap-2 border-border/70 bg-card/60 hover:bg-secondary text-foreground shadow-sm"
             >
               <Link href="/login">
-                <span>Sign In</span>
+                <span>{t.landing.signIn}</span>
               </Link>
             </Button>
           </>
@@ -90,15 +96,15 @@ export function Hero({ sessionUser }: HeroProps) {
       <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs text-muted-foreground pt-2">
         <span className="flex items-center gap-1.5">
           <CheckCircle2 className="w-3.5 h-3.5 text-accent-brand" />
-          <span>Email-free setup</span>
+          <span>{t.landing.badges.emailFree}</span>
         </span>
         <span className="flex items-center gap-1.5">
           <Shield className="w-3.5 h-3.5 text-accent-secondary" />
-          <span>Self-hostable & Open Source</span>
+          <span>{t.landing.badges.selfHostable}</span>
         </span>
         <span className="flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-accent-primary" />
-          <span>Gemini Vision AI</span>
+          <span>{t.landing.badges.aiVision}</span>
         </span>
       </div>
     </div>

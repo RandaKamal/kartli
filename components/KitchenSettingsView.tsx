@@ -57,6 +57,7 @@ import {
 } from "lucide-react";
 import { capitalize, cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 
 interface KitchenSettingsViewProps {
   kitchen: Kitchen;
@@ -74,6 +75,7 @@ export function KitchenSettingsView({
   baseUrl,
 }: KitchenSettingsViewProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const isAdmin = membership.role === "ADMIN";
 
   // General settings state
@@ -241,18 +243,17 @@ export function KitchenSettingsView({
       <div className="space-y-1">
         <div className="flex items-center gap-2.5 flex-wrap">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-            Kitchen Settings
+            {t.kitchenSettings.title}
           </h1>
           <Badge
             variant={isAdmin ? "default" : "secondary"}
             className="text-[11px] font-mono uppercase tracking-wider"
           >
-            {isAdmin ? "Admin View" : "Member View"}
+            {isAdmin ? t.kitchenSettings.adminViewBadge : t.kitchen.header.member}
           </Badge>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground">
-          Manage configuration, guest access, member roster, and space preferences for{" "}
-          <strong className="text-foreground font-semibold">{kitchenName}</strong>.
+          {t.kitchenSettings.subtitle.replace("{name}", kitchenName)}
         </p>
       </div>
 
@@ -265,10 +266,10 @@ export function KitchenSettingsView({
             </div>
             <div>
               <h2 className="text-base font-bold text-foreground tracking-tight">
-                General Space Details
+                {t.kitchenSettings.generalSectionTitle}
               </h2>
               <p className="text-xs text-muted-foreground">
-                Household naming and space classification preset.
+                {t.kitchenSettings.generalSectionSub}
               </p>
             </div>
           </div>
@@ -284,10 +285,10 @@ export function KitchenSettingsView({
               {isSavingGeneral ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
-                  <span>Saving...</span>
+                  <span>{t.kitchenSettings.saving}</span>
                 </>
               ) : (
-                "Save Changes"
+                t.kitchenSettings.saveChanges
               )}
             </Button>
           )}
@@ -297,7 +298,7 @@ export function KitchenSettingsView({
           {/* Field: Kitchen Name */}
           <div className="space-y-1.5">
             <Label htmlFor="kitchen-name-input" className="text-xs font-semibold text-foreground">
-              Kitchen Name
+              {t.kitchenSettings.kitchenNameLabel}
             </Label>
             <Input
               id="kitchen-name-input"
@@ -311,7 +312,7 @@ export function KitchenSettingsView({
             />
             <span className="text-[11px] text-muted-foreground block">
               {isAdmin
-                ? "The public display name for this shared kitchen workspace."
+                ? t.kitchenSettings.kitchenNameHelper
                 : "The shared kitchen display name (managed by space admins)."}
             </span>
           </div>
@@ -320,10 +321,10 @@ export function KitchenSettingsView({
           <div className="space-y-2 pt-1">
             <div className="space-y-0.5">
               <Label className="text-xs font-semibold text-foreground">
-                Space Type &amp; Terminology Preset
+                {t.kitchenSettings.spaceTypeTitle}
               </Label>
               <p className="text-[11px] text-muted-foreground">
-                Adjusts terminology, member labels, and notification wording across the space.
+                {t.kitchenSettings.spaceTypeHelper}
               </p>
             </div>
 
@@ -348,11 +349,11 @@ export function KitchenSettingsView({
                     }`}
                   />
                   <span className="text-xs text-foreground font-semibold leading-none">
-                    Flatshare WG
+                    {t.kitchenSettings.types.flatshare}
                   </span>
                 </div>
                 <span className="text-[11px] text-muted-foreground font-normal leading-tight">
-                  Roommates
+                  {t.kitchenSettings.types.flatshareSub}
                 </span>
               </button>
 
@@ -376,11 +377,11 @@ export function KitchenSettingsView({
                     }`}
                   />
                   <span className="text-xs text-foreground font-semibold leading-none">
-                    Family
+                    {t.kitchenSettings.types.family}
                   </span>
                 </div>
                 <span className="text-[11px] text-muted-foreground font-normal leading-tight">
-                  Household
+                  {t.kitchenSettings.types.familySub}
                 </span>
               </button>
 
@@ -404,11 +405,11 @@ export function KitchenSettingsView({
                     }`}
                   />
                   <span className="text-xs text-foreground font-semibold leading-none">
-                    Office
+                    {t.kitchenSettings.types.office}
                   </span>
                 </div>
                 <span className="text-[11px] text-muted-foreground font-normal leading-tight">
-                  Team
+                  {t.kitchenSettings.types.officeSub}
                 </span>
               </button>
 
@@ -432,11 +433,11 @@ export function KitchenSettingsView({
                     }`}
                   />
                   <span className="text-xs text-foreground font-semibold leading-none">
-                    Neutral
+                    {t.kitchenSettings.types.neutral}
                   </span>
                 </div>
                 <span className="text-[11px] text-muted-foreground font-normal leading-tight">
-                  Members
+                  {t.kitchenSettings.types.neutralSub}
                 </span>
               </button>
             </div>
@@ -452,10 +453,10 @@ export function KitchenSettingsView({
           </div>
           <div>
             <h2 className="text-base font-bold text-foreground tracking-tight">
-              Invites &amp; Guest Access
+              {t.kitchenSettings.guestAccessTitle}
             </h2>
             <p className="text-xs text-muted-foreground">
-              Share links for permanent roomies or disposable guest shopping runs.
+              {t.kitchenSettings.guestAccessSub}
             </p>
           </div>
         </div>
@@ -465,13 +466,13 @@ export function KitchenSettingsView({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="space-y-0.5">
               <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <span>Public Guest / Supermarket Link</span>
+                <span>{t.kitchenSettings.guestLinkTitle}</span>
                 <Badge variant="outline" className="text-[10px] font-mono">
-                  Read-only
+                  {t.kitchenSettings.readOnlyBadge}
                 </Badge>
               </Label>
               <p className="text-[11px] text-muted-foreground">
-                Allows guests or roommates to view needed groceries without logging into an account.
+                {t.kitchenSettings.guestLinkHelper}
               </p>
             </div>
 
@@ -488,7 +489,7 @@ export function KitchenSettingsView({
                 <RefreshCw
                   className={`w-3.5 h-3.5 mr-1.5 ${isRegeneratingToken ? "animate-spin" : ""}`}
                 />
-                <span>{isRegeneratingToken ? "Regenerating..." : "Regenerate"}</span>
+                <span>{isRegeneratingToken ? "Regenerating..." : t.kitchenSettings.regenerateBtn}</span>
               </Button>
             )}
           </div>
@@ -503,7 +504,7 @@ export function KitchenSettingsView({
             <div className="flex items-center gap-2 shrink-0">
               <CopyButton
                 text={publicGuestUrl}
-                label="Copy Link"
+                label={t.kitchenSettings.copyLinkBtn}
                 size="sm"
                 variant="secondary"
                 className="flex-1 sm:flex-none h-10 px-3 rounded-xl font-medium text-xs"
@@ -529,13 +530,13 @@ export function KitchenSettingsView({
         <div className="space-y-4">
           <div className="space-y-0.5">
             <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-              <span>Member Invitation Link</span>
+              <span>{t.kitchenSettings.memberInviteTitle}</span>
               <Badge variant="secondary" className="text-[10px]">
-                {pendingInvites.length} Pending
+                {pendingInvites.length} {t.kitchenSettings.pendingBadge}
               </Badge>
             </Label>
             <p className="text-[11px] text-muted-foreground">
-              New {terminology.memberLabelPlural.toLowerCase()} use this invite link to claim a slot in this space.
+              {t.kitchenSettings.memberInviteHelper}
             </p>
           </div>
 
@@ -588,7 +589,7 @@ export function KitchenSettingsView({
             </div>
           ) : (
             <div className="p-3.5 rounded-xl bg-muted/40 border border-border/70 text-xs text-muted-foreground">
-              No pending invite links currently active.
+              {t.kitchenSettings.noPendingInvites}
             </div>
           )}
 

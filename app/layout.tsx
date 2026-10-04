@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { cookies } from "next/headers";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { SiteFooter } from "@/components/SiteFooter";
+import { LanguageProvider, type Locale } from "@/lib/i18n";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -32,9 +33,13 @@ export default async function RootLayout({
 
   const initialTheme = normalizeTheme(culinaryTheme);
 
+  const cookieLocale = cookieStore.get("kartli_locale")?.value;
+  const initialLocale: Locale | undefined =
+    cookieLocale === "de" || cookieLocale === "en" ? (cookieLocale as Locale) : undefined;
+
   return (
     <html
-      lang="en"
+      lang={initialLocale || "en"}
       data-theme={initialTheme}
       data-culinary-theme={initialTheme}
       suppressHydrationWarning
@@ -54,17 +59,19 @@ export default async function RootLayout({
           themes={["light", "dark", "system"]}
           disableTransitionOnChange
         >
-          <TooltipProvider delayDuration={200}>
-            <Header session={session} />
+          <LanguageProvider initialLocale={initialLocale}>
+            <TooltipProvider delayDuration={200}>
+              <Header session={session} />
 
-            <main className="w-full flex-1 flex flex-col">
-              {children}
-            </main>
+              <main className="w-full flex-1 flex flex-col">
+                {children}
+              </main>
 
-            <SiteFooter />
+              <SiteFooter />
 
-            <Toaster position="top-right" richColors />
-          </TooltipProvider>
+              <Toaster position="top-right" richColors />
+            </TooltipProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

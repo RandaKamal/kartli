@@ -13,6 +13,7 @@ import {
 import type { ShoppingListItem, KitchenSpaceType, PantryItem } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import { capitalize, cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 import { CheckoutDialog } from "@/components/CheckoutDialog";
 import {
   ShoppingCart as CartIcon,
@@ -63,6 +64,7 @@ export function ActiveCartSection({
   onAllItemsMovedToCart,
 }: ActiveCartSectionProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [allItems, setAllItems] = useState<ShoppingListItem[]>(items);
   const [isPending, startTransition] = useTransition();
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
@@ -305,14 +307,14 @@ export function ActiveCartSection({
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h3 className="text-xs sm:text-sm font-bold text-foreground tracking-tight">
-                    Quick-Add Staples
+                    {t.supermarket.quickAddTitle}
                   </h3>
                   <Badge variant="outline" className="text-[10px] font-mono py-0 px-1.5 border-border">
                     {pantryItems.length}
                   </Badge>
                 </div>
                 <p className="text-[11px] text-muted-foreground truncate">
-                  Forgot something? Tap any essential to grab it directly into your basket.
+                  {t.supermarket.quickAddSub}
                 </p>
               </div>
             </div>
@@ -324,7 +326,7 @@ export function ActiveCartSection({
               onClick={() => setIsStaplesTrayOpen(!isStaplesTrayOpen)}
               className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground shrink-0 rounded-lg gap-1"
             >
-              <span>{isStaplesTrayOpen ? "Collapse" : "Expand"}</span>
+              <span>{isStaplesTrayOpen ? t.supermarket.collapse : t.supermarket.expand}</span>
               {isStaplesTrayOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </Button>
           </div>
@@ -337,7 +339,7 @@ export function ActiveCartSection({
                   <Input
                     value={stapleSearch}
                     onChange={(e) => setStapleSearch(e.target.value)}
-                    placeholder="Search staples..."
+                    placeholder={t.supermarket.searchStaples}
                     className="h-8 pl-8 pr-3 text-xs rounded-lg bg-secondary/30 border-border/70"
                   />
                 </div>
@@ -495,7 +497,7 @@ export function ActiveCartSection({
               <div className="flex items-center gap-2">
                 <CartIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground leading-tight">
-                  Your Basket
+                  {t.supermarket.yourBasket}
                 </h2>
                 <Badge
                   variant="secondary"
@@ -505,7 +507,7 @@ export function ActiveCartSection({
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">
-                Check off items as you place them into your shopping basket.
+                {t.supermarket.yourBasketSub}
               </p>
             </div>
 
@@ -535,7 +537,7 @@ export function ActiveCartSection({
                 title="Proceed to checkout"
               >
                 <Receipt className="w-3.5 h-3.5" />
-                <span>Checkout</span>
+                <span>{t.supermarket.checkoutBtn}</span>
               </Button>
             </div>
           </div>
@@ -547,12 +549,12 @@ export function ActiveCartSection({
               </div>
               <div className="space-y-1 max-w-sm mx-auto">
                 <p className="text-xs sm:text-sm font-semibold text-foreground">
-                  Your basket is currently empty
+                  {t.supermarket.basketEmptyTitle}
                 </p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   {neededItems.length > 0
                     ? "Tap any item in 'Needed for This Run' above to add it to your basket."
-                    : "Tap a staple from the Quick-Add tray or browse your kitchen board."}
+                    : t.supermarket.basketEmptySub}
                 </p>
               </div>
               {onSwitchTab && (
@@ -565,7 +567,7 @@ export function ActiveCartSection({
                     className="rounded-xl text-xs font-semibold gap-1.5 h-8.5 px-3.5 cursor-pointer"
                   >
                     <ShoppingBag className="w-3.5 h-3.5" />
-                    <span>Go to Kitchen Board</span>
+                    <span>{t.supermarket.goToBoard}</span>
                   </Button>
                 </div>
               )}
@@ -665,7 +667,7 @@ export function ActiveCartSection({
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-muted-foreground" />
               <h3 className="text-base font-semibold text-foreground">
-                Staged by {terminology.memberLabelPlural}
+                {t.supermarket.stagedByRoommates}
               </h3>
               <Badge variant="secondary" className="text-xs font-mono">
                 {otherCartItems.length}
@@ -677,7 +679,7 @@ export function ActiveCartSection({
           {otherCartItems.length === 0 ? (
             <div className="py-12 px-4 text-center rounded-2xl border border-dashed border-border bg-muted/20">
               <p className="text-xs text-muted-foreground">
-                No items currently staged by {terminology.memberLabelPlural.toLowerCase()}.
+                {t.supermarket.stagedByRoommatesEmpty}
               </p>
             </div>
           ) : (

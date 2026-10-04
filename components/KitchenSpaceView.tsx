@@ -20,6 +20,7 @@ import {
   moveAllNeededToCartAction,
 } from "@/app/actions/pantry";
 import { getPendingRefundsCountAction } from "@/app/actions/checkout";
+import { useTranslation } from "@/lib/i18n";
 import { PantrySection } from "@/components/PantrySection";
 import { ShoppingListSection } from "@/components/ShoppingListSection";
 import { ActiveCartSection } from "@/components/ActiveCartSection";
@@ -127,8 +128,22 @@ export function KitchenSpaceView({
   initialPulseStats,
   myCheckouts = [],
 }: KitchenSpaceViewProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const getSpaceLabel = (spaceType?: string) => {
+    switch (spaceType) {
+      case "FAMILY":
+        return t.kitchen.header.family;
+      case "OFFICE":
+        return t.kitchen.header.office;
+      case "NEUTRAL":
+        return t.kitchen.header.neutral;
+      default:
+        return t.kitchen.header.flatshare;
+    }
+  };
 
   const initialKitchen = kitchen || propInitialKitchen!;
   const isAdmin = propIsAdmin !== undefined ? propIsAdmin : membership?.role === "ADMIN";
@@ -438,7 +453,7 @@ export function KitchenSpaceView({
             </span>
             {isAdmin && (
               <span className="font-mono text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">
-                Admin
+                {t.kitchen.header.admin}
               </span>
             )}
           </div>
@@ -450,8 +465,8 @@ export function KitchenSpaceView({
               type="button"
               onClick={() => setIsRoommatesOpen(true)}
               className="flex items-center py-1 px-2.5 rounded-full hover:bg-secondary/60 border border-border/70 bg-card/60 transition-all cursor-pointer group"
-              title="View roommates & invites"
-              aria-label="View roommates and household invites"
+              title={t.kitchen.roommates.title}
+              aria-label={t.kitchen.roommates.title}
             >
               <div className="flex items-center overflow-hidden py-0.5">
                 {displayMembers.slice(0, 3).map((m) => (
@@ -464,7 +479,7 @@ export function KitchenSpaceView({
                 ))}
               </div>
               <span className="text-[11px] sm:text-xs font-mono text-muted-foreground group-hover:text-foreground pl-2">
-                {roommatesCount} {roommatesCount === 1 ? "roommate" : "roommates"}
+                {roommatesCount} {roommatesCount === 1 ? t.kitchen.header.roommateSingular : t.kitchen.header.roommatesCount}
               </span>
             </button>
 
@@ -473,8 +488,8 @@ export function KitchenSpaceView({
               type="button"
               onClick={() => setIsStatsFlyoutOpen(true)}
               className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border border-border bg-secondary/30 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
-              title="Space Pulse & Statistics"
-              aria-label="View space pulse and statistics"
+              title={t.kitchen.pulse.title}
+              aria-label={t.kitchen.pulse.title}
             >
               <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
@@ -484,8 +499,8 @@ export function KitchenSpaceView({
               type="button"
               onClick={handleShare}
               className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border border-border bg-secondary/30 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
-              title="Share guest link"
-              aria-label="Share guest link"
+              title={t.dashboard.guestLink}
+              aria-label={t.dashboard.guestLink}
             >
               <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
@@ -494,8 +509,8 @@ export function KitchenSpaceView({
             <Link
               href={`/kitchen/${initialKitchen.id}/settings`}
               className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border border-border bg-secondary/30 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
-              title="Space Settings"
-              aria-label="Space Settings"
+              title={t.dashboard.settings}
+              aria-label={t.dashboard.settings}
             >
               <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </Link>
@@ -515,9 +530,9 @@ export function KitchenSpaceView({
             )}
           >
             <UtensilsCrossed className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span>Kitchen Board</span>
+            <span>{t.kitchen.modes.kitchenBoard}</span>
             <span className="hidden sm:inline text-[11px] opacity-70 font-normal">
-              (Inventory & Prep)
+              {t.kitchen.modes.inventoryPrep}
             </span>
             {neededItemsCount > 0 && (
               <span
@@ -544,9 +559,9 @@ export function KitchenSpaceView({
             )}
           >
             <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span>Supermarket Run</span>
+            <span>{t.kitchen.modes.supermarketRun}</span>
             <span className="hidden sm:inline text-[11px] opacity-70 font-normal">
-              (Store Checklist)
+              {t.kitchen.modes.storeChecklist}
             </span>
             {(activeCartCount > 0 || isCartBadgePulsing) && (
               <span
@@ -576,7 +591,7 @@ export function KitchenSpaceView({
                   type="text"
                   value={commandInput}
                   onChange={(e) => setCommandInput(e.target.value)}
-                  placeholder="Add item (e.g. Oat Milk)..."
+                  placeholder={t.kitchen.commandBar.placeholder}
                   disabled={isSubmittingCommand}
                   className="w-full bg-transparent border-none text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-0 min-w-0 pr-2 sm:pr-3"
                 />
@@ -594,7 +609,7 @@ export function KitchenSpaceView({
                           : "text-muted-foreground hover:text-foreground"
                       )}
                     >
-                      One-off
+                      {t.kitchen.commandBar.oneOff}
                     </button>
                     <button
                       type="button"
@@ -606,7 +621,7 @@ export function KitchenSpaceView({
                           : "text-muted-foreground hover:text-foreground"
                       )}
                     >
-                      Staple
+                      {t.kitchen.commandBar.staple}
                     </button>
                   </div>
 
@@ -619,8 +634,8 @@ export function KitchenSpaceView({
                         ? "bg-accent-brand text-accent-foreground shadow-md shadow-accent-brand/20 active:scale-95"
                         : "bg-muted text-muted-foreground/30 cursor-not-allowed border border-border/50"
                     )}
-                    title="Add item"
-                    aria-label="Add item"
+                    title={t.kitchen.commandBar.add}
+                    aria-label={t.kitchen.commandBar.add}
                   >
                     {isSubmittingCommand ? (
                       <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
@@ -646,11 +661,11 @@ export function KitchenSpaceView({
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
                       </span>
                       <h3 className="text-sm sm:text-base font-bold text-foreground tracking-tight truncate">
-                        {neededItemsCount} {neededItemsCount === 1 ? "item" : "items"} ready to restock
+                        {neededItemsCount} {neededItemsCount === 1 ? t.kitchen.status.itemsReadyRestockSingular : t.kitchen.status.itemsReadyRestock}
                       </h3>
                     </div>
                     <p className="text-xs text-muted-foreground truncate">
-                      Inventory updated • Ready for supermarket checklist
+                      {t.kitchen.status.inventoryUpdated}
                     </p>
                   </div>
                 </div>
@@ -661,7 +676,7 @@ export function KitchenSpaceView({
                   onClick={() => handleModeChange("supermarket")}
                   className="rounded-xl h-10 px-5 bg-accent-brand text-accent-foreground font-bold text-xs sm:text-sm shrink-0 flex items-center gap-2 cursor-pointer shadow-md hover:bg-accent-brand/90 hover:shadow-lg transition-all"
                 >
-                  <span>Ready to buy? Open Supermarket Run →</span>
+                  <span>{t.kitchen.status.readyToBuy}</span>
                 </Button>
               </div>
             ) : (
@@ -671,10 +686,10 @@ export function KitchenSpaceView({
                 </div>
                 <div className="space-y-1">
                   <h3 className="text-sm sm:text-base font-bold text-foreground tracking-tight">
-                    Kitchen is fully stocked
+                    {t.kitchen.status.fullyStocked}
                   </h3>
                   <p className="text-xs sm:text-sm text-muted-foreground max-w-sm mx-auto">
-                    Tap any staple below when running low.
+                    {t.kitchen.status.allStockedDesc}
                   </p>
                 </div>
               </div>
@@ -720,11 +735,11 @@ export function KitchenSpaceView({
                   <div className="min-w-0">
                     <p className="text-xs sm:text-sm font-semibold text-foreground truncate">
                       {pendingRefundsCount > 0
-                        ? `${pendingRefundsCount} pending ${pendingRefundsCount === 1 ? "expense" : "expenses"} to settle`
-                        : "Household balances up to date"}
+                        ? `${pendingRefundsCount} ${pendingRefundsCount === 1 ? t.kitchen.ledger.pendingExpenseSingular : t.kitchen.ledger.pendingExpenses}`
+                        : t.kitchen.ledger.balancesUpToDate}
                     </p>
                     <p className="text-[10px] sm:text-xs font-mono text-muted-foreground/70 truncate">
-                      {myCheckouts.length} logged receipts in space history
+                      {myCheckouts.length} {t.kitchen.ledger.loggedReceipts}
                     </p>
                   </div>
                 </div>
@@ -736,7 +751,7 @@ export function KitchenSpaceView({
                   onClick={() => setIsLedgerOpen(true)}
                   className="h-8 px-3.5 rounded-xl text-xs sm:text-sm font-medium border-border/70 bg-secondary/50 hover:bg-secondary text-foreground shrink-0 cursor-pointer self-start sm:self-auto"
                 >
-                  <span>Settle →</span>
+                  <span>{t.kitchen.ledger.settle}</span>
                 </Button>
               </div>
             </footer>
@@ -753,7 +768,7 @@ export function KitchenSpaceView({
                 className="inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors cursor-pointer py-1"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Back to Kitchen Board</span>
+                <span>{t.kitchen.modes.backToBoard}</span>
               </button>
             </div>
 

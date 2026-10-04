@@ -45,16 +45,18 @@ export function UserDropdown({ user, className }: UserDropdownProps) {
         <Button
           variant="secondary"
           className={cn(
-            "h-9 flex items-center gap-2 rounded-xl border border-border/70 px-2.5 sm:px-3 text-xs font-medium shadow-xs hover:border-border hover:bg-secondary/80 transition-all",
+            "h-8 w-8 rounded-full border border-border bg-secondary flex items-center justify-center font-bold text-xs p-0 text-foreground md:h-9 md:w-auto md:px-3 md:rounded-xl md:border-border/70 md:font-medium md:gap-2 shadow-xs hover:border-border hover:bg-secondary/80 transition-all cursor-pointer",
             className
           )}
+          aria-label={`User menu for @${username}`}
         >
-          <Avatar className="h-5 w-5 border border-border/60 shadow-2xs">
+          <span className="md:hidden select-none">{initial}</span>
+          <Avatar className="hidden md:flex h-5 w-5 border border-border/60 shadow-2xs">
             <AvatarFallback className="bg-secondary-foreground/10 text-[10px] text-foreground font-bold flex items-center justify-center">
               {initial}
             </AvatarFallback>
           </Avatar>
-          <span className="text-xs font-medium max-w-[90px] sm:max-w-none truncate">
+          <span className="hidden md:inline text-xs font-medium max-w-[90px] sm:max-w-none truncate">
             @{username}
           </span>
         </Button>
