@@ -17,15 +17,6 @@ export function Hero({ sessionUser }: HeroProps) {
 
   return (
     <div className="space-y-6 sm:space-y-7 text-left">
-      {/* Editorial Pill Badge */}
-      <div className="inline-flex items-center text-xs font-mono text-muted-foreground px-3 py-1 rounded-full border border-border/60 bg-secondary/30">
-        <span className="text-foreground font-semibold">kartli 1.0</span>
-        <span className="mx-1.5 opacity-60">&middot;</span>
-        <span>
-          {t.landing.badge.replace(/^kartli 1\.0\s*·\s*/, "")}
-        </span>
-      </div>
-
       {/* Main Headline */}
       <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight text-foreground leading-[1.12]">
         {t.landing.heroTitlePrefix}
