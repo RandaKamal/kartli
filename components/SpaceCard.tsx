@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   ArrowRight,
@@ -16,6 +18,7 @@ import {
 } from "@/components/ui/tooltip";
 import type { UserKitchenWithStats } from "@/lib/kitchen";
 import { capitalize, cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 export function getSpaceIcon(spaceType?: string, className: string = "w-3.5 h-3.5") {
   switch (spaceType) {
@@ -125,6 +128,7 @@ export function SpaceCard({
   baseUrl,
   variant = "card",
 }: SpaceCardProps) {
+  const { t } = useTranslation();
   const { kitchen, membership, memberCount, neededItemCount, sampleNeededItems } =
     kitchenWithStats;
 
@@ -243,24 +247,24 @@ export function SpaceCard({
             </div>
           </div>
 
-          {/* Right Column: Actions */}
-          <div className="lg:col-span-3 flex flex-col sm:flex-row lg:flex-col items-stretch lg:items-end justify-center gap-3">
-            <Link
-              href={targetUrl}
-              className="rounded-2xl px-6 py-3.5 bg-primary text-primary-foreground font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm flex items-center justify-center gap-2 group w-full lg:w-auto"
-            >
-              <span>Enter Kitchen</span>
-              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-            </Link>
+            {/* Right Column: Actions */}
+            <div className="lg:col-span-3 flex flex-col sm:flex-row lg:flex-col items-stretch lg:items-end justify-center gap-3">
+              <Link
+                href={targetUrl}
+                className="rounded-2xl px-6 py-3.5 bg-primary text-primary-foreground font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm flex items-center justify-center gap-2 group w-full lg:w-auto"
+              >
+                <span>{t.dashboard.openSpace}</span>
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+              </Link>
 
-            <CopyButton
-              text={guestLink}
-              label="Guest Link"
-              tooltip="Quick read-only supermarket view for household members and guests, not a member onboarding invite."
-              size="sm"
-              className="rounded-xl px-4 py-2.5 text-xs font-medium bg-secondary/80 hover:bg-secondary border border-border/80 text-foreground transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs w-full lg:w-auto"
-            />
-          </div>
+              <CopyButton
+                text={guestLink}
+                label={t.dashboard.guestLink}
+                tooltip="Quick read-only supermarket view for household members and guests, not a member onboarding invite."
+                size="sm"
+                className="rounded-xl px-4 py-2.5 text-xs font-medium bg-secondary/80 hover:bg-secondary border border-border/80 text-foreground transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs w-full lg:w-auto"
+              />
+            </div>
         </div>
       </div>
     );
@@ -375,14 +379,14 @@ export function SpaceCard({
         {/* Card Action Footer */}
         <div className="pt-4 border-t border-border/60 flex items-center justify-between gap-3 relative z-0 pointer-events-none">
           <span className="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl bg-primary text-primary-foreground shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5 transition-all duration-200">
-            <span>Enter Kitchen</span>
+            <span>{t.dashboard.openSpace}</span>
             <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
           </span>
 
           <div className="relative z-10 pointer-events-auto">
             <CopyButton
               text={guestLink}
-              label="Guest Link"
+              label={t.dashboard.guestLink}
               tooltip="Quick read-only supermarket view for household members and guests, not a member onboarding invite."
               size="sm"
               className="text-xs font-medium px-3 py-2 rounded-xl bg-secondary/80 hover:bg-secondary border border-border/70 hover:border-border text-foreground transition-all duration-200 shadow-2xs flex items-center gap-1.5 cursor-pointer"

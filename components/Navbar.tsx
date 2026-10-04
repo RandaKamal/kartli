@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserDropdown } from "@/components/UserDropdown";
+import { useTranslation } from "@/lib/i18n";
 
 export interface NavbarUser {
   id?: string;
@@ -21,6 +22,7 @@ export interface NavbarProps {
 
 export function Navbar({ user }: NavbarProps) {
   const pathname = usePathname();
+  const { locale, setLocale, t } = useTranslation();
   const isDashboard =
     pathname === "/dashboard" || pathname?.startsWith("/dashboard/");
   const brandHref = user ? "/dashboard" : "/";
@@ -48,6 +50,18 @@ export function Navbar({ user }: NavbarProps) {
           {/* Subtle theme toggle */}
           <ThemeToggle />
 
+          {/* Understated language switcher pill */}
+          <button
+            type="button"
+            onClick={() => setLocale(locale === "en" ? "de" : "en")}
+            className="h-8 px-2.5 rounded-xl border border-border bg-secondary/30 hover:bg-secondary text-xs font-mono font-semibold transition-colors flex items-center gap-1 cursor-pointer select-none text-foreground"
+            title={locale === "en" ? "Auf Deutsch umschalten" : "Switch to English"}
+            aria-label={`Current language: ${locale.toUpperCase()}. Toggle language.`}
+          >
+            <Globe className="w-3.5 h-3.5 text-muted-foreground" />
+            <span>{locale === "en" ? "EN" : "DE"}</span>
+          </button>
+
           {user ? (
             <>
               {/* Secondary + New Kitchen trigger */}
@@ -58,7 +72,7 @@ export function Navbar({ user }: NavbarProps) {
               >
                 <Link href="/kitchen/new">
                   <Plus className="w-3.5 h-3.5" />
-                  <span>New Kitchen</span>
+                  <span>{t.nav.newKitchen}</span>
                 </Link>
               </Button>
 
@@ -71,7 +85,7 @@ export function Navbar({ user }: NavbarProps) {
                   className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-xs hover:-translate-y-px transition-all"
                 >
                   <Link href="/dashboard" className="flex items-center gap-1">
-                    <span>Dashboard</span>
+                    <span>{t.nav.dashboard}</span>
                     <span className="text-[11px] opacity-80">→</span>
                   </Link>
                 </Button>
@@ -87,14 +101,14 @@ export function Navbar({ user }: NavbarProps) {
                 variant="secondary"
                 className="h-9 rounded-xl px-3.5 text-xs font-medium border border-border/70 hover:bg-secondary transition-all"
               >
-                <Link href="/login">Log in</Link>
+                <Link href="/login">{t.nav.login}</Link>
               </Button>
               <Button
                 asChild
                 variant="default"
                 className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-xs hover:-translate-y-px transition-all"
               >
-                <Link href="/register">Sign up</Link>
+                <Link href="/register">{t.nav.signup}</Link>
               </Button>
             </div>
           )}

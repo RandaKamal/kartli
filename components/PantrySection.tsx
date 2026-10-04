@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/pantry";
 import type { PantryItem, ShoppingListItem } from "@/types";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 import {
   Package,
   Trash2,
@@ -56,6 +57,7 @@ export function PantrySection({
   onItemAdded,
   hideInput = false,
 }: PantrySectionProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [optimisticItems, setOptimisticItems] = useOptimistic(
     items,
@@ -149,14 +151,14 @@ export function PantrySection({
           <div className="flex items-center gap-2">
             <Package className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
-              Household Staples
+              {t.kitchen.staples.title}
             </span>
             <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground border border-border/70">
               {optimisticItems.length}
             </span>
           </div>
           <span className="text-[11px] text-muted-foreground/60">
-            Tap tile when empty
+            {t.kitchen.staples.tapHint}
           </span>
         </div>
 
@@ -167,7 +169,7 @@ export function PantrySection({
               type="text"
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
-              placeholder="Track new staple (e.g. Olive Oil)..."
+              placeholder={t.kitchen.commandBar.placeholder}
               disabled={isAdding}
               className="flex-1 rounded-xl h-10 bg-background border-border text-foreground text-sm"
             />
@@ -178,7 +180,7 @@ export function PantrySection({
               className="rounded-xl h-10 px-4 font-semibold shrink-0 cursor-pointer"
             >
               {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4 mr-1" />}
-              <span>Add</span>
+              <span>{t.kitchen.commandBar.add}</span>
             </Button>
           </form>
         )}
@@ -240,7 +242,7 @@ export function PantrySection({
                       <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)] shrink-0" />
                         <span className="text-[10px] font-mono font-medium text-emerald-600 dark:text-emerald-400">
-                          Stocked
+                          {t.kitchen.staples.stocked}
                         </span>
                       </div>
                     )}
@@ -252,7 +254,7 @@ export function PantrySection({
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
                         </span>
                         <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30">
-                          Empty / Needed
+                          {t.kitchen.staples.emptyNeeded}
                         </span>
                       </div>
                     )}
@@ -261,7 +263,7 @@ export function PantrySection({
                       <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_6px_rgba(6,182,212,0.5)] shrink-0" />
                         <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-800 dark:text-cyan-200 border border-cyan-500/30">
-                          In Cart · {stagedByName}
+                          {t.kitchen.staples.inCart} · {stagedByName}
                         </span>
                       </div>
                     )}
@@ -274,7 +276,7 @@ export function PantrySection({
                         setItemToDelete(item);
                       }}
                       className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                      title="Delete staple"
+                      title={t.kitchen.staples.deleteStaple}
                       aria-label={`Delete ${item.name}`}
                     >
                       <Trash2 className="w-3.5 h-3.5" />

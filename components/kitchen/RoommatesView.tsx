@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,6 +55,7 @@ export function RoommatesView({
   onMemberAdded,
   onMemberRemoved,
 }: RoommatesViewProps) {
+  const { t } = useTranslation();
   const [newMemberName, setNewMemberName] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<KitchenMemberWithUser | null>(null);
@@ -120,7 +122,7 @@ export function RoommatesView({
           <div className="flex items-center gap-2">
             <UserCheck className="w-4 h-4 text-emerald-500" />
             <span className="text-xs font-mono uppercase tracking-wider font-semibold text-muted-foreground">
-              Active Roommates ({activeMembers.length})
+              {t.kitchen.roommates.activeMembers} ({activeMembers.length})
             </span>
           </div>
         </div>
@@ -148,7 +150,7 @@ export function RoommatesView({
                       </span>
                       {isMe && (
                         <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-primary/10 text-primary">
-                          You
+                          {t.kitchen.roommates.youBadge}
                         </span>
                       )}
                     </div>
@@ -178,7 +180,7 @@ export function RoommatesView({
                       size="icon-sm"
                       onClick={() => setMemberToRemove(member)}
                       className="text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer h-8 w-8"
-                      title="Remove member"
+                      title={t.kitchen.roommates.removeMember}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
@@ -195,7 +197,7 @@ export function RoommatesView({
         <div className="space-y-3 pt-2 border-t border-border/60">
           <div className="flex items-center justify-between px-1">
             <span className="text-xs font-mono uppercase tracking-wider font-semibold text-muted-foreground">
-              Pending Invites ({pendingInvites.length})
+              {t.kitchen.roommates.pendingInvites} ({pendingInvites.length})
             </span>
           </div>
 
@@ -212,14 +214,14 @@ export function RoommatesView({
                       {invite.kitchen_display_name}
                     </span>
                     <span className="text-[11px] text-muted-foreground font-mono">
-                      Invite code ready
+                      {t.kitchen.roommates.inviteCodeReady}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0">
                     <CopyButton
                       text={inviteUrl}
-                      label="Copy Link"
+                      label={t.kitchen.roommates.copyLink}
                       size="sm"
                       className="h-8 px-2.5 text-xs font-medium rounded-xl border border-border/70 bg-card hover:bg-secondary text-foreground"
                     />
@@ -231,7 +233,7 @@ export function RoommatesView({
                         size="icon-sm"
                         onClick={() => setMemberToRemove(invite)}
                         className="text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer h-8 w-8"
-                        title="Revoke invite"
+                        title={t.kitchen.roommates.revokeInvite}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
@@ -248,12 +250,12 @@ export function RoommatesView({
       {isAdmin && (
         <div className="pt-2 border-t border-border/60 space-y-2.5">
           <label className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono">
-            Invite New Household Member
+            {t.kitchen.roommates.title}
           </label>
           <form onSubmit={handleAddMember} className="flex flex-col sm:flex-row gap-2">
             <Input
               type="text"
-              placeholder="Roommate name (e.g. Maya)..."
+              placeholder={t.kitchen.roommates.inviteInput}
               value={newMemberName}
               onChange={(e) => setNewMemberName(e.target.value)}
               disabled={isAdding}
@@ -265,7 +267,7 @@ export function RoommatesView({
               className="rounded-xl h-10 px-4 font-semibold shrink-0 cursor-pointer w-full sm:w-auto"
             >
               {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4 mr-1.5" />}
-              <span>Generate Invite</span>
+              <span>{t.kitchen.roommates.generateLink}</span>
             </Button>
           </form>
         </div>

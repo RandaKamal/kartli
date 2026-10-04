@@ -13,6 +13,7 @@ import { Receipt } from "lucide-react";
 import { AdminRefundsSection } from "@/components/AdminRefundsSection";
 import { MyPurchasesSection } from "@/components/MyPurchasesSection";
 import type { KitchenMemberWithUser, KitchenSpaceType, CheckoutWithDetails } from "@/types";
+import { useTranslation } from "@/lib/i18n";
 
 export interface ExpenseLedgerModalProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export function ExpenseLedgerModal({
   members,
   checkouts,
 }: ExpenseLedgerModalProps) {
+  const { t } = useTranslation();
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
@@ -71,7 +73,7 @@ export function ExpenseLedgerModal({
             onClick={() => onOpenChange(false)}
             className="w-full h-10 rounded-xl text-xs font-semibold cursor-pointer"
           >
-            Close
+            {t.common.close}
           </Button>
         </div>
       </DialogContent>

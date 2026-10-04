@@ -41,6 +41,7 @@ import { getKitchenStats, type KitchenPulseStats } from "@/lib/actions/stats";
 import { getMyCheckoutsAction } from "@/app/actions/checkout";
 import type { PantryItem, CheckoutWithDetails } from "@/types";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 
 export interface SpacePulseModalProps {
   isOpen: boolean;
@@ -133,6 +134,7 @@ export function SpacePulseModal({
   pantryItems,
   myCheckouts,
 }: SpacePulseModalProps) {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<KitchenPulseStats | null>(initialStats || null);
   const [checkoutsList, setCheckoutsList] = useState<CheckoutWithDetails[]>(
     Array.isArray(myCheckouts) ? myCheckouts : []
@@ -179,7 +181,7 @@ export function SpacePulseModal({
       }
 
       if (isManual) {
-        toast.success("Space pulse updated");
+        toast.success(t.kitchen.pulse.updated);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to load space statistics";
@@ -223,7 +225,7 @@ export function SpacePulseModal({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <DialogTitle className="text-base sm:text-lg font-bold tracking-tight text-foreground truncate">
-                  {kitchenName} Pulse
+                  {kitchenName} {t.kitchen.pulse.title}
                 </DialogTitle>
                 {stats?.monthLabel && (
                   <Badge
@@ -235,7 +237,7 @@ export function SpacePulseModal({
                 )}
               </div>
               <DialogDescription className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                Monthly balance, depleted essentials, and restock logs
+                {t.kitchen.pulse.subtitle}
               </DialogDescription>
             </div>
 
@@ -246,7 +248,7 @@ export function SpacePulseModal({
               onClick={() => loadData(true)}
               disabled={isRefreshing || isLoading}
               className="h-8 w-8 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted shrink-0 cursor-pointer"
-              title="Refresh statistics"
+              title={t.kitchen.pulse.refresh}
             >
               <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
             </Button>
@@ -265,7 +267,7 @@ export function SpacePulseModal({
                   className="flex-1 py-1.5 px-3 text-xs font-medium rounded-lg text-center whitespace-nowrap transition-all data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 shrink-0"
                 >
                   <CreditCard className="w-3.5 h-3.5 shrink-0" />
-                  <span>Spend Balance</span>
+                  <span>{t.kitchen.pulse.spendBalance}</span>
                 </TabsTrigger>
 
                 <TabsTrigger
@@ -273,7 +275,7 @@ export function SpacePulseModal({
                   className="flex-1 py-1.5 px-3 text-xs font-medium rounded-lg text-center whitespace-nowrap transition-all data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 shrink-0"
                 >
                   <Package className="w-3.5 h-3.5 shrink-0" />
-                  <span>Depleted Staples</span>
+                  <span>{t.kitchen.pulse.depletedStaples}</span>
                   {depletedStaples.length > 0 && (
                     <span className="px-1.5 py-0.2 text-[10px] font-mono rounded-full bg-destructive/15 text-destructive border border-destructive/25 shrink-0">
                       {depletedStaples.length}
@@ -286,7 +288,7 @@ export function SpacePulseModal({
                   className="flex-1 py-1.5 px-3 text-xs font-medium rounded-lg text-center whitespace-nowrap transition-all data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 shrink-0"
                 >
                   <Receipt className="w-3.5 h-3.5 shrink-0" />
-                  <span>Restock Feed</span>
+                  <span>{t.kitchen.pulse.restockFeed}</span>
                   {checkoutsList.length > 0 && (
                     <span className="px-1.5 py-0.2 text-[10px] font-mono rounded-full bg-muted text-muted-foreground border border-border shrink-0">
                       {checkoutsList.length}
@@ -332,7 +334,7 @@ export function SpacePulseModal({
                       </div>
                       <div className="space-y-1">
                         <h3 className="text-base font-bold text-foreground">
-                          No grocery runs recorded yet this month.
+                          {t.kitchen.pulse.noRuns}
                         </h3>
                         <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                           Check out your supermarket run or upload a receipt to track household spending and personal impact.
@@ -347,7 +349,7 @@ export function SpacePulseModal({
                           <div className="flex items-center gap-2">
                             <CreditCard className="w-4 h-4 text-muted-foreground" />
                             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                              Total Spend This Month
+                              {t.kitchen.pulse.monthlySpend}
                             </span>
                           </div>
                           <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs font-mono">
@@ -405,7 +407,7 @@ export function SpacePulseModal({
                           <div className="flex items-center gap-2">
                             <User className="w-4 h-4 text-primary" />
                             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                              My Impact &amp; Checkout Breakdown
+                              {t.kitchen.pulse.myImpact}
                             </h4>
                           </div>
                           {stats.userReceiptsCount > 0 && (

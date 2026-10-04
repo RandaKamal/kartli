@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Users } from "lucide-react";
 import { RoommatesView } from "@/components/kitchen/RoommatesView";
 import type { KitchenMemberWithUser, KitchenSpaceType } from "@/types";
+import { useTranslation } from "@/lib/i18n";
 
 export interface RoommatesModalProps {
   isOpen: boolean;
@@ -40,6 +41,8 @@ export function RoommatesModal({
   onMemberAdded,
   onMemberRemoved,
 }: RoommatesModalProps) {
+  const { t } = useTranslation();
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
@@ -49,10 +52,10 @@ export function RoommatesModal({
         <DialogHeader className="p-5 sm:p-6 pb-3 border-b border-border/60 pr-12 text-left">
           <DialogTitle className="text-lg sm:text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
-            <span>{kitchenName} Roommates</span>
+            <span>{kitchenName} {t.kitchen.roommates.title}</span>
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Manage household members and active invite codes.
+            {t.kitchen.roommates.subtitle}
           </DialogDescription>
         </DialogHeader>
 
@@ -77,7 +80,7 @@ export function RoommatesModal({
             onClick={() => onOpenChange(false)}
             className="w-full h-10 rounded-xl text-xs font-semibold cursor-pointer"
           >
-            Close
+            {t.common.close}
           </Button>
         </div>
       </DialogContent>
