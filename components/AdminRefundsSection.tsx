@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 
 export function AdminRefundsSkeleton() {
   return (
@@ -80,6 +81,7 @@ export function AdminRefundsSection({
   onCheckoutsLoaded,
 }: AdminRefundsSectionProps) {
   const router = useRouter();
+  const { t, locale } = useTranslation();
   const [isLoading, setIsLoading] = useState(
     initialCheckouts === undefined || members === undefined
   );
@@ -131,7 +133,7 @@ export function AdminRefundsSection({
   const memberMap = new Map<string, { displayName: string; username: string; initial: string }>();
   membersList.forEach((m) => {
     if (m.user_id) {
-      const displayName = m.kitchen_display_name ? capitalize(m.kitchen_display_name) : "Member";
+      const displayName = m.kitchen_display_name ? capitalize(m.kitchen_display_name) : (t.kitchenSettings.memberSingular || "Member");
       const initial = (m.kitchen_display_name || "M").charAt(0).toUpperCase();
       const username = m.username ? `@${m.username}` : "@guest";
       memberMap.set(m.user_id, { displayName, username, initial });
@@ -145,7 +147,7 @@ export function AdminRefundsSection({
   const getMemberInfo = (userId: string, usernameFallback?: string | null) => {
     const found = memberMap.get(userId);
     if (found) return found;
-    const name = usernameFallback ? capitalize(usernameFallback) : "Roommate";
+    const name = usernameFallback ? capitalize(usernameFallback) : (t.kitchen.header.roommateSingular || "Roommate");
     return {
       displayName: name,
       username: usernameFallback ? `@${usernameFallback}` : "@guest",
@@ -175,7 +177,7 @@ export function AdminRefundsSection({
               : c
           )
         );
-        toast.success("Checkout marked as settled & refunded!");
+        toast.success(t.kitchen.ledger.settledSuccess);
         router.refresh();
       } catch (err: any) {
         toast.error(err.message || "Failed to mark as refunded.");
@@ -186,7 +188,7 @@ export function AdminRefundsSection({
   };
 
   const handleDeleteReceipt = (receiptId: string) => {
-    if (!window.confirm("Remove this receipt from the admin view? This won't delete the member's own copy.")) return;
+    if (!window.confirm(t.kitchen.ledger.deleteReceiptAdminConfirm)) return;
     setDeletingReceiptId(receiptId);
     startTransition(async () => {
       try {
@@ -197,7 +199,7 @@ export function AdminRefundsSection({
         setSelectedCheckout((prev) =>
           prev ? { ...prev, receipts: prev.receipts.filter((r) => r.id !== receiptId) } : prev
         );
-        toast.success("Receipt removed from your view.");
+        toast.success(t.kitchen.ledger.receiptRemoved);
       } catch (err: any) {
         toast.error(err.message || "Failed to delete receipt.");
       } finally {
@@ -206,39 +208,40 @@ export function AdminRefundsSection({
     });
   };
 
+  const dateLocale = locale === "de" ? "de-DE" : "en-US";
 
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
-      <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm space-y-4">
+      <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-4 sm:p-6 md:p-7 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2 mb-1">
-              <Badge variant="secondary" className="border border-border text-muted-foreground text-[11px] font-medium uppercase tracking-wider gap-1">
+              <Badge variant="secondary" className="border border-border text-muted-foreground text-[11px] font-medium uppercase tracking-wider gap-1 rounded-full">
                 <Receipt className="w-3 h-3 text-muted-foreground" />
-                <span>ADMIN PURCHASES &amp; REFUNDS</span>
+                <span>{t.kitchen.ledger.adminBadge}</span>
               </Badge>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
-              Household Purchases &amp; Refunds
+              {t.kitchen.ledger.adminSectionTitle}
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Review receipts uploaded by {terminology.memberLabelPlural.toLowerCase()} and mark refunds as settled.
+              {t.kitchen.ledger.adminSectionSubtitle.replace("{members}", terminology.memberLabelPlural.toLowerCase())}
             </p>
           </div>
 
           {/* Quick Metrics Bar */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
             <button
               type="button"
               onClick={() => setFilterStatus("all")}
-              className={`px-3.5 py-2 rounded-2xl border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+              className={`px-4 py-2 rounded-full border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
                 filterStatus === "all"
                   ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-muted text-muted-foreground border-border hover:text-foreground"
+                  : "bg-secondary/60 text-muted-foreground border-border hover:text-foreground"
               }`}
             >
-              <span>All</span>
+              <span>{t.kitchen.ledger.filterAll}</span>
               <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-full bg-background/50">
                 {checkoutsList.length}
               </span>
@@ -247,14 +250,14 @@ export function AdminRefundsSection({
             <button
               type="button"
               onClick={() => setFilterStatus("pending")}
-              className={`px-3.5 py-2 rounded-2xl border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+              className={`px-4 py-2 rounded-full border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
                 filterStatus === "pending"
-                  ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/50 shadow-xs"
+                  ? "bg-amber-500/20 text-amber-500 dark:text-amber-400 border-amber-500/50 shadow-xs"
                   : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/15"
               }`}
             >
               <Clock className="w-3.5 h-3.5" />
-              <span>Pending</span>
+              <span>{t.kitchen.ledger.filterPending}</span>
               <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-full bg-background/50 text-amber-600 dark:text-amber-400">
                 {pendingCheckouts.length}
               </span>
@@ -263,14 +266,14 @@ export function AdminRefundsSection({
             <button
               type="button"
               onClick={() => setFilterStatus("settled")}
-              className={`px-3.5 py-2 rounded-2xl border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+              className={`px-4 py-2 rounded-full border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
                 filterStatus === "settled"
-                  ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/50 shadow-xs"
+                  ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 shadow-xs"
                   : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/15"
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Settled</span>
+              <span>{t.kitchen.ledger.filterSettled}</span>
               <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-full bg-background/50 text-emerald-600 dark:text-emerald-400">
                 {settledCheckouts.length}
               </span>
@@ -288,15 +291,15 @@ export function AdminRefundsSection({
           <div className="space-y-1">
             <h3 className="text-sm font-semibold text-foreground">
               {filterStatus === "pending"
-                ? "No pending refunds found"
+                ? t.kitchen.ledger.noPendingRefunds
                 : filterStatus === "settled"
-                ? "No settled purchases recorded yet"
-                : "No purchases recorded yet"}
+                ? t.kitchen.ledger.noSettledPurchases
+                : t.kitchen.ledger.noPurchases}
             </h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto">
               {filterStatus === "pending"
-                ? "All member supermarket checkouts and grocery refunds are currently up to date."
-                : "When members purchase items and upload receipts, their checkout logs will appear here."}
+                ? t.kitchen.ledger.noPendingRefundsDesc
+                : t.kitchen.ledger.noPurchasesDesc}
             </p>
           </div>
         </Card>
@@ -334,7 +337,7 @@ export function AdminRefundsSection({
                         <div className="flex items-center gap-1">
                           <Calendar className="w-3 h-3 text-muted-foreground shrink-0" />
                           <span>
-                            {new Date(checkout.created_at).toLocaleDateString("en-US", {
+                            {new Date(checkout.created_at).toLocaleDateString(dateLocale, {
                               month: "short",
                               day: "numeric",
                               year: "numeric",
@@ -342,7 +345,7 @@ export function AdminRefundsSection({
                           </span>
                         </div>
                         <span>&middot;</span>
-                        <span>{checkout.items.length} {checkout.items.length === 1 ? "item" : "items"}</span>
+                        <span>{checkout.items.length} {checkout.items.length === 1 ? t.kitchen.ledger.item : t.kitchen.ledger.items}</span>
                       </div>
 
                       {/* Optional Note Snippet */}
@@ -390,22 +393,22 @@ export function AdminRefundsSection({
                         variant="ghost"
                         size="sm"
                         onClick={() => setSelectedCheckout(checkout)}
-                        className="rounded-xl text-xs font-medium h-8 px-2.5 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-muted"
+                        className="rounded-full text-xs font-medium h-8 px-3 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-muted"
                       >
                         <Receipt className="w-3.5 h-3.5" />
-                        <span>View{checkout.receipts.length > 1 ? ` (${checkout.receipts.length})` : ""}</span>
+                        <span>{t.kitchen.ledger.viewReceipt}{checkout.receipts.length > 1 ? ` (${checkout.receipts.length})` : ""}</span>
                       </Button>
                     ) : checkout.totalReceiptsEverAttached > 0 ? (
                       <div
                         className="p-1.5 text-muted-foreground/50"
-                        title="Receipt previously deleted"
+                        title={t.kitchen.ledger.receiptDeleted}
                       >
                         <Receipt className="w-3.5 h-3.5 line-through opacity-40" />
                       </div>
                     ) : (
                       <div
                         className="p-1.5 text-muted-foreground/30"
-                        title="No receipt attached"
+                        title={t.kitchen.ledger.noReceipt}
                       >
                         <Receipt className="w-3.5 h-3.5 opacity-30" />
                       </div>
@@ -414,9 +417,9 @@ export function AdminRefundsSection({
                     {/* Status Badge & Settle Action */}
                     {checkout.is_refunded ? (
                       <div className="flex items-center gap-1.5">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                          <span>Settled</span>
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>{t.kitchen.ledger.settled}</span>
                         </div>
                         {checkout.receipts.length > 0 && checkout.refunded_at && (
                           <ReceiptExpiryBadge refundedAt={checkout.refunded_at} />
@@ -424,9 +427,9 @@ export function AdminRefundsSection({
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/20">
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                          <span>Pending</span>
+                          <span>{t.kitchen.ledger.pending}</span>
                         </div>
 
                         <Button
@@ -435,14 +438,14 @@ export function AdminRefundsSection({
                           size="sm"
                           onClick={() => handleMarkAsSettled(checkout.id)}
                           disabled={isPending}
-                          className="rounded-xl text-xs font-semibold h-8 px-3 shadow-xs gap-1.5"
+                          className="rounded-full text-xs font-semibold h-8 px-3.5 shadow-xs gap-1.5"
                         >
                           {isSettling ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : (
                             <Check className="w-3.5 h-3.5" />
                           )}
-                          <span>{isSettling ? "Settling..." : "Settle"}</span>
+                          <span>{isSettling ? t.kitchen.ledger.settlingAction : t.kitchen.ledger.settleAction}</span>
                         </Button>
                       </div>
                     )}
@@ -456,7 +459,7 @@ export function AdminRefundsSection({
 
       {/* Full Resolution Receipt Preview Modal Dialog */}
       <Dialog open={!!selectedCheckout} onOpenChange={(open) => !open && setSelectedCheckout(null)}>
-        <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[92vh] overflow-y-auto bg-card border border-border p-5 sm:p-6 text-card-foreground rounded-3xl shadow-xl flex flex-col gap-4">
+        <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[92vh] overflow-y-auto bg-card/95 backdrop-blur-2xl border border-white/[0.08] p-5 sm:p-6 text-card-foreground rounded-3xl shadow-2xl flex flex-col gap-4">
           {selectedCheckout && (
             <>
               {/* Header */}
@@ -469,25 +472,25 @@ export function AdminRefundsSection({
                     </DialogTitle>
                   </div>
                   {selectedCheckout.is_refunded ? (
-                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 w-fit shrink-0">
+                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 w-fit shrink-0 rounded-full">
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      Settled
+                      {t.kitchen.ledger.settled}
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 w-fit shrink-0">
+                    <Badge variant="outline" className="bg-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/20 w-fit shrink-0 rounded-full">
                       <Clock className="w-3.5 h-3.5 mr-1" />
-                      Pending Refund
+                      {t.kitchen.ledger.pendingRefund}
                     </Badge>
                   )}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                   <span>
-                    Submitted by <strong className="text-foreground">{getMemberInfo(selectedCheckout.user_id, selectedCheckout.username).displayName}</strong> ({getMemberInfo(selectedCheckout.user_id, selectedCheckout.username).username})
+                    {t.kitchen.ledger.submittedBy} <strong className="text-foreground">{getMemberInfo(selectedCheckout.user_id, selectedCheckout.username).displayName}</strong> ({getMemberInfo(selectedCheckout.user_id, selectedCheckout.username).username})
                   </span>
                   <span>&middot;</span>
                   <span className="font-mono">
-                    {new Date(selectedCheckout.created_at).toLocaleDateString("en-US", {
+                    {new Date(selectedCheckout.created_at).toLocaleDateString(dateLocale, {
                       month: "short",
                       day: "numeric",
                       year: "numeric",
@@ -495,10 +498,10 @@ export function AdminRefundsSection({
                   </span>
                   <span>&middot;</span>
                   <span className="font-semibold text-foreground">
-                    Claimed: {formatCurrency(selectedCheckout.total_claimed_amount || 0, selectedCheckout.currency)}
+                    {t.kitchen.ledger.claimed}: {formatCurrency(selectedCheckout.total_claimed_amount || 0, selectedCheckout.currency)}
                     {selectedCheckout.total_receipt_amount != null && (
                       <span className="text-muted-foreground font-normal">
-                        {" "} (Total: {formatCurrency(selectedCheckout.total_receipt_amount, selectedCheckout.currency)})
+                        {" "} ({t.kitchen.ledger.total}: {formatCurrency(selectedCheckout.total_receipt_amount, selectedCheckout.currency)})
                       </span>
                     )}
                   </span>
@@ -512,7 +515,7 @@ export function AdminRefundsSection({
                   <div className="p-3 rounded-2xl bg-muted/40 border border-border space-y-1">
                     <span className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
                       <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span>Note to Admin</span>
+                      <span>{t.kitchen.ledger.noteToAdmin}</span>
                     </span>
                     <p className="text-xs text-foreground italic">&ldquo;{selectedCheckout.note}&rdquo;</p>
                   </div>
@@ -527,7 +530,7 @@ export function AdminRefundsSection({
                           type="button"
                           onClick={() => handleDeleteReceipt(r.id)}
                           disabled={deletingReceiptId === r.id}
-                          aria-label="Delete this receipt"
+                          aria-label={t.kitchen.ledger.deleteReceipt}
                           className="absolute top-2 right-2 z-10 p-1.5 rounded-lg bg-card/90 border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40 transition shadow-sm cursor-pointer disabled:opacity-50"
                         >
                           {deletingReceiptId === r.id ? (
@@ -549,8 +552,8 @@ export function AdminRefundsSection({
                     <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
                       <Receipt className="w-4 h-4" />
                     </div>
-                    <p className="text-xs font-medium text-foreground">No Receipt Attached</p>
-                    <p className="text-[11px] text-muted-foreground">This purchase was checked out directly without a receipt image.</p>
+                    <p className="text-xs font-medium text-foreground">{t.kitchen.ledger.noReceiptAttached}</p>
+                    <p className="text-[11px] text-muted-foreground">{t.kitchen.ledger.noReceiptAttachedDesc}</p>
                   </div>
                 )}
 
@@ -560,7 +563,7 @@ export function AdminRefundsSection({
                     <div className="flex items-center justify-between text-xs font-semibold text-foreground">
                       <span className="flex items-center gap-1.5">
                         <Package className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>Claimed Items ({selectedCheckout.items.length})</span>
+                        <span>{t.kitchen.ledger.claimedItems.replace("{count}", String(selectedCheckout.items.length))}</span>
                       </span>
                       <span className="font-mono text-[11px] text-muted-foreground">
                         {formatCurrency(selectedCheckout.total_claimed_amount || 0, selectedCheckout.currency)}
@@ -592,11 +595,11 @@ export function AdminRefundsSection({
                     <span className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 shrink-0" />
                       <span>
-                        Settled on {new Date(selectedCheckout.refunded_at).toLocaleDateString("en-US", {
+                        {t.kitchen.ledger.settledOn.replace("{date}", new Date(selectedCheckout.refunded_at).toLocaleDateString(dateLocale, {
                           month: "short",
                           day: "numeric",
                           year: "numeric",
-                        })}
+                        }))}
                       </span>
                     </span>
                     {selectedCheckout.receipts.length > 0 && (
@@ -613,9 +616,9 @@ export function AdminRefundsSection({
                   variant="outline"
                   size="sm"
                   onClick={() => setSelectedCheckout(null)}
-                  className="rounded-xl text-xs h-9 border-border"
+                  className="rounded-full text-xs h-9 px-4 border-border"
                 >
-                  Close
+                  {t.common.close}
                 </Button>
                 {!selectedCheckout.is_refunded && (
                   <Button
@@ -628,10 +631,10 @@ export function AdminRefundsSection({
                       handleMarkAsSettled(id);
                     }}
                     disabled={isPending}
-                    className="rounded-xl text-xs font-semibold h-9 px-4 gap-1.5 bg-primary text-primary-foreground shadow-sm"
+                    className="rounded-full text-xs font-semibold h-9 px-5 gap-1.5 bg-primary text-primary-foreground shadow-sm"
                   >
                     <Check className="w-3.5 h-3.5" />
-                    <span>Mark as Settled</span>
+                    <span>{t.kitchen.ledger.markAsSettled}</span>
                   </Button>
                 )}
               </DialogFooter>

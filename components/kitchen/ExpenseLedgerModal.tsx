@@ -39,19 +39,21 @@ export function ExpenseLedgerModal({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         onDismiss={() => onOpenChange(false)}
-        className="sm:max-w-2xl w-full p-0 gap-0 overflow-hidden flex flex-col"
+        className="sm:max-w-3xl w-full p-0 gap-0 overflow-hidden flex flex-col rounded-3xl border border-white/[0.08] bg-card/95 backdrop-blur-2xl shadow-2xl"
       >
-        <DialogHeader className="p-5 sm:p-6 pb-3 border-b border-border/60 pr-12 text-left">
+        <DialogHeader className="p-5 sm:p-6 pb-4 border-b border-border/60 pr-12 text-left bg-muted/20 backdrop-blur-md">
           <DialogTitle className="text-lg sm:text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-primary" />
-            <span>Expense &amp; Refund Ledger</span>
+            <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+              <Receipt className="w-4 h-4" />
+            </div>
+            <span>{t.kitchen.ledger.modalTitle}</span>
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Shared household balances, receipt checkouts, and refund claims.
+            {t.kitchen.ledger.modalSubtitle}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-5 pb-8 pt-4 space-y-6 overscroll-contain">
+        <div className="flex-1 overflow-y-auto px-5 pb-8 pt-4 space-y-6 overscroll-contain max-h-[82vh]">
           {isAdmin && (
             <AdminRefundsSection
               kitchenId={kitchenId}
@@ -71,7 +73,7 @@ export function ExpenseLedgerModal({
             type="button"
             variant="secondary"
             onClick={() => onOpenChange(false)}
-            className="w-full h-10 rounded-xl text-xs font-semibold cursor-pointer"
+            className="w-full h-10 rounded-full text-xs font-semibold cursor-pointer"
           >
             {t.common.close}
           </Button>
@@ -82,3 +84,4 @@ export function ExpenseLedgerModal({
 }
 
 export default ExpenseLedgerModal;
+

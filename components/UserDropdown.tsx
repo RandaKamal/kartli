@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { logoutAction } from "@/app/actions/auth";
-
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 interface UserDropdownProps {
@@ -25,6 +25,7 @@ interface UserDropdownProps {
 }
 
 export function UserDropdown({ user, className }: UserDropdownProps) {
+  const { t } = useTranslation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const username = user.username || "user";
   const initial = username.charAt(0).toUpperCase() || "U";
@@ -63,19 +64,19 @@ export function UserDropdown({ user, className }: UserDropdownProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel className="font-normal text-xs text-muted-foreground">
-          Signed in as <strong className="text-foreground">@{username}</strong>
+          {t.userDropdown.signedInAs} <strong className="text-foreground">@{username}</strong>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild className="hover:bg-white/10 dark:hover:bg-white/5 hover:text-foreground transition-colors duration-150 rounded-lg">
           <Link href="/dashboard" className="flex items-center gap-2 w-full cursor-pointer">
             <LayoutDashboard className="w-3.5 h-3.5" />
-            <span>Dashboard</span>
+            <span>{t.userDropdown.dashboard}</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild className="hover:bg-white/10 dark:hover:bg-white/5 hover:text-foreground transition-colors duration-150 rounded-lg">
           <Link href="/profile" className="flex items-center gap-2 w-full cursor-pointer">
             <Settings className="w-3.5 h-3.5" />
-            <span>Settings &amp; Profile</span>
+            <span>{t.userDropdown.settingsAndProfile}</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -90,12 +91,12 @@ export function UserDropdown({ user, className }: UserDropdownProps) {
           {isLoggingOut ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span>Signing out...</span>
+              <span>{t.userDropdown.signingOut}</span>
             </>
           ) : (
             <>
               <LogOut className="w-3.5 h-3.5" />
-              <span>Sign out</span>
+              <span>{t.userDropdown.signOut}</span>
             </>
           )}
         </DropdownMenuItem>

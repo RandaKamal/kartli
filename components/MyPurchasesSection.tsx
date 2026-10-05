@@ -18,10 +18,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 
 export function MyPurchasesSkeleton() {
   return (
-    <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-3">
+    <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-4 sm:p-6 shadow-sm space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Skeleton className="w-4 h-4 rounded" />
@@ -41,6 +42,7 @@ export function MyPurchasesSection({
   kitchenId: string;
   checkouts?: CheckoutWithDetails[];
 }) {
+  const { t, locale } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasFetched, setHasFetched] = useState(initialCheckouts !== undefined);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,6 +50,8 @@ export function MyPurchasesSection({
   const [selectedCheckout, setSelectedCheckout] = useState<CheckoutWithDetails | null>(null);
   const [deletingReceiptId, setDeletingReceiptId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+
+  const dateLocale = locale === "de" ? "de-DE" : "en-US";
 
   useEffect(() => {
     if (initialCheckouts !== undefined) {
@@ -77,7 +81,7 @@ export function MyPurchasesSection({
   };
 
   const handleDeleteReceipt = (receiptId: string) => {
-    if (!window.confirm("Remove this receipt from your view? This won't delete the admin's copy.")) return;
+    if (!window.confirm(t.kitchen.ledger.deleteReceiptMemberConfirm)) return;
     setDeletingReceiptId(receiptId);
     startTransition(async () => {
       try {
@@ -88,7 +92,7 @@ export function MyPurchasesSection({
         setSelectedCheckout((prev) =>
           prev ? { ...prev, receipts: prev.receipts.filter((r) => r.id !== receiptId) } : prev
         );
-        toast.success("Receipt removed from your view.");
+        toast.success(t.kitchen.ledger.receiptRemoved);
       } catch (err: any) {
         toast.error(err.message || "Failed to delete receipt.");
       } finally {
@@ -98,27 +102,27 @@ export function MyPurchasesSection({
   };
 
   return (
-    <Card className="border border-border bg-card rounded-3xl p-4 sm:p-6 shadow-sm space-y-3 transition-all">
+    <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-4 sm:p-6 shadow-sm space-y-3 transition-all">
       <button
         type="button"
         onClick={handleToggleExpand}
         className="w-full flex items-center justify-between gap-2 text-left cursor-pointer group focus:outline-none"
         aria-expanded={isExpanded}
-        aria-label={isExpanded ? "Collapse purchases history" : "Expand purchases history"}
+        aria-label={isExpanded ? t.kitchen.ledger.myPurchasesCollapse : t.kitchen.ledger.myPurchasesExpand}
       >
         <div className="flex items-center gap-2">
           <Receipt className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition" />
           <h2 className="text-base font-semibold text-foreground group-hover:text-foreground transition">
-            My Purchases
+            {t.kitchen.ledger.myPurchases}
           </h2>
           {hasFetched && (
-            <Badge variant="secondary" className="text-xs font-mono">
+            <Badge variant="secondary" className="text-xs font-mono rounded-full px-2">
               {checkoutsList.length}
             </Badge>
           )}
         </div>
 
-        <div className="p-1 rounded-lg text-muted-foreground group-hover:text-foreground group-hover:bg-muted transition">
+        <div className="p-1 rounded-full text-muted-foreground group-hover:text-foreground group-hover:bg-muted transition">
           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
       </button>
@@ -127,22 +131,26 @@ export function MyPurchasesSection({
         <div className="pt-2 animate-in fade-in-50 duration-200">
           {isLoading ? (
             <div className="space-y-3 py-2">
-              <Skeleton className="h-12 w-full rounded-xl" />
-              <Skeleton className="h-12 w-full rounded-xl" />
+              <Skeleton className="h-12 w-full rounded-2xl" />
+              <Skeleton className="h-12 w-full rounded-2xl" />
             </div>
           ) : checkoutsList.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-2 text-center">Nothing checked out yet.</p>
+            <p className="text-xs text-muted-foreground py-2 text-center">{t.kitchen.ledger.nothingCheckedOut}</p>
           ) : (
             <div className="divide-y divide-border">
               {checkoutsList.map((checkout) => (
-                <div key={checkout.id} className="py-3 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition">
+                <div key={checkout.id} className="py-3 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-2xl transition">
                   <div className="min-w-0">
                     <p className="font-medium text-foreground truncate">{checkout.items.map((i) => i.name).join(", ")}</p>
                     {checkout.note && (
                       <p className="text-xs text-muted-foreground italic">&ldquo;{checkout.note}&rdquo;</p>
                     )}
                     <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                      {new Date(checkout.created_at).toLocaleDateString("en-US")} &middot; {formatCurrency(checkout.total_claimed_amount, checkout.currency)}
+                      {new Date(checkout.created_at).toLocaleDateString(dateLocale, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })} &middot; {formatCurrency(checkout.total_claimed_amount, checkout.currency)}
                     </p>
                   </div>
 
@@ -153,35 +161,35 @@ export function MyPurchasesSection({
                         variant="outline"
                         size="sm"
                         onClick={() => setSelectedCheckout(checkout)}
-                        className="rounded-xl text-xs font-medium h-8 gap-1.5 border-border hover:bg-secondary"
+                        className="rounded-full text-xs font-medium h-8 px-3 gap-1.5 border-border hover:bg-secondary"
                       >
                         <Receipt className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>View{checkout.receipts.length > 1 ? ` (${checkout.receipts.length})` : ""}</span>
+                        <span>{t.kitchen.ledger.viewReceipt}{checkout.receipts.length > 1 ? ` (${checkout.receipts.length})` : ""}</span>
                       </Button>
                     ) : checkout.totalReceiptsEverAttached > 0 ? (
-                      <Badge variant="secondary" className="rounded-xl text-xs font-normal h-8 px-2.5 bg-muted text-muted-foreground border border-border flex items-center justify-center">
-                        Receipt Deleted
+                      <Badge variant="secondary" className="rounded-full text-xs font-normal h-8 px-3 bg-muted text-muted-foreground border border-border flex items-center justify-center">
+                        {t.kitchen.ledger.receiptDeleted}
                       </Badge>
                     ) : (
-                      <Badge variant="secondary" className="rounded-xl text-xs font-normal h-8 px-2.5 bg-muted text-muted-foreground border border-border flex items-center justify-center">
-                        No Receipt
+                      <Badge variant="secondary" className="rounded-full text-xs font-normal h-8 px-3 bg-muted text-muted-foreground border border-border flex items-center justify-center">
+                        {t.kitchen.ledger.noReceipt}
                       </Badge>
                     )}
 
                     {checkout.is_refunded ? (
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <Badge variant="outline" className="gap-1 font-semibold text-xs py-1 px-2.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
+                        <Badge variant="outline" className="gap-1 font-semibold text-xs py-1 px-3 rounded-full bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          Refunded
+                          {t.kitchen.ledger.refunded}
                         </Badge>
                         {checkout.receipts.length > 0 && checkout.refunded_at && (
                           <ReceiptExpiryBadge refundedAt={checkout.refunded_at} />
                         )}
                       </div>
                     ) : (
-                      <Badge variant="outline" className="gap-1 font-semibold text-xs py-1 px-2.5 shrink-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+                      <Badge variant="outline" className="gap-1 font-semibold text-xs py-1 px-3 rounded-full shrink-0 bg-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/20">
                         <Clock className="w-3.5 h-3.5" />
-                        Pending Refund
+                        {t.kitchen.ledger.pendingRefund}
                       </Badge>
                     )}
                   </div>
@@ -194,7 +202,7 @@ export function MyPurchasesSection({
 
       {/* Receipt viewer / delete modal */}
       <Dialog open={!!selectedCheckout} onOpenChange={(open) => !open && setSelectedCheckout(null)}>
-        <DialogContent className="sm:max-w-2xl max-h-[92vh] overflow-y-auto bg-card border border-border p-5 sm:p-6 text-card-foreground rounded-3xl shadow-xl flex flex-col gap-4">
+        <DialogContent className="sm:max-w-2xl max-h-[92vh] overflow-y-auto bg-card/95 backdrop-blur-2xl border border-white/[0.08] p-5 sm:p-6 text-card-foreground rounded-3xl shadow-2xl flex flex-col gap-4">
           {selectedCheckout && (
             <>
               <DialogHeader className="space-y-1 text-left">
@@ -202,7 +210,11 @@ export function MyPurchasesSection({
                   {selectedCheckout.store_name || "Supermarket Receipt"}
                 </DialogTitle>
                 <p className="text-xs text-muted-foreground font-mono">
-                  {new Date(selectedCheckout.created_at).toLocaleDateString("en-US")} &middot; {formatCurrency(selectedCheckout.total_claimed_amount, selectedCheckout.currency)}
+                  {new Date(selectedCheckout.created_at).toLocaleDateString(dateLocale, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })} &middot; {formatCurrency(selectedCheckout.total_claimed_amount, selectedCheckout.currency)}
                 </p>
                 {selectedCheckout.is_refunded && selectedCheckout.refunded_at && selectedCheckout.receipts.length > 0 && (
                   <ReceiptExpiryBadge refundedAt={selectedCheckout.refunded_at} className="mt-0.5" />
@@ -216,7 +228,7 @@ export function MyPurchasesSection({
                       type="button"
                       onClick={() => handleDeleteReceipt(r.id)}
                       disabled={deletingReceiptId === r.id}
-                      aria-label="Delete this receipt"
+                      aria-label={t.kitchen.ledger.deleteReceipt}
                       className="absolute top-2 right-2 z-10 p-1.5 rounded-lg bg-card/90 border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40 transition shadow-sm cursor-pointer disabled:opacity-50"
                     >
                       {deletingReceiptId === r.id ? (
@@ -240,9 +252,9 @@ export function MyPurchasesSection({
                   variant="outline"
                   size="sm"
                   onClick={() => setSelectedCheckout(null)}
-                  className="rounded-xl text-xs h-9 border-border"
+                  className="rounded-full text-xs h-9 px-4 border-border"
                 >
-                  Close
+                  {t.common.close}
                 </Button>
               </DialogFooter>
             </>

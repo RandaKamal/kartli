@@ -75,7 +75,7 @@ export function KitchenSettingsView({
   baseUrl,
 }: KitchenSettingsViewProps) {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const isAdmin = membership.role === "ADMIN";
 
   // General settings state
@@ -232,10 +232,10 @@ export function KitchenSettingsView({
         <div className="mb-6 sm:mb-8">
           <Link
             href={`/kitchen/${initialKitchen.id}`}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all border border-transparent hover:border-border/60"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to {kitchenName}</span>
+            <span>{t.kitchenSettings.backToSpace.replace("{name}", kitchenName)}</span>
           </Link>
         </div>
 
@@ -280,7 +280,7 @@ export function KitchenSettingsView({
               form="general-space-form"
               disabled={isSavingGeneral || !kitchenName.trim()}
               size="sm"
-              className="rounded-xl font-semibold text-xs h-8.5 px-3.5 w-full sm:w-auto"
+              className="rounded-full font-semibold text-xs h-9 px-5 bg-primary text-primary-foreground shadow-md hover:bg-primary/90 w-full sm:w-auto transition-all"
             >
               {isSavingGeneral ? (
                 <>
@@ -313,7 +313,7 @@ export function KitchenSettingsView({
             <span className="text-[11px] text-muted-foreground block">
               {isAdmin
                 ? t.kitchenSettings.kitchenNameHelper
-                : "The shared kitchen display name (managed by space admins)."}
+                : t.kitchenSettings.kitchenNameManaged}
             </span>
           </div>
 
@@ -334,12 +334,12 @@ export function KitchenSettingsView({
                 type="button"
                 disabled={!isAdmin}
                 onClick={() => setSpaceType("FLATSHARE")}
-                className={`p-3 rounded-xl flex flex-col gap-1 border transition-all text-left select-none ${
+                className={`p-3 rounded-2xl flex flex-col gap-1 border transition-all text-left select-none ${
                   isAdmin ? "cursor-pointer active:scale-[0.98]" : "cursor-default opacity-85"
                 } ${
                   spaceType === "FLATSHARE"
-                    ? "border-primary/50 bg-primary/[0.06] ring-1 ring-primary/30 shadow-xs"
-                    : "border-border/60 bg-secondary/30 hover:bg-secondary/50"
+                    ? "ring-2 ring-primary/40 border-primary bg-primary/[0.04] shadow-md shadow-primary/5"
+                    : "border-border/70 bg-secondary/30 hover:bg-secondary/50"
                 }`}
               >
                 <div className="flex items-center gap-1.5">
@@ -362,12 +362,12 @@ export function KitchenSettingsView({
                 type="button"
                 disabled={!isAdmin}
                 onClick={() => setSpaceType("FAMILY")}
-                className={`p-3 rounded-xl flex flex-col gap-1 border transition-all text-left select-none ${
+                className={`p-3 rounded-2xl flex flex-col gap-1 border transition-all text-left select-none ${
                   isAdmin ? "cursor-pointer active:scale-[0.98]" : "cursor-default opacity-85"
                 } ${
                   spaceType === "FAMILY"
-                    ? "border-primary/50 bg-primary/[0.06] ring-1 ring-primary/30 shadow-xs"
-                    : "border-border/60 bg-secondary/30 hover:bg-secondary/50"
+                    ? "ring-2 ring-primary/40 border-primary bg-primary/[0.04] shadow-md shadow-primary/5"
+                    : "border-border/70 bg-secondary/30 hover:bg-secondary/50"
                 }`}
               >
                 <div className="flex items-center gap-1.5">
@@ -390,12 +390,12 @@ export function KitchenSettingsView({
                 type="button"
                 disabled={!isAdmin}
                 onClick={() => setSpaceType("OFFICE")}
-                className={`p-3 rounded-xl flex flex-col gap-1 border transition-all text-left select-none ${
+                className={`p-3 rounded-2xl flex flex-col gap-1 border transition-all text-left select-none ${
                   isAdmin ? "cursor-pointer active:scale-[0.98]" : "cursor-default opacity-85"
                 } ${
                   spaceType === "OFFICE"
-                    ? "border-primary/50 bg-primary/[0.06] ring-1 ring-primary/30 shadow-xs"
-                    : "border-border/60 bg-secondary/30 hover:bg-secondary/50"
+                    ? "ring-2 ring-primary/40 border-primary bg-primary/[0.04] shadow-md shadow-primary/5"
+                    : "border-border/70 bg-secondary/30 hover:bg-secondary/50"
                 }`}
               >
                 <div className="flex items-center gap-1.5">
@@ -418,12 +418,12 @@ export function KitchenSettingsView({
                 type="button"
                 disabled={!isAdmin}
                 onClick={() => setSpaceType("NEUTRAL")}
-                className={`p-3 rounded-xl flex flex-col gap-1 border transition-all text-left select-none ${
+                className={`p-3 rounded-2xl flex flex-col gap-1 border transition-all text-left select-none ${
                   isAdmin ? "cursor-pointer active:scale-[0.98]" : "cursor-default opacity-85"
                 } ${
                   spaceType === "NEUTRAL"
-                    ? "border-primary/50 bg-primary/[0.06] ring-1 ring-primary/30 shadow-xs"
-                    : "border-border/60 bg-secondary/30 hover:bg-secondary/50"
+                    ? "ring-2 ring-primary/40 border-primary bg-primary/[0.04] shadow-md shadow-primary/5"
+                    : "border-border/70 bg-secondary/30 hover:bg-secondary/50"
                 }`}
               >
                 <div className="flex items-center gap-1.5">
@@ -483,13 +483,13 @@ export function KitchenSettingsView({
                 size="sm"
                 onClick={handleRegenerateGuestToken}
                 disabled={isRegeneratingToken}
-                className="rounded-xl text-xs h-8 border-border text-muted-foreground hover:text-foreground hover:bg-muted self-start sm:self-auto"
+                className="rounded-full text-xs h-8 px-3.5 border-border/80 text-muted-foreground hover:text-foreground hover:bg-secondary/60 self-start sm:self-auto transition-all"
                 title="Invalidates previous guest links"
               >
                 <RefreshCw
                   className={`w-3.5 h-3.5 mr-1.5 ${isRegeneratingToken ? "animate-spin" : ""}`}
                 />
-                <span>{isRegeneratingToken ? "Regenerating..." : t.kitchenSettings.regenerateBtn}</span>
+                <span>{isRegeneratingToken ? t.kitchenSettings.regenerating : t.kitchenSettings.regenerateBtn}</span>
               </Button>
             )}
           </div>
@@ -507,13 +507,13 @@ export function KitchenSettingsView({
                 label={t.kitchenSettings.copyLinkBtn}
                 size="sm"
                 variant="secondary"
-                className="flex-1 sm:flex-none h-10 px-3 rounded-xl font-medium text-xs"
+                className="flex-1 sm:flex-none h-10 px-4 rounded-full font-medium text-xs"
               />
               <Button
                 asChild
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted"
+                className="h-10 w-10 rounded-full shrink-0 text-muted-foreground hover:text-foreground hover:bg-secondary/60"
                 title="Open guest view in new tab"
               >
                 <Link href={publicGuestUrl} target="_blank">
@@ -552,16 +552,16 @@ export function KitchenSettingsView({
                 <div className="flex items-center gap-2 shrink-0">
                   <CopyButton
                     text={primaryInviteUrl}
-                    label="Copy Invite"
+                    label={t.kitchenSettings.copyInvite}
                     size="sm"
                     variant="default"
-                    className="flex-1 sm:flex-none h-10 px-3 rounded-xl font-semibold text-xs"
+                    className="flex-1 sm:flex-none h-10 px-4 rounded-full font-semibold text-xs"
                   />
                   <Button
                     asChild
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted"
+                    className="h-10 w-10 rounded-full shrink-0 text-muted-foreground hover:text-foreground hover:bg-secondary/60"
                     title="Open invite link"
                   >
                     <Link href={primaryInviteUrl} target="_blank">
@@ -573,7 +573,9 @@ export function KitchenSettingsView({
 
               <div className="flex items-center justify-between text-[11px] text-muted-foreground px-1">
                 <span>
-                  Reserved for: <strong className="text-foreground">{primaryPendingInvite.kitchen_display_name}</strong>
+                  {t.kitchenSettings.reservedFor.split("{name}")[0]}
+                  <strong className="text-foreground">{primaryPendingInvite.kitchen_display_name}</strong>
+                  {t.kitchenSettings.reservedFor.split("{name}")[1] || ""}
                 </span>
                 {isAdmin && (
                   <button
@@ -582,7 +584,7 @@ export function KitchenSettingsView({
                     disabled={revokingInviteId === primaryPendingInvite.id}
                     className="text-destructive hover:underline text-[11px] cursor-pointer"
                   >
-                    Revoke Link
+                    {t.kitchenSettings.revokeInvite}
                   </button>
                 )}
               </div>
@@ -597,12 +599,12 @@ export function KitchenSettingsView({
           {isAdmin && (
             <form onSubmit={handleCreateInvite} className="pt-2">
               <Label htmlFor="new-invite-name" className="text-xs font-medium text-foreground block mb-1.5">
-                Generate New Invitation Link
+                {t.kitchenSettings.generateInviteTitle}
               </Label>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <Input
                   id="new-invite-name"
-                  placeholder="e.g. Alex (or Roommate Nickname)"
+                  placeholder={t.kitchenSettings.generateInvitePlaceholder}
                   value={newMemberName}
                   onChange={(e) => setNewMemberName(e.target.value)}
                   disabled={isCreatingInvite}
@@ -612,14 +614,14 @@ export function KitchenSettingsView({
                   type="submit"
                   size="sm"
                   disabled={isCreatingInvite || !newMemberName.trim()}
-                  className="rounded-xl h-10 px-3.5 font-semibold text-xs shrink-0 w-full sm:w-auto"
+                  className="rounded-full h-10 px-4 font-semibold text-xs shrink-0 w-full sm:w-auto shadow-sm"
                 >
                   {isCreatingInvite ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
                   ) : (
                     <UserPlus className="w-3.5 h-3.5 mr-1.5" />
                   )}
-                  <span>Create Link</span>
+                  <span>{isCreatingInvite ? t.kitchenSettings.creatingInvite : t.kitchenSettings.createInviteBtn}</span>
                 </Button>
               </div>
             </form>
@@ -636,16 +638,16 @@ export function KitchenSettingsView({
             </div>
             <div>
               <h2 className="text-base font-bold text-foreground tracking-tight">
-                Space Members
+                {t.kitchenSettings.membersSectionTitle}
               </h2>
               <p className="text-xs text-muted-foreground">
-                Active member roster registered in this kitchen space.
+                {t.kitchenSettings.membersSectionSub}
               </p>
             </div>
           </div>
 
           <Badge variant="secondary" className="font-mono text-xs">
-            {activeMembers.length} {activeMembers.length === 1 ? "Member" : "Members"}
+            {activeMembers.length} {activeMembers.length === 1 ? t.kitchenSettings.memberSingular : t.kitchenSettings.memberPlural}
           </Badge>
         </div>
 
@@ -673,7 +675,7 @@ export function KitchenSettingsView({
                       </span>
                       {isSelf && (
                         <Badge variant="outline" className="text-[10px] py-0 px-1 font-mono">
-                          You
+                          {t.kitchenSettings.youBadge}
                         </Badge>
                       )}
                     </div>
@@ -690,12 +692,15 @@ export function KitchenSettingsView({
                     variant={member.role === "ADMIN" ? "default" : "secondary"}
                     className="text-[10px] font-mono uppercase tracking-wider"
                   >
-                    {member.role === "ADMIN" ? "Admin" : "Member"}
+                    {member.role === "ADMIN" ? t.kitchen.header.admin : t.kitchen.header.member}
                   </Badge>
 
                   {member.joined_at && (
                     <span className="text-[11px] text-muted-foreground hidden sm:inline-block">
-                      Joined {new Date(member.joined_at).toLocaleDateString()}
+                      {t.kitchenSettings.joinedDate.replace(
+                        "{date}",
+                        new Date(member.joined_at).toLocaleDateString(locale === "de" ? "de-DE" : "en-US")
+                      )}
                     </span>
                   )}
                 </div>
@@ -712,9 +717,9 @@ export function KitchenSettingsView({
             <AlertTriangle className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-foreground">Danger Zone</h2>
+            <h2 className="text-base font-bold text-foreground">{t.kitchenSettings.dangerZone}</h2>
             <p className="text-xs text-muted-foreground">
-              Irreversible actions related to your kitchen membership and data.
+              {t.kitchenSettings.dangerZoneSub}
             </p>
           </div>
         </div>
@@ -725,9 +730,9 @@ export function KitchenSettingsView({
         {!isAdmin && (
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-0.5">
-              <span className="text-xs font-semibold text-foreground">Leave Kitchen</span>
+              <span className="text-xs font-semibold text-foreground">{t.kitchenSettings.leaveSpace}</span>
               <p className="text-[11px] text-muted-foreground">
-                Remove your membership from this kitchen space and forfeit grocery list access.
+                {t.kitchenSettings.dangerZoneMemberSub}
               </p>
             </div>
             <Button
@@ -735,10 +740,10 @@ export function KitchenSettingsView({
               variant="outline"
               size="sm"
               onClick={() => setIsLeaveDialogOpen(true)}
-              className="border-destructive/40 text-destructive hover:bg-destructive/10 rounded-xl font-medium text-xs shrink-0"
+              className="border-destructive/40 text-destructive hover:bg-destructive/10 rounded-full font-medium text-xs px-4 h-9 shrink-0 transition-all"
             >
               <LogOut className="w-3.5 h-3.5 mr-1.5" />
-              <span>Leave Kitchen</span>
+              <span>{t.kitchenSettings.leaveSpace}</span>
             </Button>
           </div>
         )}
@@ -747,9 +752,9 @@ export function KitchenSettingsView({
         {isAdmin && (
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-0.5">
-              <span className="text-xs font-semibold text-destructive">Delete Entire Kitchen</span>
+              <span className="text-xs font-semibold text-destructive">{t.kitchenSettings.deleteEntireKitchen}</span>
               <p className="text-[11px] text-muted-foreground">
-                Permanently delete this kitchen and wipe all pantry inventory, shopping lists, receipts, and memberships.
+                {t.kitchenSettings.dangerZoneAdminSub}
               </p>
             </div>
             <Button
@@ -757,10 +762,10 @@ export function KitchenSettingsView({
               variant="destructive"
               size="sm"
               onClick={() => setIsDeleteDialogOpen(true)}
-              className="rounded-xl font-semibold text-xs shrink-0"
+              className="rounded-full font-semibold text-xs px-4 h-9 shrink-0 shadow-sm"
             >
               <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-              <span>Delete Kitchen</span>
+              <span>{t.kitchenSettings.deleteSpace}</span>
             </Button>
           </div>
         )}
@@ -789,10 +794,10 @@ export function KitchenSettingsView({
           </div>
           <div className="space-y-0.5">
             <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5 font-mono">
-              Open Source culinary operating system
+              {t.kitchenSettings.openSourceTitle}
             </span>
             <p className="text-[11px] text-muted-foreground">
-              kartli is free, transparent, and community-driven on GitHub.
+              {t.kitchenSettings.openSourceSub}
             </p>
           </div>
         </div>
@@ -806,20 +811,20 @@ export function KitchenSettingsView({
           <AlertDialogHeader>
             <AlertDialogTitle className="text-base font-bold flex items-center gap-2">
               <LogOut className="w-4 h-4 text-destructive" />
-              <span>Leave {kitchenName}?</span>
+              <span>{t.kitchenSettings.leaveConfirmTitle.replace("{name}", kitchenName)}</span>
             </AlertDialogTitle>
             <AlertDialogDescription className="text-xs text-muted-foreground">
-              Are you sure you want to leave this kitchen? You will immediately lose access to shared grocery lists and pantry inventories. You will need a new invite link from an admin to rejoin.
+              {t.kitchenSettings.leaveConfirmDesc}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl text-xs">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-full text-xs">{t.common.cancel}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleLeaveKitchen}
               disabled={isLeaving}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl text-xs font-semibold"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-full text-xs font-semibold px-4"
             >
-              {isLeaving ? "Leaving..." : "Yes, Leave Kitchen"}
+              {isLeaving ? t.kitchenSettings.leavingBtn : t.kitchenSettings.leaveConfirmBtn}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -831,25 +836,25 @@ export function KitchenSettingsView({
           <AlertDialogHeader>
             <AlertDialogTitle className="text-base font-bold flex items-center gap-2 text-destructive">
               <AlertTriangle className="w-4 h-4" />
-              <span>Permanently Delete Kitchen?</span>
+              <span>{t.kitchenSettings.deleteConfirmTitle}</span>
             </AlertDialogTitle>
             <AlertDialogDescription className="text-xs text-muted-foreground space-y-2">
               <span>
-                This will irreversibly delete <strong className="text-foreground">{kitchenName}</strong> along with all associated inventory items, shopping records, purchase receipts, and member memberships.
+                {t.kitchenSettings.deleteConfirmDesc.replace("{name}", kitchenName)}
               </span>
               <span className="block font-semibold text-destructive pt-1">
-                This action cannot be undone.
+                {t.kitchenSettings.deleteConfirmWarning}
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl text-xs">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-full text-xs">{t.common.cancel}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteKitchen}
               disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl text-xs font-semibold"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-full text-xs font-semibold px-4"
             >
-              {isDeleting ? "Deleting..." : "Permanently Delete"}
+              {isDeleting ? t.kitchenSettings.deletingBtn : t.kitchenSettings.deleteConfirmBtn}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
