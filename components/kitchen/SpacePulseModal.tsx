@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,7 +28,6 @@ import {
   ShoppingBag,
   Receipt,
   Sparkles,
-  ArrowUpRight,
   Flame,
   Store,
   Calendar,
@@ -54,29 +53,38 @@ export interface SpacePulseModalProps {
   myCheckouts?: CheckoutWithDetails[] | any[];
 }
 
-function formatRelativeDate(dateInput: string | Date | undefined | null): string {
-  if (!dateInput) return "Recently";
+function formatRelativeDate(
+  dateInput: string | Date | undefined | null,
+  locale: string
+): string {
+  if (!dateInput) return locale === "de" ? "Kürzlich" : "Recently";
   const date = new Date(dateInput);
-  if (isNaN(date.getTime())) return "Recently";
+  if (isNaN(date.getTime())) return locale === "de" ? "Kürzlich" : "Recently";
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / (1000 * 60));
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (diffMins < 1) return locale === "de" ? "Gerade eben" : "Just now";
+  if (diffMins < 60) return `${diffMins}m ${locale === "de" ? "her" : "ago"}`;
+  if (diffHours < 24) return `${diffHours}h ${locale === "de" ? "her" : "ago"}`;
+  if (diffDays === 1) return locale === "de" ? "Gestern" : "Yesterday";
+  if (diffDays < 7) return `${diffDays}d ${locale === "de" ? "her" : "ago"}`;
+  return date.toLocaleDateString(locale === "de" ? "de-DE" : "en-US", {
+    month: "short",
+    day: "numeric",
+  });
 }
 
-function formatShortDate(dateInput: string | Date | undefined | null): string {
+function formatShortDate(
+  dateInput: string | Date | undefined | null,
+  locale: string
+): string {
   if (!dateInput) return "";
   const date = new Date(dateInput);
   if (isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(locale === "de" ? "de-DE" : "en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -87,7 +95,7 @@ export function SpacePulseModalSkeleton() {
   return (
     <div className="space-y-6 py-2 animate-pulse">
       {/* Spend hero card skeleton */}
-      <Card className="border border-border bg-card rounded-2xl p-5 space-y-4">
+      <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 space-y-4">
         <div className="flex items-center justify-between">
           <Skeleton className="h-4 w-28 rounded-md" />
           <Skeleton className="h-5 w-20 rounded-full" />
@@ -102,12 +110,12 @@ export function SpacePulseModalSkeleton() {
 
       {/* 2-column widgets skeleton */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card className="border border-border bg-card rounded-2xl p-4 space-y-3">
+        <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 space-y-3">
           <Skeleton className="h-4 w-32 rounded-md" />
           <Skeleton className="h-8 w-20 rounded-lg" />
           <Skeleton className="h-2 w-full rounded-full" />
         </Card>
-        <Card className="border border-border bg-card rounded-2xl p-4 space-y-3">
+        <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 space-y-3">
           <Skeleton className="h-4 w-32 rounded-md" />
           <Skeleton className="h-8 w-20 rounded-lg" />
           <Skeleton className="h-2 w-full rounded-full" />
@@ -116,9 +124,9 @@ export function SpacePulseModalSkeleton() {
 
       {/* List items skeleton */}
       <div className="space-y-2 pt-1">
-        <Skeleton className="h-12 w-full rounded-xl" />
-        <Skeleton className="h-12 w-full rounded-xl" />
-        <Skeleton className="h-12 w-full rounded-xl" />
+        <Skeleton className="h-12 w-full rounded-2xl" />
+        <Skeleton className="h-12 w-full rounded-2xl" />
+        <Skeleton className="h-12 w-full rounded-2xl" />
       </div>
     </div>
   );
@@ -134,7 +142,7 @@ export function SpacePulseModal({
   pantryItems,
   myCheckouts,
 }: SpacePulseModalProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [stats, setStats] = useState<KitchenPulseStats | null>(initialStats || null);
   const [checkoutsList, setCheckoutsList] = useState<CheckoutWithDetails[]>(
     Array.isArray(myCheckouts) ? myCheckouts : []
@@ -184,7 +192,7 @@ export function SpacePulseModal({
         toast.success(t.kitchen.pulse.updated);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to load space statistics";
+      const msg = err instanceof Error ? err.message : t.kitchen.pulse.couldNotLoad;
       toast.error(msg);
     } finally {
       setIsLoading(false);
@@ -215,11 +223,14 @@ export function SpacePulseModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent onDismiss={() => onOpenChange(false)} className="sm:max-w-3xl sm:w-full p-0 gap-0">
+      <DialogContent
+        onDismiss={() => onOpenChange(false)}
+        className="sm:max-w-3xl sm:w-full p-0 gap-0 overflow-hidden bg-card/90 border border-white/[0.08] backdrop-blur-2xl shadow-2xl rounded-3xl flex flex-col max-h-[90vh]"
+      >
         {/* Modal Header */}
-        <DialogHeader className="p-5 sm:p-6 pb-3 border-b border-border/80 pr-12 flex flex-col space-y-1.5 shrink-0 bg-muted/20">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+        <DialogHeader className="p-5 sm:p-6 pb-4 border-b border-white/[0.08] pr-12 flex flex-col space-y-3 shrink-0 bg-muted/20 backdrop-blur-md">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary shrink-0 shadow-xs">
               <Activity className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
@@ -230,7 +241,7 @@ export function SpacePulseModal({
                 {stats?.monthLabel && (
                   <Badge
                     variant="secondary"
-                    className="bg-muted text-muted-foreground text-[10px] font-mono uppercase px-2 py-0.5 rounded-md"
+                    className="bg-muted/80 text-muted-foreground text-[10px] font-mono uppercase px-2.5 py-0.5 rounded-full border border-border/70"
                   >
                     {stats.monthLabel}
                   </Badge>
@@ -247,37 +258,37 @@ export function SpacePulseModal({
               size="icon-sm"
               onClick={() => loadData(true)}
               disabled={isRefreshing || isLoading}
-              className="h-8 w-8 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted shrink-0 cursor-pointer"
+              className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 shrink-0 cursor-pointer"
               title={t.kitchen.pulse.refresh}
             >
               <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
             </Button>
           </div>
 
-          {/* Sub-navigation Tray */}
-          <div className="pt-2">
+          {/* Sub-navigation Tray: Refined glass pill switcher with tactile active state */}
+          <div className="pt-1">
             <Tabs
               value={activeTab}
               onValueChange={(val) => setActiveTab(val as "spending" | "pantry" | "activity")}
               className="w-full"
             >
-              <TabsList className="w-full flex items-center gap-1.5 p-1 bg-secondary/50 rounded-xl mb-1 overflow-x-auto no-scrollbar border-0 h-auto">
+              <TabsList className="w-full flex items-center gap-1.5 p-1.5 bg-muted/40 backdrop-blur-xl border border-white/[0.08] rounded-2xl mb-0 overflow-x-auto no-scrollbar h-auto shadow-inner">
                 <TabsTrigger
                   value="spending"
-                  className="flex-1 py-1.5 px-3 text-xs font-medium rounded-lg text-center whitespace-nowrap transition-all data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 shrink-0"
+                  className="flex-1 py-2 px-3 text-xs font-medium rounded-xl text-center whitespace-nowrap transition-all duration-200 data-[state=active]:bg-card/90 data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-white/[0.1] data-[state=active]:font-semibold text-muted-foreground hover:text-foreground active:scale-[0.98] flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                 >
-                  <CreditCard className="w-3.5 h-3.5 shrink-0" />
+                  <CreditCard className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
                   <span>{t.kitchen.pulse.spendBalance}</span>
                 </TabsTrigger>
 
                 <TabsTrigger
                   value="pantry"
-                  className="flex-1 py-1.5 px-3 text-xs font-medium rounded-lg text-center whitespace-nowrap transition-all data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 shrink-0"
+                  className="flex-1 py-2 px-3 text-xs font-medium rounded-xl text-center whitespace-nowrap transition-all duration-200 data-[state=active]:bg-card/90 data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-white/[0.1] data-[state=active]:font-semibold text-muted-foreground hover:text-foreground active:scale-[0.98] flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                 >
-                  <Package className="w-3.5 h-3.5 shrink-0" />
+                  <Package className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
                   <span>{t.kitchen.pulse.depletedStaples}</span>
                   {depletedStaples.length > 0 && (
-                    <span className="px-1.5 py-0.2 text-[10px] font-mono rounded-full bg-destructive/15 text-destructive border border-destructive/25 shrink-0">
+                    <span className="px-2 py-0.5 text-[10px] font-mono rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25 shrink-0 shadow-xs">
                       {depletedStaples.length}
                     </span>
                   )}
@@ -285,12 +296,12 @@ export function SpacePulseModal({
 
                 <TabsTrigger
                   value="activity"
-                  className="flex-1 py-1.5 px-3 text-xs font-medium rounded-lg text-center whitespace-nowrap transition-all data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 shrink-0"
+                  className="flex-1 py-2 px-3 text-xs font-medium rounded-xl text-center whitespace-nowrap transition-all duration-200 data-[state=active]:bg-card/90 data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-white/[0.1] data-[state=active]:font-semibold text-muted-foreground hover:text-foreground active:scale-[0.98] flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                 >
-                  <Receipt className="w-3.5 h-3.5 shrink-0" />
+                  <Receipt className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
                   <span>{t.kitchen.pulse.restockFeed}</span>
                   {checkoutsList.length > 0 && (
-                    <span className="px-1.5 py-0.2 text-[10px] font-mono rounded-full bg-muted text-muted-foreground border border-border shrink-0">
+                    <span className="px-2 py-0.5 text-[10px] font-mono rounded-full bg-muted/80 text-muted-foreground border border-border/80 shrink-0">
                       {checkoutsList.length}
                     </span>
                   )}
@@ -301,25 +312,25 @@ export function SpacePulseModal({
         </DialogHeader>
 
         {/* Modal Scrollable Body */}
-        <div className="flex-1 overflow-y-auto px-5 pb-8 pt-2 sm:p-6 space-y-6 overscroll-contain">
+        <div className="flex-1 overflow-y-auto px-5 pb-8 pt-4 sm:p-6 space-y-6 overscroll-contain">
           {isLoading ? (
             <SpacePulseModalSkeleton />
           ) : !stats ? (
-            <Card className="border border-border bg-card rounded-2xl p-6 text-center space-y-3 shadow-xs">
+            <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-6 text-center space-y-3 shadow-md">
               <div className="w-10 h-10 mx-auto rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
-                <AlertCircle className="w-5 h-5" />
+                <AlertCircle className="w-5 h-5 text-amber-400" />
               </div>
-              <p className="text-sm font-semibold text-foreground">Could not load space stats</p>
+              <p className="text-sm font-semibold text-foreground">{t.kitchen.pulse.couldNotLoad}</p>
               <p className="text-xs text-muted-foreground">
-                Please check your network connection and try again.
+                {t.kitchen.pulse.networkError}
               </p>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => loadData(true)}
-                className="rounded-xl text-xs h-8 border-border cursor-pointer"
+                className="rounded-full text-xs h-8 px-4 border-border cursor-pointer"
               >
-                Retry
+                {t.kitchen.pulse.retry}
               </Button>
             </Card>
           ) : (
@@ -328,9 +339,9 @@ export function SpacePulseModal({
               {activeTab === "spending" && (
                 <div className="space-y-5 animate-in fade-in-50 duration-200">
                   {stats.totalReceiptsCount === 0 && stats.totalSpendCurrentMonth === 0 ? (
-                    <Card className="border border-border/70 bg-muted/20 rounded-2xl p-8 text-center space-y-3 shadow-xs">
+                    <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-8 text-center space-y-3 shadow-lg">
                       <div className="w-12 h-12 mx-auto rounded-2xl bg-muted border border-border/80 flex items-center justify-center text-muted-foreground">
-                        <CreditCard className="w-6 h-6" />
+                        <CreditCard className="w-6 h-6 text-cyan-400" />
                       </div>
                       <div className="space-y-1">
                         <h3 className="text-base font-bold text-foreground">
@@ -344,15 +355,15 @@ export function SpacePulseModal({
                   ) : (
                     <>
                       {/* Hero Spend Card */}
-                      <Card className="border border-border bg-card rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+                      <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <CreditCard className="w-4 h-4 text-muted-foreground" />
+                            <CreditCard className="w-4 h-4 text-cyan-400" />
                             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
                               {t.kitchen.pulse.monthlySpend}
                             </span>
                           </div>
-                          <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs font-mono">
+                          <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs font-mono rounded-full px-2.5">
                             {stats.monthLabel}
                           </Badge>
                         </div>
@@ -364,113 +375,117 @@ export function SpacePulseModal({
 
                           {/* Month-over-month Trend Indicator */}
                           {stats.spendTrendDirection === "down" && (
-                            <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-mono gap-1">
-                              <TrendingDown className="w-3 h-3 text-primary" />
-                              <span>-{stats.spendTrendPercentage}% vs last month</span>
+                            <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono gap-1 rounded-full px-2.5 shadow-[0_0_10px_rgba(16,185,129,0.15)]">
+                              <TrendingDown className="w-3 h-3 text-emerald-400" />
+                              <span>-{stats.spendTrendPercentage}% {t.kitchen.pulse.vsLastMonth}</span>
                             </Badge>
                           )}
 
                           {stats.spendTrendDirection === "up" && (
-                            <Badge className="bg-amber-500/10 text-amber-500 dark:text-amber-400 border border-amber-500/20 text-xs font-mono gap-1">
-                              <TrendingUp className="w-3 h-3 text-amber-500 dark:text-amber-400" />
-                              <span>+{stats.spendTrendPercentage}% vs last month</span>
+                            <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-mono gap-1 rounded-full px-2.5 shadow-[0_0_10px_rgba(245,158,11,0.15)]">
+                              <TrendingUp className="w-3 h-3 text-amber-400" />
+                              <span>+{stats.spendTrendPercentage}% {t.kitchen.pulse.vsLastMonth}</span>
                             </Badge>
                           )}
 
                           {stats.spendTrendDirection === "flat" && (
-                            <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border gap-1">
+                            <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border gap-1 rounded-full px-2.5">
                               <Minus className="w-3 h-3" />
-                              <span>0% vs last month</span>
+                              <span>0% {t.kitchen.pulse.vsLastMonth}</span>
                             </Badge>
                           )}
 
                           {stats.spendTrendDirection === "new" && (
-                            <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-mono gap-1">
+                            <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-mono gap-1 rounded-full px-2.5">
                               <Sparkles className="w-3 h-3" />
-                              <span>First month</span>
+                              <span>{t.kitchen.pulse.firstMonth}</span>
                             </Badge>
                           )}
                         </div>
 
                         {/* Comparison note & quick stats */}
                         <div className="pt-2 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60">
-                          <span>Previous Month Spend:</span>
+                          <span>{t.kitchen.pulse.prevMonthSpend}</span>
                           <span className="font-mono font-medium text-foreground">
                             {formatCurrency(stats.totalSpendPreviousMonth, "EUR")}
                           </span>
                         </div>
                       </Card>
 
-                      {/* Real "My Impact" Checkout Breakdown */}
-                      <Card className="border border-border bg-card rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+                      {/* Real "My Impact" Checkout Breakdown (with intentional subtle indigo highlight) */}
+                      <Card className="border border-indigo-500/20 bg-card/80 backdrop-blur-md rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <User className="w-4 h-4 text-primary" />
+                            <User className="w-4 h-4 text-indigo-400" />
                             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
                               {t.kitchen.pulse.myImpact}
                             </h4>
                           </div>
                           {stats.userReceiptsCount > 0 && (
-                            <Badge variant="secondary" className="text-xs font-mono">
+                            <Badge variant="secondary" className="text-xs font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-2.5 shadow-xs">
                               {stats.userHabitRole.roleTitle}
                             </Badge>
                           )}
                         </div>
 
                         {stats.userReceiptsCount === 0 && stats.userSpend === 0 && (!stats.userSettlement || stats.userSettlement.pendingRefundAmount === 0) ? (
-                          <div className="py-6 px-4 rounded-xl bg-muted/20 border border-dashed border-border/70 text-center space-y-1.5">
+                          <div className="py-6 px-4 rounded-2xl bg-muted/20 border border-dashed border-border/70 text-center space-y-1.5">
                             <p className="text-xs font-semibold text-foreground">
-                              No checkouts logged by you yet this month.
+                              {t.kitchen.pulse.noCheckoutsLogged}
                             </p>
                             <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
-                              When you complete a supermarket run or claim an expense, your personal spend, run share, and settlement balance will be tracked here.
+                              {t.kitchen.pulse.noCheckoutsLoggedDesc}
                             </p>
                           </div>
                         ) : (
                           <>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                              <div className="p-3 rounded-xl bg-muted/40 border border-border/60 space-y-1">
-                                <span className="text-[11px] text-muted-foreground">Personal Spend</span>
-                                <div className="text-lg font-bold font-mono text-foreground">
+                              <div className="p-3.5 rounded-2xl bg-indigo-500/[0.04] border border-indigo-500/20 space-y-1">
+                                <span className="text-[11px] text-muted-foreground">{t.kitchen.pulse.personalSpend}</span>
+                                <div className="text-lg font-bold font-mono text-indigo-400">
                                   {formatCurrency(stats.userSpend, "EUR")}
                                 </div>
                                 <span className="text-[10px] text-muted-foreground">
-                                  {stats.userSpendSharePercentage}% of total
+                                  {t.kitchen.pulse.totalSpendShare.replace("{percentage}", String(stats.userSpendSharePercentage))}
                                 </span>
                               </div>
 
-                              <div className="p-3 rounded-xl bg-muted/40 border border-border/60 space-y-1">
-                                <span className="text-[11px] text-muted-foreground">Personal Runs</span>
-                                <div className="text-lg font-bold font-mono text-foreground">
+                              <div className="p-3.5 rounded-2xl bg-cyan-500/[0.04] border border-cyan-500/20 space-y-1">
+                                <span className="text-[11px] text-muted-foreground">{t.kitchen.pulse.personalRuns}</span>
+                                <div className="text-lg font-bold font-mono text-cyan-400">
                                   {stats.userReceiptsCount} <span className="text-xs font-normal text-muted-foreground">/ {stats.totalReceiptsCount}</span>
                                 </div>
                                 <span className="text-[10px] text-muted-foreground">
-                                  {stats.userHabitRole.runPercentage}% of household runs
+                                  {t.kitchen.pulse.householdRunsShare.replace("{percentage}", String(stats.userHabitRole.runPercentage))}
                                 </span>
                               </div>
 
-                              <div className="p-3 rounded-xl bg-muted/40 border border-border/60 space-y-1">
-                                <span className="text-[11px] text-muted-foreground">Settlement Status</span>
-                                <div className="text-lg font-bold font-mono text-foreground">
+                              <div className="p-3.5 rounded-2xl bg-emerald-500/[0.04] border border-emerald-500/20 space-y-1">
+                                <span className="text-[11px] text-muted-foreground">{t.kitchen.pulse.settlementStatus}</span>
+                                <div className="text-lg font-bold font-mono">
                                   {stats.userSettlement.pendingRefundAmount > 0 ? (
-                                    <span className="text-amber-600 dark:text-amber-400">
+                                    <span className="text-amber-400">
                                       +{formatCurrency(stats.userSettlement.pendingRefundAmount, "EUR")}
                                     </span>
                                   ) : (
-                                    <span className="text-emerald-600 dark:text-emerald-400">Balanced</span>
+                                    <span className="text-emerald-400">{t.kitchen.pulse.balanced}</span>
                                   )}
                                 </div>
                                 <span className="text-[10px] text-muted-foreground">
                                   {stats.userSettlement.pendingRefundAmount > 0
-                                    ? `Owed to you (${stats.userSettlement.pendingRefundsCount} pending)`
-                                    : "All refunds settled"}
+                                    ? t.kitchen.pulse.owedToYou.replace("{count}", String(stats.userSettlement.pendingRefundsCount))
+                                    : t.kitchen.pulse.allRefundsSettled}
                                 </span>
                               </div>
                             </div>
 
                             <p className="text-xs text-muted-foreground">
-                              {stats.userHabitRole.roleDescription} (Avg contribution:{" "}
-                              <strong className="text-foreground">{formatCurrency(stats.userAverageContribution, "EUR")}</strong> per run)
+                              {stats.userHabitRole.roleDescription} (
+                              {t.kitchen.pulse.avgContributionPerRun.replace(
+                                "{amount}",
+                                formatCurrency(stats.userAverageContribution, "EUR")
+                              )}
+                              )
                             </p>
                           </>
                         )}
@@ -479,32 +494,44 @@ export function SpacePulseModal({
                       {/* 2-Column Metrics: Basket Size & Category Footprint */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Average Basket Size */}
-                        <Card className="border border-border bg-card rounded-2xl p-4 shadow-xs space-y-2">
+                        <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 shadow-lg space-y-2">
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span className="font-medium">Avg. Household Basket</span>
-                            <ShoppingBag className="w-3.5 h-3.5" />
+                            <span className="font-medium">{t.kitchen.pulse.avgHouseholdBasket}</span>
+                            <ShoppingBag className="w-3.5 h-3.5 text-cyan-400" />
                           </div>
                           <div className="text-2xl font-bold font-mono text-foreground">
                             {formatCurrency(stats.averageBasketSize, "EUR")}
                           </div>
                           <p className="text-[11px] text-muted-foreground">
-                            Across {stats.totalReceiptsCount} logged grocery {stats.totalReceiptsCount === 1 ? "run" : "runs"} this month
+                            {t.kitchen.pulse.avgBasketDesc
+                              .replace("{count}", String(stats.totalReceiptsCount))
+                              .replace(
+                                "{runs}",
+                                stats.totalReceiptsCount === 1
+                                  ? t.kitchen.pulse.runSingular
+                                  : t.kitchen.pulse.runPlural
+                              )}
                           </p>
                         </Card>
 
                         {/* Top Store Footprint */}
-                        <Card className="border border-border bg-card rounded-2xl p-4 shadow-xs space-y-2">
+                        <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 shadow-lg space-y-2">
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span className="font-medium">Primary Store Footprint</span>
-                            <Store className="w-3.5 h-3.5" />
+                            <span className="font-medium">{t.kitchen.pulse.primaryStoreFootprint}</span>
+                            <Store className="w-3.5 h-3.5 text-indigo-400" />
                           </div>
                           <div className="text-2xl font-bold text-foreground truncate">
-                            {stats.userCategoryFootprint ? stats.userCategoryFootprint.categoryName : (stats.categoryBreakdown[0]?.name || "Local Supermarket")}
+                            {stats.userCategoryFootprint
+                              ? stats.userCategoryFootprint.categoryName
+                              : stats.categoryBreakdown[0]?.name || "Local Supermarket"}
                           </div>
                           <p className="text-[11px] text-muted-foreground">
                             {stats.userCategoryFootprint
                               ? stats.userCategoryFootprint.displayText
-                              : `${stats.categoryBreakdown[0]?.percentage || 0}% of household spending`}
+                              : t.kitchen.pulse.storeSpendingShare.replace(
+                                  "{percentage}",
+                                  String(stats.categoryBreakdown[0]?.percentage || 0)
+                                )}
                           </p>
                         </Card>
                       </div>
@@ -512,7 +539,7 @@ export function SpacePulseModal({
                   )}
 
                   {/* Merchant & Category Spending Breakdown */}
-                  <Card className="border border-border bg-card rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5">
+                  <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 sm:p-6 shadow-xl space-y-3.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Store className="w-4 h-4 text-muted-foreground" />
@@ -521,7 +548,10 @@ export function SpacePulseModal({
                         </h4>
                       </div>
                       <span className="text-xs font-mono text-muted-foreground">
-                        {stats.categoryBreakdown.length} {stats.categoryBreakdown.length === 1 ? "store" : "stores"}
+                        {stats.categoryBreakdown.length}{" "}
+                        {stats.categoryBreakdown.length === 1
+                          ? t.kitchen.pulse.storeSingular
+                          : t.kitchen.pulse.storePlural}
                       </span>
                     </div>
 
@@ -543,7 +573,7 @@ export function SpacePulseModal({
                                 </span>
                                 <Badge
                                   variant="secondary"
-                                  className="text-[10px] font-mono bg-muted text-foreground border border-border px-1.5 py-0"
+                                  className="text-[10px] font-mono bg-muted text-foreground border border-border px-2 py-0 rounded-full"
                                 >
                                   {store.percentage}%
                                 </Badge>
@@ -566,24 +596,24 @@ export function SpacePulseModal({
               {/* TAB 2: Depleted Pantry Staples */}
               {activeTab === "pantry" && (
                 <div className="space-y-5 animate-in fade-in-50 duration-200">
-                  {/* Stock Health Banner */}
-                  <Card className="border border-border bg-card rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5">
+                  {/* Stock Health Banner: Health & Stock with Emerald gradient glow */}
+                  <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <Package className="w-4 h-4 text-muted-foreground" />
+                        <Package className="w-4 h-4 text-emerald-400" />
                         <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                          Pantry Inventory Health
+                          {t.kitchen.pulse.inventoryHealth}
                         </h4>
                       </div>
                       {stats.pantryStockRatio.outOfStock > 0 ? (
-                        <Badge className="bg-destructive/10 text-destructive border border-destructive/20 text-xs font-medium gap-1">
-                          <AlertTriangle className="w-3 h-3" />
-                          <span>{stats.pantryStockRatio.outOfStock} depleted</span>
+                        <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-medium gap-1 rounded-full px-2.5 shadow-[0_0_10px_rgba(245,158,11,0.15)]">
+                          <AlertTriangle className="w-3 h-3 text-amber-400" />
+                          <span>{t.kitchen.pulse.depletedCount.replace("{count}", String(stats.pantryStockRatio.outOfStock))}</span>
                         </Badge>
                       ) : (
-                        <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-medium gap-1">
-                          <CheckCircle2 className="w-3 h-3" />
-                          <span>Fully Stocked</span>
+                        <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-medium gap-1 rounded-full px-2.5 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                          <span>{t.kitchen.pulse.fullyStocked}</span>
                         </Badge>
                       )}
                     </div>
@@ -594,12 +624,14 @@ export function SpacePulseModal({
                           {stats.pantryStockRatio.inStockPercentage}%
                         </span>
                         <span className="text-xs font-mono text-muted-foreground">
-                          {stats.pantryStockRatio.inStock} in stock · {stats.pantryStockRatio.outOfStock} depleted
+                          {t.kitchen.pulse.stockSummary
+                            .replace("{inStock}", String(stats.pantryStockRatio.inStock))
+                            .replace("{outOfStock}", String(stats.pantryStockRatio.outOfStock))}
                         </span>
                       </div>
-                      <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden p-0.5">
                         <div
-                          className="h-full bg-primary rounded-full transition-all duration-300"
+                          className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-300 shadow-[0_0_12px_rgba(16,185,129,0.35)]"
                           style={{ width: `${stats.pantryStockRatio.inStockPercentage}%` }}
                         />
                       </div>
@@ -607,37 +639,37 @@ export function SpacePulseModal({
 
                     <div className="pt-2 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60">
                       <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-primary" />
-                        <span>Restock Response Time:</span>
+                        <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>{t.kitchen.pulse.restockResponseTime}:</span>
                       </div>
-                      <span className="font-mono font-medium text-foreground">
-                        {stats.vitals.compactRestockLatency || stats.vitals.formattedRestockLatency || "Instant"}
+                      <span className="font-mono font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full text-xs">
+                        {stats.vitals.compactRestockLatency || stats.vitals.formattedRestockLatency || t.kitchen.pulse.instant}
                       </span>
                     </div>
                   </Card>
 
-                  {/* Top Depleted Staples List */}
-                  <Card className="border border-border bg-card rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5">
+                  {/* Top Depleted Staples List: Warm amber accents */}
+                  <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 sm:p-6 shadow-xl space-y-3.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-destructive" />
+                        <AlertCircle className="w-4 h-4 text-amber-400" />
                         <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                          Depleted Staples Needing Restock
+                          {t.kitchen.pulse.depletedNeedingRestock}
                         </h4>
                       </div>
-                      <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border">
-                        {depletedStaples.length} items
+                      <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border rounded-full px-2.5">
+                        {depletedStaples.length} {depletedStaples.length === 1 ? t.kitchen.ledger.item : t.kitchen.ledger.items}
                       </Badge>
                     </div>
 
                     {depletedStaples.length === 0 ? (
                       <div className="py-6 text-center space-y-2">
-                        <div className="w-9 h-9 mx-auto rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                          <CheckCircle2 className="w-4 h-4" />
+                        <div className="w-10 h-10 mx-auto rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                         </div>
-                        <p className="text-xs font-medium text-foreground">All pantry staples in stock!</p>
+                        <p className="text-xs font-medium text-foreground">{t.kitchen.pulse.allStaplesInStock}</p>
                         <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
-                          None of your tracked staples are currently marked as depleted.
+                          {t.kitchen.pulse.allStaplesInStockDesc}
                         </p>
                       </div>
                     ) : (
@@ -645,10 +677,10 @@ export function SpacePulseModal({
                         {depletedStaples.map((item: PantryItem) => (
                           <div
                             key={item.id}
-                            className="py-2.5 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition"
+                            className="py-2.5 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-2xl transition"
                           >
                             <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                              <span className="w-2 h-2 rounded-full bg-destructive shrink-0" />
+                              <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.5)] shrink-0" />
                               <span className="font-medium text-foreground truncate">
                                 {item.name}
                               </span>
@@ -656,10 +688,10 @@ export function SpacePulseModal({
 
                             <div className="flex items-center gap-2 shrink-0">
                               <span className="text-[11px] text-muted-foreground hidden sm:inline">
-                                {formatRelativeDate(item.updated_at || item.created_at)}
+                                {formatRelativeDate(item.updated_at || item.created_at, locale)}
                               </span>
-                              <Badge className="bg-destructive/10 text-destructive border border-destructive/20 text-[10px] font-mono px-2 py-0.5">
-                                Depleted
+                              <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-mono px-2.5 py-0.5 rounded-full">
+                                {t.kitchen.pulse.depleted}
                               </Badge>
                             </div>
                           </div>
@@ -669,29 +701,29 @@ export function SpacePulseModal({
                   </Card>
 
                   {/* Frequently Restocked Items */}
-                  <Card className="border border-border bg-card rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5">
+                  <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 sm:p-6 shadow-xl space-y-3.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Flame className="w-4 h-4 text-amber-500" />
+                        <Flame className="w-4 h-4 text-amber-400" />
                         <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                          Frequently Restocked Staples
+                          {t.kitchen.pulse.frequentlyRestocked}
                         </h4>
                       </div>
-                      <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border">
-                        Top {stats.allTopItems.length}
+                      <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border rounded-full px-2.5">
+                        {t.kitchen.pulse.frequentlyRestockedSub.replace("{count}", String(stats.allTopItems.length))}
                       </Badge>
                     </div>
 
                     {stats.allTopItems.length === 0 ? (
                       <p className="text-xs text-muted-foreground py-4 text-center">
-                        No restocked items recorded yet this month.
+                        {t.kitchen.pulse.noRestockedThisMonth}
                       </p>
                     ) : (
                       <div className="divide-y divide-border/60">
                         {stats.allTopItems.map((item, index) => (
                           <div
                             key={item.name}
-                            className="py-2.5 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition"
+                            className="py-2.5 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-2xl transition"
                           >
                             <div className="flex items-center gap-2.5 min-w-0 flex-1">
                               <span className="text-xs font-mono text-muted-foreground w-4">
@@ -705,9 +737,9 @@ export function SpacePulseModal({
                             <div className="flex items-center gap-2 shrink-0">
                               <Badge
                                 variant="secondary"
-                                className="text-xs font-mono bg-muted text-foreground border border-border px-2 py-0.5"
+                                className="text-xs font-mono bg-muted text-foreground border border-border px-2.5 py-0.5 rounded-full"
                               >
-                                {item.count}× restocked
+                                {t.kitchen.pulse.restockedTimes.replace("{count}", String(item.count))}
                               </Badge>
                             </div>
                           </div>
@@ -718,24 +750,24 @@ export function SpacePulseModal({
 
                   {/* Dead Stock / Idle Items Warning */}
                   {stats.deadStockItems.length > 0 && (
-                    <Card className="border border-border bg-card rounded-2xl p-4 shadow-xs space-y-3">
+                    <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 shadow-xl space-y-3">
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-muted-foreground" />
                         <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                          Untouched Staples (Idle Stock)
+                          {t.kitchen.pulse.untouchedStaplesSub}
                         </h4>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {stats.deadStockItems.slice(0, 4).map((dead) => (
                           <div
                             key={dead.name}
-                            className="flex items-center justify-between p-2.5 rounded-xl bg-muted/40 border border-border/70 text-xs"
+                            className="flex items-center justify-between p-3 rounded-2xl bg-muted/40 border border-border/70 text-xs"
                           >
                             <span className="font-medium text-foreground truncate max-w-[65%]">
                               {dead.name}
                             </span>
-                            <Badge variant="secondary" className="text-[10px] font-mono bg-muted text-muted-foreground">
-                              {dead.idleDays}d idle
+                            <Badge variant="secondary" className="text-[10px] font-mono bg-muted text-muted-foreground rounded-full px-2">
+                              {t.kitchen.pulse.idleDays.replace("{days}", String(dead.idleDays))}
                             </Badge>
                           </div>
                         ))}
@@ -750,24 +782,24 @@ export function SpacePulseModal({
                 <div className="space-y-4 animate-in fade-in-50 duration-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Receipt className="w-4 h-4 text-muted-foreground" />
+                      <Receipt className="w-4 h-4 text-indigo-400" />
                       <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                        Recent Checkout Receipts &amp; Restocks
+                        {t.kitchen.pulse.recentRestocks}
                       </h4>
                     </div>
-                    <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border">
-                      {checkoutsList.length} logs
+                    <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border rounded-full px-2.5">
+                      {t.kitchen.pulse.logsCount.replace("{count}", String(checkoutsList.length))}
                     </Badge>
                   </div>
 
                   {checkoutsList.length === 0 ? (
-                    <Card className="border border-border bg-card rounded-2xl p-8 text-center space-y-3 shadow-xs">
+                    <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-8 text-center space-y-3 shadow-lg">
                       <div className="w-10 h-10 mx-auto rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
-                        <ShoppingBag className="w-5 h-5" />
+                        <ShoppingBag className="w-5 h-5 text-indigo-400" />
                       </div>
-                      <p className="text-sm font-semibold text-foreground">No recent restocks logged</p>
+                      <p className="text-sm font-semibold text-foreground">{t.kitchen.pulse.noRecentRestocks}</p>
                       <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                        When grocery runs are checked out and receipts are submitted, items restocked and audit trails will appear here.
+                        {t.kitchen.pulse.noRecentRestocksDesc}
                       </p>
                     </Card>
                   ) : (
@@ -781,28 +813,28 @@ export function SpacePulseModal({
                         return (
                           <Card
                             key={checkout.id}
-                            className="border border-border bg-card rounded-2xl p-4 shadow-xs space-y-3 hover:border-border/80 transition"
+                            className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-4 sm:p-5 shadow-lg space-y-3 hover:border-border/80 transition"
                           >
                             {/* Top row: store, date, amount */}
                             <div className="flex items-start justify-between gap-3">
                               <div className="space-y-0.5 min-w-0 flex-1">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="font-semibold text-sm text-foreground truncate">
-                                    {checkout.store_name || "General Restock"}
+                                    {checkout.store_name || t.kitchen.pulse.generalRestock}
                                   </span>
                                   {checkout.username && (
                                     <Badge
                                       variant="secondary"
-                                      className="text-[10px] font-mono bg-muted text-muted-foreground px-1.5 py-0"
+                                      className="text-[10px] font-mono bg-muted text-muted-foreground px-2 py-0 rounded-full"
                                     >
                                       @{checkout.username}
                                     </Badge>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                  <span>{formatRelativeDate(checkout.created_at)}</span>
+                                  <span>{formatRelativeDate(checkout.created_at, locale)}</span>
                                   <span>·</span>
-                                  <span>{formatShortDate(checkout.created_at)}</span>
+                                  <span>{formatShortDate(checkout.created_at, locale)}</span>
                                 </div>
                               </div>
 
@@ -812,16 +844,16 @@ export function SpacePulseModal({
                                 </div>
                                 <div className="flex items-center gap-1 justify-end pt-1">
                                   {checkout.is_refunded ? (
-                                    <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px] font-mono px-1.5 py-0">
-                                      Settled
+                                    <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono px-2 py-0 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.15)]">
+                                      {t.kitchen.ledger.settled}
                                     </Badge>
                                   ) : (
-                                    <Badge className="bg-amber-500/10 text-amber-500 dark:text-amber-400 border border-amber-500/20 text-[10px] font-mono px-1.5 py-0">
-                                      Pending
+                                    <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-mono px-2 py-0 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.15)]">
+                                      {t.kitchen.ledger.pending}
                                     </Badge>
                                   )}
                                   {hasReceipt && (
-                                    <Badge variant="secondary" className="text-[10px] font-mono bg-muted text-muted-foreground px-1.5 py-0" title="Receipt attached">
+                                    <Badge variant="secondary" className="text-[10px] font-mono bg-muted text-muted-foreground px-1.5 py-0 rounded-full" title={t.kitchen.pulse.receiptAttached}>
                                       <FileText className="w-2.5 h-2.5" />
                                     </Badge>
                                   )}
@@ -833,20 +865,20 @@ export function SpacePulseModal({
                             {itemsCount > 0 && (
                               <div className="pt-2 border-t border-border/60">
                                 <div className="text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center justify-between">
-                                  <span>Items Restocked ({itemsCount})</span>
+                                  <span>{t.kitchen.pulse.itemsRestocked.replace("{count}", String(itemsCount))}</span>
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">
                                   {checkout.items.slice(0, 6).map((item) => (
                                     <span
                                       key={item.id}
-                                      className="inline-flex items-center text-[11px] px-2 py-0.5 rounded-lg bg-muted text-foreground border border-border/80"
+                                      className="inline-flex items-center text-[11px] px-2.5 py-0.5 rounded-full bg-muted/80 text-foreground border border-border/80"
                                     >
                                       {item.name}
                                     </span>
                                   ))}
                                   {itemsCount > 6 && (
-                                    <span className="inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-lg bg-muted/60 text-muted-foreground">
-                                      +{itemsCount - 6} more
+                                    <span className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full bg-muted/60 text-muted-foreground">
+                                      {t.kitchen.pulse.moreItems.replace("{count}", String(itemsCount - 6))}
                                     </span>
                                   )}
                                 </div>
@@ -855,7 +887,7 @@ export function SpacePulseModal({
 
                             {/* Note if present */}
                             {checkout.note && (
-                              <p className="text-xs text-muted-foreground italic bg-muted/30 p-2 rounded-xl border border-border/40">
+                              <p className="text-xs text-muted-foreground italic bg-muted/30 p-2.5 rounded-2xl border border-border/40">
                                 &ldquo;{checkout.note}&rdquo;
                               </p>
                             )}
@@ -871,10 +903,10 @@ export function SpacePulseModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-3 sm:p-4 border-t border-border/80 bg-muted/20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 text-xs text-muted-foreground shrink-0">
-          <div className="hidden sm:flex items-center gap-1.5 truncate">
-            <span className="w-2 h-2 rounded-full bg-primary" />
-            <span className="truncate">Live data synchronized with household inventory</span>
+        <div className="p-4 sm:p-5 border-t border-white/[0.08] bg-muted/20 backdrop-blur-md flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs text-muted-foreground shrink-0">
+          <div className="hidden sm:flex items-center gap-2 truncate">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+            <span className="truncate">{t.kitchen.pulse.liveSync}</span>
           </div>
 
           <Button
@@ -882,9 +914,9 @@ export function SpacePulseModal({
             variant="secondary"
             size="sm"
             onClick={() => onOpenChange(false)}
-            className="w-full sm:w-auto rounded-xl text-xs font-semibold h-9 px-4 border border-border shrink-0 cursor-pointer"
+            className="w-full sm:w-auto rounded-full text-xs font-semibold h-9 px-5 border border-border/80 shrink-0 cursor-pointer shadow-xs"
           >
-            Close
+            {t.common.close}
           </Button>
         </div>
       </DialogContent>

@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Link as LinkIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 
 export function DashboardInviteJoin() {
+  const { t } = useTranslation();
   const [inviteInput, setInviteInput] = useState("");
   const [isNavigating, setIsNavigating] = useState(false);
   const router = useRouter();
@@ -42,7 +44,7 @@ export function DashboardInviteJoin() {
         <LinkIcon className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
         <Input
           type="text"
-          placeholder="Paste invite link or code..."
+          placeholder={t.dashboard.joinForm.placeholder}
           value={inviteInput}
           onChange={(e) => setInviteInput(e.target.value)}
           className="h-10 pl-9 pr-3 text-xs rounded-xl bg-card border-border/80 focus-visible:ring-1"
@@ -56,7 +58,7 @@ export function DashboardInviteJoin() {
         className="h-10 px-4 rounded-xl text-xs font-semibold gap-1.5 shadow-xs"
       >
         {isNavigating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />}
-        <span>Join</span>
+        <span>{t.dashboard.joinForm.joinBtn}</span>
       </Button>
     </form>
   );

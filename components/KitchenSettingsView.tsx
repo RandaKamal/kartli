@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type {
@@ -18,14 +18,18 @@ import {
   leaveKitchenAction,
   deleteKitchenAction,
 } from "@/app/actions/kitchen";
-import { CopyButton } from "@/components/CopyButton";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,22 +42,22 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   ArrowLeft,
-  Settings,
-  Share2,
-  Users,
+  Check,
+  Copy,
   ExternalLink,
   RefreshCw,
-  Trash2,
-  LogOut,
-  AlertTriangle,
+  Globe,
+  MoreHorizontal,
   Loader2,
   Home,
   Heart,
   Briefcase,
-  Building2,
-  UserPlus,
-  Shield,
-  Check,
+  Layers,
+  Plus,
+  Trash2,
+  LogOut,
+  AlertTriangle,
+  RotateCcw,
 } from "lucide-react";
 import { capitalize, cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -75,12 +79,14 @@ export function KitchenSettingsView({
   baseUrl,
 }: KitchenSettingsViewProps) {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const isAdmin = membership.role === "ADMIN";
 
   // General settings state
   const [kitchenName, setKitchenName] = useState(initialKitchen.name);
-  const [spaceType, setSpaceType] = useState<KitchenSpaceType>(initialKitchen.space_type || "FLATSHARE");
+  const [spaceType, setSpaceType] = useState<KitchenSpaceType>(
+    initialKitchen.space_type || "FLATSHARE"
+  );
   const [isSavingGeneral, setIsSavingGeneral] = useState(false);
 
   // Invites & guest link state
@@ -89,7 +95,12 @@ export function KitchenSettingsView({
   const [members, setMembers] = useState<KitchenMemberWithUser[]>(initialMembers);
   const [newMemberName, setNewMemberName] = useState("");
   const [isCreatingInvite, setIsCreatingInvite] = useState(false);
+  const [isInviteDrawerOpen, setIsInviteDrawerOpen] = useState(false);
   const [revokingInviteId, setRevokingInviteId] = useState<string | null>(null);
+
+  // Copy states
+  const [guestCopied, setGuestCopied] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
 
   // Danger zone dialog states
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
@@ -97,24 +108,36 @@ export function KitchenSettingsView({
   const [isLeaving, setIsLeaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Computed state
   const terminology = getSpaceTerminology(spaceType);
+  const isDirty =
+    kitchenName.trim() !== initialKitchen.name ||
+    spaceType !== (initialKitchen.space_type || "FLATSHARE");
 
   const publicGuestUrl = `${baseUrl}/kitchen/view/${publicViewToken}`;
+  const displayGuestUrl = `${baseUrl.replace(/^https?:\/\//, "")}/view/${publicViewToken.slice(0, 8)}...`;
+
   const activeMembers = members.filter((m) => m.joined_at !== null);
-  const pendingInvites = members.filter((m) => m.joined_at === null && m.invite_token !== null);
+  const pendingInvites = members.filter(
+    (m) => m.joined_at === null && m.invite_token !== null
+  );
   const primaryPendingInvite = pendingInvites[0];
   const primaryInviteUrl = primaryPendingInvite
     ? `${baseUrl}/invite/${primaryPendingInvite.invite_token}`
     : "";
 
   // Handle Save General Settings
-  const handleSaveGeneral = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveGeneral = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!isAdmin) return;
 
     const trimmed = kitchenName.trim();
     if (!trimmed) {
-      toast.error("Kitchen name cannot be empty.");
+      toast.error(
+        locale === "de"
+          ? "Der Name der Küche darf nicht leer sein."
+          : "Kitchen name cannot be empty."
+      );
       return;
     }
 
@@ -125,12 +148,47 @@ export function KitchenSettingsView({
         name: trimmed,
         spaceType,
       });
-      toast.success("Space details updated successfully.");
+      toast.success(
+        locale === "de"
+          ? "Änderungen erfolgreich gespeichert."
+          : "Settings updated successfully."
+      );
       router.refresh();
     } catch (err: any) {
-      toast.error(err.message || "Failed to update space details.");
+      toast.error(err.message || "Failed to update settings.");
     } finally {
       setIsSavingGeneral(false);
+    }
+  };
+
+  // Reset form changes
+  const handleResetForm = () => {
+    setKitchenName(initialKitchen.name);
+    setSpaceType(initialKitchen.space_type || "FLATSHARE");
+  };
+
+  // Copy guest URL
+  const handleCopyGuestLink = async () => {
+    try {
+      await navigator.clipboard.writeText(publicGuestUrl);
+      setGuestCopied(true);
+      toast.success(locale === "de" ? "Link kopiert!" : "Link copied!");
+      setTimeout(() => setGuestCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  };
+
+  // Copy invite URL
+  const handleCopyInviteLink = async () => {
+    if (!primaryInviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(primaryInviteUrl);
+      setInviteCopied(true);
+      toast.success(locale === "de" ? "Einladung kopiert!" : "Invite link copied!");
+      setTimeout(() => setInviteCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy invite");
     }
   };
 
@@ -140,9 +198,15 @@ export function KitchenSettingsView({
 
     setIsRegeneratingToken(true);
     try {
-      const result = await regeneratePublicViewTokenAction({ kitchenId: initialKitchen.id });
+      const result = await regeneratePublicViewTokenAction({
+        kitchenId: initialKitchen.id,
+      });
       setPublicViewToken(result.newToken);
-      toast.success("Public guest link regenerated.");
+      toast.success(
+        locale === "de"
+          ? "Öffentlicher Link neu generiert."
+          : "Public guest link regenerated."
+      );
       router.refresh();
     } catch (err: any) {
       toast.error(err.message || "Failed to regenerate guest link.");
@@ -158,7 +222,11 @@ export function KitchenSettingsView({
 
     const trimmed = newMemberName.trim();
     if (!trimmed) {
-      toast.error("Please enter a member display name.");
+      toast.error(
+        locale === "de"
+          ? "Bitte gib einen Namen ein."
+          : "Please enter a member display name."
+      );
       return;
     }
 
@@ -171,7 +239,12 @@ export function KitchenSettingsView({
       };
       setMembers((prev) => [...prev, newMemberRecord]);
       setNewMemberName("");
-      toast.success(`Invite generated for ${trimmed}`);
+      setIsInviteDrawerOpen(false);
+      toast.success(
+        locale === "de"
+          ? `Einladungslink für ${trimmed} erstellt.`
+          : `Invite generated for ${trimmed}`
+      );
       router.refresh();
     } catch (err: any) {
       toast.error(err.message || "Failed to generate invite.");
@@ -188,7 +261,11 @@ export function KitchenSettingsView({
     try {
       await cancelInviteAction(initialKitchen.id, memberId);
       setMembers((prev) => prev.filter((m) => m.id !== memberId));
-      toast.success(`Revoked invite for ${name}`);
+      toast.success(
+        locale === "de"
+          ? `Einladung für ${name} widerrufen.`
+          : `Revoked invite for ${name}`
+      );
       router.refresh();
     } catch (err: any) {
       toast.error(err.message || "Failed to revoke invite.");
@@ -202,7 +279,11 @@ export function KitchenSettingsView({
     setIsLeaving(true);
     try {
       await leaveKitchenAction(initialKitchen.id);
-      toast.success(`You have left ${kitchenName}`);
+      toast.success(
+        locale === "de"
+          ? `Du hast ${kitchenName} verlassen.`
+          : `You have left ${kitchenName}`
+      );
       router.push("/dashboard");
     } catch (err: any) {
       toast.error(err.message || "Failed to leave kitchen.");
@@ -216,7 +297,11 @@ export function KitchenSettingsView({
     setIsDeleting(true);
     try {
       await deleteKitchenAction(initialKitchen.id);
-      toast.success(`${kitchenName} was permanently deleted.`);
+      toast.success(
+        locale === "de"
+          ? `${kitchenName} wurde dauerhaft gelöscht.`
+          : `${kitchenName} was permanently deleted.`
+      );
       router.push("/dashboard");
     } catch (err: any) {
       toast.error(err.message || "Failed to delete kitchen.");
@@ -227,633 +312,690 @@ export function KitchenSettingsView({
 
   return (
     <div className="min-h-[calc(100vh-4rem)] w-full flex flex-col bg-background text-foreground selection:bg-primary/20">
-      <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 pt-8 sm:pt-12 pb-24 space-y-6 sm:space-y-8 flex-1">
-        {/* Dedicated back-navigation row with mb-8 */}
-        <div className="mb-6 sm:mb-8">
+      <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 space-y-6 flex-1">
+        {/* ========================================================
+            PAGE HEADER (Linear / Apple Style)
+           ======================================================== */}
+        <div className="space-y-4">
           <Link
             href={`/kitchen/${initialKitchen.id}`}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group cursor-pointer"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to {kitchenName}</span>
+            <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
+            <span>{t.kitchenSettings.backToBoard}</span>
           </Link>
-        </div>
 
-      {/* Header with Kitchen Settings title & description */}
-      <div className="space-y-1">
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-            {t.kitchenSettings.title}
-          </h1>
-          <Badge
-            variant={isAdmin ? "default" : "secondary"}
-            className="text-[11px] font-mono uppercase tracking-wider"
-          >
-            {isAdmin ? t.kitchenSettings.adminViewBadge : t.kitchen.header.member}
-          </Badge>
-        </div>
-        <p className="text-xs sm:text-sm text-muted-foreground">
-          {t.kitchenSettings.subtitle.replace("{name}", kitchenName)}
-        </p>
-      </div>
-
-      {/* Distinct Card 1: General Space Details */}
-      <Card className="p-4 sm:p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/60">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0">
-              <Settings className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-foreground tracking-tight">
-                {t.kitchenSettings.generalSectionTitle}
-              </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                {t.kitchenSettings.title}
+              </h1>
               <p className="text-xs text-muted-foreground">
-                {t.kitchenSettings.generalSectionSub}
+                {locale === "de"
+                  ? "Verwalte Konfiguration, Zugänge und Mitbewohner."
+                  : "Manage configuration, access, and roommates."}
               </p>
             </div>
-          </div>
 
-          {isAdmin && (
-            <Button
-              type="submit"
-              form="general-space-form"
-              disabled={isSavingGeneral || !kitchenName.trim()}
-              size="sm"
-              className="rounded-xl font-semibold text-xs h-8.5 px-3.5 w-full sm:w-auto"
-            >
-              {isSavingGeneral ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
-                  <span>{t.kitchenSettings.saving}</span>
-                </>
-              ) : (
-                t.kitchenSettings.saveChanges
-              )}
-            </Button>
-          )}
+            {/* Desktop Docked Save Button */}
+            {isAdmin && (
+              <div className="hidden sm:flex items-center gap-2">
+                {isDirty && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleResetForm}
+                    disabled={isSavingGeneral}
+                    className="rounded-xl text-xs h-9 px-3 text-muted-foreground hover:text-foreground"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                    <span>{t.kitchenSettings.resetBtn}</span>
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  onClick={() => handleSaveGeneral()}
+                  disabled={isSavingGeneral || !kitchenName.trim() || !isDirty}
+                  size="sm"
+                  className={cn(
+                    "rounded-xl font-semibold text-xs h-9 px-4 transition-all duration-150 shadow-sm",
+                    isDirty
+                      ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 cursor-pointer"
+                      : "opacity-40 pointer-events-none bg-secondary text-muted-foreground"
+                  )}
+                >
+                  {isSavingGeneral ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                      <span>{t.kitchenSettings.saving}</span>
+                    </>
+                  ) : (
+                    <span>{t.kitchenSettings.saveChanges}</span>
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
 
-        <form id="general-space-form" onSubmit={handleSaveGeneral} className="space-y-5">
-          {/* Field: Kitchen Name */}
-          <div className="space-y-1.5">
-            <Label htmlFor="kitchen-name-input" className="text-xs font-semibold text-foreground">
-              {t.kitchenSettings.kitchenNameLabel}
-            </Label>
+        {/* ========================================================
+            GROUP 1: KÜCHEN-PROFIL & RAUM-TYP (Linear/Apple List)
+           ======================================================== */}
+        <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-sm">
+          {/* Row 1: Name der Küche */}
+          <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <Label
+                htmlFor="kitchen-name"
+                className="text-sm font-semibold text-foreground cursor-pointer"
+              >
+                {t.kitchenSettings.nameRowLabel}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t.kitchenSettings.nameRowSubtext}
+              </p>
+            </div>
             <Input
-              id="kitchen-name-input"
+              id="kitchen-name"
               value={kitchenName}
               onChange={(e) => setKitchenName(e.target.value)}
               disabled={!isAdmin || isSavingGeneral}
               required
               maxLength={255}
-              placeholder="e.g. Baker Street Kitchen"
-              className="rounded-xl bg-secondary/30 border-input text-foreground text-xs sm:text-sm h-10"
+              placeholder="e.g. Baker Street WG"
+              className="bg-secondary/40 border border-border/60 rounded-xl px-3 py-1.5 text-sm w-full sm:w-64 focus:outline-none focus:ring-1 focus:ring-primary text-foreground transition-all h-9"
             />
-            <span className="text-[11px] text-muted-foreground block">
-              {isAdmin
-                ? t.kitchenSettings.kitchenNameHelper
-                : "The shared kitchen display name (managed by space admins)."}
-            </span>
           </div>
 
-          {/* Field: Space Type Preset */}
-          <div className="space-y-2 pt-1">
+          {/* Row 2: Divider */}
+          <div className="border-t border-border/60" />
+
+          {/* Row 3: Art der Gemeinschaft */}
+          <div className="p-4 sm:p-5 space-y-3">
             <div className="space-y-0.5">
-              <Label className="text-xs font-semibold text-foreground">
-                {t.kitchenSettings.spaceTypeTitle}
+              <Label className="text-sm font-semibold text-foreground">
+                {t.kitchenSettings.typeRowLabel}
               </Label>
-              <p className="text-[11px] text-muted-foreground">
-                {t.kitchenSettings.spaceTypeHelper}
+              <p className="text-xs text-muted-foreground">
+                {t.kitchenSettings.typeRowSubtext}
               </p>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-              {/* Option 1: Flatshare WG */}
+            {/* 4-Segment Pill Selector */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-0.5">
+              {/* Flatshare WG */}
               <button
                 type="button"
                 disabled={!isAdmin}
                 onClick={() => setSpaceType("FLATSHARE")}
-                className={`p-3 rounded-xl flex flex-col gap-1 border transition-all text-left select-none ${
-                  isAdmin ? "cursor-pointer active:scale-[0.98]" : "cursor-default opacity-85"
-                } ${
+                className={cn(
+                  "rounded-xl py-2 px-3 text-xs flex items-center justify-center gap-1.5 transition-all select-none min-h-[36px]",
+                  isAdmin ? "cursor-pointer active:scale-95" : "cursor-default opacity-85",
                   spaceType === "FLATSHARE"
-                    ? "border-primary/50 bg-primary/[0.06] ring-1 ring-primary/30 shadow-xs"
-                    : "border-border/60 bg-secondary/30 hover:bg-secondary/50"
-                }`}
+                    ? "bg-primary/10 text-primary border border-primary/30 font-semibold shadow-xs"
+                    : "bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground border border-transparent"
+                )}
               >
-                <div className="flex items-center gap-1.5">
-                  <Home
-                    className={`w-3.5 h-3.5 transition-colors ${
-                      spaceType === "FLATSHARE" ? "text-primary" : "text-muted-foreground"
-                    }`}
-                  />
-                  <span className="text-xs text-foreground font-semibold leading-none">
-                    {t.kitchenSettings.types.flatshare}
-                  </span>
-                </div>
-                <span className="text-[11px] text-muted-foreground font-normal leading-tight">
-                  {t.kitchenSettings.types.flatshareSub}
-                </span>
+                <Home className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{t.kitchenSettings.types.flatshare}</span>
               </button>
 
-              {/* Option 2: Family */}
+              {/* Familie */}
               <button
                 type="button"
                 disabled={!isAdmin}
                 onClick={() => setSpaceType("FAMILY")}
-                className={`p-3 rounded-xl flex flex-col gap-1 border transition-all text-left select-none ${
-                  isAdmin ? "cursor-pointer active:scale-[0.98]" : "cursor-default opacity-85"
-                } ${
+                className={cn(
+                  "rounded-xl py-2 px-3 text-xs flex items-center justify-center gap-1.5 transition-all select-none min-h-[36px]",
+                  isAdmin ? "cursor-pointer active:scale-95" : "cursor-default opacity-85",
                   spaceType === "FAMILY"
-                    ? "border-primary/50 bg-primary/[0.06] ring-1 ring-primary/30 shadow-xs"
-                    : "border-border/60 bg-secondary/30 hover:bg-secondary/50"
-                }`}
+                    ? "bg-primary/10 text-primary border border-primary/30 font-semibold shadow-xs"
+                    : "bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground border border-transparent"
+                )}
               >
-                <div className="flex items-center gap-1.5">
-                  <Heart
-                    className={`w-3.5 h-3.5 transition-colors ${
-                      spaceType === "FAMILY" ? "text-primary" : "text-muted-foreground"
-                    }`}
-                  />
-                  <span className="text-xs text-foreground font-semibold leading-none">
-                    {t.kitchenSettings.types.family}
-                  </span>
-                </div>
-                <span className="text-[11px] text-muted-foreground font-normal leading-tight">
-                  {t.kitchenSettings.types.familySub}
-                </span>
+                <Heart className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{t.kitchenSettings.types.family}</span>
               </button>
 
-              {/* Option 3: Office */}
+              {/* Büro */}
               <button
                 type="button"
                 disabled={!isAdmin}
                 onClick={() => setSpaceType("OFFICE")}
-                className={`p-3 rounded-xl flex flex-col gap-1 border transition-all text-left select-none ${
-                  isAdmin ? "cursor-pointer active:scale-[0.98]" : "cursor-default opacity-85"
-                } ${
+                className={cn(
+                  "rounded-xl py-2 px-3 text-xs flex items-center justify-center gap-1.5 transition-all select-none min-h-[36px]",
+                  isAdmin ? "cursor-pointer active:scale-95" : "cursor-default opacity-85",
                   spaceType === "OFFICE"
-                    ? "border-primary/50 bg-primary/[0.06] ring-1 ring-primary/30 shadow-xs"
-                    : "border-border/60 bg-secondary/30 hover:bg-secondary/50"
-                }`}
+                    ? "bg-primary/10 text-primary border border-primary/30 font-semibold shadow-xs"
+                    : "bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground border border-transparent"
+                )}
               >
-                <div className="flex items-center gap-1.5">
-                  <Briefcase
-                    className={`w-3.5 h-3.5 transition-colors ${
-                      spaceType === "OFFICE" ? "text-primary" : "text-muted-foreground"
-                    }`}
-                  />
-                  <span className="text-xs text-foreground font-semibold leading-none">
-                    {t.kitchenSettings.types.office}
-                  </span>
-                </div>
-                <span className="text-[11px] text-muted-foreground font-normal leading-tight">
-                  {t.kitchenSettings.types.officeSub}
-                </span>
+                <Briefcase className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{t.kitchenSettings.types.office}</span>
               </button>
 
-              {/* Option 4: Neutral */}
+              {/* Neutral */}
               <button
                 type="button"
                 disabled={!isAdmin}
                 onClick={() => setSpaceType("NEUTRAL")}
-                className={`p-3 rounded-xl flex flex-col gap-1 border transition-all text-left select-none ${
-                  isAdmin ? "cursor-pointer active:scale-[0.98]" : "cursor-default opacity-85"
-                } ${
+                className={cn(
+                  "rounded-xl py-2 px-3 text-xs flex items-center justify-center gap-1.5 transition-all select-none min-h-[36px]",
+                  isAdmin ? "cursor-pointer active:scale-95" : "cursor-default opacity-85",
                   spaceType === "NEUTRAL"
-                    ? "border-primary/50 bg-primary/[0.06] ring-1 ring-primary/30 shadow-xs"
-                    : "border-border/60 bg-secondary/30 hover:bg-secondary/50"
-                }`}
+                    ? "bg-primary/10 text-primary border border-primary/30 font-semibold shadow-xs"
+                    : "bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground border border-transparent"
+                )}
               >
-                <div className="flex items-center gap-1.5">
-                  <Building2
-                    className={`w-3.5 h-3.5 transition-colors ${
-                      spaceType === "NEUTRAL" ? "text-primary" : "text-muted-foreground"
-                    }`}
-                  />
-                  <span className="text-xs text-foreground font-semibold leading-none">
-                    {t.kitchenSettings.types.neutral}
-                  </span>
-                </div>
-                <span className="text-[11px] text-muted-foreground font-normal leading-tight">
-                  {t.kitchenSettings.types.neutralSub}
-                </span>
+                <Layers className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{t.kitchenSettings.types.neutral}</span>
               </button>
             </div>
           </div>
-        </form>
-      </Card>
+        </div>
 
-      {/* Distinct Card 2: Invites & Access */}
-      <Card className="p-4 sm:p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-6">
-        <div className="flex items-center gap-2.5 pb-3 border-b border-border/60">
-          <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">
-            <Share2 className="w-4 h-4" />
-          </div>
-          <div>
-            <h2 className="text-base font-bold text-foreground tracking-tight">
-              {t.kitchenSettings.guestAccessTitle}
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              {t.kitchenSettings.guestAccessSub}
-            </p>
+        {/* ========================================================
+            GROUP 2: GASTZUGANG & SUPERMARKT-LINK
+           ======================================================== */}
+        <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-sm p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            {/* Left Info */}
+            <div className="flex items-start sm:items-center gap-3 min-w-0">
+              <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0 mt-0.5 sm:mt-0">
+                <Globe className="w-4 h-4" />
+              </div>
+              <div className="space-y-0.5 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-foreground">
+                    {t.kitchenSettings.publicSupermarketLink}
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>{t.kitchenSettings.activeStatus}</span>
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground truncate">
+                  {t.kitchenSettings.guestLinkSubtext}
+                </p>
+              </div>
+            </div>
+
+            {/* Right Horizontal Action Cluster */}
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
+              {/* Truncated URL pill */}
+              <div
+                title={publicGuestUrl}
+                className="font-mono text-xs text-muted-foreground bg-secondary/50 px-3 py-1.5 rounded-lg border border-border/50 max-w-[180px] sm:max-w-[200px] truncate select-all"
+              >
+                {displayGuestUrl}
+              </div>
+
+              {/* Copy Link Button */}
+              <button
+                type="button"
+                onClick={handleCopyGuestLink}
+                className="h-8 px-3 rounded-lg bg-primary text-primary-foreground font-semibold text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer shrink-0"
+              >
+                {guestCopied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{t.kitchenSettings.linkCopied}</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>{t.kitchenSettings.copyLinkBtn}</span>
+                  </>
+                )}
+              </button>
+
+              {/* Regenerate Token Button */}
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={handleRegenerateGuestToken}
+                  disabled={isRegeneratingToken}
+                  title={t.kitchenSettings.regenerateBtn}
+                  className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw
+                    className={cn("w-3.5 h-3.5", isRegeneratingToken && "animate-spin")}
+                  />
+                </button>
+              )}
+
+              {/* Open Link Button */}
+              <Link
+                href={publicGuestUrl}
+                target="_blank"
+                title={t.kitchenSettings.openLink}
+                className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors flex items-center justify-center shrink-0"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </div>
         </div>
 
-        {/* Section A: Public Guest / Supermarket link */}
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="space-y-0.5">
-              <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <span>{t.kitchenSettings.guestLinkTitle}</span>
-                <Badge variant="outline" className="text-[10px] font-mono">
-                  {t.kitchenSettings.readOnlyBadge}
-                </Badge>
-              </Label>
-              <p className="text-[11px] text-muted-foreground">
-                {t.kitchenSettings.guestLinkHelper}
-              </p>
-            </div>
+        {/* ========================================================
+            GROUP 3: MITBEWOHNER & EINLADUNGEN
+           ======================================================== */}
+        <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-sm">
+          {/* Subheader Row */}
+          <div className="p-4 sm:p-5 flex items-center justify-between border-b border-border/60">
+            <span className="text-sm font-semibold text-foreground">
+              {t.kitchenSettings.membersCount.replace("{count}", String(activeMembers.length))}
+            </span>
 
             {isAdmin && (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={handleRegenerateGuestToken}
-                disabled={isRegeneratingToken}
-                className="rounded-xl text-xs h-8 border-border text-muted-foreground hover:text-foreground hover:bg-muted self-start sm:self-auto"
-                title="Invalidates previous guest links"
+                onClick={() => setIsInviteDrawerOpen(!isInviteDrawerOpen)}
+                className="rounded-xl h-8 px-3 text-xs font-medium border-border/80 text-foreground hover:bg-secondary/60 gap-1.5"
               >
-                <RefreshCw
-                  className={`w-3.5 h-3.5 mr-1.5 ${isRegeneratingToken ? "animate-spin" : ""}`}
-                />
-                <span>{isRegeneratingToken ? "Regenerating..." : t.kitchenSettings.regenerateBtn}</span>
+                <Plus className="w-3.5 h-3.5" />
+                <span>{t.kitchenSettings.createInvitePrompt}</span>
               </Button>
             )}
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <Input
-              type="text"
-              readOnly
-              value={publicGuestUrl}
-              className="h-10 px-3 text-xs font-mono select-all rounded-xl bg-secondary/30 border-input text-foreground truncate min-w-0"
-            />
-            <div className="flex items-center gap-2 shrink-0">
-              <CopyButton
-                text={publicGuestUrl}
-                label={t.kitchenSettings.copyLinkBtn}
-                size="sm"
-                variant="secondary"
-                className="flex-1 sm:flex-none h-10 px-3 rounded-xl font-medium text-xs"
+          {/* Inline Invite Creation Drawer */}
+          {isAdmin && isInviteDrawerOpen && (
+            <form
+              onSubmit={handleCreateInvite}
+              className="p-4 bg-secondary/20 border-b border-border/60 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200"
+            >
+              <Input
+                placeholder={t.kitchenSettings.generateInvitePlaceholder}
+                value={newMemberName}
+                onChange={(e) => setNewMemberName(e.target.value)}
+                disabled={isCreatingInvite}
+                autoFocus
+                className="bg-card border-border/70 rounded-xl px-3 text-xs h-9 flex-1"
               />
-              <Button
-                asChild
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted"
-                title="Open guest view in new tab"
-              >
-                <Link href={publicGuestUrl} target="_blank">
-                  <ExternalLink className="w-4 h-4" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <Separator className="bg-border/60" />
-
-        {/* Section B: Member Invite Links */}
-        <div className="space-y-4">
-          <div className="space-y-0.5">
-            <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-              <span>{t.kitchenSettings.memberInviteTitle}</span>
-              <Badge variant="secondary" className="text-[10px]">
-                {pendingInvites.length} {t.kitchenSettings.pendingBadge}
-              </Badge>
-            </Label>
-            <p className="text-[11px] text-muted-foreground">
-              {t.kitchenSettings.memberInviteHelper}
-            </p>
-          </div>
-
-          {primaryPendingInvite ? (
-            <div className="space-y-2">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                <Input
-                  type="text"
-                  readOnly
-                  value={primaryInviteUrl}
-                  className="h-10 px-3 text-xs font-mono select-all rounded-xl bg-secondary/30 border-input text-foreground truncate min-w-0"
-                />
-                <div className="flex items-center gap-2 shrink-0">
-                  <CopyButton
-                    text={primaryInviteUrl}
-                    label="Copy Invite"
-                    size="sm"
-                    variant="default"
-                    className="flex-1 sm:flex-none h-10 px-3 rounded-xl font-semibold text-xs"
-                  />
-                  <Button
-                    asChild
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted"
-                    title="Open invite link"
-                  >
-                    <Link href={primaryInviteUrl} target="_blank">
-                      <ExternalLink className="w-4 h-4" />
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-[11px] text-muted-foreground px-1">
-                <span>
-                  Reserved for: <strong className="text-foreground">{primaryPendingInvite.kitchen_display_name}</strong>
-                </span>
-                {isAdmin && (
-                  <button
-                    type="button"
-                    onClick={() => handleRevokeInvite(primaryPendingInvite.id, primaryPendingInvite.kitchen_display_name)}
-                    disabled={revokingInviteId === primaryPendingInvite.id}
-                    className="text-destructive hover:underline text-[11px] cursor-pointer"
-                  >
-                    Revoke Link
-                  </button>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="p-3.5 rounded-xl bg-muted/40 border border-border/70 text-xs text-muted-foreground">
-              {t.kitchenSettings.noPendingInvites}
-            </div>
-          )}
-
-          {/* Admin Invite Generator */}
-          {isAdmin && (
-            <form onSubmit={handleCreateInvite} className="pt-2">
-              <Label htmlFor="new-invite-name" className="text-xs font-medium text-foreground block mb-1.5">
-                Generate New Invitation Link
-              </Label>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                <Input
-                  id="new-invite-name"
-                  placeholder="e.g. Alex (or Roommate Nickname)"
-                  value={newMemberName}
-                  onChange={(e) => setNewMemberName(e.target.value)}
-                  disabled={isCreatingInvite}
-                  className="h-10 rounded-xl bg-secondary/30 text-xs text-foreground"
-                />
+              <div className="flex items-center gap-2 shrink-0">
                 <Button
                   type="submit"
                   size="sm"
                   disabled={isCreatingInvite || !newMemberName.trim()}
-                  className="rounded-xl h-10 px-3.5 font-semibold text-xs shrink-0 w-full sm:w-auto"
+                  className="rounded-xl h-9 px-4 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   {isCreatingInvite ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
-                  ) : (
-                    <UserPlus className="w-3.5 h-3.5 mr-1.5" />
-                  )}
-                  <span>Create Link</span>
+                  ) : null}
+                  <span>
+                    {isCreatingInvite
+                      ? t.kitchenSettings.creatingInvite
+                      : t.kitchenSettings.createInviteBtn}
+                  </span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setIsInviteDrawerOpen(false);
+                    setNewMemberName("");
+                  }}
+                  className="rounded-xl h-9 px-3 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  {t.kitchenSettings.cancelInvite}
                 </Button>
               </div>
             </form>
           )}
-        </div>
-      </Card>
 
-      {/* Distinct Card 3: Space Members List Summary */}
-      <Card className="p-4 sm:p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-5">
-        <div className="flex items-center justify-between gap-3 pb-3 border-b border-border/60">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
-              <Users className="w-4 h-4" />
+          {/* Pending Invite Slot Row */}
+          {primaryPendingInvite && (
+            <div className="p-3.5 px-4 bg-amber-500/[0.04] border-b border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                <span className="text-xs text-foreground truncate">
+                  {t.kitchenSettings.reservedFor.split("{name}")[0]}
+                  <strong>{primaryPendingInvite.kitchen_display_name}</strong>
+                  {t.kitchenSettings.reservedFor.split("{name}")[1] || ""}
+                </span>
+                <span className="text-[10px] font-mono text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-md border border-amber-500/20">
+                  {t.kitchenSettings.pendingBadge}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                <button
+                  type="button"
+                  onClick={handleCopyInviteLink}
+                  className="h-7 px-2.5 rounded-lg bg-card border border-border/80 text-foreground hover:bg-secondary/60 text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  {inviteCopied ? (
+                    <>
+                      <Check className="w-3 h-3 text-emerald-500" />
+                      <span>{t.kitchenSettings.linkCopied}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3 h-3 text-muted-foreground" />
+                      <span>{t.kitchenSettings.copyInvite}</span>
+                    </>
+                  )}
+                </button>
+
+                <Link
+                  href={primaryInviteUrl}
+                  target="_blank"
+                  className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 flex items-center justify-center transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </Link>
+
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleRevokeInvite(
+                        primaryPendingInvite.id,
+                        primaryPendingInvite.kitchen_display_name
+                      )
+                    }
+                    disabled={revokingInviteId === primaryPendingInvite.id}
+                    className="text-xs text-destructive hover:underline px-1 cursor-pointer"
+                  >
+                    {t.kitchenSettings.revokeInvite}
+                  </button>
+                )}
+              </div>
             </div>
-            <div>
-              <h2 className="text-base font-bold text-foreground tracking-tight">
-                Space Members
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Active member roster registered in this kitchen space.
-              </p>
-            </div>
-          </div>
+          )}
 
-          <Badge variant="secondary" className="font-mono text-xs">
-            {activeMembers.length} {activeMembers.length === 1 ? "Member" : "Members"}
-          </Badge>
-        </div>
+          {/* Roster Rows with Subtle Dividers */}
+          <div className="divide-y divide-border/60">
+            {activeMembers.map((member) => {
+              const isSelf = member.user_id === currentUserId;
+              const initial = (member.kitchen_display_name || "?")
+                .charAt(0)
+                .toUpperCase();
 
-        <div className="space-y-2.5">
-          {activeMembers.map((member) => {
-            const isSelf = member.user_id === currentUserId;
-            const initial = (member.kitchen_display_name || "?").charAt(0).toUpperCase();
+              return (
+                <div
+                  key={member.id}
+                  className="flex items-center justify-between py-3.5 px-4 hover:bg-secondary/20 transition-colors"
+                >
+                  {/* Left: Avatar + Name + @handle + You Badge */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar className="h-8 w-8 rounded-full border border-border/80 shrink-0">
+                      <AvatarFallback className="bg-secondary text-xs font-semibold text-foreground">
+                        {initial}
+                      </AvatarFallback>
+                    </Avatar>
 
-            return (
-              <div
-                key={member.id}
-                className="flex items-center justify-between p-3 rounded-xl bg-secondary/30 border border-border/60 hover:bg-secondary/40 transition-colors"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <Avatar className="h-9 w-9 border border-border/80 shrink-0">
-                    <AvatarFallback className="bg-secondary text-xs font-bold text-foreground">
-                      {initial}
-                    </AvatarFallback>
-                  </Avatar>
-
-                  <div className="min-w-0 space-y-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-semibold text-foreground truncate">
+                    <div className="min-w-0 flex items-center gap-2 flex-wrap">
+                      <span className="text-xs sm:text-sm font-medium text-foreground truncate">
                         {capitalize(member.kitchen_display_name)}
                       </span>
+                      {member.username && (
+                        <span className="text-xs text-muted-foreground font-mono truncate">
+                          @{member.username}
+                        </span>
+                      )}
                       {isSelf && (
-                        <Badge variant="outline" className="text-[10px] py-0 px-1 font-mono">
-                          You
-                        </Badge>
+                        <span className="text-[10px] font-mono bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.2 rounded-md">
+                          {t.kitchenSettings.youBadge}
+                        </span>
                       )}
                     </div>
-                    {member.username && (
-                      <p className="text-[11px] text-muted-foreground truncate">
-                        @{member.username}
-                      </p>
-                    )}
+                  </div>
+
+                  {/* Right: Role Badge + Three-dot Context Menu */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span
+                      className={cn(
+                        "text-[10px] font-mono uppercase tracking-wider rounded-md px-2 py-0.5",
+                        member.role === "ADMIN"
+                          ? "bg-primary/10 text-primary border border-primary/20 font-semibold"
+                          : "bg-secondary/50 text-muted-foreground border border-border/50"
+                      )}
+                    >
+                      {member.role === "ADMIN"
+                        ? t.kitchenSettings.roleAdmin
+                        : t.kitchenSettings.roleMember}
+                    </span>
+
+                    {/* Three-Dot Menu */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+                        >
+                          <MoreHorizontal className="w-3.5 h-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48 rounded-xl">
+                        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                          {capitalize(member.kitchen_display_name)} (
+                          {member.role === "ADMIN"
+                            ? t.kitchenSettings.roleAdmin
+                            : t.kitchenSettings.roleMember}
+                          )
+                        </DropdownMenuLabel>
+                        {member.joined_at && (
+                          <div className="px-2 py-1 text-[11px] text-muted-foreground font-mono">
+                            {t.kitchenSettings.joinedDate.replace(
+                              "{date}",
+                              new Date(member.joined_at).toLocaleDateString(
+                                locale === "de" ? "de-DE" : "en-US",
+                                { month: "short", day: "numeric", year: "numeric" }
+                              )
+                            )}
+                          </div>
+                        )}
+                        {isAdmin && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              disabled={isSelf}
+                              onClick={() => {
+                                if (isSelf) return;
+                                toast.info(
+                                  locale === "de"
+                                    ? "Rollenwechsel wird in Kürze freigeschaltet."
+                                    : "Role transfer feature coming soon."
+                                );
+                              }}
+                              className="text-xs cursor-pointer"
+                            >
+                              {t.kitchenSettings.changeRole}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              disabled={isSelf}
+                              onClick={() => {
+                                if (isSelf) {
+                                  toast.error(t.kitchenSettings.cannotRemoveSelf);
+                                  return;
+                                }
+                                toast.info(
+                                  locale === "de"
+                                    ? "Mitgliedsentfernung erfolgt über Support oder Selbst-Austritt."
+                                    : "Member removal is managed via admin leave actions."
+                                );
+                              }}
+                              className="text-xs text-destructive focus:text-destructive cursor-pointer"
+                            >
+                              {t.kitchenSettings.removeMember}
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
+              );
+            })}
+          </div>
+        </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  <Badge
-                    variant={member.role === "ADMIN" ? "default" : "secondary"}
-                    className="text-[10px] font-mono uppercase tracking-wider"
-                  >
-                    {member.role === "ADMIN" ? "Admin" : "Member"}
-                  </Badge>
+        {/* ========================================================
+            GROUP 4: GEFAHRENBEREICH (Danger Zone - Apple Minimalist)
+           ======================================================== */}
+        <div className="rounded-2xl border border-destructive/20 bg-destructive/[0.02] p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <span className="text-sm font-semibold text-destructive">
+                {t.kitchenSettings.dangerZoneTitle}
+              </span>
+              <p className="text-xs text-muted-foreground">
+                {isAdmin
+                  ? t.kitchenSettings.deleteKitchenDesc
+                  : t.kitchenSettings.leaveKitchenDesc}
+              </p>
+            </div>
 
-                  {member.joined_at && (
-                    <span className="text-[11px] text-muted-foreground hidden sm:inline-block">
-                      Joined {new Date(member.joined_at).toLocaleDateString()}
-                    </span>
+            {isAdmin ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsDeleteDialogOpen(true)}
+                className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground border border-destructive/20 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all shrink-0 min-h-[36px]"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                <span>{t.kitchenSettings.deleteKitchenBtn}</span>
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsLeaveDialogOpen(true)}
+                className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground border border-destructive/20 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all shrink-0 min-h-[36px]"
+              >
+                <LogOut className="w-3.5 h-3.5 mr-1.5" />
+                <span>{t.kitchenSettings.leaveKitchenBtn}</span>
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Subtle Footer Link to GitHub */}
+        <div className="pt-2 text-center">
+          <a
+            href="https://github.com/randakamal/kartli"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-mono"
+          >
+            <span>{t.kitchenSettings.openSourceTitle}</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+
+        {/* ========================================================
+            MOBILE PERSISTENT SAVE AFFORDANCE (Sticky Bottom Bar)
+           ======================================================== */}
+        {isAdmin && isDirty && (
+          <div className="sm:hidden fixed bottom-6 inset-x-0 z-50 flex justify-center px-4 animate-in fade-in slide-in-from-bottom-4 duration-200 pointer-events-none">
+            <div className="pointer-events-auto flex items-center justify-between gap-3 p-3 rounded-2xl bg-card/95 border border-primary/40 backdrop-blur-xl shadow-xl w-full max-w-sm">
+              <span className="text-xs font-medium text-foreground truncate flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
+                <span>{t.kitchenSettings.unsavedChanges}</span>
+              </span>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleResetForm}
+                  disabled={isSavingGeneral}
+                  className="rounded-xl text-xs h-9 px-3 text-muted-foreground"
+                >
+                  {t.common.cancel}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => handleSaveGeneral()}
+                  disabled={isSavingGeneral || !kitchenName.trim()}
+                  size="sm"
+                  className="rounded-xl font-semibold text-xs h-9 px-4 bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+                >
+                  {isSavingGeneral ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <span>{t.kitchenSettings.saveChanges}</span>
                   )}
-                </div>
+                </Button>
               </div>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* Distinct Card 4: Danger Zone */}
-      <Card className="p-4 sm:p-6 rounded-2xl border border-destructive/30 bg-destructive/5 space-y-5">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-destructive/10 text-destructive border border-destructive/20 shrink-0">
-            <AlertTriangle className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-base font-bold text-foreground">Danger Zone</h2>
-            <p className="text-xs text-muted-foreground">
-              Irreversible actions related to your kitchen membership and data.
-            </p>
-          </div>
-        </div>
-
-        <Separator className="bg-destructive/20" />
-
-        {/* Action: Leave Kitchen (For regular members) */}
-        {!isAdmin && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-0.5">
-              <span className="text-xs font-semibold text-foreground">Leave Kitchen</span>
-              <p className="text-[11px] text-muted-foreground">
-                Remove your membership from this kitchen space and forfeit grocery list access.
-              </p>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setIsLeaveDialogOpen(true)}
-              className="border-destructive/40 text-destructive hover:bg-destructive/10 rounded-xl font-medium text-xs shrink-0"
-            >
-              <LogOut className="w-3.5 h-3.5 mr-1.5" />
-              <span>Leave Kitchen</span>
-            </Button>
           </div>
         )}
 
-        {/* Action: Delete Kitchen (For admins) */}
-        {isAdmin && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-0.5">
-              <span className="text-xs font-semibold text-destructive">Delete Entire Kitchen</span>
-              <p className="text-[11px] text-muted-foreground">
-                Permanently delete this kitchen and wipe all pantry inventory, shopping lists, receipts, and memberships.
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={() => setIsDeleteDialogOpen(true)}
-              className="rounded-xl font-semibold text-xs shrink-0"
-            >
-              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-              <span>Delete Kitchen</span>
-            </Button>
-          </div>
-        )}
-      </Card>
+        {/* Confirmation Dialog: Leave Kitchen */}
+        <AlertDialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
+          <AlertDialogContent className="rounded-2xl max-w-md">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-base font-bold flex items-center gap-2">
+                <LogOut className="w-4 h-4 text-destructive" />
+                <span>
+                  {t.kitchenSettings.leaveConfirmTitle.replace("{name}", kitchenName)}
+                </span>
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-xs text-muted-foreground">
+                {t.kitchenSettings.leaveConfirmDesc}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="rounded-xl text-xs">
+                {t.common.cancel}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleLeaveKitchen}
+                disabled={isLeaving}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl text-xs font-semibold px-4"
+              >
+                {isLeaving
+                  ? t.kitchenSettings.leavingBtn
+                  : t.kitchenSettings.leaveConfirmBtn}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
-      {/* Bottom Anchor: GitHub Repository Link (Requirement 5) */}
-      <a
-        href="https://github.com/randakamal/kartli"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group flex items-center justify-between p-4 rounded-2xl border border-border/80 bg-card hover:bg-muted/40 hover:border-border transition-all duration-200 shadow-2xs cursor-pointer"
-      >
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-muted/60 border border-border/60 text-muted-foreground group-hover:text-foreground transition-colors">
-            <svg
-              className="w-4 h-4 fill-current"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-              />
-            </svg>
-          </div>
-          <div className="space-y-0.5">
-            <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5 font-mono">
-              Open Source culinary operating system
-            </span>
-            <p className="text-[11px] text-muted-foreground">
-              kartli is free, transparent, and community-driven on GitHub.
-            </p>
-          </div>
-        </div>
-
-        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
-      </a>
-
-      {/* Confirmation Dialog: Leave Kitchen */}
-      <AlertDialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
-        <AlertDialogContent className="rounded-2xl max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-base font-bold flex items-center gap-2">
-              <LogOut className="w-4 h-4 text-destructive" />
-              <span>Leave {kitchenName}?</span>
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-xs text-muted-foreground">
-              Are you sure you want to leave this kitchen? You will immediately lose access to shared grocery lists and pantry inventories. You will need a new invite link from an admin to rejoin.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl text-xs">Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleLeaveKitchen}
-              disabled={isLeaving}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl text-xs font-semibold"
-            >
-              {isLeaving ? "Leaving..." : "Yes, Leave Kitchen"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Confirmation Dialog: Delete Kitchen */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="rounded-2xl max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-base font-bold flex items-center gap-2 text-destructive">
-              <AlertTriangle className="w-4 h-4" />
-              <span>Permanently Delete Kitchen?</span>
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-xs text-muted-foreground space-y-2">
-              <span>
-                This will irreversibly delete <strong className="text-foreground">{kitchenName}</strong> along with all associated inventory items, shopping records, purchase receipts, and member memberships.
-              </span>
-              <span className="block font-semibold text-destructive pt-1">
-                This action cannot be undone.
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl text-xs">Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteKitchen}
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl text-xs font-semibold"
-            >
-              {isDeleting ? "Deleting..." : "Permanently Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* Confirmation Dialog: Delete Kitchen */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent className="rounded-2xl max-w-md">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-base font-bold flex items-center gap-2 text-destructive">
+                <AlertTriangle className="w-4 h-4" />
+                <span>{t.kitchenSettings.deleteConfirmTitle}</span>
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-xs text-muted-foreground space-y-2">
+                <span>
+                  {t.kitchenSettings.deleteConfirmDesc.replace("{name}", kitchenName)}
+                </span>
+                <span className="block font-semibold text-destructive pt-1">
+                  {t.kitchenSettings.deleteConfirmWarning}
+                </span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="rounded-xl text-xs">
+                {t.common.cancel}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteKitchen}
+                disabled={isDeleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl text-xs font-semibold px-4"
+              >
+                {isDeleting
+                  ? t.kitchenSettings.deletingBtn
+                  : t.kitchenSettings.deleteConfirmBtn}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
