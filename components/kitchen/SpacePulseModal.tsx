@@ -15,6 +15,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Activity,
   CreditCard,
   Package,
@@ -22,10 +28,12 @@ import {
   TrendingDown,
   Minus,
   RefreshCw,
+  Download,
   AlertTriangle,
   CheckCircle2,
   Clock,
   ShoppingBag,
+  ShoppingCart,
   Receipt,
   Sparkles,
   Flame,
@@ -34,10 +42,17 @@ import {
   AlertCircle,
   FileText,
   User,
+  Users,
+  ChevronLeft,
+  ChevronRight,
+  Crown,
 } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
-import { getKitchenStats, type KitchenPulseStats } from "@/lib/actions/stats";
-import { getMyCheckoutsAction } from "@/app/actions/checkout";
+import {
+  getKitchenStats,
+  type KitchenPulseStats,
+  type MonthCheckoutItem,
+} from "@/lib/actions/stats";
 import type { PantryItem, CheckoutWithDetails } from "@/types";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
@@ -51,6 +66,51 @@ export interface SpacePulseModalProps {
   initialStats?: KitchenPulseStats | any;
   pantryItems?: PantryItem[] | any[];
   myCheckouts?: CheckoutWithDetails[] | any[];
+  onStartShoppingRun?: () => void;
+}
+
+const STORE_ACCENTS = [
+  { bg: "bg-emerald-500", text: "text-emerald-400", border: "border-emerald-500/20", lightBg: "bg-emerald-500/10" },
+  { bg: "bg-teal-500", text: "text-teal-400", border: "border-teal-500/20", lightBg: "bg-teal-500/10" },
+  { bg: "bg-violet-500", text: "text-violet-400", border: "border-violet-500/20", lightBg: "bg-violet-500/10" },
+  { bg: "bg-cyan-500", text: "text-cyan-400", border: "border-cyan-500/20", lightBg: "bg-cyan-500/10" },
+  { bg: "bg-indigo-500", text: "text-indigo-400", border: "border-indigo-500/20", lightBg: "bg-indigo-500/10" },
+  { bg: "bg-amber-500", text: "text-amber-400", border: "border-amber-500/20", lightBg: "bg-amber-500/10" },
+];
+
+function escapeCsvCell(cell: string | number | null | undefined): string {
+  if (cell === null || cell === undefined) return '""';
+  const str = String(cell);
+  if (str.includes('"') || str.includes(',') || str.includes(';') || str.includes('\n') || str.includes('\r')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return `"${str}"`;
+}
+
+function formatMonthLabel(monthKey: string, locale: string): string {
+  const [y, m] = monthKey.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, 1));
+  return date.toLocaleDateString(locale === "de" ? "de-DE" : "en-US", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function getRecentMonths(count = 12, locale: string): Array<{ key: string; label: string }> {
+  const months: Array<{ key: string; label: string }> = [];
+  const now = new Date();
+  for (let i = 0; i < count; i++) {
+    const d = new Date(Date.UTC(now.getFullYear(), now.getMonth() - i, 1));
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleDateString(locale === "de" ? "de-DE" : "en-US", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+    months.push({ key, label });
+  }
+  return months;
 }
 
 function formatRelativeDate(
@@ -77,6 +137,32 @@ function formatRelativeDate(
   });
 }
 
+function formatTimeSinceEmpty(
+  dateInput: string | Date | undefined | null,
+  locale: string
+): string {
+  if (!dateInput) return locale === "de" ? "Kürzlich" : "Recently";
+  const date = new Date(dateInput);
+  if (isNaN(date.getTime())) return locale === "de" ? "Kürzlich" : "Recently";
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMins < 60) {
+    const mins = Math.max(1, diffMins);
+    return locale === "de" ? `vor ${mins} Min.` : `${mins}m ago`;
+  }
+  if (diffHours < 24) {
+    return locale === "de" ? `vor ${diffHours} Std.` : `${diffHours}h ago`;
+  }
+  if (diffDays === 1) {
+    return locale === "de" ? "vor 1 Tag" : "1 day ago";
+  }
+  return locale === "de" ? `vor ${diffDays} Tagen` : `${diffDays} days ago`;
+}
+
 function formatShortDate(
   dateInput: string | Date | undefined | null,
   locale: string
@@ -94,8 +180,7 @@ function formatShortDate(
 export function SpacePulseModalSkeleton() {
   return (
     <div className="space-y-6 py-2 animate-pulse">
-      {/* Spend hero card skeleton */}
-      <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 space-y-4">
+      <Card className="bg-card border border-border/80 rounded-2xl p-5 space-y-4 shadow-sm">
         <div className="flex items-center justify-between">
           <Skeleton className="h-4 w-28 rounded-md" />
           <Skeleton className="h-5 w-20 rounded-full" />
@@ -108,21 +193,19 @@ export function SpacePulseModalSkeleton() {
         </div>
       </Card>
 
-      {/* 2-column widgets skeleton */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 space-y-3">
+        <Card className="bg-card border border-border/80 rounded-2xl p-5 space-y-3 shadow-sm">
           <Skeleton className="h-4 w-32 rounded-md" />
           <Skeleton className="h-8 w-20 rounded-lg" />
           <Skeleton className="h-2 w-full rounded-full" />
         </Card>
-        <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 space-y-3">
+        <Card className="bg-card border border-border/80 rounded-2xl p-5 space-y-3 shadow-sm">
           <Skeleton className="h-4 w-32 rounded-md" />
           <Skeleton className="h-8 w-20 rounded-lg" />
           <Skeleton className="h-2 w-full rounded-full" />
         </Card>
       </div>
 
-      {/* List items skeleton */}
       <div className="space-y-2 pt-1">
         <Skeleton className="h-12 w-full rounded-2xl" />
         <Skeleton className="h-12 w-full rounded-2xl" />
@@ -141,14 +224,22 @@ export function SpacePulseModal({
   initialStats,
   pantryItems,
   myCheckouts,
+  onStartShoppingRun,
 }: SpacePulseModalProps) {
   const { t, locale } = useTranslation();
-  const [stats, setStats] = useState<KitchenPulseStats | null>(initialStats || null);
-  const [checkoutsList, setCheckoutsList] = useState<CheckoutWithDetails[]>(
-    Array.isArray(myCheckouts) ? myCheckouts : []
+
+  const currentMonthKey = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }, []);
+
+  const [selectedMonthKey, setSelectedMonthKey] = useState<string>(
+    initialStats?.monthKey || currentMonthKey
   );
+  const [stats, setStats] = useState<KitchenPulseStats | null>(initialStats || null);
   const [isLoading, setIsLoading] = useState(!initialStats);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [activeTab, setActiveTab] = useState<"spending" | "pantry" | "activity">("spending");
   const [, startTransition] = useTransition();
 
@@ -156,43 +247,29 @@ export function SpacePulseModal({
   useEffect(() => {
     if (initialStats) {
       setStats(initialStats);
+      if (initialStats.monthKey) {
+        setSelectedMonthKey(initialStats.monthKey);
+      }
       setIsLoading(false);
     }
   }, [initialStats]);
 
-  // Sync checkouts when prop updates
-  useEffect(() => {
-    if (Array.isArray(myCheckouts)) {
-      setCheckoutsList(myCheckouts);
-    }
-  }, [myCheckouts]);
-
-  // Fetch data on modal open if not available
-  const loadData = async (isManual = false) => {
+  // Fetch aggregated data for kitchen and selected month
+  const loadData = async (isManual = false, monthKey = selectedMonthKey) => {
     if (isManual) {
       setIsRefreshing(true);
-    } else if (!stats) {
+    } else {
       setIsLoading(true);
     }
 
     try {
-      const promises: [Promise<KitchenPulseStats>, Promise<CheckoutWithDetails[]> | Promise<null>] = [
-        getKitchenStats(kitchenId, currentUserId),
-        !myCheckouts ? getMyCheckoutsAction(kitchenId) : Promise.resolve(null),
-      ];
-
-      const [statsData, checkoutsData] = await Promise.all(promises);
-
+      const statsData = await getKitchenStats(kitchenId, currentUserId, monthKey);
       setStats(statsData);
-      if (checkoutsData) {
-        setCheckoutsList(checkoutsData);
-      }
-
       if (isManual) {
-        toast.success(t.kitchen.pulse.updated);
+        toast.success(t.pulse.updated);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : t.kitchen.pulse.couldNotLoad;
+      const msg = err instanceof Error ? err.message : t.pulse.couldNotLoad;
       toast.error(msg);
     } finally {
       setIsLoading(false);
@@ -202,107 +279,253 @@ export function SpacePulseModal({
 
   useEffect(() => {
     if (isOpen) {
-      if (!stats) {
-        loadData();
-      } else if (!myCheckouts && checkoutsList.length === 0) {
-        // Fetch checkouts in background if missing
-        getMyCheckoutsAction(kitchenId)
-          .then((data) => setCheckoutsList(data))
-          .catch(() => {});
-      }
+      loadData(false, selectedMonthKey);
     }
-  }, [isOpen, kitchenId, currentUserId]);
+  }, [isOpen, kitchenId, currentUserId, selectedMonthKey]);
 
-  // Derived depleted pantry staples
-  const depletedStaples = useMemo(() => {
-    if (!pantryItems || !Array.isArray(pantryItems)) return [];
-    return pantryItems.filter((item) => item.is_out_of_stock);
-  }, [pantryItems]);
+  // Month navigation handlers
+  const handlePrevMonth = () => {
+    const [y, m] = selectedMonthKey.split("-").map(Number);
+    const prevDate = new Date(Date.UTC(y, m - 2, 1));
+    const nextKey = `${prevDate.getUTCFullYear()}-${String(prevDate.getUTCMonth() + 1).padStart(2, "0")}`;
+    setSelectedMonthKey(nextKey);
+  };
+
+  const handleNextMonth = () => {
+    const [y, m] = selectedMonthKey.split("-").map(Number);
+    const nextDate = new Date(Date.UTC(y, m, 1));
+    const nextKey = `${nextDate.getUTCFullYear()}-${String(nextDate.getUTCMonth() + 1).padStart(2, "0")}`;
+    setSelectedMonthKey(nextKey);
+  };
+
+  // CSV Export handler (Task 3)
+  const handleExportCsv = () => {
+    const checkouts = stats?.monthCheckouts || [];
+    if (checkouts.length === 0) {
+      toast.info(t.pulse.csvExportNoData);
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const headers = [
+        t.pulse.csvHeaderDate,
+        t.pulse.csvHeaderStore,
+        t.pulse.csvHeaderAmount,
+        t.pulse.csvHeaderCurrency,
+        t.pulse.csvHeaderPaidBy,
+        t.pulse.csvHeaderNote,
+        t.pulse.csvHeaderStatus,
+      ];
+
+      const rows = checkouts.map((c) => {
+        const dateStr = c.created_at
+          ? new Date(c.created_at).toISOString().split("T")[0]
+          : "";
+        const storeName = c.store_name === "Sonstige" ? t.pulse.otherStore : c.store_name;
+        const amountStr = c.total_claimed_amount.toFixed(2);
+        const currencyStr = c.currency || stats?.currency || "EUR";
+        const paidBy = c.paid_by_name || c.username || "Mitglied";
+        const note = c.note || "";
+        const status = c.is_refunded ? t.pulse.csvSettled : t.pulse.csvPending;
+
+        return [
+          escapeCsvCell(dateStr),
+          escapeCsvCell(storeName),
+          escapeCsvCell(amountStr),
+          escapeCsvCell(currencyStr),
+          escapeCsvCell(paidBy),
+          escapeCsvCell(note),
+          escapeCsvCell(status),
+        ].join(",");
+      });
+
+      const csvContent = [headers.map(escapeCsvCell).join(","), ...rows].join("\r\n");
+      // Standard UTF-8 with BOM (\uFEFF)
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+
+      const slug = (kitchenName || "space")
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]/gi, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
+      const filename = `kartli-${slug}-ausgaben-${selectedMonthKey}.csv`;
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(t.pulse.csvExportSuccess);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Export failed";
+      toast.error(msg);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const currency = stats?.currency || "EUR";
+  const recentMonths = useMemo(() => getRecentMonths(12, locale), [locale]);
+  const monthDisplayLabel = useMemo(
+    () => formatMonthLabel(selectedMonthKey, locale),
+    [selectedMonthKey, locale]
+  );
+
+  // Depleted essentials count
+  const depletedCount = stats?.pantryStockRatio?.outOfStock ?? 0;
+  const feedCheckoutsCount = stats?.monthCheckouts?.length ?? 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         onDismiss={() => onOpenChange(false)}
-        className="sm:max-w-3xl sm:w-full p-0 gap-0 overflow-hidden bg-card/90 border border-white/[0.08] backdrop-blur-2xl shadow-2xl rounded-3xl flex flex-col max-h-[90vh]"
+        className="sm:max-w-3xl sm:w-full p-0 gap-0 overflow-hidden bg-card/95 border border-border/80 backdrop-blur-2xl shadow-2xl rounded-3xl flex flex-col max-h-[90vh]"
       >
         {/* Modal Header */}
-        <DialogHeader className="p-5 sm:p-6 pb-4 border-b border-white/[0.08] pr-12 flex flex-col space-y-3 shrink-0 bg-muted/20 backdrop-blur-md">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary shrink-0 shadow-xs">
-              <Activity className="w-4 h-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <DialogTitle className="text-base sm:text-lg font-bold tracking-tight text-foreground truncate">
-                  {kitchenName} {t.kitchen.pulse.title}
-                </DialogTitle>
-                {stats?.monthLabel && (
-                  <Badge
-                    variant="secondary"
-                    className="bg-muted/80 text-muted-foreground text-[10px] font-mono uppercase px-2.5 py-0.5 rounded-full border border-border/70"
-                  >
-                    {stats.monthLabel}
-                  </Badge>
-                )}
+        <DialogHeader className="p-5 sm:p-6 pb-4 border-b border-border/80 flex flex-col space-y-3.5 shrink-0 bg-muted/20 backdrop-blur-md">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary shrink-0 shadow-xs">
+                <Activity className="w-4 h-4" />
               </div>
-              <DialogDescription className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                {t.kitchen.pulse.subtitle}
-              </DialogDescription>
+              <div className="min-w-0 flex-1">
+                <DialogTitle className="text-base sm:text-lg font-bold tracking-tight text-foreground truncate">
+                  {kitchenName} {t.pulse.title}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                  {t.pulse.subtitle}
+                </DialogDescription>
+              </div>
             </div>
 
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => loadData(true)}
-              disabled={isRefreshing || isLoading}
-              className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 shrink-0 cursor-pointer"
-              title={t.kitchen.pulse.refresh}
-            >
-              <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
-            </Button>
+            {/* Header Controls: Live Month Selector Pill, CSV Export & Refresh */}
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
+              {/* Live Month Selector Pill */}
+              <div className="flex items-center bg-card border border-border/80 rounded-xl p-0.5 shadow-xs">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={handlePrevMonth}
+                  className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+                  title={t.pulse.previousMonth}
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-muted/60 rounded-lg flex items-center gap-1.5 cursor-pointer transition select-none"
+                    >
+                      <Calendar className="w-3 h-3 text-primary shrink-0" />
+                      <span className="capitalize">{monthDisplayLabel}</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center" className="w-48 max-h-64 overflow-y-auto">
+                    {recentMonths.map((m) => (
+                      <DropdownMenuItem
+                        key={m.key}
+                        onClick={() => setSelectedMonthKey(m.key)}
+                        className={cn(
+                          "text-xs capitalize cursor-pointer",
+                          m.key === selectedMonthKey && "font-bold text-primary bg-primary/10"
+                        )}
+                      >
+                        {m.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={handleNextMonth}
+                  disabled={selectedMonthKey >= currentMonthKey}
+                  className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-30"
+                  title={t.pulse.nextMonth}
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+
+              {/* CSV Export Action Button */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleExportCsv}
+                disabled={isExporting || isLoading}
+                className="h-8 rounded-xl text-xs font-semibold px-3 gap-1.5 border-border/80 hover:bg-muted/70 cursor-pointer shadow-xs"
+                title={t.pulse.csvExportBtn}
+              >
+                <Download className="w-3.5 h-3.5 text-primary" />
+                <span className="hidden sm:inline">
+                  {isExporting ? t.pulse.csvExporting : t.pulse.csvExportBtn}
+                </span>
+              </Button>
+
+              {/* Refresh Button */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => loadData(true, selectedMonthKey)}
+                disabled={isRefreshing || isLoading}
+                className="h-8 w-8 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/60 shrink-0 cursor-pointer"
+                title={t.pulse.refresh}
+              >
+                <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
+              </Button>
+            </div>
           </div>
 
-          {/* Sub-navigation Tray: Refined glass pill switcher with tactile active state */}
+          {/* Sub-Tabs: 3 clean glass tabs */}
           <div className="pt-1">
             <Tabs
               value={activeTab}
               onValueChange={(val) => setActiveTab(val as "spending" | "pantry" | "activity")}
               className="w-full"
             >
-              <TabsList className="w-full flex items-center gap-1.5 p-1.5 bg-muted/40 backdrop-blur-xl border border-white/[0.08] rounded-2xl mb-0 overflow-x-auto no-scrollbar h-auto shadow-inner">
+              <TabsList className="w-full flex items-center gap-1.5 p-1.5 bg-muted/40 backdrop-blur-xl border border-border/80 rounded-2xl mb-0 overflow-x-auto no-scrollbar h-auto shadow-inner">
                 <TabsTrigger
                   value="spending"
-                  className="flex-1 py-2 px-3 text-xs font-medium rounded-xl text-center whitespace-nowrap transition-all duration-200 data-[state=active]:bg-card/90 data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-white/[0.1] data-[state=active]:font-semibold text-muted-foreground hover:text-foreground active:scale-[0.98] flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                  className="flex-1 py-2 px-3 text-xs font-medium rounded-xl text-center whitespace-nowrap transition-all duration-200 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/80 data-[state=active]:font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                 >
                   <CreditCard className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
-                  <span>{t.kitchen.pulse.spendBalance}</span>
+                  <span>{t.pulse.tabSpendBalance}</span>
                 </TabsTrigger>
 
                 <TabsTrigger
                   value="pantry"
-                  className="flex-1 py-2 px-3 text-xs font-medium rounded-xl text-center whitespace-nowrap transition-all duration-200 data-[state=active]:bg-card/90 data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-white/[0.1] data-[state=active]:font-semibold text-muted-foreground hover:text-foreground active:scale-[0.98] flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                  className="flex-1 py-2 px-3 text-xs font-medium rounded-xl text-center whitespace-nowrap transition-all duration-200 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/80 data-[state=active]:font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                 >
                   <Package className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
-                  <span>{t.kitchen.pulse.depletedStaples}</span>
-                  {depletedStaples.length > 0 && (
+                  <span>{t.pulse.tabBasicsHealth}</span>
+                  {depletedCount > 0 && (
                     <span className="px-2 py-0.5 text-[10px] font-mono rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25 shrink-0 shadow-xs">
-                      {depletedStaples.length}
+                      {depletedCount}
                     </span>
                   )}
                 </TabsTrigger>
 
                 <TabsTrigger
                   value="activity"
-                  className="flex-1 py-2 px-3 text-xs font-medium rounded-xl text-center whitespace-nowrap transition-all duration-200 data-[state=active]:bg-card/90 data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-white/[0.1] data-[state=active]:font-semibold text-muted-foreground hover:text-foreground active:scale-[0.98] flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                  className="flex-1 py-2 px-3 text-xs font-medium rounded-xl text-center whitespace-nowrap transition-all duration-200 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/80 data-[state=active]:font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                 >
                   <Receipt className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
-                  <span>{t.kitchen.pulse.restockFeed}</span>
-                  {checkoutsList.length > 0 && (
-                    <span className="px-2 py-0.5 text-[10px] font-mono rounded-full bg-muted/80 text-muted-foreground border border-border/80 shrink-0">
-                      {checkoutsList.length}
+                  <span>{t.pulse.tabRestockFeed}</span>
+                  {feedCheckoutsCount > 0 && (
+                    <span className="px-2 py-0.5 text-[10px] font-mono rounded-full bg-muted text-muted-foreground border border-border/80 shrink-0">
+                      {feedCheckoutsCount}
                     </span>
                   )}
                 </TabsTrigger>
@@ -316,304 +539,407 @@ export function SpacePulseModal({
           {isLoading ? (
             <SpacePulseModalSkeleton />
           ) : !stats ? (
-            <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-6 text-center space-y-3 shadow-md">
+            <Card className="bg-card border border-border/80 rounded-2xl p-6 text-center space-y-3 shadow-sm">
               <div className="w-10 h-10 mx-auto rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
                 <AlertCircle className="w-5 h-5 text-amber-400" />
               </div>
-              <p className="text-sm font-semibold text-foreground">{t.kitchen.pulse.couldNotLoad}</p>
-              <p className="text-xs text-muted-foreground">
-                {t.kitchen.pulse.networkError}
-              </p>
+              <p className="text-sm font-semibold text-foreground">{t.pulse.couldNotLoad}</p>
+              <p className="text-xs text-muted-foreground">{t.pulse.networkError}</p>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => loadData(true)}
+                onClick={() => loadData(true, selectedMonthKey)}
                 className="rounded-full text-xs h-8 px-4 border-border cursor-pointer"
               >
-                {t.kitchen.pulse.retry}
+                {t.pulse.retry}
               </Button>
             </Card>
           ) : (
             <>
-              {/* TAB 1: Spending & Balance */}
+              {/* SUB-TAB 1: Ausgaben & Saldo */}
               {activeTab === "spending" && (
                 <div className="space-y-5 animate-in fade-in-50 duration-200">
+                  {/* Honest Empty State if zero checkouts exist for the period */}
                   {stats.totalReceiptsCount === 0 && stats.totalSpendCurrentMonth === 0 ? (
-                    <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-8 text-center space-y-3 shadow-lg">
-                      <div className="w-12 h-12 mx-auto rounded-2xl bg-muted border border-border/80 flex items-center justify-center text-muted-foreground">
-                        <CreditCard className="w-6 h-6 text-cyan-400" />
+                    <Card className="bg-card border border-border/80 rounded-2xl p-8 text-center space-y-4 shadow-sm">
+                      <div className="w-12 h-12 mx-auto rounded-2xl bg-muted/70 border border-border/80 flex items-center justify-center text-muted-foreground shadow-xs">
+                        <CreditCard className="w-6 h-6 text-primary" />
                       </div>
-                      <div className="space-y-1">
+                      <div className="space-y-1.5 max-w-md mx-auto">
                         <h3 className="text-base font-bold text-foreground">
-                          {t.kitchen.pulse.noRuns}
+                          {t.pulse.emptyMonth}
                         </h3>
-                        <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                        <p className="text-xs text-muted-foreground leading-relaxed">
                           {t.pulse.emptyMonthSub}
                         </p>
+                      </div>
+                      <div className="pt-2">
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            if (onStartShoppingRun) {
+                              onStartShoppingRun();
+                            } else {
+                              onOpenChange(false);
+                            }
+                          }}
+                          className="rounded-xl text-xs font-semibold h-9 px-5 gap-2 cursor-pointer shadow-sm"
+                        >
+                          <ShoppingCart className="w-3.5 h-3.5" />
+                          <span>{t.pulse.startShoppingRun}</span>
+                        </Button>
                       </div>
                     </Card>
                   ) : (
                     <>
-                      {/* Hero Spend Card */}
-                      <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
+                      {/* Hero Spend Total Card */}
+                      <Card className="bg-card border border-border/80 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             <CreditCard className="w-4 h-4 text-cyan-400" />
                             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                              {t.kitchen.pulse.monthlySpend}
+                              {t.pulse.monthlySpend}
                             </span>
                           </div>
-                          <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs font-mono rounded-full px-2.5">
-                            {stats.monthLabel}
+                          <Badge
+                            variant="secondary"
+                            className="bg-muted text-muted-foreground text-xs font-mono rounded-full px-2.5 capitalize"
+                          >
+                            {monthDisplayLabel}
                           </Badge>
                         </div>
 
                         <div className="flex items-baseline gap-3 flex-wrap">
                           <span className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight font-mono">
-                            {formatCurrency(stats.totalSpendCurrentMonth, "EUR")}
+                            {formatCurrency(stats.totalSpendCurrentMonth, currency)}
                           </span>
 
                           {/* Month-over-month Trend Indicator */}
                           {stats.spendTrendDirection === "down" && (
-                            <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono gap-1 rounded-full px-2.5 shadow-[0_0_10px_rgba(16,185,129,0.15)]">
+                            <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono gap-1 rounded-full px-2.5">
                               <TrendingDown className="w-3 h-3 text-emerald-400" />
-                              <span>-{stats.spendTrendPercentage}% {t.kitchen.pulse.vsLastMonth}</span>
+                              <span>-{stats.spendTrendPercentage}% {t.pulse.vsLastMonth}</span>
                             </Badge>
                           )}
 
                           {stats.spendTrendDirection === "up" && (
-                            <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-mono gap-1 rounded-full px-2.5 shadow-[0_0_10px_rgba(245,158,11,0.15)]">
+                            <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-mono gap-1 rounded-full px-2.5">
                               <TrendingUp className="w-3 h-3 text-amber-400" />
-                              <span>+{stats.spendTrendPercentage}% {t.kitchen.pulse.vsLastMonth}</span>
+                              <span>+{stats.spendTrendPercentage}% {t.pulse.vsLastMonth}</span>
                             </Badge>
                           )}
 
                           {stats.spendTrendDirection === "flat" && (
-                            <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border gap-1 rounded-full px-2.5">
+                            <Badge
+                              variant="secondary"
+                              className="text-xs font-mono bg-muted text-muted-foreground border border-border gap-1 rounded-full px-2.5"
+                            >
                               <Minus className="w-3 h-3" />
-                              <span>0% {t.kitchen.pulse.vsLastMonth}</span>
+                              <span>0% {t.pulse.vsLastMonth}</span>
                             </Badge>
                           )}
 
                           {stats.spendTrendDirection === "new" && (
                             <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs font-mono gap-1 rounded-full px-2.5">
                               <Sparkles className="w-3 h-3" />
-                              <span>{t.kitchen.pulse.firstMonth}</span>
+                              <span>{t.pulse.firstMonth}</span>
                             </Badge>
                           )}
                         </div>
 
                         {/* Comparison note & quick stats */}
                         <div className="pt-2 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60">
-                          <span>{t.kitchen.pulse.prevMonthSpend}</span>
+                          <span>{t.pulse.prevMonthSpend}:</span>
                           <span className="font-mono font-medium text-foreground">
-                            {formatCurrency(stats.totalSpendPreviousMonth, "EUR")}
+                            {formatCurrency(stats.totalSpendPreviousMonth, currency)}
                           </span>
                         </div>
                       </Card>
 
-                      {/* Real "My Impact" Checkout Breakdown (with intentional subtle indigo highlight) */}
-                      <Card className="border border-indigo-500/20 bg-card/80 backdrop-blur-md rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
+                      {/* Personal Impact & Settlement Balance */}
+                      <Card className="bg-card border border-border/80 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <User className="w-4 h-4 text-indigo-400" />
                             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                              {t.kitchen.pulse.myImpact}
+                              {t.pulse.myImpact}
                             </h4>
                           </div>
                           {stats.userReceiptsCount > 0 && (
-                            <Badge variant="secondary" className="text-xs font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-2.5 shadow-xs">
+                            <Badge
+                              variant="secondary"
+                              className="text-xs font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-2.5"
+                            >
                               {stats.userHabitRole.roleTitle}
                             </Badge>
                           )}
                         </div>
 
-                        {stats.userReceiptsCount === 0 && stats.userSpend === 0 && (!stats.userSettlement || stats.userSettlement.pendingRefundAmount === 0) ? (
-                          <div className="py-6 px-4 rounded-2xl bg-muted/20 border border-dashed border-border/70 text-center space-y-1.5">
+                        {stats.userReceiptsCount === 0 &&
+                        stats.userSpend === 0 &&
+                        (!stats.userSettlement || stats.userSettlement.pendingRefundAmount === 0) ? (
+                          <div className="py-5 px-4 rounded-xl bg-muted/20 border border-dashed border-border/70 text-center space-y-1">
                             <p className="text-xs font-semibold text-foreground">
-                              {t.kitchen.pulse.noCheckoutsLogged}
+                              {t.pulse.noCheckoutsLogged}
                             </p>
                             <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
-                              {t.kitchen.pulse.noCheckoutsLoggedDesc}
+                              {t.pulse.noCheckoutsLoggedDesc}
                             </p>
                           </div>
                         ) : (
-                          <>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                              <div className="p-3.5 rounded-2xl bg-indigo-500/[0.04] border border-indigo-500/20 space-y-1">
-                                <span className="text-[11px] text-muted-foreground">{t.kitchen.pulse.personalSpend}</span>
-                                <div className="text-lg font-bold font-mono text-indigo-400">
-                                  {formatCurrency(stats.userSpend, "EUR")}
-                                </div>
-                                <span className="text-[10px] text-muted-foreground">
-                                  {t.kitchen.pulse.totalSpendShare.replace("{percentage}", String(stats.userSpendSharePercentage))}
-                                </span>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="p-3.5 rounded-xl bg-indigo-500/[0.04] border border-indigo-500/20 space-y-1">
+                              <span className="text-[11px] text-muted-foreground">{t.pulse.personalSpend}</span>
+                              <div className="text-lg font-bold font-mono text-indigo-400">
+                                {formatCurrency(stats.userSpend, currency)}
                               </div>
-
-                              <div className="p-3.5 rounded-2xl bg-cyan-500/[0.04] border border-cyan-500/20 space-y-1">
-                                <span className="text-[11px] text-muted-foreground">{t.kitchen.pulse.personalRuns}</span>
-                                <div className="text-lg font-bold font-mono text-cyan-400">
-                                  {stats.userReceiptsCount} <span className="text-xs font-normal text-muted-foreground">/ {stats.totalReceiptsCount}</span>
-                                </div>
-                                <span className="text-[10px] text-muted-foreground">
-                                  {t.kitchen.pulse.householdRunsShare.replace("{percentage}", String(stats.userHabitRole.runPercentage))}
-                                </span>
-                              </div>
-
-                              <div className="p-3.5 rounded-2xl bg-emerald-500/[0.04] border border-emerald-500/20 space-y-1">
-                                <span className="text-[11px] text-muted-foreground">{t.kitchen.pulse.settlementStatus}</span>
-                                <div className="text-lg font-bold font-mono">
-                                  {stats.userSettlement.pendingRefundAmount > 0 ? (
-                                    <span className="text-amber-400">
-                                      +{formatCurrency(stats.userSettlement.pendingRefundAmount, "EUR")}
-                                    </span>
-                                  ) : (
-                                    <span className="text-emerald-400">{t.kitchen.pulse.balanced}</span>
-                                  )}
-                                </div>
-                                <span className="text-[10px] text-muted-foreground">
-                                  {stats.userSettlement.pendingRefundAmount > 0
-                                    ? t.kitchen.pulse.owedToYou.replace("{count}", String(stats.userSettlement.pendingRefundsCount))
-                                    : t.kitchen.pulse.allRefundsSettled}
-                                </span>
-                              </div>
+                              <span className="text-[10px] text-muted-foreground">
+                                {t.pulse.totalSpendShare.replace("{percentage}", String(stats.userSpendSharePercentage))}
+                              </span>
                             </div>
 
-                            <p className="text-xs text-muted-foreground">
-                              {stats.userHabitRole.roleDescription} (
-                              {t.kitchen.pulse.avgContributionPerRun.replace(
-                                "{amount}",
-                                formatCurrency(stats.userAverageContribution, "EUR")
-                              )}
-                              )
-                            </p>
-                          </>
+                            <div className="p-3.5 rounded-xl bg-cyan-500/[0.04] border border-cyan-500/20 space-y-1">
+                              <span className="text-[11px] text-muted-foreground">{t.pulse.personalRuns}</span>
+                              <div className="text-lg font-bold font-mono text-cyan-400">
+                                {stats.userReceiptsCount}{" "}
+                                <span className="text-xs font-normal text-muted-foreground">
+                                  / {stats.totalReceiptsCount}
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-muted-foreground">
+                                {t.pulse.householdRunsShare.replace("{percentage}", String(stats.userHabitRole.runPercentage))}
+                              </span>
+                            </div>
+
+                            <div className="p-3.5 rounded-xl bg-emerald-500/[0.04] border border-emerald-500/20 space-y-1">
+                              <span className="text-[11px] text-muted-foreground">{t.pulse.settlementStatus}</span>
+                              <div className="text-lg font-bold font-mono">
+                                {stats.userSettlement.pendingRefundAmount > 0 ? (
+                                  <span className="text-amber-400">
+                                    +{formatCurrency(stats.userSettlement.pendingRefundAmount, currency)}
+                                  </span>
+                                ) : (
+                                  <span className="text-emerald-400">{t.pulse.balanced}</span>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-muted-foreground">
+                                {stats.userSettlement.pendingRefundAmount > 0
+                                  ? t.pulse.owedToYou.replace("{count}", String(stats.userSettlement.pendingRefundsCount))
+                                  : t.pulse.allRefundsSettled}
+                              </span>
+                            </div>
+                          </div>
                         )}
                       </Card>
 
-                      {/* 2-Column Metrics: Basket Size & Category Footprint */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Average Basket Size */}
-                        <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 shadow-lg space-y-2">
-                          <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span className="font-medium">{t.kitchen.pulse.avgHouseholdBasket}</span>
-                            <ShoppingBag className="w-3.5 h-3.5 text-cyan-400" />
+                      {/* Top Restocker & Member Roster Spend */}
+                      <Card className="bg-card border border-border/80 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-primary" />
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
+                              {t.pulse.memberRosterTitle.replace("{count}", String(stats.memberRoster?.length || 0))}
+                            </h4>
                           </div>
-                          <div className="text-2xl font-bold font-mono text-foreground">
-                            {formatCurrency(stats.averageBasketSize, "EUR")}
-                          </div>
-                          <p className="text-[11px] text-muted-foreground">
-                            {t.kitchen.pulse.avgBasketDesc
-                              .replace("{count}", String(stats.totalReceiptsCount))
-                              .replace(
-                                "{runs}",
-                                stats.totalReceiptsCount === 1
-                                  ? t.kitchen.pulse.runSingular
-                                  : t.kitchen.pulse.runPlural
-                              )}
-                          </p>
-                        </Card>
+                          {stats.topRestocker && (
+                            <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-medium gap-1 rounded-full px-2.5">
+                              <Crown className="w-3 h-3 text-amber-400" />
+                              <span>{t.pulse.topRestockerBadge}</span>
+                            </Badge>
+                          )}
+                        </div>
 
-                        {/* Top Store Footprint */}
-                        <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 shadow-lg space-y-2">
-                          <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span className="font-medium">{t.kitchen.pulse.primaryStoreFootprint}</span>
-                            <Store className="w-3.5 h-3.5 text-indigo-400" />
-                          </div>
-                          <div className="text-2xl font-bold text-foreground truncate">
-                            {stats.userCategoryFootprint
-                              ? stats.userCategoryFootprint.categoryName
-                              : stats.categoryBreakdown[0]?.name || "Local Supermarket"}
-                          </div>
-                          <p className="text-[11px] text-muted-foreground">
-                            {stats.userCategoryFootprint
-                              ? stats.userCategoryFootprint.displayText
-                              : t.kitchen.pulse.storeSpendingShare.replace(
-                                  "{percentage}",
-                                  String(stats.categoryBreakdown[0]?.percentage || 0)
-                                )}
-                          </p>
-                        </Card>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Merchant & Category Spending Breakdown */}
-                  <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 sm:p-6 shadow-xl space-y-3.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Store className="w-4 h-4 text-muted-foreground" />
-                        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                          {t.pulse.merchantBreakdown}
-                        </h4>
-                      </div>
-                      <span className="text-xs font-mono text-muted-foreground">
-                        {stats.categoryBreakdown.length}{" "}
-                        {stats.categoryBreakdown.length === 1
-                          ? t.kitchen.pulse.storeSingular
-                          : t.kitchen.pulse.storePlural}
-                      </span>
-                    </div>
-
-                    {stats.categoryBreakdown.length === 0 ? (
-                      <p className="text-xs text-muted-foreground py-4 text-center">
-                        {t.pulse.noMerchantData}
-                      </p>
-                    ) : (
-                      <div className="space-y-3 pt-1">
-                        {stats.categoryBreakdown.map((store) => (
-                          <div key={store.name} className="space-y-1.5">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="font-medium text-foreground truncate max-w-[60%]">
-                                {store.name}
-                              </span>
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-muted-foreground">
-                                  {formatCurrency(store.amount, currency)}
-                                </span>
-                                <Badge
-                                  variant="secondary"
-                                  className="text-[10px] font-mono bg-muted text-foreground border border-border px-2 py-0 rounded-full"
-                                >
-                                  {store.percentage}%
-                                </Badge>
+                        {/* Top Restocker Highlight if present */}
+                        {stats.topRestocker && (
+                          <div className="p-3.5 rounded-xl bg-amber-500/[0.05] border border-amber-500/25 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-8 h-8 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                                <Crown className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-sm font-bold text-foreground truncate">
+                                  {stats.topRestocker.name}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground">
+                                  {t.pulse.topRestockerDesc.replace("{count}", String(stats.topRestocker.runCount))}
+                                </div>
                               </div>
                             </div>
-                            <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-primary rounded-full transition-all duration-300"
-                                style={{ width: `${Math.max(store.percentage, 3)}%` }}
-                              />
+                            <div className="text-right shrink-0">
+                              <div className="font-mono font-bold text-sm text-amber-400">
+                                {formatCurrency(stats.topRestocker.spend, currency)}
+                              </div>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </Card>
+                        )}
+
+                        {/* Member Roster List */}
+                        {stats.memberRoster && stats.memberRoster.length > 0 && (
+                          <div className="divide-y divide-border/60">
+                            {stats.memberRoster.map((member) => {
+                              const sharePct =
+                                stats.totalSpendCurrentMonth > 0
+                                  ? Math.round((member.spend / stats.totalSpendCurrentMonth) * 100)
+                                  : 0;
+
+                              return (
+                                <div
+                                  key={member.userId}
+                                  className="py-2.5 flex items-center justify-between gap-3 text-sm"
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="w-7 h-7 rounded-full bg-muted border border-border/80 flex items-center justify-center text-xs font-semibold text-foreground shrink-0 uppercase">
+                                      {member.name.charAt(0)}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="font-medium text-foreground truncate flex items-center gap-1.5">
+                                        <span>{member.name}</span>
+                                        {member.isTopRestocker && (
+                                          <Crown className="w-3 h-3 text-amber-400" />
+                                        )}
+                                      </div>
+                                      <div className="text-[10px] text-muted-foreground">
+                                        {member.runCount} {member.runCount === 1 ? t.pulse.runSingular : t.pulse.runPlural} · {sharePct}%
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="font-mono font-bold text-sm text-foreground shrink-0">
+                                    {formatCurrency(member.spend, currency)}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </Card>
+
+                      {/* Merchant Breakdown with Stacked Horizontal Progress Bar */}
+                      <Card className="bg-card border border-border/80 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Store className="w-4 h-4 text-muted-foreground" />
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
+                              {t.pulse.merchantBreakdown}
+                            </h4>
+                          </div>
+                          <span className="text-xs font-mono text-muted-foreground">
+                            {stats.categoryBreakdown.length}{" "}
+                            {stats.categoryBreakdown.length === 1
+                              ? t.pulse.storeSingular
+                              : t.pulse.storePlural}
+                          </span>
+                        </div>
+
+                        {stats.categoryBreakdown.length === 0 ? (
+                          <p className="text-xs text-muted-foreground py-4 text-center">
+                            {t.pulse.noMerchantData}
+                          </p>
+                        ) : (
+                          <div className="space-y-4 pt-1">
+                            {/* Stacked Horizontal Progress Bar with subtle accent colors */}
+                            <div className="w-full h-3 bg-muted/60 rounded-full overflow-hidden flex p-0.5 gap-0.5 shadow-inner">
+                              {stats.categoryBreakdown.map((store, idx) => {
+                                const accent = STORE_ACCENTS[idx % STORE_ACCENTS.length];
+                                return (
+                                  <div
+                                    key={store.name}
+                                    title={`${store.name === "Sonstige" ? t.pulse.otherStore : store.name}: ${store.percentage}% (${formatCurrency(store.amount, currency)})`}
+                                    className={cn(
+                                      "h-full rounded-sm transition-all duration-300 first:rounded-l-full last:rounded-r-full",
+                                      accent.bg
+                                    )}
+                                    style={{ width: `${Math.max(store.percentage, 2)}%` }}
+                                  />
+                                );
+                              })}
+                            </div>
+
+                            {/* Itemized Store List */}
+                            <div className="space-y-2.5 pt-1">
+                              {stats.categoryBreakdown.map((store, idx) => {
+                                const accent = STORE_ACCENTS[idx % STORE_ACCENTS.length];
+                                const displayName =
+                                  store.name === "Sonstige" ? t.pulse.otherStore : store.name;
+
+                                return (
+                                  <div
+                                    key={store.name}
+                                    className="flex items-center justify-between text-xs py-1 hover:bg-muted/30 px-2 rounded-xl transition"
+                                  >
+                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                      <span
+                                        className={cn(
+                                          "w-2.5 h-2.5 rounded-full shrink-0",
+                                          accent.bg
+                                        )}
+                                      />
+                                      <span className="font-medium text-foreground truncate max-w-[60%]">
+                                        {displayName}
+                                      </span>
+                                      <span className="text-[10px] text-muted-foreground">
+                                        ({store.count}{" "}
+                                        {store.count === 1
+                                          ? t.pulse.runSingular
+                                          : t.pulse.runPlural}
+                                        )
+                                      </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <span className="font-mono text-foreground font-medium">
+                                        {formatCurrency(store.amount, currency)}
+                                      </span>
+                                      <Badge
+                                        variant="secondary"
+                                        className={cn(
+                                          "text-[10px] font-mono px-2 py-0 rounded-full border",
+                                          accent.lightBg,
+                                          accent.text,
+                                          accent.border
+                                        )}
+                                      >
+                                        {store.percentage}%
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </Card>
+                    </>
+                  )}
                 </div>
               )}
 
-              {/* TAB 2: Depleted Pantry Staples */}
+              {/* SUB-TAB 2: WG-Basics Health */}
               {activeTab === "pantry" && (
                 <div className="space-y-5 animate-in fade-in-50 duration-200">
-                  {/* Stock Health Banner: Health & Stock with Emerald gradient glow */}
-                  <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
+                  {/* Stock Health Banner: (total_staples - depleted_staples) / total_staples * 100 */}
+                  <Card className="bg-card border border-border/80 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <Package className="w-4 h-4 text-emerald-400" />
                         <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                          {t.kitchen.pulse.inventoryHealth}
+                          {t.pulse.inventoryHealth}
                         </h4>
                       </div>
                       {stats.pantryStockRatio.outOfStock > 0 ? (
-                        <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-medium gap-1 rounded-full px-2.5 shadow-[0_0_10px_rgba(245,158,11,0.15)]">
+                        <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-medium gap-1 rounded-full px-2.5">
                           <AlertTriangle className="w-3 h-3 text-amber-400" />
-                          <span>{t.kitchen.pulse.depletedCount.replace("{count}", String(stats.pantryStockRatio.outOfStock))}</span>
+                          <span>
+                            {t.pulse.depletedCount.replace(
+                              "{count}",
+                              String(stats.pantryStockRatio.outOfStock)
+                            )}
+                          </span>
                         </Badge>
                       ) : (
-                        <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-medium gap-1 rounded-full px-2.5 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                        <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-medium gap-1 rounded-full px-2.5">
                           <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                          <span>{t.kitchen.pulse.fullyStocked}</span>
+                          <span>{t.pulse.fullyStocked}</span>
                         </Badge>
                       )}
                     </div>
@@ -624,14 +950,14 @@ export function SpacePulseModal({
                           {stats.pantryStockRatio.inStockPercentage}%
                         </span>
                         <span className="text-xs font-mono text-muted-foreground">
-                          {t.kitchen.pulse.stockSummary
+                          {t.pulse.stockSummary
                             .replace("{inStock}", String(stats.pantryStockRatio.inStock))
                             .replace("{outOfStock}", String(stats.pantryStockRatio.outOfStock))}
                         </span>
                       </div>
                       <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden p-0.5">
                         <div
-                          className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-300 shadow-[0_0_12px_rgba(16,185,129,0.35)]"
+                          className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-300"
                           style={{ width: `${stats.pantryStockRatio.inStockPercentage}%` }}
                         />
                       </div>
@@ -640,58 +966,65 @@ export function SpacePulseModal({
                     <div className="pt-2 flex items-center justify-between text-xs text-muted-foreground border-t border-border/60">
                       <div className="flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>{t.kitchen.pulse.restockResponseTime}:</span>
+                        <span>{t.pulse.restockResponseTime}:</span>
                       </div>
                       <span className="font-mono font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full text-xs">
-                        {stats.vitals.compactRestockLatency || stats.vitals.formattedRestockLatency || t.kitchen.pulse.instant}
+                        {stats.vitals.compactRestockLatency ||
+                          stats.vitals.formattedRestockLatency ||
+                          t.pulse.instant}
                       </span>
                     </div>
                   </Card>
 
-                  {/* Top Depleted Staples List: Warm amber accents */}
-                  <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 sm:p-6 shadow-xl space-y-3.5">
+                  {/* Depleted Essentials with time since marked empty */}
+                  <Card className="bg-card border border-border/80 rounded-2xl p-5 sm:p-6 shadow-sm space-y-3.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 text-amber-400" />
                         <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                          {t.kitchen.pulse.depletedNeedingRestock}
+                          {t.pulse.depletedNeedingRestock}
                         </h4>
                       </div>
-                      <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border rounded-full px-2.5">
-                        {depletedStaples.length} {depletedStaples.length === 1 ? t.kitchen.ledger.item : t.kitchen.ledger.items}
+                      <Badge
+                        variant="secondary"
+                        className="text-xs font-mono bg-muted text-muted-foreground border border-border rounded-full px-2.5"
+                      >
+                        {stats.depletedEssentials?.length || 0}
                       </Badge>
                     </div>
 
-                    {depletedStaples.length === 0 ? (
+                    {!stats.depletedEssentials || stats.depletedEssentials.length === 0 ? (
                       <div className="py-6 text-center space-y-2">
-                        <div className="w-10 h-10 mx-auto rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                        <div className="w-10 h-10 mx-auto rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                           <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                         </div>
-                        <p className="text-xs font-medium text-foreground">{t.kitchen.pulse.allStaplesInStock}</p>
+                        <p className="text-xs font-medium text-foreground">
+                          {t.pulse.allStaplesInStock}
+                        </p>
                         <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
-                          {t.kitchen.pulse.allStaplesInStockDesc}
+                          {t.pulse.allStaplesInStockDesc}
                         </p>
                       </div>
                     ) : (
                       <div className="divide-y divide-border/60">
-                        {depletedStaples.map((item: PantryItem) => (
+                        {stats.depletedEssentials.map((item) => (
                           <div
                             key={item.id}
-                            className="py-2.5 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-2xl transition"
+                            className="py-2.5 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-xl transition"
                           >
                             <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                              <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.5)] shrink-0" />
+                              <span className="w-2 h-2 rounded-full bg-amber-400 shadow-xs shrink-0" />
                               <span className="font-medium text-foreground truncate">
                                 {item.name}
                               </span>
                             </div>
 
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[11px] text-muted-foreground hidden sm:inline">
-                                {formatRelativeDate(item.updated_at || item.created_at, locale)}
+                              <span className="text-[11px] text-muted-foreground">
+                                {formatTimeSinceEmpty(item.updated_at || item.created_at, locale)}
                               </span>
                               <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-mono px-2.5 py-0.5 rounded-full">
-                                {t.kitchen.pulse.depleted}
+                                {t.pulse.depleted}
                               </Badge>
                             </div>
                           </div>
@@ -700,74 +1033,37 @@ export function SpacePulseModal({
                     )}
                   </Card>
 
-                  {/* Frequently Restocked Items */}
-                  <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 sm:p-6 shadow-xl space-y-3.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Flame className="w-4 h-4 text-amber-400" />
-                        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                          {t.kitchen.pulse.frequentlyRestocked}
-                        </h4>
-                      </div>
-                      <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border rounded-full px-2.5">
-                        {t.kitchen.pulse.frequentlyRestockedSub.replace("{count}", String(stats.allTopItems.length))}
-                      </Badge>
-                    </div>
-
-                    {stats.allTopItems.length === 0 ? (
-                      <p className="text-xs text-muted-foreground py-4 text-center">
-                        {t.kitchen.pulse.noRestockedThisMonth}
-                      </p>
-                    ) : (
-                      <div className="divide-y divide-border/60">
-                        {stats.allTopItems.map((item, index) => (
-                          <div
-                            key={item.name}
-                            className="py-2.5 flex items-center justify-between gap-3 text-sm hover:bg-muted/40 px-2 rounded-2xl transition"
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                              <span className="text-xs font-mono text-muted-foreground w-4">
-                                #{index + 1}
-                              </span>
-                              <span className="font-medium text-foreground truncate">
-                                {item.name}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-2 shrink-0">
-                              <Badge
-                                variant="secondary"
-                                className="text-xs font-mono bg-muted text-foreground border border-border px-2.5 py-0.5 rounded-full"
-                              >
-                                {t.kitchen.pulse.restockedTimes.replace("{count}", String(item.count))}
-                              </Badge>
-                            </div>
+                  {/* Untouched / Idle Staples using pantry_items.updated_at */}
+                  {stats.idleStaples && stats.idleStaples.length > 0 && (
+                    <Card className="bg-card border border-border/80 rounded-2xl p-5 shadow-sm space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-muted-foreground" />
+                          <div>
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
+                              {t.pulse.untouchedStaplesSub}
+                            </h4>
+                            <p className="text-[11px] text-muted-foreground">
+                              {t.pulse.untouchedStaplesDesc}
+                            </p>
                           </div>
-                        ))}
+                        </div>
                       </div>
-                    )}
-                  </Card>
 
-                  {/* Dead Stock / Idle Items Warning */}
-                  {stats.deadStockItems.length > 0 && (
-                    <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-5 shadow-xl space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                          {t.kitchen.pulse.untouchedStaplesSub}
-                        </h4>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {stats.deadStockItems.slice(0, 4).map((dead) => (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                        {stats.idleStaples.map((item) => (
                           <div
-                            key={dead.name}
-                            className="flex items-center justify-between p-3 rounded-2xl bg-muted/40 border border-border/70 text-xs"
+                            key={item.id}
+                            className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/70 text-xs"
                           >
                             <span className="font-medium text-foreground truncate max-w-[65%]">
-                              {dead.name}
+                              {item.name}
                             </span>
-                            <Badge variant="secondary" className="text-[10px] font-mono bg-muted text-muted-foreground rounded-full px-2">
-                              {t.kitchen.pulse.idleDays.replace("{days}", String(dead.idleDays))}
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px] font-mono bg-muted text-muted-foreground rounded-full px-2"
+                            >
+                              {t.pulse.idleDays.replace("{days}", String(item.idle_days))}
                             </Badge>
                           </div>
                         ))}
@@ -777,59 +1073,69 @@ export function SpacePulseModal({
                 </div>
               )}
 
-              {/* TAB 3: Recent Restock Activity Feed */}
+              {/* SUB-TAB 3: Einkaufs-Feed */}
               {activeTab === "activity" && (
                 <div className="space-y-4 animate-in fade-in-50 duration-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Receipt className="w-4 h-4 text-indigo-400" />
                       <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                        {t.kitchen.pulse.recentRestocks}
+                        {t.pulse.recentRestocks}
                       </h4>
                     </div>
-                    <Badge variant="secondary" className="text-xs font-mono bg-muted text-muted-foreground border border-border rounded-full px-2.5">
-                      {t.kitchen.pulse.logsCount.replace("{count}", String(checkoutsList.length))}
+                    <Badge
+                      variant="secondary"
+                      className="text-xs font-mono bg-muted text-muted-foreground border border-border rounded-full px-2.5"
+                    >
+                      {t.pulse.logsCount.replace(
+                        "{count}",
+                        String(stats.monthCheckouts?.length || 0)
+                      )}
                     </Badge>
                   </div>
 
-                  {checkoutsList.length === 0 ? (
-                    <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-8 text-center space-y-3 shadow-lg">
+                  {!stats.monthCheckouts || stats.monthCheckouts.length === 0 ? (
+                    <Card className="bg-card border border-border/80 rounded-2xl p-8 text-center space-y-3 shadow-sm">
                       <div className="w-10 h-10 mx-auto rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
                         <ShoppingBag className="w-5 h-5 text-indigo-400" />
                       </div>
-                      <p className="text-sm font-semibold text-foreground">{t.kitchen.pulse.noRecentRestocks}</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {t.pulse.noRecentRestocks}
+                      </p>
                       <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                        {t.kitchen.pulse.noRecentRestocksDesc}
+                        {t.pulse.noRecentRestocksDesc}
                       </p>
                     </Card>
                   ) : (
                     <div className="space-y-3">
-                      {checkoutsList.map((checkout) => {
+                      {stats.monthCheckouts.map((checkout) => {
                         const itemsCount = checkout.items?.length || 0;
                         const hasReceipt = Boolean(
-                          checkout.receipt_filename || (checkout.receipts && checkout.receipts.length > 0)
+                          checkout.receipt_filename ||
+                            (checkout.receipts && checkout.receipts.length > 0)
                         );
+                        const storeName =
+                          checkout.store_name === "Sonstige"
+                            ? t.pulse.otherStore
+                            : checkout.store_name;
 
                         return (
                           <Card
                             key={checkout.id}
-                            className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-4 sm:p-5 shadow-lg space-y-3 hover:border-border/80 transition"
+                            className="bg-card border border-border/80 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3 hover:border-border transition"
                           >
-                            {/* Top row: store, date, amount */}
                             <div className="flex items-start justify-between gap-3">
                               <div className="space-y-0.5 min-w-0 flex-1">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="font-semibold text-sm text-foreground truncate">
-                                    {checkout.store_name || t.kitchen.pulse.generalRestock}
+                                    {storeName || t.pulse.generalRestock}
                                   </span>
-                                  {checkout.username && (
-                                    <Badge
-                                      variant="secondary"
-                                      className="text-[10px] font-mono bg-muted text-muted-foreground px-2 py-0 rounded-full"
-                                    >
-                                      @{checkout.username}
-                                    </Badge>
-                                  )}
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-[10px] font-mono bg-muted text-muted-foreground px-2 py-0 rounded-full"
+                                  >
+                                    {t.pulse.paidBy.replace("{name}", checkout.paid_by_name)}
+                                  </Badge>
                                 </div>
                                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                   <span>{formatRelativeDate(checkout.created_at, locale)}</span>
@@ -840,20 +1146,27 @@ export function SpacePulseModal({
 
                               <div className="text-right shrink-0">
                                 <div className="font-mono font-bold text-sm text-foreground">
-                                  {formatCurrency(checkout.total_claimed_amount, checkout.currency || currency)}
+                                  {formatCurrency(
+                                    checkout.total_claimed_amount,
+                                    checkout.currency || currency
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-1 justify-end pt-1">
                                   {checkout.is_refunded ? (
-                                    <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono px-2 py-0 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.15)]">
-                                      {t.kitchen.ledger.settled}
+                                    <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono px-2 py-0 rounded-full">
+                                      {t.pulse.settled}
                                     </Badge>
                                   ) : (
-                                    <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-mono px-2 py-0 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.15)]">
-                                      {t.kitchen.ledger.pending}
+                                    <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-mono px-2 py-0 rounded-full">
+                                      {t.pulse.pending}
                                     </Badge>
                                   )}
                                   {hasReceipt && (
-                                    <Badge variant="secondary" className="text-[10px] font-mono bg-muted text-muted-foreground px-1.5 py-0 rounded-full" title={t.kitchen.pulse.receiptAttached}>
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-[10px] font-mono bg-muted text-muted-foreground px-1.5 py-0 rounded-full"
+                                      title={t.pulse.receiptAttached}
+                                    >
                                       <FileText className="w-2.5 h-2.5" />
                                     </Badge>
                                   )}
@@ -861,11 +1174,13 @@ export function SpacePulseModal({
                               </div>
                             </div>
 
-                            {/* Restocked items list */}
+                            {/* Restocked Items */}
                             {itemsCount > 0 && (
                               <div className="pt-2 border-t border-border/60">
                                 <div className="text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center justify-between">
-                                  <span>{t.kitchen.pulse.itemsRestocked.replace("{count}", String(itemsCount))}</span>
+                                  <span>
+                                    {t.pulse.itemsRestocked.replace("{count}", String(itemsCount))}
+                                  </span>
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">
                                   {checkout.items.slice(0, 6).map((item) => (
@@ -878,7 +1193,7 @@ export function SpacePulseModal({
                                   ))}
                                   {itemsCount > 6 && (
                                     <span className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full bg-muted/60 text-muted-foreground">
-                                      {t.kitchen.pulse.moreItems.replace("{count}", String(itemsCount - 6))}
+                                      {t.pulse.moreItems.replace("{count}", String(itemsCount - 6))}
                                     </span>
                                   )}
                                 </div>
@@ -887,7 +1202,7 @@ export function SpacePulseModal({
 
                             {/* Note if present */}
                             {checkout.note && (
-                              <p className="text-xs text-muted-foreground italic bg-muted/30 p-2.5 rounded-2xl border border-border/40">
+                              <p className="text-xs text-muted-foreground italic bg-muted/30 p-2.5 rounded-xl border border-border/40">
                                 &ldquo;{checkout.note}&rdquo;
                               </p>
                             )}
@@ -903,10 +1218,10 @@ export function SpacePulseModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 sm:p-5 border-t border-white/[0.08] bg-muted/20 backdrop-blur-md flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs text-muted-foreground shrink-0">
+        <div className="p-4 sm:p-5 border-t border-border/80 bg-muted/20 backdrop-blur-md flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs text-muted-foreground shrink-0">
           <div className="hidden sm:flex items-center gap-2 truncate">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-            <span className="truncate">{t.kitchen.pulse.liveSync}</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-xs" />
+            <span className="truncate">{t.pulse.liveSync}</span>
           </div>
 
           <Button
@@ -914,9 +1229,9 @@ export function SpacePulseModal({
             variant="secondary"
             size="sm"
             onClick={() => onOpenChange(false)}
-            className="w-full sm:w-auto rounded-full text-xs font-semibold h-9 px-5 border border-border/80 shrink-0 cursor-pointer shadow-xs"
+            className="w-full sm:w-auto rounded-xl text-xs font-semibold h-9 px-5 border border-border/80 shrink-0 cursor-pointer shadow-xs"
           >
-            {t.common.close}
+            {t.pulse.close}
           </Button>
         </div>
       </DialogContent>

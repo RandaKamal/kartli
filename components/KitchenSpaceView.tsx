@@ -827,6 +827,10 @@ export function KitchenSpaceView({
         initialStats={initialPulseStats}
         pantryItems={localPantryItems}
         myCheckouts={myCheckouts}
+        onStartShoppingRun={() => {
+          setIsStatsFlyoutOpen(false);
+          handleModeChange("supermarket");
+        }}
       />
     </div>
   );
