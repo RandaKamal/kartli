@@ -288,9 +288,9 @@ export const en = {
     close: "Close",
 
     // Tabs
-    tabSpendBalance: "Spend & Balance",
-    tabBasicsHealth: "WG-Basics Health",
-    tabRestockFeed: "Restock Feed",
+    tabSpendBalance: "Spend",
+    tabBasicsHealth: "Pantry",
+    tabRestockFeed: "Feed",
 
     // Month Selector
     previousMonth: "Previous Month",
@@ -304,7 +304,8 @@ export const en = {
     vsLastMonth: "vs previous month",
     firstMonth: "First Month",
     noRuns: "No grocery runs logged yet",
-    emptyMonth: "Diesen Monat noch keine Einkäufe erfasst",
+    emptyMonth: "No grocery runs recorded this month",
+    emptyMonthTitle: "No grocery runs recorded this month",
     emptyMonthSub:
       "Check out your supermarket run or upload a receipt to track household spending and personal impact.",
     startShoppingRun: "Start shopping run",
@@ -499,12 +500,13 @@ export const en = {
     },
     pulse: {
       title: "Pulse",
-      spendBalance: "Spend Balance",
-      depletedStaples: "Depleted Staples",
-      restockFeed: "Restock Feed",
+      spendBalance: "Spend",
+      depletedStaples: "Pantry",
+      restockFeed: "Feed",
       monthlySpend: "Monthly Spend",
       myImpact: "My Impact",
       noRuns: "No supermarket runs recorded yet",
+      emptyMonthTitle: "No grocery runs recorded this month",
       emptyMonthSub:
         "Check out your supermarket run or upload a receipt to track household spending and personal impact.",
       merchantBreakdown: "MERCHANT SPENDING BREAKDOWN",

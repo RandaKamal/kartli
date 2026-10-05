@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition, useOptimistic } from "react";
+import { useState, useOptimistic, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   addPantryItemAction,
   setPantryItemStockAction,
+  updateItemStockAction,
   deletePantryItemAction,
 } from "@/app/actions/pantry";
 import type { PantryItem, ShoppingListItem } from "@/types";
@@ -40,7 +41,7 @@ export interface PantrySectionProps {
   shoppingListItems?: ShoppingListItem[];
   currentUserId?: string;
   onItemEmptied?: (item: PantryItem) => void;
-  onItemRestocked?: (itemId: string) => void;
+  onItemRestocked?: (item: PantryItem | string) => void;
   onItemDeleted?: (itemId: string) => void;
   onItemAdded?: (item: PantryItem) => void;
   hideInput?: boolean;
@@ -68,7 +69,6 @@ export function PantrySection({
   const [itemToDelete, setItemToDelete] = useState<PantryItem | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [, startTransition] = useTransition();
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,17 +94,16 @@ export function PantrySection({
   const handleToggleStock = (item: PantryItem) => {
     const nextValue = !item.is_out_of_stock;
 
-    // Instant local optimistic update
-    setOptimisticItems({ id: item.id, is_out_of_stock: nextValue });
-    if (nextValue) {
-      onItemEmptied?.(item);
-    } else {
-      onItemRestocked?.(item.id);
-    }
-
     startTransition(async () => {
+      setOptimisticItems({ id: item.id, is_out_of_stock: nextValue });
+      if (nextValue) {
+        onItemEmptied?.(item);
+      } else {
+        onItemRestocked?.(item);
+      }
+
       try {
-        await setPantryItemStockAction(kitchenId, item.id, nextValue);
+        await updateItemStockAction(item.id, nextValue);
         if (nextValue) {
           toast.warning(`Marked "${item.name}" as Needed — queued on shopping list`);
         } else {
@@ -112,7 +111,7 @@ export function PantrySection({
         }
       } catch (err: any) {
         if (nextValue) {
-          onItemRestocked?.(item.id);
+          onItemRestocked?.(item);
         } else {
           onItemEmptied?.(item);
         }

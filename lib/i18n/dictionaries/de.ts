@@ -290,9 +290,9 @@ export const de: typeof en = {
     close: "Schließen",
 
     // Tabs
-    tabSpendBalance: "Ausgaben & Saldo",
-    tabBasicsHealth: "WG-Basics Health",
-    tabRestockFeed: "Einkaufs-Feed",
+    tabSpendBalance: "Ausgaben",
+    tabBasicsHealth: "Vorrat",
+    tabRestockFeed: "Feed",
 
     // Month Selector
     previousMonth: "Vorheriger Monat",
@@ -307,6 +307,7 @@ export const de: typeof en = {
     firstMonth: "Erster Monat",
     noRuns: "Bisher keine Einkäufe erfasst",
     emptyMonth: "Diesen Monat noch keine Einkäufe erfasst",
+    emptyMonthTitle: "Diesen Monat noch keine Einkäufe erfasst",
     emptyMonthSub:
       "Schließe einen Einkauf ab oder scanne einen Beleg, um Ausgaben und deinen Beitrag zu sehen.",
     startShoppingRun: "Einkauf starten",
@@ -501,12 +502,13 @@ export const de: typeof en = {
     },
     pulse: {
       title: "Pulse",
-      spendBalance: "Ausgaben & Saldo",
-      depletedStaples: "Fehlende Basics",
-      restockFeed: "Einkaufs-Feed",
+      spendBalance: "Ausgaben",
+      depletedStaples: "Vorrat",
+      restockFeed: "Feed",
       monthlySpend: "Monatsausgaben",
       myImpact: "Mein Beitrag",
       noRuns: "Bisher keine Einkäufe erfasst",
+      emptyMonthTitle: "Diesen Monat noch keine Einkäufe erfasst",
       emptyMonthSub:
         "Schließe einen Einkauf ab oder scanne einen Beleg, um Ausgaben und deinen Beitrag zu sehen.",
       merchantBreakdown: "AUSGABEN NACH LÄDEN",

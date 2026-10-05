@@ -9,7 +9,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -384,28 +383,31 @@ export function SpacePulseModal({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         onDismiss={() => onOpenChange(false)}
-        className="sm:max-w-3xl sm:w-full p-0 gap-0 overflow-hidden bg-card/95 border border-border/80 backdrop-blur-2xl shadow-2xl rounded-3xl flex flex-col max-h-[90vh]"
+        className="h-[88dvh] max-h-[88dvh] w-full bg-card text-card-foreground rounded-t-[32px] border-t border-border shadow-2xl flex flex-col overflow-hidden sm:h-[750px] sm:max-h-[85vh] sm:w-full sm:max-w-xl sm:rounded-3xl sm:border p-0 gap-0"
       >
-        {/* Modal Header */}
-        <DialogHeader className="p-5 sm:p-6 pb-4 border-b border-border/80 flex flex-col space-y-3.5 shrink-0 bg-muted/20 backdrop-blur-md">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-9 h-9 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary shrink-0 shadow-xs">
-                <Activity className="w-4 h-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <DialogTitle className="text-base sm:text-lg font-bold tracking-tight text-foreground truncate">
-                  {kitchenName} {t.pulse.title}
-                </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                  {t.pulse.subtitle}
-                </DialogDescription>
+        {/* Zone 1: Header Zone (shrink-0) */}
+        <div className="shrink-0 bg-muted/20 border-b border-border/60">
+          <DialogHeader className="p-4 sm:p-6 pb-2.5 space-y-3">
+            {/* Title row */}
+            <div className="flex items-center justify-between gap-3 pr-10 sm:pr-8">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary shrink-0 shadow-xs">
+                  <Activity className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <DialogTitle className="text-base sm:text-lg font-bold tracking-tight text-foreground truncate">
+                    {kitchenName} {t.pulse.title}
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                    {t.pulse.subtitle}
+                  </DialogDescription>
+                </div>
               </div>
             </div>
 
-            {/* Header Controls: Live Month Selector Pill, CSV Export & Refresh */}
-            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
-              {/* Live Month Selector Pill */}
+            {/* Controls row: Date navigation + Export & Refresh */}
+            <div className="flex items-center justify-between gap-2">
+              {/* Month navigation: Compact pill with prev/next arrows and month label */}
               <div className="flex items-center bg-card border border-border/80 rounded-xl p-0.5 shadow-xs">
                 <Button
                   type="button"
@@ -422,13 +424,13 @@ export function SpacePulseModal({
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      className="px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-muted/60 rounded-lg flex items-center gap-1.5 cursor-pointer transition select-none"
+                      className="px-2 sm:px-2.5 py-1 text-xs font-mono font-semibold text-foreground hover:bg-muted/60 rounded-lg flex items-center gap-1.5 cursor-pointer transition select-none"
                     >
                       <Calendar className="w-3 h-3 text-primary shrink-0" />
                       <span className="capitalize">{monthDisplayLabel}</span>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center" className="w-48 max-h-64 overflow-y-auto">
+                  <DropdownMenuContent align="start" className="w-48 max-h-64 overflow-y-auto">
                     {recentMonths.map((m) => (
                       <DropdownMenuItem
                         key={m.key}
@@ -457,85 +459,108 @@ export function SpacePulseModal({
                 </Button>
               </div>
 
-              {/* CSV Export Action Button */}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleExportCsv}
-                disabled={isExporting || isLoading}
-                className="h-8 rounded-xl text-xs font-semibold px-3 gap-1.5 border-border/80 hover:bg-muted/70 cursor-pointer shadow-xs"
-                title={t.pulse.csvExportBtn}
-              >
-                <Download className="w-3.5 h-3.5 text-primary" />
-                <span className="hidden sm:inline">
-                  {isExporting ? t.pulse.csvExporting : t.pulse.csvExportBtn}
-                </span>
-              </Button>
+              {/* Actions: Export and Refresh icon buttons grouped cleanly on the right with gap-1.5 */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportCsv}
+                  disabled={isExporting || isLoading}
+                  className="h-8 rounded-xl text-xs font-semibold px-2.5 sm:px-3 gap-1.5 border-border/80 hover:bg-muted/70 cursor-pointer shadow-xs"
+                  title={t.pulse.csvExportBtn}
+                >
+                  <Download className="w-3.5 h-3.5 text-primary" />
+                  <span className="hidden sm:inline">
+                    {isExporting ? t.pulse.csvExporting : t.pulse.csvExportBtn}
+                  </span>
+                </Button>
 
-              {/* Refresh Button */}
-              <Button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => loadData(true, selectedMonthKey)}
+                  disabled={isRefreshing || isLoading}
+                  className="h-8 w-8 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/60 shrink-0 cursor-pointer"
+                  title={t.pulse.refresh}
+                >
+                  <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {/* Segmented Control Sub-navigation */}
+          <div className="w-full px-4 sm:px-6 shrink-0">
+            <div
+              role="tablist"
+              aria-label="Pulse navigation"
+              className="w-full grid grid-cols-3 p-1 bg-secondary/50 rounded-2xl mb-4 gap-1 shrink-0"
+            >
+              <button
                 type="button"
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => loadData(true, selectedMonthKey)}
-                disabled={isRefreshing || isLoading}
-                className="h-8 w-8 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/60 shrink-0 cursor-pointer"
-                title={t.pulse.refresh}
+                role="tab"
+                aria-selected={activeTab === "spending"}
+                onClick={() => setActiveTab("spending")}
+                className={cn(
+                  "flex items-center justify-center gap-1.5 py-2 px-1 text-xs font-semibold rounded-xl transition-all text-center truncate cursor-pointer",
+                  activeTab === "spending"
+                    ? "bg-card text-foreground shadow-sm border border-border/60"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/40 border border-transparent"
+                )}
               >
-                <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
-              </Button>
+                <CreditCard className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
+                <span className="truncate">{t.pulse.tabSpendBalance}</span>
+              </button>
+
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "pantry"}
+                onClick={() => setActiveTab("pantry")}
+                className={cn(
+                  "flex items-center justify-center gap-1.5 py-2 px-1 text-xs font-semibold rounded-xl transition-all text-center truncate cursor-pointer",
+                  activeTab === "pantry"
+                    ? "bg-card text-foreground shadow-sm border border-border/60"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/40 border border-transparent"
+                )}
+              >
+                <Package className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                <span className="truncate">{t.pulse.tabBasicsHealth}</span>
+                {depletedCount > 0 && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-mono rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25 shrink-0 shadow-xs">
+                    {depletedCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "activity"}
+                onClick={() => setActiveTab("activity")}
+                className={cn(
+                  "flex items-center justify-center gap-1.5 py-2 px-1 text-xs font-semibold rounded-xl transition-all text-center truncate cursor-pointer",
+                  activeTab === "activity"
+                    ? "bg-card text-foreground shadow-sm border border-border/60"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/40 border border-transparent"
+                )}
+              >
+                <Clock className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
+                <span className="truncate">{t.pulse.tabRestockFeed}</span>
+                {feedCheckoutsCount > 0 && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-mono rounded-full bg-muted text-muted-foreground border border-border/80 shrink-0">
+                    {feedCheckoutsCount}
+                  </span>
+                )}
+              </button>
             </div>
           </div>
+        </div>
 
-          {/* Sub-Tabs: 3 clean glass tabs */}
-          <div className="pt-1">
-            <Tabs
-              value={activeTab}
-              onValueChange={(val) => setActiveTab(val as "spending" | "pantry" | "activity")}
-              className="w-full"
-            >
-              <TabsList className="w-full flex items-center gap-1.5 p-1.5 bg-muted/40 backdrop-blur-xl border border-border/80 rounded-2xl mb-0 overflow-x-auto no-scrollbar h-auto shadow-inner">
-                <TabsTrigger
-                  value="spending"
-                  className="flex-1 py-2 px-3 text-xs font-medium rounded-xl text-center whitespace-nowrap transition-all duration-200 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/80 data-[state=active]:font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-2 shrink-0 cursor-pointer"
-                >
-                  <CreditCard className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
-                  <span>{t.pulse.tabSpendBalance}</span>
-                </TabsTrigger>
-
-                <TabsTrigger
-                  value="pantry"
-                  className="flex-1 py-2 px-3 text-xs font-medium rounded-xl text-center whitespace-nowrap transition-all duration-200 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/80 data-[state=active]:font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-2 shrink-0 cursor-pointer"
-                >
-                  <Package className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
-                  <span>{t.pulse.tabBasicsHealth}</span>
-                  {depletedCount > 0 && (
-                    <span className="px-2 py-0.5 text-[10px] font-mono rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25 shrink-0 shadow-xs">
-                      {depletedCount}
-                    </span>
-                  )}
-                </TabsTrigger>
-
-                <TabsTrigger
-                  value="activity"
-                  className="flex-1 py-2 px-3 text-xs font-medium rounded-xl text-center whitespace-nowrap transition-all duration-200 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/80 data-[state=active]:font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-2 shrink-0 cursor-pointer"
-                >
-                  <Receipt className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
-                  <span>{t.pulse.tabRestockFeed}</span>
-                  {feedCheckoutsCount > 0 && (
-                    <span className="px-2 py-0.5 text-[10px] font-mono rounded-full bg-muted text-muted-foreground border border-border/80 shrink-0">
-                      {feedCheckoutsCount}
-                    </span>
-                  )}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-        </DialogHeader>
-
-        {/* Modal Scrollable Body */}
-        <div className="flex-1 overflow-y-auto px-5 pb-8 pt-4 sm:p-6 space-y-6 overscroll-contain">
+        {/* Zone 2: Scrollable Content Zone (flex-1 min-h-0 overflow-y-auto) */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-2 space-y-4 overscroll-contain">
           {isLoading ? (
             <SpacePulseModalSkeleton />
           ) : !stats ? (
@@ -567,7 +592,7 @@ export function SpacePulseModal({
                       </div>
                       <div className="space-y-1.5 max-w-md mx-auto">
                         <h3 className="text-base font-bold text-foreground">
-                          {t.pulse.emptyMonth}
+                          {t.pulse.emptyMonthTitle}
                         </h3>
                         <p className="text-xs text-muted-foreground leading-relaxed">
                           {t.pulse.emptyMonthSub}
@@ -593,8 +618,8 @@ export function SpacePulseModal({
                   ) : (
                     <>
                       {/* Hero Spend Total Card */}
-                      <Card className="bg-card border border-border/80 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
-                        <div className="flex items-center justify-between gap-2">
+                      <Card className="bg-card border border-border/80 rounded-2xl p-4 sm:p-6 shadow-sm space-y-4">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
                           <div className="flex items-center gap-2">
                             <CreditCard className="w-4 h-4 text-cyan-400" />
                             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
@@ -609,8 +634,8 @@ export function SpacePulseModal({
                           </Badge>
                         </div>
 
-                        <div className="flex items-baseline gap-3 flex-wrap">
-                          <span className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight font-mono">
+                        <div className="flex items-baseline gap-2.5 sm:gap-3 flex-wrap">
+                          <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight font-mono">
                             {formatCurrency(stats.totalSpendCurrentMonth, currency)}
                           </span>
 
@@ -657,8 +682,8 @@ export function SpacePulseModal({
                       </Card>
 
                       {/* Personal Impact & Settlement Balance */}
-                      <Card className="bg-card border border-border/80 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
-                        <div className="flex items-center justify-between">
+                      <Card className="bg-card border border-border/80 rounded-2xl p-4 sm:p-6 shadow-sm space-y-4">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
                           <div className="flex items-center gap-2">
                             <User className="w-4 h-4 text-indigo-400" />
                             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
@@ -668,7 +693,7 @@ export function SpacePulseModal({
                           {stats.userReceiptsCount > 0 && (
                             <Badge
                               variant="secondary"
-                              className="text-xs font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-2.5"
+                              className="text-[10px] px-2 py-0.5 font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-full shrink-0"
                             >
                               {stats.userHabitRole.roleTitle}
                             </Badge>
@@ -1217,19 +1242,13 @@ export function SpacePulseModal({
           )}
         </div>
 
-        {/* Modal Footer */}
-        <div className="p-4 sm:p-5 border-t border-border/80 bg-muted/20 backdrop-blur-md flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs text-muted-foreground shrink-0">
-          <div className="hidden sm:flex items-center gap-2 truncate">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-xs" />
-            <span className="truncate">{t.pulse.liveSync}</span>
-          </div>
-
+        {/* Zone 3: Sticky Footer Zone (shrink-0) */}
+        <div className="shrink-0 border-t border-border/40 bg-card/90 backdrop-blur-md px-4 sm:px-6 pt-3 pb-8">
           <Button
             type="button"
             variant="secondary"
-            size="sm"
             onClick={() => onOpenChange(false)}
-            className="w-full sm:w-auto rounded-xl text-xs font-semibold h-9 px-5 border border-border/80 shrink-0 cursor-pointer shadow-xs"
+            className="h-11 w-full rounded-xl bg-secondary font-semibold text-sm hover:bg-secondary/80 text-foreground transition-colors cursor-pointer shadow-xs flex items-center justify-center"
           >
             {t.pulse.close}
           </Button>
