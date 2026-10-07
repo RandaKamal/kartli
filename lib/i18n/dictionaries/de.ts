@@ -589,4 +589,30 @@ export const de: typeof en = {
       processing: "Wird verarbeitet...",
     },
   },
+  tour: {
+    triggerTooltip: "Tour starten",
+    skip: "Überspringen",
+    next: "Weiter",
+    back: "Zurück",
+    finish: "Küche entdecken",
+    close: "Tour schließen",
+    stepOf: "Schritt {current} von {total}",
+    goToStep: "Zu Schritt {step}",
+    step1: {
+      title: "WG-Basics im Blick",
+      desc: "Verwalte Dauerbrenner wie Öl, Gewürze oder Spüli. Ein Tap markiert ein Basic als leer und setzt es auf die Einkaufsliste.",
+    },
+    step2: {
+      title: "Spontane Wünsche",
+      desc: "Braucht ihr spontan Hafermilch oder Snacks? Trage Einmalkäufe sekundenschnell über die Eingabezeile ein.",
+    },
+    step3: {
+      title: "Gemeinsam einkaufen",
+      desc: "Wechsle im Supermarkt in die Einkaufsrunde. Hake Artikel ab und sieh live, wer was im Korb hat.",
+    },
+    step4: {
+      title: "Ausgaben & Bons",
+      desc: "Scanne Belege per KI oder trage Summen ein. kartli hält eure WG-Finanzen transparent und stressfrei.",
+    },
+  },
 };

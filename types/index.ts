@@ -18,6 +18,7 @@ export interface DbUser {
   username: string;
   password_hash: string;
   preferred_currency?: string;
+  has_completed_tour: boolean;
   created_at: Date;
   updated_at: Date;
 }

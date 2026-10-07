@@ -28,6 +28,8 @@ import { RoommatesView } from "@/components/kitchen/RoommatesView";
 import { RoommatesModal } from "@/components/kitchen/RoommatesModal";
 import { ExpenseLedgerModal } from "@/components/kitchen/ExpenseLedgerModal";
 import { SpacePulseModal } from "@/components/kitchen/SpacePulseModal";
+import { markTourCompletedAction } from "@/app/actions/user";
+import { KitchenTourModal } from "@/components/kitchen/KitchenTourModal";
 import { AdminRefundsSection } from "@/components/AdminRefundsSection";
 import { MyPurchasesSection } from "@/components/MyPurchasesSection";
 import { CopyButton } from "@/components/CopyButton";
@@ -77,6 +79,8 @@ export interface KitchenSpaceViewProps {
   pantryItems: PantryItem[];
   shoppingListItems: ShoppingListItem[];
   currentUserId: string;
+  /** Account-level state; `has_completed_tour` drives the first-visit auto-open. */
+  user?: { id: string; has_completed_tour: boolean };
   isAdmin?: boolean;
   baseUrl: string;
   defaultTab?: string;
@@ -121,6 +125,7 @@ export function KitchenSpaceView({
   pantryItems: initialPantryItems,
   shoppingListItems: initialShoppingListItems,
   currentUserId,
+  user,
   isAdmin: propIsAdmin,
   baseUrl,
   defaultTab = "kitchen",
@@ -183,6 +188,9 @@ export function KitchenSpaceView({
   const [isRoommatesOpen, setIsRoommatesOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [isStatsFlyoutOpen, setIsStatsFlyoutOpen] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
+  // Missing user prop => assume completed so we never nag by accident
+  const [hasCompletedTour, setHasCompletedTour] = useState(user?.has_completed_tour ?? true);
   const [isCartBadgePulsing, setIsCartBadgePulsing] = useState(false);
   const [pendingRefundsCount, setPendingRefundsCount] = useState(0);
   const [, startTransition] = useTransition();
@@ -217,6 +225,25 @@ export function KitchenSpaceView({
       isMounted = false;
     };
   }, [initialKitchen.id]);
+
+  // First-time visit (per account, stored in DB): subtly open the onboarding tour once
+  useEffect(() => {
+    if (hasCompletedTour) return;
+    const timer = setTimeout(() => setIsTourOpen(true), 800);
+    return () => clearTimeout(timer);
+    // Mount-only: later completion must not re-trigger or cancel anything
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Finish / skip / any dismissal: update locally right away, persist in background
+  const handleTourComplete = () => {
+    if (hasCompletedTour) return; // manual replay of an already-completed tour
+    setHasCompletedTour(true);
+    markTourCompletedAction().catch((err) => {
+      console.error("Failed to persist tour completion", err);
+      setHasCompletedTour(false);
+    });
+  };
 
   const handleShare = async () => {
     if (typeof navigator !== "undefined" && navigator.share) {
@@ -482,6 +509,17 @@ export function KitchenSpaceView({
               <span className="text-[11px] sm:text-xs font-mono text-muted-foreground group-hover:text-foreground pl-2">
                 {roommatesCount} {roommatesCount === 1 ? t.kitchen.header.roommateSingular : t.kitchen.header.roommatesCount}
               </span>
+            </button>
+
+            {/* Tutorial / Tour Button */}
+            <button
+              type="button"
+              onClick={() => setIsTourOpen(true)}
+              className="h-8 w-8 rounded-xl border border-border/80 bg-secondary/40 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-all shadow-sm cursor-pointer"
+              title={t.tour.triggerTooltip}
+              aria-label={t.tour.triggerTooltip}
+            >
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
             {/* Pulse / Stats Flyout Button */}
@@ -833,6 +871,9 @@ export function KitchenSpaceView({
           handleModeChange("supermarket");
         }}
       />
+
+      {/* OVERLAY 4: Onboarding Tour */}
+      <KitchenTourModal isOpen={isTourOpen} onOpenChange={setIsTourOpen} onComplete={handleTourComplete} />
     </div>
   );
 }

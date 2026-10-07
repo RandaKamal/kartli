@@ -587,4 +587,30 @@ export const en = {
       processing: "Processing...",
     },
   },
+  tour: {
+    triggerTooltip: "Start Tour",
+    skip: "Skip",
+    next: "Next",
+    back: "Back",
+    finish: "Explore Kitchen",
+    close: "Close tour",
+    stepOf: "Step {current} of {total}",
+    goToStep: "Go to step {step}",
+    step1: {
+      title: "Pantry Staples",
+      desc: "Track shared essentials like oil, spices, or soap. Tap any staple to mark it empty and queue it for shopping.",
+    },
+    step2: {
+      title: "Quick Add Items",
+      desc: "Need oat milk or snacks? Add one-off grocery requests in seconds via the top input bar.",
+    },
+    step3: {
+      title: "Supermarket Run",
+      desc: "Switch to Supermarket Run while shopping. Check off items and see live who placed what in their cart.",
+    },
+    step4: {
+      title: "Expenses & Receipts",
+      desc: "Scan receipts with AI or log quick checkouts. kartli keeps household balances fair with zero drama.",
+    },
+  },
 };

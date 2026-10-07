@@ -21,6 +21,7 @@ Stores registered user credentials and account timestamps.
 * `created_at` (TIMESTAMPTZ, Default: `NOW()`): Account creation timestamp.
 * `updated_at` (TIMESTAMPTZ, Default: `NOW()`): Last update timestamp.
 * `preferred_currency` (VARCHAR(3), Default: 'EUR', NOT NULL): ISO-4217 Currency Code (e.g. 'EUR', 'CHF', 'USD', 'GBP') for display and auto-conversion.
+* `has_completed_tour` (BOOLEAN, Default: `false`, NOT NULL): Whether the user has finished or skipped the kitchen onboarding tour (persisted per account across devices).
 
 ---
 
