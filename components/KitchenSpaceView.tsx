@@ -277,11 +277,19 @@ export function KitchenSpaceView({
     }
   };
 
+  const isStaplesAdminOnlyNonAdmin =
+    initialKitchen.staple_permission === "admin_only" && !isAdmin;
+
   // Universal Command Bar Add Handler
   const handleCommandSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const name = commandInput.trim();
     if (!name || isSubmittingCommand) return;
+
+    if (commandType === "staple" && isStaplesAdminOnlyNonAdmin) {
+      toast.error(t.kitchen.commandBar.staplesAdminOnlyHelper);
+      return;
+    }
 
     setIsSubmittingCommand(true);
     startTransition(async () => {
@@ -292,7 +300,11 @@ export function KitchenSpaceView({
             [...prev, item].sort((a, b) => a.name.localeCompare(b.name))
           );
           router.refresh();
-          toast.success(`Tracked "${name}" in household staples`);
+          if (item.is_approved === false) {
+            toast.success(t.kitchen.staples.proposalSubmitted);
+          } else {
+            toast.success(`Tracked "${name}" in household staples`);
+          }
         } else {
           const newItem = await addCustomShoppingItemAction(initialKitchen.id, name);
           setLocalShoppingListItems((prev) => [newItem, ...prev]);
@@ -649,18 +661,29 @@ export function KitchenSpaceView({
                     >
                       {t.kitchen.commandBar.oneOff}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setCommandType("staple")}
-                      className={cn(
-                        "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-semibold transition-all cursor-pointer select-none",
-                        commandType === "staple"
-                          ? "bg-accent-brand/15 text-accent-brand border border-accent-brand/25 shadow-2xs"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {t.kitchen.commandBar.staple}
-                    </button>
+                    {isStaplesAdminOnlyNonAdmin ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-semibold transition-all select-none opacity-40 cursor-not-allowed text-muted-foreground"
+                        title={t.kitchen.commandBar.staplesAdminOnlyHelper}
+                      >
+                        {t.kitchen.commandBar.staple}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setCommandType("staple")}
+                        className={cn(
+                          "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-semibold transition-all cursor-pointer select-none",
+                          commandType === "staple"
+                            ? "bg-accent-brand/15 text-accent-brand border border-accent-brand/25 shadow-2xs"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {t.kitchen.commandBar.staple}
+                      </button>
+                    )}
                   </div>
 
                   <button
@@ -683,6 +706,12 @@ export function KitchenSpaceView({
                   </button>
                 </div>
               </div>
+              {isStaplesAdminOnlyNonAdmin && (
+                <p className="text-[11px] text-muted-foreground/80 mt-1.5 px-2 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
+                  <span>{t.kitchen.commandBar.staplesAdminOnlyHelper}</span>
+                </p>
+              )}
             </form>
 
             {/* RESTING STATE OR URGENT RESTOCK BANNER */}
@@ -755,11 +784,17 @@ export function KitchenSpaceView({
               items={localPantryItems}
               shoppingListItems={localShoppingListItems}
               currentUserId={currentUserId}
+              isAdmin={isAdmin}
               hideInput={true}
               onItemEmptied={handlePantryItemEmptied}
               onItemRestocked={handlePantryItemRestocked}
               onItemDeleted={(itemId) =>
                 setLocalPantryItems((prev) => prev.filter((p) => p.id !== itemId))
+              }
+              onItemUpdated={(updated) =>
+                setLocalPantryItems((prev) =>
+                  prev.map((p) => (p.id === updated.id ? updated : p))
+                )
               }
             />
 
@@ -850,9 +885,15 @@ export function KitchenSpaceView({
         currentUserId={currentUserId}
         isAdmin={isAdmin}
         spaceType={initialKitchen.space_type}
+        creatorId={initialKitchen.creator_id}
         baseUrl={baseUrl}
         onMemberAdded={(m) => setLocalMembers((prev) => [m, ...prev])}
         onMemberRemoved={(id) => setLocalMembers((prev) => prev.filter((m) => m.id !== id))}
+        onRoleChanged={(id, newRole) =>
+          setLocalMembers((prev) =>
+            prev.map((m) => (m.id === id ? { ...m, role: newRole } : m))
+          )
+        }
       />
 
       {/* OVERLAY 2: Expense & Refunds Ledger Modal */}

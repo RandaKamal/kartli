@@ -1,15 +1,22 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import type { KitchenMemberWithUser, KitchenSpaceType } from "@/types";
+import type { KitchenMemberWithUser, KitchenRole, KitchenSpaceType } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
-import { addMemberAction, cancelInviteAction, removeKitchenMemberAction } from "@/app/actions/kitchen";
+import {
+  addMemberAction,
+  cancelInviteAction,
+  removeKitchenMemberAction,
+  promoteMemberAction,
+} from "@/app/actions/kitchen";
 import { CopyButton } from "@/components/CopyButton";
 import {
   Users,
   UserPlus,
   Trash2,
   Shield,
+  ShieldCheck,
+  ChevronDown,
   Loader2,
   Mail,
   UserCheck,
@@ -19,6 +26,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
 import {
@@ -38,10 +51,12 @@ export interface RoommatesViewProps {
   members: KitchenMemberWithUser[];
   currentUserId: string;
   isAdmin: boolean;
+  creatorId?: string | null;
   spaceType?: KitchenSpaceType;
   baseUrl: string;
   onMemberAdded?: (member: KitchenMemberWithUser) => void;
   onMemberRemoved?: (memberId: string) => void;
+  onRoleChanged?: (memberId: string, newRole: KitchenRole) => void;
 }
 
 export function RoommatesView({
@@ -50,10 +65,12 @@ export function RoommatesView({
   members,
   currentUserId,
   isAdmin,
+  creatorId,
   spaceType = "FLATSHARE",
   baseUrl,
   onMemberAdded,
   onMemberRemoved,
+  onRoleChanged,
 }: RoommatesViewProps) {
   const { t } = useTranslation();
   const [newMemberName, setNewMemberName] = useState("");
@@ -65,6 +82,55 @@ export function RoommatesView({
   const terminology = getSpaceTerminology(spaceType);
   const activeMembers = members.filter((m) => m.joined_at !== null);
   const pendingInvites = members.filter((m) => m.joined_at === null && m.invite_token !== null);
+
+  const [optimisticRoles, setOptimisticRoles] = useState<Record<string, KitchenRole>>({});
+  const [updatingMemberId, setUpdatingMemberId] = useState<string | null>(null);
+
+  const handleRoleChange = async (member: KitchenMemberWithUser, newRole: KitchenRole) => {
+    const previousRole = optimisticRoles[member.id] || member.role;
+    if (previousRole === newRole) return;
+
+    // 1. Optimistic update: Instantly update badge to newRole
+    setOptimisticRoles((prev) => ({ ...prev, [member.id]: newRole }));
+    onRoleChanged?.(member.id, newRole);
+    setUpdatingMemberId(member.id);
+
+    try {
+      const targetIdentifier = member.user_id || member.id;
+      const res = await promoteMemberAction(kitchenId, targetIdentifier, newRole);
+
+      if (!res.success) {
+        throw new Error(res.error || "Failed to update role.");
+      }
+
+      // 2. Success feedback: Crisp emerald confirmation toast
+      const successMessage =
+        newRole === "ADMIN"
+          ? (t.kitchen.roommates.promotedToAdmin || "{name} is now an Admin").replace(
+              "{name}",
+              member.kitchen_display_name
+            )
+          : (t.kitchen.roommates.demotedToMember || "{name} is now a Member").replace(
+              "{name}",
+              member.kitchen_display_name
+            );
+
+      toast.success(successMessage, {
+        className: "border-emerald-500/20 text-emerald-600 dark:text-emerald-400",
+      });
+    } catch (err: any) {
+      // 3. Failure handling: Revert optimistic state and show clear error toast
+      setOptimisticRoles((prev) => {
+        const next = { ...prev };
+        delete next[member.id];
+        return next;
+      });
+      onRoleChanged?.(member.id, previousRole);
+      toast.error(err.message || "Failed to update role.");
+    } finally {
+      setUpdatingMemberId(null);
+    }
+  };
 
   const handleAddMember = (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,7 +196,12 @@ export function RoommatesView({
         <div className="space-y-2">
           {activeMembers.map((member) => {
             const isMe = member.user_id === currentUserId;
-            const isMemberAdmin = member.role === "ADMIN";
+            const effectiveRole: KitchenRole = optimisticRoles[member.id] || member.role;
+            const isMemberAdmin = effectiveRole === "ADMIN";
+            const isCreator = Boolean(
+              creatorId && (member.user_id === creatorId || member.id === creatorId)
+            );
+            const isThisMemberUpdating = updatingMemberId === member.id;
 
             return (
               <div
@@ -163,15 +234,65 @@ export function RoommatesView({
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <span
-                    className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
-                      isMemberAdmin
-                        ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-                        : "bg-secondary text-muted-foreground border-border/60"
-                    }`}
-                  >
-                    {member.role}
-                  </span>
+                  {/* Distinct Badges */}
+                  <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                    {isCreator && (
+                      <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20">
+                        {t.kitchen.roommates.creatorBadge}
+                      </span>
+                    )}
+                    {isMemberAdmin ? (
+                      <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 transition-colors">
+                        {t.kitchen.roommates.adminBadge}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border bg-secondary text-muted-foreground border-border/60 transition-colors">
+                        {t.kitchen.roommates.memberBadge}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Admin Role Promotion/Demotion Affordance */}
+                  {isAdmin && !isMe && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          disabled={isThisMemberUpdating}
+                          className="h-8 px-2 rounded-xl bg-secondary/50 hover:bg-secondary text-xs font-medium border border-border/60 flex items-center gap-1 transition-all cursor-pointer text-muted-foreground hover:text-foreground disabled:opacity-50"
+                          title="Rolle ändern"
+                          aria-label="Rolle ändern"
+                        >
+                          {isThisMemberUpdating ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48 rounded-xl bg-card border border-border shadow-md">
+                        {isMemberAdmin ? (
+                          <DropdownMenuItem
+                            onClick={() => handleRoleChange(member, "MEMBER")}
+                            disabled={isThisMemberUpdating}
+                            className="cursor-pointer text-xs flex items-center gap-2 py-2"
+                          >
+                            <Shield className="w-3.5 h-3.5 text-muted-foreground" />
+                            <span>{t.kitchen.roommates.setAsMember}</span>
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem
+                            onClick={() => handleRoleChange(member, "ADMIN")}
+                            disabled={isThisMemberUpdating}
+                            className="cursor-pointer text-xs flex items-center gap-2 py-2"
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                            <span>{t.kitchen.roommates.makeAdmin}</span>
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
 
                   {isAdmin && !isMe && (
                     <Button
@@ -223,16 +344,16 @@ export function RoommatesView({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <CopyButton
-                      text={inviteUrl}
-                      label={t.kitchen.roommates.copyLink}
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 px-3 rounded-xl bg-secondary hover:bg-secondary/80 text-xs font-medium border border-border/60 flex items-center gap-1.5 transition-all"
-                    />
+                  {isAdmin && (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <CopyButton
+                        text={inviteUrl}
+                        label={t.kitchen.roommates.copyLink}
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-3 rounded-xl bg-secondary hover:bg-secondary/80 text-xs font-medium border border-border/60 flex items-center gap-1.5 transition-all"
+                      />
 
-                    {isAdmin && (
                       <button
                         type="button"
                         onClick={() => setMemberToRemove(invite)}
@@ -242,8 +363,8 @@ export function RoommatesView({
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -251,8 +372,8 @@ export function RoommatesView({
         </div>
       )}
 
-      {/* Admin Quick Invite Creator */}
-      {isAdmin && (
+      {/* Admin Quick Invite Creator or Non-Admin Note */}
+      {isAdmin ? (
         <div className="pt-2 border-t border-border/60 space-y-2.5">
           <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 font-sans">
             {t.kitchen.roommates.title}
@@ -275,6 +396,12 @@ export function RoommatesView({
               <span>{t.kitchen.roommates.generateLink}</span>
             </Button>
           </form>
+        </div>
+      ) : (
+        <div className="pt-2 border-t border-border/60">
+          <p className="text-xs text-muted-foreground italic px-1">
+            {t.kitchen.roommates.adminOnlyInviteNote}
+          </p>
         </div>
       )}
 
