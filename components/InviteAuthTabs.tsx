@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
-import { registerUserAction, loginUserAction } from "@/app/actions/auth";
+import { useState, useTransition, useRef, useEffect } from "react";
+import { registerUserAction, loginUserAction, checkUsernameAvailabilityAction } from "@/app/actions/auth";
 import { Eye, EyeOff, Check, X, Loader2, BadgeCheck } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -18,14 +18,68 @@ const eyeCls =
 
 export function InviteAuthTabs({
   inviteToken,
-  suggestedName,
+  requestedUsername,
+  initialUsername,
+  initialStatus,
 }: {
   inviteToken: string;
-  suggestedName: string;
+  /** Sanitized handle derived from the invited nickname. */
+  requestedUsername: string;
+  /** What the input starts with (requested name, or a verified suggestion if it was taken). */
+  initialUsername: string;
+  initialStatus: "idle" | "available" | "taken";
 }) {
   const { t } = useTranslation();
   const [tab, setTab] = useState<"register" | "login">("register");
   const callbackUrl = `/invite/${encodeURIComponent(inviteToken)}`;
+
+  // Live username availability
+  type UsernameStatus = "idle" | "checking" | "available" | "taken";
+  const [username, setUsername] = useState(initialUsername);
+  const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>(initialStatus);
+  const [usernameSuggestion, setUsernameSuggestion] = useState<string | null>(null);
+  // Value whose status is already known; the debounce effect skips it (initial value, clicked suggestion)
+  const verifiedRef = useRef<string | null>(initialStatus === "idle" ? null : initialUsername);
+  const checkIdRef = useRef(0);
+  const usedFallback = initialUsername !== requestedUsername;
+  const isReserved = username === requestedUsername && usernameStatus === "available";
+  const showFallbackNote = usedFallback && username === initialUsername && usernameStatus === "available";
+
+  useEffect(() => {
+    if (username === verifiedRef.current) return;
+    const checkId = ++checkIdRef.current;
+    if (username.length < 2) {
+      setUsernameStatus("idle");
+      setUsernameSuggestion(null);
+      return;
+    }
+    setUsernameStatus("checking");
+    const timer = setTimeout(async () => {
+      try {
+        const res = await checkUsernameAvailabilityAction(username);
+        if (checkId !== checkIdRef.current) return; // stale response
+        verifiedRef.current = username;
+        setUsernameStatus(res.invalid ? "idle" : res.available ? "available" : "taken");
+        setUsernameSuggestion(res.available ? null : res.suggestion ?? null);
+      } catch {
+        if (checkId !== checkIdRef.current) return;
+        // Don't block signup if the check itself fails; the server re-validates on submit
+        setUsernameStatus("idle");
+        setUsernameSuggestion(null);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [username]);
+
+  const applySuggestion = (s: string) => {
+    verifiedRef.current = s;
+    checkIdRef.current++;
+    setUsername(s);
+    setUsernameStatus("available");
+    setUsernameSuggestion(null);
+  };
+
+  const usernameBlocked = usernameStatus === "taken" || usernameStatus === "checking";
 
   // Registration state
   const [password, setPassword] = useState("");
@@ -47,7 +101,7 @@ export function InviteAuthTabs({
 
   const handleRegisterSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isRegisterPending) return;
+    if (isRegisterPending || usernameBlocked) return;
 
     if (password !== confirmPassword) {
       const err = t.invite.passwordsMismatchError;
@@ -200,24 +254,61 @@ export function InviteAuthTabs({
           <div>
             <div className="flex items-center justify-between gap-2">
               <label htmlFor="invite-username" className={labelCls}>{t.invite.usernameLabel}</label>
-              {suggestedName && (
-                <span className="mb-1.5 inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
-                  <BadgeCheck className="w-3 h-3" />
-                  {t.invite.reservedForYou}
-                </span>
-              )}
+              <span className="mb-1.5 inline-flex items-center min-h-[18px]" aria-live="polite">
+                {usernameStatus === "checking" && (
+                  <span className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-pulse" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-pulse [animation-delay:150ms]" />
+                  </span>
+                )}
+                {usernameStatus === "available" && (
+                  <span className="inline-flex items-center gap-1 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 text-[10px] px-2 py-0.5 rounded-full font-medium">
+                    <BadgeCheck className="w-3 h-3" />
+                    {isReserved ? t.invite.usernameReserved : t.invite.usernameAvailable}
+                  </span>
+                )}
+                {usernameStatus === "taken" && (
+                  <span className="inline-flex items-center gap-1 text-amber-400 bg-amber-500/10 border border-amber-500/20 text-[10px] px-2 py-0.5 rounded-full font-medium">
+                    {t.invite.usernameTaken}
+                  </span>
+                )}
+              </span>
             </div>
             <input
               id="invite-username"
               type="text"
               name="username"
               required
+              minLength={2}
+              maxLength={32}
               autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               onKeyDown={handleRegisterKeyDown}
-              defaultValue={suggestedName.toLowerCase().replace(/\s+/g, "")}
+              value={username}
+              onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, ""))}
               placeholder={t.invite.usernamePlaceholder}
-              className={inputCls}
+              aria-invalid={usernameStatus === "taken"}
+              className={`${inputCls} ${usernameStatus === "taken" ? "border-amber-500/40" : ""}`}
             />
+            {usernameStatus === "taken" && usernameSuggestion && (
+              <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground animate-in fade-in">
+                <span>{t.invite.suggestionLabel}</span>
+                <button
+                  type="button"
+                  onClick={() => applySuggestion(usernameSuggestion)}
+                  className="min-h-[32px] px-3 rounded-full border border-border/70 bg-secondary/50 hover:bg-secondary text-foreground font-medium transition-colors cursor-pointer break-all"
+                >
+                  @{usernameSuggestion}
+                </button>
+              </div>
+            )}
+            {showFallbackNote && (
+              <span className="text-[11px] text-muted-foreground block mt-1.5">
+                {t.invite.usernameFallbackNote.replace("{name}", requestedUsername)}
+              </span>
+            )}
             <span className="text-[11px] text-muted-foreground block mt-1.5">
               {t.invite.usernameHelper}
             </span>
@@ -266,7 +357,7 @@ export function InviteAuthTabs({
             )}
           </div>
 
-          <button type="submit" disabled={isRegisterPending || isMismatch} className={ctaCls}>
+          <button type="submit" disabled={isRegisterPending || isMismatch || usernameBlocked} className={ctaCls}>
             {isRegisterPending && <Loader2 className="w-4 h-4 animate-spin" />}
             <span>{isRegisterPending ? t.invite.creatingAccount : t.invite.submitBtnNew}</span>
           </button>

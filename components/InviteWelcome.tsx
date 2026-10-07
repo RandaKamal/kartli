@@ -9,10 +9,16 @@ export function InviteWelcome({
   token,
   kitchenName,
   displayName,
+  requestedUsername,
+  initialUsername,
+  initialStatus,
 }: {
   token: string;
   kitchenName: string;
   displayName: string;
+  requestedUsername: string;
+  initialUsername: string;
+  initialStatus: "idle" | "available" | "taken";
 }) {
   const { t } = useTranslation();
 
@@ -39,7 +45,12 @@ export function InviteWelcome({
       </div>
 
       <div className="max-w-md w-full mx-auto bg-card/70 border border-border/80 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 shadow-2xl mt-4">
-        <InviteAuthTabs inviteToken={token} suggestedName={displayName} />
+        <InviteAuthTabs
+          inviteToken={token}
+          requestedUsername={requestedUsername}
+          initialUsername={initialUsername}
+          initialStatus={initialStatus}
+        />
       </div>
 
       <p className="text-center text-[11px] text-muted-foreground/70 mt-8">

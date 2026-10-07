@@ -4,6 +4,7 @@ import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/auth";
 import { registerUser } from "@/lib/auth-service";
 import { cookies } from "next/headers";
+import { checkUsernameAvailability, type UsernameAvailability } from "@/lib/username";
 import { PENDING_INVITE_COOKIE_NAME, PENDING_INVITE_COOKIE_OPTIONS } from "@/lib/invite";
 
 export interface AuthActionResult {
@@ -120,4 +121,15 @@ export async function logoutAction() {
   const cookieStore = await cookies();
   cookieStore.delete(PENDING_INVITE_COOKIE_NAME);
   await signOut({ redirectTo: "/" });
+}
+
+/**
+ * Live username availability check for the registration form.
+ * Returns a DB-verified suggestion when the candidate is taken.
+ * Intentionally public (needed pre-login); only exposes taken/free for the exact candidate.
+ */
+export async function checkUsernameAvailabilityAction(
+  candidate: string
+): Promise<UsernameAvailability> {
+  return checkUsernameAvailability(String(candidate ?? ""));
 }
