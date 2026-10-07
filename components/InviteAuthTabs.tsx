@@ -2,12 +2,19 @@
 
 import { useState, useTransition, useRef } from "react";
 import { registerUserAction, loginUserAction } from "@/app/actions/auth";
-import { Eye, EyeOff, Check, X, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Check, X, Loader2, BadgeCheck } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
+
+const labelCls =
+  "text-[11px] font-semibold tracking-wider text-muted-foreground/80 mb-1.5 block font-sans";
+const inputCls =
+  "h-11 w-full rounded-xl bg-secondary/30 border border-border/60 px-3.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 outline-none transition-all";
+const ctaCls =
+  "h-12 w-full rounded-2xl bg-foreground text-background font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all shadow-md shadow-foreground/5 mt-4 cursor-pointer disabled:opacity-50 disabled:pointer-events-none";
+const eyeCls =
+  "absolute right-1.5 top-1/2 -translate-y-1/2 h-9 w-9 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer";
 
 export function InviteAuthTabs({
   inviteToken,
@@ -16,6 +23,7 @@ export function InviteAuthTabs({
   inviteToken: string;
   suggestedName: string;
 }) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<"register" | "login">("register");
   const callbackUrl = `/invite/${encodeURIComponent(inviteToken)}`;
 
@@ -42,7 +50,7 @@ export function InviteAuthTabs({
     if (isRegisterPending) return;
 
     if (password !== confirmPassword) {
-      const err = "Passwords do not match. Please re-enter your password.";
+      const err = t.invite.passwordsMismatchError;
       setRegisterError(err);
       toast.error(err);
       return;
@@ -58,11 +66,11 @@ export function InviteAuthTabs({
           setRegisterError(result.error);
           toast.error(result.error);
         } else {
-          toast.success("Account created! Joining kitchen...");
+          toast.success(t.invite.accountCreated);
         }
       } catch (err: any) {
         if (err?.message?.includes("NEXT_REDIRECT")) return;
-        const msg = err.message || "Failed to create account. Please try again.";
+        const msg = err.message || t.invite.registerFailed;
         setRegisterError(msg);
         toast.error(msg);
       }
@@ -83,11 +91,11 @@ export function InviteAuthTabs({
           setLoginError(result.error);
           toast.error(result.error);
         } else {
-          toast.success("Signed in! Joining kitchen...");
+          toast.success(t.invite.signedIn);
         }
       } catch (err: any) {
         if (err?.message?.includes("NEXT_REDIRECT")) return;
-        const msg = err.message || "Failed to log in. Please try again.";
+        const msg = err.message || t.invite.loginFailed;
         setLoginError(msg);
         toast.error(msg);
       }
@@ -108,217 +116,200 @@ export function InviteAuthTabs({
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <Tabs
-        value={tab}
-        onValueChange={(val) => {
-          setTab(val as "register" | "login");
-          setRegisterError(null);
-          setLoginError(null);
-        }}
-        className="w-full"
-      >
-        <TabsList className="grid grid-cols-2 w-full h-11 p-1 bg-muted border border-border rounded-xl">
-          <TabsTrigger value="register" className="rounded-lg text-xs sm:text-sm font-semibold">
-            New User (Sign up)
-          </TabsTrigger>
-          <TabsTrigger value="login" className="rounded-lg text-xs sm:text-sm font-semibold">
-            Existing User (Log in)
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="register">
-          <form
-            ref={registerFormRef}
-            onSubmit={handleRegisterSubmit}
-            className="space-y-4 text-left pt-2"
-          >
-            <input type="hidden" name="callbackUrl" value={callbackUrl} />
-            <input type="hidden" name="inviteToken" value={inviteToken} />
-
-            {registerError && (
-              <div className="p-3 bg-destructive/10 border border-destructive/30 text-destructive text-xs rounded-xl font-medium text-center animate-in fade-in-50">
-                {registerError}
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="invite-username">
-                Account Username
-              </Label>
-              <Input
-                id="invite-username"
-                type="text"
-                name="username"
-                required
-                autoComplete="username"
-                onKeyDown={handleRegisterKeyDown}
-                defaultValue={suggestedName.toLowerCase().replace(/\s+/g, "")}
-                placeholder="e.g. sarah_42"
-                className="rounded-xl"
-              />
-              <span className="text-[11px] text-muted-foreground block">
-                Unique username for your personal account.
-              </span>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="invite-password">
-                Password
-              </Label>
-              <div className="relative">
-                <Input
-                  id="invite-password"
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  required
-                  minLength={6}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="new-password"
-                  onKeyDown={handleRegisterKeyDown}
-                  placeholder="At least 6 characters"
-                  className="rounded-xl pr-11"
-                />
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition p-1 cursor-pointer"
-                  title={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="invite-confirmPassword">
-                Confirm Password
-              </Label>
-              <div className="relative">
-                <Input
-                  id="invite-confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  name="confirmPassword"
-                  required
-                  minLength={6}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  autoComplete="new-password"
-                  onKeyDown={handleRegisterKeyDown}
-                  placeholder="Re-enter your password"
-                  className="rounded-xl pr-11"
-                />
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition p-1 cursor-pointer"
-                  title={showConfirmPassword ? "Hide password" : "Show password"}
-                >
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-
-              {/* Live Validation Indicator */}
-              {confirmPassword.length > 0 && (
-                <div className="mt-1.5 flex items-center gap-1.5 text-xs">
-                  {isMatching ? (
-                    <span className="text-emerald-700 dark:text-emerald-300 flex items-center gap-1 font-medium animate-in fade-in">
-                      <Check className="w-3.5 h-3.5" /> Passwords match
-                    </span>
-                  ) : (
-                    <span className="text-destructive flex items-center gap-1 font-medium animate-in fade-in">
-                      <X className="w-3.5 h-3.5" /> Passwords do not match
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <Button
-              type="submit"
-              disabled={isRegisterPending || isMismatch}
-              className="w-full h-11 rounded-xl font-semibold mt-2"
-            >
-              {isRegisterPending && <Loader2 className="w-4 h-4 animate-spin" />}
-              <span>{isRegisterPending ? "Creating Account..." : "Create Account & Join Kitchen →"}</span>
-            </Button>
-          </form>
-        </TabsContent>
-
-        <TabsContent value="login">
-          <form
-            ref={loginFormRef}
-            onSubmit={handleLoginSubmit}
-            className="space-y-4 text-left pt-2"
-          >
-            <input type="hidden" name="callbackUrl" value={callbackUrl} />
-            <input type="hidden" name="inviteToken" value={inviteToken} />
-
-            {loginError && (
-              <div className="p-3 bg-destructive/10 border border-destructive/30 text-destructive text-xs rounded-xl font-medium text-center animate-in fade-in-50">
-                {loginError}
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="invite-login-username">
-                Account Username
-              </Label>
-              <Input
-                id="invite-login-username"
-                type="text"
-                name="username"
-                required
-                autoComplete="username"
-                onKeyDown={handleLoginKeyDown}
-                placeholder="Your existing username"
-                className="rounded-xl"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="invite-login-password">
-                Password
-              </Label>
-              <div className="relative">
-                <Input
-                  id="invite-login-password"
-                  type={showLoginPassword ? "text" : "password"}
-                  name="password"
-                  required
-                  autoComplete="current-password"
-                  onKeyDown={handleLoginKeyDown}
-                  placeholder="••••••••"
-                  className="rounded-xl pr-11"
-                />
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => setShowLoginPassword(!showLoginPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition p-1 cursor-pointer"
-                  title={showLoginPassword ? "Hide password" : "Show password"}
-                >
-                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={isLoginPending}
-              className="w-full h-11 rounded-xl font-semibold mt-2"
-            >
-              {isLoginPending && <Loader2 className="w-4 h-4 animate-spin" />}
-              <span>{isLoginPending ? "Signing In..." : "Log In & Join Kitchen →"}</span>
-            </Button>
-          </form>
-        </TabsContent>
-      </Tabs>
+  const errBox = (msg: string) => (
+    <div className="p-3 bg-destructive/10 border border-destructive/30 text-destructive text-xs rounded-xl font-medium text-center animate-in fade-in-50">
+      {msg}
     </div>
   );
-}
 
+  const passwordField = (opts: {
+    id: string;
+    value?: string;
+    onChange?: (v: string) => void;
+    show: boolean;
+    toggle: () => void;
+    autoComplete: string;
+    placeholder: string;
+    label: string;
+    onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+    minLength?: number;
+    name: string;
+  }) => (
+    <div>
+      <label htmlFor={opts.id} className={labelCls}>{opts.label}</label>
+      <div className="relative">
+        <input
+          id={opts.id}
+          type={opts.show ? "text" : "password"}
+          name={opts.name}
+          required
+          minLength={opts.minLength}
+          {...(opts.onChange
+            ? { value: opts.value, onChange: (e: React.ChangeEvent<HTMLInputElement>) => opts.onChange!(e.target.value) }
+            : {})}
+          autoComplete={opts.autoComplete}
+          onKeyDown={opts.onKeyDown}
+          placeholder={opts.placeholder}
+          className={`${inputCls} pr-12`}
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          onClick={opts.toggle}
+          className={eyeCls}
+          title={opts.show ? t.invite.hidePassword : t.invite.showPassword}
+          aria-label={opts.show ? t.invite.hidePassword : t.invite.showPassword}
+        >
+          {opts.show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <Tabs
+      value={tab}
+      onValueChange={(val) => {
+        setTab(val as "register" | "login");
+        setRegisterError(null);
+        setLoginError(null);
+      }}
+      className="w-full"
+    >
+      <TabsList className="w-full grid grid-cols-2 p-1 bg-secondary/50 rounded-xl mb-6 text-xs font-semibold h-auto border-0">
+        <TabsTrigger
+          value="register"
+          className="h-9 rounded-lg text-xs font-semibold border border-transparent text-muted-foreground hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border-border/50 transition-all"
+        >
+          {t.invite.newAccountTab}
+        </TabsTrigger>
+        <TabsTrigger
+          value="login"
+          className="h-9 rounded-lg text-xs font-semibold border border-transparent text-muted-foreground hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:border-border/50 transition-all"
+        >
+          {t.invite.existingAccountTab}
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="register" className="mt-0">
+        <form ref={registerFormRef} onSubmit={handleRegisterSubmit} className="space-y-4 text-left">
+          <input type="hidden" name="callbackUrl" value={callbackUrl} />
+          <input type="hidden" name="inviteToken" value={inviteToken} />
+          {registerError && errBox(registerError)}
+
+          <div>
+            <div className="flex items-center justify-between gap-2">
+              <label htmlFor="invite-username" className={labelCls}>{t.invite.usernameLabel}</label>
+              {suggestedName && (
+                <span className="mb-1.5 inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                  <BadgeCheck className="w-3 h-3" />
+                  {t.invite.reservedForYou}
+                </span>
+              )}
+            </div>
+            <input
+              id="invite-username"
+              type="text"
+              name="username"
+              required
+              autoComplete="username"
+              onKeyDown={handleRegisterKeyDown}
+              defaultValue={suggestedName.toLowerCase().replace(/\s+/g, "")}
+              placeholder={t.invite.usernamePlaceholder}
+              className={inputCls}
+            />
+            <span className="text-[11px] text-muted-foreground block mt-1.5">
+              {t.invite.usernameHelper}
+            </span>
+          </div>
+
+          {passwordField({
+            id: "invite-password",
+            name: "password",
+            value: password,
+            onChange: setPassword,
+            show: showPassword,
+            toggle: () => setShowPassword(!showPassword),
+            autoComplete: "new-password",
+            placeholder: t.invite.passwordPlaceholder,
+            label: t.invite.passwordLabel,
+            onKeyDown: handleRegisterKeyDown,
+            minLength: 6,
+          })}
+
+          <div>
+            {passwordField({
+              id: "invite-confirmPassword",
+              name: "confirmPassword",
+              value: confirmPassword,
+              onChange: setConfirmPassword,
+              show: showConfirmPassword,
+              toggle: () => setShowConfirmPassword(!showConfirmPassword),
+              autoComplete: "new-password",
+              placeholder: t.invite.confirmPasswordPlaceholder,
+              label: t.invite.confirmPasswordLabel,
+              onKeyDown: handleRegisterKeyDown,
+              minLength: 6,
+            })}
+            {confirmPassword.length > 0 && (
+              <div className="mt-1.5 flex items-center gap-1.5 text-xs">
+                {isMatching ? (
+                  <span className="text-emerald-700 dark:text-emerald-300 flex items-center gap-1 font-medium animate-in fade-in">
+                    <Check className="w-3.5 h-3.5" /> {t.invite.passwordsMatch}
+                  </span>
+                ) : (
+                  <span className="text-destructive flex items-center gap-1 font-medium animate-in fade-in">
+                    <X className="w-3.5 h-3.5" /> {t.invite.passwordsMismatch}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          <button type="submit" disabled={isRegisterPending || isMismatch} className={ctaCls}>
+            {isRegisterPending && <Loader2 className="w-4 h-4 animate-spin" />}
+            <span>{isRegisterPending ? t.invite.creatingAccount : t.invite.submitBtnNew}</span>
+          </button>
+        </form>
+      </TabsContent>
+
+      <TabsContent value="login" className="mt-0">
+        <form ref={loginFormRef} onSubmit={handleLoginSubmit} className="space-y-4 text-left">
+          <input type="hidden" name="callbackUrl" value={callbackUrl} />
+          <input type="hidden" name="inviteToken" value={inviteToken} />
+          {loginError && errBox(loginError)}
+
+          <div>
+            <label htmlFor="invite-login-username" className={labelCls}>{t.invite.usernameLabel}</label>
+            <input
+              id="invite-login-username"
+              type="text"
+              name="username"
+              required
+              autoComplete="username"
+              onKeyDown={handleLoginKeyDown}
+              placeholder={t.invite.existingUsernamePlaceholder}
+              className={inputCls}
+            />
+          </div>
+
+          {passwordField({
+            id: "invite-login-password",
+            name: "password",
+            show: showLoginPassword,
+            toggle: () => setShowLoginPassword(!showLoginPassword),
+            autoComplete: "current-password",
+            placeholder: "••••••••",
+            label: t.invite.passwordLabel,
+            onKeyDown: handleLoginKeyDown,
+          })}
+
+          <button type="submit" disabled={isLoginPending} className={ctaCls}>
+            {isLoginPending && <Loader2 className="w-4 h-4 animate-spin" />}
+            <span>{isLoginPending ? t.invite.signingIn : t.invite.submitBtnExisting}</span>
+          </button>
+        </form>
+      </TabsContent>
+    </Tabs>
+  );
+}

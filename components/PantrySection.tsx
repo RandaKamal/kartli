@@ -240,7 +240,7 @@ export function PantrySection({
                     {isStocked && (
                       <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)] shrink-0" />
-                        <span className="text-[10px] font-mono font-medium text-emerald-600 dark:text-emerald-400">
+                        <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
                           {t.kitchen.staples.stocked}
                         </span>
                       </div>
@@ -252,7 +252,7 @@ export function PantrySection({
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
                         </span>
-                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30">
                           {t.kitchen.staples.emptyNeeded}
                         </span>
                       </div>
@@ -261,7 +261,7 @@ export function PantrySection({
                     {isInCart && (
                       <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_6px_rgba(6,182,212,0.5)] shrink-0" />
-                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-800 dark:text-cyan-200 border border-cyan-500/30">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-800 dark:text-cyan-200 border border-cyan-500/30">
                           {t.kitchen.staples.inCart} · {stagedByName}
                         </span>
                       </div>

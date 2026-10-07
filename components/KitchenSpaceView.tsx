@@ -54,7 +54,6 @@ import {
   ExternalLink,
   Plus,
   CheckCircle2,
-  CreditCard,
   ArrowRight,
   ArrowLeft,
   Home,
@@ -476,11 +475,11 @@ export function KitchenSpaceView({
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground truncate">
               {initialKitchen.name}
             </h1>
-            <span className="font-mono text-[10px] sm:text-xs tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
+            <span className="text-[10px] sm:text-xs tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
               {getSpaceLabel(initialKitchen.space_type)}
             </span>
             {isAdmin && (
-              <span className="font-mono text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">
                 {t.kitchen.header.admin}
               </span>
             )}
@@ -506,7 +505,7 @@ export function KitchenSpaceView({
                   </div>
                 ))}
               </div>
-              <span className="text-[11px] sm:text-xs font-mono text-muted-foreground group-hover:text-foreground pl-2">
+              <span className="text-[11px] sm:text-xs text-muted-foreground group-hover:text-foreground pl-2">
                 {roommatesCount} {roommatesCount === 1 ? t.kitchen.header.roommateSingular : t.kitchen.header.roommatesCount}
               </span>
             </button>
@@ -642,7 +641,7 @@ export function KitchenSpaceView({
                       type="button"
                       onClick={() => setCommandType("one-off")}
                       className={cn(
-                        "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md font-mono text-[10px] sm:text-xs font-semibold transition-all cursor-pointer select-none",
+                        "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-semibold transition-all cursor-pointer select-none",
                         commandType === "one-off"
                           ? "bg-background text-foreground shadow-2xs border border-border/60"
                           : "text-muted-foreground hover:text-foreground"
@@ -654,7 +653,7 @@ export function KitchenSpaceView({
                       type="button"
                       onClick={() => setCommandType("staple")}
                       className={cn(
-                        "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md font-mono text-[10px] sm:text-xs font-semibold transition-all cursor-pointer select-none",
+                        "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-semibold transition-all cursor-pointer select-none",
                         commandType === "staple"
                           ? "bg-accent-brand/15 text-accent-brand border border-accent-brand/25 shadow-2xs"
                           : "text-muted-foreground hover:text-foreground"
@@ -764,34 +763,45 @@ export function KitchenSpaceView({
               }
             />
 
-            {/* BALANCES & REFUNDS MINIMALIST DOCKED BAR */}
-            <footer className="mt-8">
-              <div className="bg-card border border-border/70 rounded-2xl px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-secondary/60 border border-border/70 text-muted-foreground flex items-center justify-center shrink-0">
-                    <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
+            {/* BALANCES & REFUNDS GLASS BANNER */}
+            <footer>
+              <div className="w-full rounded-2xl border border-border/70 bg-card/60 backdrop-blur-xl p-4 flex items-center justify-between gap-4 mt-6 hover:border-border transition-all shadow-sm">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className={cn(
+                      "h-9 w-9 rounded-xl border flex items-center justify-center shrink-0",
+                      pendingRefundsCount > 0
+                        ? "bg-amber-500/10 border-amber-500/20 text-amber-500"
+                        : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                    )}
+                  >
+                    {pendingRefundsCount > 0 ? (
+                      <Receipt className="w-4 h-4" />
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4" />
+                    )}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs sm:text-sm font-semibold text-foreground truncate">
+                    <p className="text-sm font-semibold text-foreground leading-snug">
                       {pendingRefundsCount > 0
                         ? `${pendingRefundsCount} ${pendingRefundsCount === 1 ? t.kitchen.ledger.pendingExpenseSingular : t.kitchen.ledger.pendingExpenses}`
                         : t.kitchen.ledger.balancesUpToDate}
                     </p>
-                    <p className="text-[10px] sm:text-xs font-mono text-muted-foreground/70 truncate">
-                      {myCheckouts.length} {t.kitchen.ledger.loggedReceipts}
+                    <p className="text-xs text-muted-foreground font-normal leading-snug">
+                      {pendingRefundsCount > 0
+                        ? `${myCheckouts.length} ${t.kitchen.ledger.loggedReceipts}`
+                        : t.kitchen.ledger.balancesUpToDateDesc}
                     </p>
                   </div>
                 </div>
 
-                <Button
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
                   onClick={() => setIsLedgerOpen(true)}
-                  className="h-8 px-3.5 rounded-xl text-xs sm:text-sm font-medium border-border/70 bg-secondary/50 hover:bg-secondary text-foreground shrink-0 cursor-pointer self-start sm:self-auto"
+                  className="h-8 px-3.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground text-xs font-medium border border-border/60 flex items-center gap-1.5 transition-all active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
                 >
                   <span>{t.kitchen.ledger.settle}</span>
-                </Button>
+                </button>
               </div>
             </footer>
           </main>
@@ -804,7 +814,7 @@ export function KitchenSpaceView({
               <button
                 type="button"
                 onClick={() => handleModeChange("board")}
-                className="inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors cursor-pointer py-1"
+                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer py-1"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>{t.kitchen.modes.backToBoard}</span>

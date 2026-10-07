@@ -279,14 +279,14 @@ export function ShoppingListSection({
                   {isStaple ? (
                     <Badge
                       variant="outline"
-                      className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/25 shrink-0 self-start sm:self-auto"
+                      className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/25 shrink-0 self-start sm:self-auto"
                     >
                       {t.kitchen.queue.stapleBadge}
                     </Badge>
                   ) : (
                     <Badge
                       variant="outline"
-                      className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground border-border shrink-0 self-start sm:self-auto"
+                      className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground border-border shrink-0 self-start sm:self-auto"
                     >
                       {item.purchased_by_name ? `@${item.purchased_by_name}` : t.kitchen.queue.oneOffBadge}
                     </Badge>
@@ -365,7 +365,7 @@ export function ShoppingListSection({
                     </span>
                     <Badge
                       variant="outline"
-                      className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-800 dark:text-cyan-200 border border-cyan-500/30 shrink-0 self-start sm:self-auto"
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-800 dark:text-cyan-200 border border-cyan-500/30 shrink-0 self-start sm:self-auto"
                     >
                       {stagedLabel}
                     </Badge>

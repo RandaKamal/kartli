@@ -121,7 +121,7 @@ export function RoommatesView({
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
             <UserCheck className="w-4 h-4 text-emerald-500" />
-            <span className="text-xs font-mono uppercase tracking-wider font-semibold text-muted-foreground">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 font-sans">
               {t.kitchen.roommates.activeMembers} ({activeMembers.length})
             </span>
           </div>
@@ -149,7 +149,7 @@ export function RoommatesView({
                         {member.kitchen_display_name}
                       </span>
                       {isMe && (
-                        <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-primary/10 text-primary">
+                        <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-primary/10 text-primary">
                           {t.kitchen.roommates.youBadge}
                         </span>
                       )}
@@ -164,7 +164,7 @@ export function RoommatesView({
 
                 <div className="flex items-center gap-2 shrink-0">
                   <span
-                    className={`text-[10px] font-mono font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
+                    className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
                       isMemberAdmin
                         ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
                         : "bg-secondary text-muted-foreground border-border/60"
@@ -196,7 +196,7 @@ export function RoommatesView({
       {pendingInvites.length > 0 && (
         <div className="space-y-3 pt-2 border-t border-border/60">
           <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-mono uppercase tracking-wider font-semibold text-muted-foreground">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 font-sans">
               {t.kitchen.roommates.pendingInvites} ({pendingInvites.length})
             </span>
           </div>
@@ -207,15 +207,20 @@ export function RoommatesView({
               return (
                 <div
                   key={invite.id}
-                  className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-muted/25 border border-dashed border-border/80"
+                  className="rounded-2xl border border-dashed border-border/80 bg-secondary/20 p-3.5 flex items-center justify-between gap-3"
                 >
-                  <div className="min-w-0 space-y-0.5">
-                    <span className="text-sm font-semibold text-foreground truncate block">
-                      {invite.kitchen_display_name}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground font-mono">
-                      {t.kitchen.roommates.inviteCodeReady}
-                    </span>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-8 w-8 shrink-0 rounded-full border border-border bg-secondary/60 flex items-center justify-center text-xs text-muted-foreground">
+                      <UserPlus className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-sm font-semibold text-foreground truncate block">
+                        {invite.kitchen_display_name}
+                      </span>
+                      <span className="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 font-medium inline-block mt-0.5 whitespace-nowrap">
+                        {t.kitchen.roommates.inviteStatusOpen}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -223,20 +228,20 @@ export function RoommatesView({
                       text={inviteUrl}
                       label={t.kitchen.roommates.copyLink}
                       size="sm"
-                      className="h-8 px-2.5 text-xs font-medium rounded-xl border border-border/70 bg-card hover:bg-secondary text-foreground"
+                      variant="ghost"
+                      className="h-8 px-3 rounded-xl bg-secondary hover:bg-secondary/80 text-xs font-medium border border-border/60 flex items-center gap-1.5 transition-all"
                     />
 
                     {isAdmin && (
-                      <Button
+                      <button
                         type="button"
-                        variant="ghost"
-                        size="icon-sm"
                         onClick={() => setMemberToRemove(invite)}
-                        className="text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer h-8 w-8"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive flex items-center justify-center rounded-lg transition-colors cursor-pointer"
                         title={t.kitchen.roommates.revokeInvite}
+                        aria-label={t.kitchen.roommates.revokeInvite}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -249,7 +254,7 @@ export function RoommatesView({
       {/* Admin Quick Invite Creator */}
       {isAdmin && (
         <div className="pt-2 border-t border-border/60 space-y-2.5">
-          <label className="text-xs font-semibold text-foreground uppercase tracking-wider font-mono">
+          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 font-sans">
             {t.kitchen.roommates.title}
           </label>
           <form onSubmit={handleAddMember} className="flex flex-col sm:flex-row gap-2">
