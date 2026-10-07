@@ -51,20 +51,18 @@ export function DashboardView({
         <div className="flex items-center gap-2.5">
           <Link
             href="/profile"
-            className="text-xs font-semibold px-3.5 py-2 rounded-xl border border-border/80 bg-secondary/40 hover:bg-secondary text-foreground transition-all flex items-center gap-1.5 shadow-2xs"
+            className="h-9 px-4 rounded-xl bg-secondary/60 hover:bg-secondary border border-border text-foreground font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-all"
           >
             <Settings className="w-3.5 h-3.5 text-muted-foreground" />
             <span>{t.dashboard.settings}</span>
           </Link>
-          <Button
-            asChild
-            className="text-xs font-semibold px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all flex items-center gap-1.5 shadow-xs"
+          <Link
+            href="/kitchen/new"
+            className="h-9 px-4 rounded-xl bg-foreground text-background font-semibold text-xs flex items-center gap-1.5 shadow-sm hover:opacity-90 transition-all"
           >
-            <Link href="/kitchen/new">
-              <Plus className="w-3.5 h-3.5" />
-              <span>{t.dashboard.newSpace}</span>
-            </Link>
-          </Button>
+            <Plus className="w-3.5 h-3.5" />
+            <span>{t.dashboard.newSpace}</span>
+          </Link>
         </div>
       </div>
 

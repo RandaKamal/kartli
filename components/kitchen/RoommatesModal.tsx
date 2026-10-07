@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Users } from "lucide-react";
 import { RoommatesView } from "@/components/kitchen/RoommatesView";
-import type { KitchenMemberWithUser, KitchenSpaceType } from "@/types";
+import type { KitchenMemberWithUser, KitchenRole, KitchenSpaceType } from "@/types";
 import { useTranslation } from "@/lib/i18n";
 
 export interface RoommatesModalProps {
@@ -22,10 +22,12 @@ export interface RoommatesModalProps {
   members: KitchenMemberWithUser[];
   currentUserId: string;
   isAdmin: boolean;
+  creatorId?: string | null;
   spaceType?: KitchenSpaceType;
   baseUrl?: string;
   onMemberAdded?: (member: KitchenMemberWithUser) => void;
   onMemberRemoved?: (memberId: string) => void;
+  onRoleChanged?: (memberId: string, newRole: KitchenRole) => void;
 }
 
 export function RoommatesModal({
@@ -36,10 +38,12 @@ export function RoommatesModal({
   members,
   currentUserId,
   isAdmin,
+  creatorId,
   spaceType,
   baseUrl,
   onMemberAdded,
   onMemberRemoved,
+  onRoleChanged,
 }: RoommatesModalProps) {
   const { t } = useTranslation();
 
@@ -66,10 +70,12 @@ export function RoommatesModal({
             members={members}
             currentUserId={currentUserId}
             isAdmin={isAdmin}
+            creatorId={creatorId}
             spaceType={spaceType}
             baseUrl={baseUrl || ""}
             onMemberAdded={onMemberAdded}
             onMemberRemoved={onMemberRemoved}
+            onRoleChanged={onRoleChanged}
           />
         </div>
 

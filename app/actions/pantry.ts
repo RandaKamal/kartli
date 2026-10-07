@@ -3,7 +3,7 @@
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { getUserMembership } from "@/lib/kitchen";
+import { getUserMembership, getKitchenById, isUserKitchenAdmin } from "@/lib/kitchen";
 import { getGuestCartCookieName } from "@/lib/guestCart";
 import { pool } from "@/lib/db";
 import {
@@ -50,11 +50,90 @@ export async function getPantryItemsAction(kitchenId: string): Promise<PantryIte
   return await getPantryItems(kitchenId);
 }
 
-export async function addPantryItemAction(kitchenId: string, name: string) {
-  await requireMembership(kitchenId);
-  const item = await addPantryItem(kitchenId, name);
+export async function createPantryItemAction(kitchenId: string, name: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in.");
+  }
+  const membership = await getUserMembership(kitchenId, session.user.id);
+  if (!membership) {
+    throw new Error("You are not a member of this kitchen.");
+  }
+
+  const kitchen = await getKitchenById(kitchenId);
+  if (!kitchen) {
+    throw new Error("Kitchen not found.");
+  }
+
+  const isAdmin = membership.role === "ADMIN";
+  const staplePermission = kitchen.staple_permission || "open";
+
+  let isApproved = true;
+  let proposedBy: string | null = null;
+
+  if (isAdmin) {
+    isApproved = true;
+  } else {
+    if (staplePermission === "admin_only") {
+      throw new Error("Nur Admins können Vorräte hinzufügen / Only admins can add staples");
+    } else if (staplePermission === "approval") {
+      isApproved = false;
+      proposedBy = session.user.id;
+    } else {
+      isApproved = true;
+    }
+  }
+
+  const item = await addPantryItem(kitchenId, name, {
+    is_approved: isApproved,
+    proposed_by: proposedBy,
+  });
   revalidateKitchen(kitchenId);
   return item;
+}
+
+export const addPantryItemAction = createPantryItemAction;
+
+/**
+ * Approves a proposed pantry staple (Admin only).
+ */
+export async function approvePantryItemAction(kitchenId: string, itemId: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in.");
+  }
+  const isAdmin = await isUserKitchenAdmin(kitchenId, session.user.id);
+  if (!isAdmin) {
+    throw new Error("Unauthorized: Only admins can approve staples.");
+  }
+
+  await pool.query(
+    `UPDATE pantry_items SET is_approved = true, updated_at = NOW() WHERE id = $1 AND kitchen_id = $2`,
+    [itemId, kitchenId]
+  );
+  revalidateKitchen(kitchenId);
+  return { success: true };
+}
+
+/**
+ * Rejects and deletes a proposed pantry staple (Admin only).
+ */
+export async function rejectPantryItemAction(kitchenId: string, itemId: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in.");
+  }
+  const isAdmin = await isUserKitchenAdmin(kitchenId, session.user.id);
+  if (!isAdmin) {
+    throw new Error("Unauthorized: Only admins can reject staples.");
+  }
+
+  await pool.query(
+    `DELETE FROM pantry_items WHERE id = $1 AND kitchen_id = $2 AND is_approved = false`,
+    [itemId, kitchenId]
+  );
+  revalidateKitchen(kitchenId);
+  return { success: true };
 }
 
 export async function setPantryItemStockAction(

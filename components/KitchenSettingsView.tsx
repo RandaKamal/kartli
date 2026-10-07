@@ -8,6 +8,7 @@ import type {
   KitchenMember,
   KitchenMemberWithUser,
   KitchenSpaceType,
+  StaplePermission,
 } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import {
@@ -58,6 +59,7 @@ import {
   LogOut,
   AlertTriangle,
   RotateCcw,
+  Package,
 } from "lucide-react";
 import { capitalize, cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -87,6 +89,9 @@ export function KitchenSettingsView({
   const [spaceType, setSpaceType] = useState<KitchenSpaceType>(
     initialKitchen.space_type || "FLATSHARE"
   );
+  const [staplePermission, setStaplePermission] = useState<StaplePermission>(
+    initialKitchen.staple_permission || "open"
+  );
   const [isSavingGeneral, setIsSavingGeneral] = useState(false);
 
   // Invites & guest link state
@@ -112,7 +117,8 @@ export function KitchenSettingsView({
   const terminology = getSpaceTerminology(spaceType);
   const isDirty =
     kitchenName.trim() !== initialKitchen.name ||
-    spaceType !== (initialKitchen.space_type || "FLATSHARE");
+    spaceType !== (initialKitchen.space_type || "FLATSHARE") ||
+    staplePermission !== (initialKitchen.staple_permission || "open");
 
   const publicGuestUrl = `${baseUrl}/kitchen/view/${publicViewToken}`;
   const displayGuestUrl = `${baseUrl.replace(/^https?:\/\//, "")}/view/${publicViewToken.slice(0, 8)}...`;
@@ -147,6 +153,7 @@ export function KitchenSettingsView({
         kitchenId: initialKitchen.id,
         name: trimmed,
         spaceType,
+        staplePermission,
       });
       toast.success(
         locale === "de"
@@ -165,6 +172,7 @@ export function KitchenSettingsView({
   const handleResetForm = () => {
     setKitchenName(initialKitchen.name);
     setSpaceType(initialKitchen.space_type || "FLATSHARE");
+    setStaplePermission(initialKitchen.staple_permission || "open");
   };
 
   // Copy guest URL
@@ -490,6 +498,108 @@ export function KitchenSettingsView({
               >
                 <Layers className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">{t.kitchenSettings.types.neutral}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Row 4: Divider */}
+          <div className="border-t border-border/60" />
+
+          {/* Row 5: Berechtigungen für WG-Basics */}
+          <div className="p-4 sm:p-5 space-y-3">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-semibold text-foreground">
+                {t.kitchenSettings.staplePermissions.title}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t.kitchenSettings.staplePermissions.subtitle}
+              </p>
+            </div>
+
+            {/* 3-Way Segmented Policy Selector */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-1">
+              {/* Option 1: open */}
+              <button
+                type="button"
+                disabled={!isAdmin}
+                onClick={() => setStaplePermission("open")}
+                className={cn(
+                  "rounded-xl p-3.5 text-left flex flex-col justify-between transition-all select-none border min-h-[88px]",
+                  isAdmin ? "cursor-pointer active:scale-[0.98]" : "cursor-default opacity-85",
+                  staplePermission === "open"
+                    ? "bg-primary/10 border-primary/40 shadow-xs"
+                    : "bg-secondary/30 border-border/50 hover:bg-secondary/60 hover:border-border/80"
+                )}
+              >
+                <div className="flex items-center justify-between gap-2 mb-1.5 w-full">
+                  <span className={cn("text-xs font-semibold", staplePermission === "open" ? "text-primary" : "text-foreground")}>
+                    {t.kitchenSettings.staplePermissions.openTitle}
+                  </span>
+                  {staplePermission === "open" && (
+                    <div className="w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0">
+                      <Check className="w-2.5 h-2.5 stroke-[2.5]" />
+                    </div>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  {t.kitchenSettings.staplePermissions.openDesc}
+                </p>
+              </button>
+
+              {/* Option 2: approval */}
+              <button
+                type="button"
+                disabled={!isAdmin}
+                onClick={() => setStaplePermission("approval")}
+                className={cn(
+                  "rounded-xl p-3.5 text-left flex flex-col justify-between transition-all select-none border min-h-[88px]",
+                  isAdmin ? "cursor-pointer active:scale-[0.98]" : "cursor-default opacity-85",
+                  staplePermission === "approval"
+                    ? "bg-primary/10 border-primary/40 shadow-xs"
+                    : "bg-secondary/30 border-border/50 hover:bg-secondary/60 hover:border-border/80"
+                )}
+              >
+                <div className="flex items-center justify-between gap-2 mb-1.5 w-full">
+                  <span className={cn("text-xs font-semibold", staplePermission === "approval" ? "text-primary" : "text-foreground")}>
+                    {t.kitchenSettings.staplePermissions.approvalTitle}
+                  </span>
+                  {staplePermission === "approval" && (
+                    <div className="w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0">
+                      <Check className="w-2.5 h-2.5 stroke-[2.5]" />
+                    </div>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  {t.kitchenSettings.staplePermissions.approvalDesc}
+                </p>
+              </button>
+
+              {/* Option 3: admin_only */}
+              <button
+                type="button"
+                disabled={!isAdmin}
+                onClick={() => setStaplePermission("admin_only")}
+                className={cn(
+                  "rounded-xl p-3.5 text-left flex flex-col justify-between transition-all select-none border min-h-[88px]",
+                  isAdmin ? "cursor-pointer active:scale-[0.98]" : "cursor-default opacity-85",
+                  staplePermission === "admin_only"
+                    ? "bg-primary/10 border-primary/40 shadow-xs"
+                    : "bg-secondary/30 border-border/50 hover:bg-secondary/60 hover:border-border/80"
+                )}
+              >
+                <div className="flex items-center justify-between gap-2 mb-1.5 w-full">
+                  <span className={cn("text-xs font-semibold", staplePermission === "admin_only" ? "text-primary" : "text-foreground")}>
+                    {t.kitchenSettings.staplePermissions.adminOnlyTitle}
+                  </span>
+                  {staplePermission === "admin_only" && (
+                    <div className="w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0">
+                      <Check className="w-2.5 h-2.5 stroke-[2.5]" />
+                    </div>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  {t.kitchenSettings.staplePermissions.adminOnlyDesc}
+                </p>
               </button>
             </div>
           </div>

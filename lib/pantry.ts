@@ -9,7 +9,7 @@ import path from "node:path";
  */
 export async function getPantryItems(kitchenId: string): Promise<PantryItem[]> {
   const sql = `
-    SELECT id, kitchen_id, name, is_out_of_stock, created_at, updated_at
+    SELECT id, kitchen_id, name, is_out_of_stock, is_approved, proposed_by, created_at, updated_at
     FROM pantry_items
     WHERE kitchen_id = $1
     ORDER BY name ASC
@@ -21,18 +21,25 @@ export async function getPantryItems(kitchenId: string): Promise<PantryItem[]> {
 /**
  * Adds a new pantry item.
  */
-export async function addPantryItem(kitchenId: string, name: string): Promise<PantryItem> {
+export async function addPantryItem(
+  kitchenId: string,
+  name: string,
+  options?: { is_approved?: boolean; proposed_by?: string | null }
+): Promise<PantryItem> {
   const cleanName = name?.trim();
   if (!cleanName) {
     throw new Error("Item name cannot be empty.");
   }
 
+  const isApproved = options?.is_approved ?? true;
+  const proposedBy = options?.proposed_by ?? null;
+
   const sql = `
-    INSERT INTO pantry_items (kitchen_id, name, is_out_of_stock, created_at, updated_at)
-    VALUES ($1, $2, FALSE, NOW(), NOW())
-    RETURNING id, kitchen_id, name, is_out_of_stock, created_at, updated_at
+    INSERT INTO pantry_items (kitchen_id, name, is_out_of_stock, is_approved, proposed_by, created_at, updated_at)
+    VALUES ($1, $2, FALSE, $3, $4, NOW(), NOW())
+    RETURNING id, kitchen_id, name, is_out_of_stock, is_approved, proposed_by, created_at, updated_at
   `;
-  const { rows } = await pool.query<PantryItem>(sql, [kitchenId, cleanName]);
+  const { rows } = await pool.query<PantryItem>(sql, [kitchenId, cleanName, isApproved, proposedBy]);
   return rows[0];
 }
 

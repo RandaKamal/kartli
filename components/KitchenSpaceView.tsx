@@ -28,6 +28,8 @@ import { RoommatesView } from "@/components/kitchen/RoommatesView";
 import { RoommatesModal } from "@/components/kitchen/RoommatesModal";
 import { ExpenseLedgerModal } from "@/components/kitchen/ExpenseLedgerModal";
 import { SpacePulseModal } from "@/components/kitchen/SpacePulseModal";
+import { markTourCompletedAction } from "@/app/actions/user";
+import { KitchenTourModal } from "@/components/kitchen/KitchenTourModal";
 import { AdminRefundsSection } from "@/components/AdminRefundsSection";
 import { MyPurchasesSection } from "@/components/MyPurchasesSection";
 import { CopyButton } from "@/components/CopyButton";
@@ -52,7 +54,6 @@ import {
   ExternalLink,
   Plus,
   CheckCircle2,
-  CreditCard,
   ArrowRight,
   ArrowLeft,
   Home,
@@ -60,7 +61,7 @@ import {
   Briefcase,
   Layers,
   Loader2,
-  Sparkles,
+  HelpCircle,
   Receipt,
   RotateCcw,
   Share2,
@@ -77,6 +78,8 @@ export interface KitchenSpaceViewProps {
   pantryItems: PantryItem[];
   shoppingListItems: ShoppingListItem[];
   currentUserId: string;
+  /** Account-level state; `has_completed_tour` drives the first-visit auto-open. */
+  user?: { id: string; has_completed_tour: boolean };
   isAdmin?: boolean;
   baseUrl: string;
   defaultTab?: string;
@@ -121,6 +124,7 @@ export function KitchenSpaceView({
   pantryItems: initialPantryItems,
   shoppingListItems: initialShoppingListItems,
   currentUserId,
+  user,
   isAdmin: propIsAdmin,
   baseUrl,
   defaultTab = "kitchen",
@@ -183,6 +187,9 @@ export function KitchenSpaceView({
   const [isRoommatesOpen, setIsRoommatesOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [isStatsFlyoutOpen, setIsStatsFlyoutOpen] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
+  // Missing user prop => assume completed so we never nag by accident
+  const [hasCompletedTour, setHasCompletedTour] = useState(user?.has_completed_tour ?? true);
   const [isCartBadgePulsing, setIsCartBadgePulsing] = useState(false);
   const [pendingRefundsCount, setPendingRefundsCount] = useState(0);
   const [, startTransition] = useTransition();
@@ -218,6 +225,25 @@ export function KitchenSpaceView({
     };
   }, [initialKitchen.id]);
 
+  // First-time visit (per account, stored in DB): subtly open the onboarding tour once
+  useEffect(() => {
+    if (hasCompletedTour) return;
+    const timer = setTimeout(() => setIsTourOpen(true), 800);
+    return () => clearTimeout(timer);
+    // Mount-only: later completion must not re-trigger or cancel anything
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Finish / skip / any dismissal: update locally right away, persist in background
+  const handleTourComplete = () => {
+    if (hasCompletedTour) return; // manual replay of an already-completed tour
+    setHasCompletedTour(true);
+    markTourCompletedAction().catch((err) => {
+      console.error("Failed to persist tour completion", err);
+      setHasCompletedTour(false);
+    });
+  };
+
   const handleShare = async () => {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
@@ -251,11 +277,19 @@ export function KitchenSpaceView({
     }
   };
 
+  const isStaplesAdminOnlyNonAdmin =
+    initialKitchen.staple_permission === "admin_only" && !isAdmin;
+
   // Universal Command Bar Add Handler
   const handleCommandSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const name = commandInput.trim();
     if (!name || isSubmittingCommand) return;
+
+    if (commandType === "staple" && isStaplesAdminOnlyNonAdmin) {
+      toast.error(t.kitchen.commandBar.staplesAdminOnlyHelper);
+      return;
+    }
 
     setIsSubmittingCommand(true);
     startTransition(async () => {
@@ -266,7 +300,11 @@ export function KitchenSpaceView({
             [...prev, item].sort((a, b) => a.name.localeCompare(b.name))
           );
           router.refresh();
-          toast.success(`Tracked "${name}" in household staples`);
+          if (item.is_approved === false) {
+            toast.success(t.kitchen.staples.proposalSubmitted);
+          } else {
+            toast.success(`Tracked "${name}" in household staples`);
+          }
         } else {
           const newItem = await addCustomShoppingItemAction(initialKitchen.id, name);
           setLocalShoppingListItems((prev) => [newItem, ...prev]);
@@ -449,11 +487,11 @@ export function KitchenSpaceView({
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground truncate">
               {initialKitchen.name}
             </h1>
-            <span className="font-mono text-[10px] sm:text-xs tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
+            <span className="text-[10px] sm:text-xs tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
               {getSpaceLabel(initialKitchen.space_type)}
             </span>
             {isAdmin && (
-              <span className="font-mono text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">
                 {t.kitchen.header.admin}
               </span>
             )}
@@ -479,9 +517,20 @@ export function KitchenSpaceView({
                   </div>
                 ))}
               </div>
-              <span className="text-[11px] sm:text-xs font-mono text-muted-foreground group-hover:text-foreground pl-2">
+              <span className="text-[11px] sm:text-xs text-muted-foreground group-hover:text-foreground pl-2">
                 {roommatesCount} {roommatesCount === 1 ? t.kitchen.header.roommateSingular : t.kitchen.header.roommatesCount}
               </span>
+            </button>
+
+            {/* Tutorial / Tour Button */}
+            <button
+              type="button"
+              onClick={() => setIsTourOpen(true)}
+              className="h-8 w-8 rounded-xl border border-border/80 bg-secondary/40 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-all shadow-sm cursor-pointer"
+              title={t.tour.triggerTooltip}
+              aria-label={t.tour.triggerTooltip}
+            >
+              <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
             {/* Pulse / Stats Flyout Button */}
@@ -604,7 +653,7 @@ export function KitchenSpaceView({
                       type="button"
                       onClick={() => setCommandType("one-off")}
                       className={cn(
-                        "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md font-mono text-[10px] sm:text-xs font-semibold transition-all cursor-pointer select-none",
+                        "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-semibold transition-all cursor-pointer select-none",
                         commandType === "one-off"
                           ? "bg-background text-foreground shadow-2xs border border-border/60"
                           : "text-muted-foreground hover:text-foreground"
@@ -612,18 +661,29 @@ export function KitchenSpaceView({
                     >
                       {t.kitchen.commandBar.oneOff}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setCommandType("staple")}
-                      className={cn(
-                        "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md font-mono text-[10px] sm:text-xs font-semibold transition-all cursor-pointer select-none",
-                        commandType === "staple"
-                          ? "bg-accent-brand/15 text-accent-brand border border-accent-brand/25 shadow-2xs"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {t.kitchen.commandBar.staple}
-                    </button>
+                    {isStaplesAdminOnlyNonAdmin ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-semibold transition-all select-none opacity-40 cursor-not-allowed text-muted-foreground"
+                        title={t.kitchen.commandBar.staplesAdminOnlyHelper}
+                      >
+                        {t.kitchen.commandBar.staple}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setCommandType("staple")}
+                        className={cn(
+                          "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-semibold transition-all cursor-pointer select-none",
+                          commandType === "staple"
+                            ? "bg-accent-brand/15 text-accent-brand border border-accent-brand/25 shadow-2xs"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {t.kitchen.commandBar.staple}
+                      </button>
+                    )}
                   </div>
 
                   <button
@@ -646,6 +706,12 @@ export function KitchenSpaceView({
                   </button>
                 </div>
               </div>
+              {isStaplesAdminOnlyNonAdmin && (
+                <p className="text-[11px] text-muted-foreground/80 mt-1.5 px-2 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
+                  <span>{t.kitchen.commandBar.staplesAdminOnlyHelper}</span>
+                </p>
+              )}
             </form>
 
             {/* RESTING STATE OR URGENT RESTOCK BANNER */}
@@ -718,42 +784,59 @@ export function KitchenSpaceView({
               items={localPantryItems}
               shoppingListItems={localShoppingListItems}
               currentUserId={currentUserId}
+              isAdmin={isAdmin}
               hideInput={true}
               onItemEmptied={handlePantryItemEmptied}
               onItemRestocked={handlePantryItemRestocked}
               onItemDeleted={(itemId) =>
                 setLocalPantryItems((prev) => prev.filter((p) => p.id !== itemId))
               }
+              onItemUpdated={(updated) =>
+                setLocalPantryItems((prev) =>
+                  prev.map((p) => (p.id === updated.id ? updated : p))
+                )
+              }
             />
 
-            {/* BALANCES & REFUNDS MINIMALIST DOCKED BAR */}
-            <footer className="mt-8">
-              <div className="bg-card border border-border/70 rounded-2xl px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-secondary/60 border border-border/70 text-muted-foreground flex items-center justify-center shrink-0">
-                    <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
+            {/* BALANCES & REFUNDS GLASS BANNER */}
+            <footer>
+              <div className="w-full rounded-2xl border border-border/70 bg-card/60 backdrop-blur-xl p-4 flex items-center justify-between gap-4 mt-6 hover:border-border transition-all shadow-sm">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className={cn(
+                      "h-9 w-9 rounded-xl border flex items-center justify-center shrink-0",
+                      pendingRefundsCount > 0
+                        ? "bg-amber-500/10 border-amber-500/20 text-amber-500"
+                        : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                    )}
+                  >
+                    {pendingRefundsCount > 0 ? (
+                      <Receipt className="w-4 h-4" />
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4" />
+                    )}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs sm:text-sm font-semibold text-foreground truncate">
+                    <p className="text-sm font-semibold text-foreground leading-snug">
                       {pendingRefundsCount > 0
                         ? `${pendingRefundsCount} ${pendingRefundsCount === 1 ? t.kitchen.ledger.pendingExpenseSingular : t.kitchen.ledger.pendingExpenses}`
                         : t.kitchen.ledger.balancesUpToDate}
                     </p>
-                    <p className="text-[10px] sm:text-xs font-mono text-muted-foreground/70 truncate">
-                      {myCheckouts.length} {t.kitchen.ledger.loggedReceipts}
+                    <p className="text-xs text-muted-foreground font-normal leading-snug">
+                      {pendingRefundsCount > 0
+                        ? `${myCheckouts.length} ${t.kitchen.ledger.loggedReceipts}`
+                        : t.kitchen.ledger.balancesUpToDateDesc}
                     </p>
                   </div>
                 </div>
 
-                <Button
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
                   onClick={() => setIsLedgerOpen(true)}
-                  className="h-8 px-3.5 rounded-xl text-xs sm:text-sm font-medium border-border/70 bg-secondary/50 hover:bg-secondary text-foreground shrink-0 cursor-pointer self-start sm:self-auto"
+                  className="h-8 px-3.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground text-xs font-medium border border-border/60 flex items-center gap-1.5 transition-all active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
                 >
                   <span>{t.kitchen.ledger.settle}</span>
-                </Button>
+                </button>
               </div>
             </footer>
           </main>
@@ -766,7 +849,7 @@ export function KitchenSpaceView({
               <button
                 type="button"
                 onClick={() => handleModeChange("board")}
-                className="inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors cursor-pointer py-1"
+                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer py-1"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>{t.kitchen.modes.backToBoard}</span>
@@ -802,9 +885,15 @@ export function KitchenSpaceView({
         currentUserId={currentUserId}
         isAdmin={isAdmin}
         spaceType={initialKitchen.space_type}
+        creatorId={initialKitchen.creator_id}
         baseUrl={baseUrl}
         onMemberAdded={(m) => setLocalMembers((prev) => [m, ...prev])}
         onMemberRemoved={(id) => setLocalMembers((prev) => prev.filter((m) => m.id !== id))}
+        onRoleChanged={(id, newRole) =>
+          setLocalMembers((prev) =>
+            prev.map((m) => (m.id === id ? { ...m, role: newRole } : m))
+          )
+        }
       />
 
       {/* OVERLAY 2: Expense & Refunds Ledger Modal */}
@@ -833,6 +922,9 @@ export function KitchenSpaceView({
           handleModeChange("supermarket");
         }}
       />
+
+      {/* OVERLAY 4: Onboarding Tour */}
+      <KitchenTourModal isOpen={isTourOpen} onOpenChange={setIsTourOpen} onComplete={handleTourComplete} />
     </div>
   );
 }

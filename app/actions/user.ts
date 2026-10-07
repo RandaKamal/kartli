@@ -24,3 +24,21 @@ export async function updatePreferredCurrencyAction(currency: string) {
   revalidatePath("/");
   return { success: true, preferredCurrency: finalCurrency };
 }
+
+/**
+ * Persists that the current user has finished or skipped the kitchen tour,
+ * so it never auto-opens again on any device or session.
+ */
+export async function markTourCompletedAction() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in.");
+  }
+
+  await pool.query(
+    `UPDATE users SET has_completed_tour = true, updated_at = NOW() WHERE id = $1 AND has_completed_tour = false`,
+    [session.user.id]
+  );
+
+  return { success: true };
+}

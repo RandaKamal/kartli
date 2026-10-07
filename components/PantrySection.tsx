@@ -7,6 +7,8 @@ import {
   setPantryItemStockAction,
   updateItemStockAction,
   deletePantryItemAction,
+  approvePantryItemAction,
+  rejectPantryItemAction,
 } from "@/app/actions/pantry";
 import type { PantryItem, ShoppingListItem } from "@/types";
 import { cn } from "@/lib/utils";
@@ -40,10 +42,12 @@ export interface PantrySectionProps {
   items: PantryItem[];
   shoppingListItems?: ShoppingListItem[];
   currentUserId?: string;
+  isAdmin?: boolean;
   onItemEmptied?: (item: PantryItem) => void;
   onItemRestocked?: (item: PantryItem | string) => void;
   onItemDeleted?: (itemId: string) => void;
   onItemAdded?: (item: PantryItem) => void;
+  onItemUpdated?: (item: PantryItem) => void;
   hideInput?: boolean;
 }
 
@@ -52,23 +56,49 @@ export function PantrySection({
   items,
   shoppingListItems = [],
   currentUserId,
+  isAdmin = false,
   onItemEmptied,
   onItemRestocked,
   onItemDeleted,
   onItemAdded,
+  onItemUpdated,
   hideInput = false,
 }: PantrySectionProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const [optimisticItems, setOptimisticItems] = useOptimistic(
     items,
-    (state: PantryItem[], update: { id: string; is_out_of_stock: boolean }) =>
-      state.map((p) => (p.id === update.id ? { ...p, is_out_of_stock: update.is_out_of_stock } : p))
+    (
+      state: PantryItem[],
+      update:
+        | { type: "stock"; id: string; is_out_of_stock: boolean }
+        | { type: "approve"; id: string }
+        | { type: "delete"; id: string }
+    ) => {
+      if (update.type === "delete") {
+        return state.filter((p) => p.id !== update.id);
+      }
+      if (update.type === "approve") {
+        return state.map((p) =>
+          p.id === update.id ? { ...p, is_approved: true } : p
+        );
+      }
+      return state.map((p) =>
+        p.id === update.id
+          ? { ...p, is_out_of_stock: update.is_out_of_stock }
+          : p
+      );
+    }
   );
   const [newItemName, setNewItemName] = useState("");
   const [itemToDelete, setItemToDelete] = useState<PantryItem | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [processingItemId, setProcessingItemId] = useState<string | null>(null);
+
+  const pendingItems = optimisticItems.filter((i) => i.is_approved === false);
+  const approvedItems = optimisticItems.filter((i) => i.is_approved !== false);
+  const displayItems = isAdmin ? approvedItems : optimisticItems;
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +112,11 @@ export function PantrySection({
         onItemAdded?.(item);
         setNewItemName("");
         router.refresh();
-        toast.success(`Tracked "${name}" in staples`);
+        if (item.is_approved === false) {
+          toast.success(t.kitchen.staples.proposalSubmitted);
+        } else {
+          toast.success(`Tracked "${name}" in staples`);
+        }
       } catch (err: any) {
         toast.error(err.message || "Failed to add staple.");
       } finally {
@@ -91,11 +125,56 @@ export function PantrySection({
     });
   };
 
+  const handleApprove = (item: PantryItem) => {
+    if (processingItemId) return;
+    setProcessingItemId(item.id);
+
+    startTransition(async () => {
+      setOptimisticItems({ type: "approve", id: item.id });
+      try {
+        await approvePantryItemAction(kitchenId, item.id);
+        onItemUpdated?.({ ...item, is_approved: true });
+        toast.success(
+          t.kitchen.staples.approvedSuccess.replace("{name}", item.name)
+        );
+        router.refresh();
+      } catch (err: any) {
+        toast.error(err.message || "Failed to approve staple.");
+        router.refresh();
+      } finally {
+        setProcessingItemId(null);
+      }
+    });
+  };
+
+  const handleReject = (item: PantryItem) => {
+    if (processingItemId) return;
+    setProcessingItemId(item.id);
+
+    startTransition(async () => {
+      setOptimisticItems({ type: "delete", id: item.id });
+      try {
+        await rejectPantryItemAction(kitchenId, item.id);
+        onItemDeleted?.(item.id);
+        toast.success(
+          t.kitchen.staples.rejectedSuccess.replace("{name}", item.name)
+        );
+        router.refresh();
+      } catch (err: any) {
+        toast.error(err.message || "Failed to reject staple.");
+        router.refresh();
+      } finally {
+        setProcessingItemId(null);
+      }
+    });
+  };
+
   const handleToggleStock = (item: PantryItem) => {
+    if (item.is_approved === false) return;
     const nextValue = !item.is_out_of_stock;
 
     startTransition(async () => {
-      setOptimisticItems({ id: item.id, is_out_of_stock: nextValue });
+      setOptimisticItems({ type: "stock", id: item.id, is_out_of_stock: nextValue });
       if (nextValue) {
         onItemEmptied?.(item);
       } else {
@@ -115,7 +194,7 @@ export function PantrySection({
         } else {
           onItemEmptied?.(item);
         }
-        setOptimisticItems({ id: item.id, is_out_of_stock: !nextValue });
+        setOptimisticItems({ type: "stock", id: item.id, is_out_of_stock: !nextValue });
         toast.error(err.message || "Failed to update stock status.");
       }
     });
@@ -128,6 +207,7 @@ export function PantrySection({
 
     setIsDeleting(true);
     startTransition(async () => {
+      setOptimisticItems({ type: "delete", id: itemId });
       try {
         await deletePantryItemAction(kitchenId, itemId);
         onItemDeleted?.(itemId);
@@ -144,7 +224,7 @@ export function PantrySection({
 
   return (
     <>
-      <div className="space-y-2.5 select-none">
+      <div className="space-y-3 select-none">
         {/* Section Header */}
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
@@ -153,13 +233,73 @@ export function PantrySection({
               {t.kitchen.staples.title}
             </span>
             <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground border border-border/70">
-              {optimisticItems.length}
+              {approvedItems.length}
             </span>
           </div>
           <span className="text-[11px] text-muted-foreground/60">
             {t.kitchen.staples.tapHint}
           </span>
         </div>
+
+        {/* Admin Pending Approvals Banner */}
+        {isAdmin && pendingItems.length > 0 && (
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.07] p-3.5 sm:p-4 space-y-2.5 shadow-xs">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+                  <Package className="w-3.5 h-3.5" />
+                </div>
+                <span className="text-xs font-semibold text-foreground truncate">
+                  {pendingItems.length === 1
+                    ? t.kitchen.staples.pendingApprovalBanner.replace("{count}", "1")
+                    : t.kitchen.staples.pendingApprovalBannerPlural.replace("{count}", String(pendingItems.length))}
+                </span>
+              </div>
+              <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 shrink-0">
+                {pendingItems.length}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-2 pt-0.5">
+              {pendingItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="inline-flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-xl bg-card border border-border/80 shadow-xs text-xs"
+                >
+                  <span className="font-medium text-foreground max-w-[160px] truncate">
+                    {item.name}
+                  </span>
+                  <div className="flex items-center gap-1 border-l border-border/60 pl-1.5">
+                    <button
+                      type="button"
+                      disabled={processingItemId === item.id}
+                      onClick={() => handleApprove(item)}
+                      className="p-1 rounded-lg text-emerald-600 hover:text-emerald-500 hover:bg-emerald-500/10 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                      title={t.kitchen.staples.approve}
+                      aria-label={`${t.kitchen.staples.approve} ${item.name}`}
+                    >
+                      {processingItemId === item.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={processingItemId === item.id}
+                      onClick={() => handleReject(item)}
+                      className="p-1 rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                      title={t.kitchen.staples.reject}
+                      aria-label={`${t.kitchen.staples.reject} ${item.name}`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Optional quick add input if not hidden */}
         {!hideInput && (
@@ -185,7 +325,7 @@ export function PantrySection({
         )}
 
         {/* Tactile Bento Grid */}
-        {optimisticItems.length === 0 ? (
+        {displayItems.length === 0 ? (
           <div className="py-10 px-4 text-center rounded-2xl border border-dashed border-border/70 bg-card/40 space-y-1.5">
             <Package className="w-6 h-6 text-muted-foreground mx-auto opacity-60" />
             <p className="text-xs font-semibold text-foreground">No staples tracked yet</p>
@@ -195,7 +335,8 @@ export function PantrySection({
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-            {optimisticItems.map((item) => {
+            {displayItems.map((item) => {
+              const isPending = item.is_approved === false;
               const isOutOfStock = item.is_out_of_stock;
               const cartItem = shoppingListItems?.find(
                 (s) =>
@@ -203,9 +344,9 @@ export function PantrySection({
                   !s.checkout_id &&
                   (s.is_in_cart || s.is_purchased || s.is_guest_staged)
               );
-              const isInCart = isOutOfStock && !!cartItem;
-              const isNeeded = isOutOfStock && !cartItem;
-              const isStocked = !isOutOfStock;
+              const isInCart = !isPending && isOutOfStock && !!cartItem;
+              const isNeeded = !isPending && isOutOfStock && !cartItem;
+              const isStocked = !isPending && !isOutOfStock;
 
               const stagedByName = cartItem?.purchased_by === currentUserId
                 ? "@you"
@@ -215,32 +356,51 @@ export function PantrySection({
                 ? `@${cartItem.purchased_by_name}`
                 : "cart";
 
+              const canDelete = !isPending || item.proposed_by === currentUserId || isAdmin;
+
               return (
                 <div
                   key={item.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleToggleStock(item)}
+                  role={isPending ? undefined : "button"}
+                  tabIndex={isPending ? undefined : 0}
+                  onClick={isPending ? undefined : () => handleToggleStock(item)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
+                    if (!isPending && (e.key === "Enter" || e.key === " ")) {
                       e.preventDefault();
                       handleToggleStock(item);
                     }
                   }}
                   className={cn(
-                    "group relative flex flex-col justify-between rounded-2xl min-h-[96px] p-4 transition-all cursor-pointer select-none active:scale-[0.98]",
+                    "group relative flex flex-col justify-between rounded-2xl min-h-[96px] p-4 transition-all select-none",
+                    isPending && "bg-secondary/30 border border-dashed border-border/80 opacity-80 cursor-default",
+                    !isPending && "cursor-pointer active:scale-[0.98]",
                     isStocked && "bg-card hover:bg-muted/40 border border-border/70 hover:border-border shadow-xs",
                     isNeeded && "bg-amber-500/[0.08] hover:bg-amber-500/[0.12] border border-amber-500/35 shadow-xs",
                     isInCart && "bg-cyan-500/[0.06] hover:bg-cyan-500/[0.10] border border-cyan-500/35 shadow-xs"
                   )}
-                  title={isStocked ? "Tap to mark Empty / Needed" : "Tap to mark Stocked"}
+                  title={
+                    isPending
+                      ? t.kitchen.staples.waitingForApproval
+                      : isStocked
+                      ? "Tap to mark Empty / Needed"
+                      : "Tap to mark Stocked"
+                  }
                 >
                   {/* Top Status Indicator & Trash Button */}
                   <div className="flex items-center justify-between gap-1 w-full">
+                    {isPending && (
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500/70 shrink-0" />
+                        <span className="text-[10px] font-medium text-muted-foreground truncate">
+                          {t.kitchen.staples.waitingForApproval}
+                        </span>
+                      </div>
+                    )}
+
                     {isStocked && (
                       <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)] shrink-0" />
-                        <span className="text-[10px] font-mono font-medium text-emerald-600 dark:text-emerald-400">
+                        <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
                           {t.kitchen.staples.stocked}
                         </span>
                       </div>
@@ -252,7 +412,7 @@ export function PantrySection({
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
                         </span>
-                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30">
                           {t.kitchen.staples.emptyNeeded}
                         </span>
                       </div>
@@ -261,25 +421,27 @@ export function PantrySection({
                     {isInCart && (
                       <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_6px_rgba(6,182,212,0.5)] shrink-0" />
-                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-800 dark:text-cyan-200 border border-cyan-500/30">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-800 dark:text-cyan-200 border border-cyan-500/30">
                           {t.kitchen.staples.inCart} · {stagedByName}
                         </span>
                       </div>
                     )}
 
                     {/* Subtle Delete Button (e.stopPropagation is critical) */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setItemToDelete(item);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                      title={t.kitchen.staples.deleteStaple}
-                      aria-label={`Delete ${item.name}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {canDelete && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setItemToDelete(item);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                        title={t.kitchen.staples.deleteStaple}
+                        aria-label={`Delete ${item.name}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
 
                   {/* Bottom Staple Name */}

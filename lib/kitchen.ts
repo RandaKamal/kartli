@@ -7,6 +7,7 @@ import type {
   CreateKitchenInput,
   CreateKitchenResult,
   PublicKitchenContext,
+  StaplePermission,
 } from "@/types";
 
 /**
@@ -59,14 +60,15 @@ export async function createKitchen(
         : "FLATSHARE";
 
     const insertKitchenSql = `
-      INSERT INTO kitchens (name, space_type, public_view_token, created_at, updated_at)
-      VALUES ($1, $2, $3, NOW(), NOW())
-      RETURNING id, name, space_type, public_view_token, created_at, updated_at
+      INSERT INTO kitchens (name, space_type, public_view_token, creator_id, staple_permission, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, 'open', NOW(), NOW())
+      RETURNING id, name, space_type, public_view_token, creator_id, staple_permission, created_at, updated_at
     `;
     const { rows: kitchenRows } = await client.query<Kitchen>(insertKitchenSql, [
       kitchenName,
       spaceType,
       publicViewToken,
+      creatorUserId,
     ]);
     const kitchen = kitchenRows[0];
 
@@ -277,7 +279,7 @@ export async function removeKitchenMember(
  */
 export async function getKitchenById(kitchenId: string): Promise<Kitchen | null> {
   const sql = `
-    SELECT id, name, space_type, public_view_token, created_at, updated_at
+    SELECT id, name, space_type, public_view_token, creator_id, staple_permission, created_at, updated_at
     FROM kitchens
     WHERE id = $1
   `;
@@ -304,6 +306,7 @@ export async function getKitchenMembersWithUsers(
       km.invite_token,
       km.joined_at,
       km.created_at,
+      km.updated_at,
       u.username
     FROM kitchen_members km
     LEFT JOIN users u ON km.user_id = u.id
@@ -609,7 +612,8 @@ export async function updateKitchenSettings(
   kitchenId: string,
   name: string,
   spaceType: Kitchen["space_type"],
-  adminUserId: string
+  adminUserId: string,
+  staplePermission?: StaplePermission
 ): Promise<Kitchen> {
   const cleanName = name?.trim();
   if (!cleanName) {
@@ -622,6 +626,9 @@ export async function updateKitchenSettings(
   const validSpaceType: Kitchen["space_type"] =
     spaceType === "FAMILY" || spaceType === "NEUTRAL" || spaceType === "OFFICE" ? spaceType : "FLATSHARE";
 
+  const validStaplePermission: StaplePermission =
+    staplePermission === "admin_only" || staplePermission === "approval" ? staplePermission : "open";
+
   const isAdmin = await isUserKitchenAdmin(kitchenId, adminUserId);
   if (!isAdmin) {
     throw new Error("Unauthorized: Only kitchen admins can update kitchen settings.");
@@ -629,11 +636,11 @@ export async function updateKitchenSettings(
 
   const sql = `
     UPDATE kitchens
-    SET name = $1, space_type = $2, updated_at = NOW()
-    WHERE id = $3
-    RETURNING id, name, space_type, public_view_token, created_at, updated_at
+    SET name = $1, space_type = $2, staple_permission = $3, updated_at = NOW()
+    WHERE id = $4
+    RETURNING id, name, space_type, public_view_token, creator_id, staple_permission, created_at, updated_at
   `;
-  const { rows } = await pool.query<Kitchen>(sql, [cleanName, validSpaceType, kitchenId]);
+  const { rows } = await pool.query<Kitchen>(sql, [cleanName, validSpaceType, validStaplePermission, kitchenId]);
   if (rows.length === 0) {
     throw new Error("Kitchen not found.");
   }
@@ -675,7 +682,7 @@ export async function regeneratePublicViewToken(
 
 /**
  * Removes the authenticated user's own membership from a kitchen (Member leave action).
- * Admins cannot leave directly.
+ * If the user is an admin, blocks leave if they are the sole admin.
  *
  * @param kitchenId - UUID of the kitchen.
  * @param userId - UUID of the leaving user.
@@ -695,7 +702,16 @@ export async function leaveKitchen(
   }
 
   if (membership.role === "ADMIN") {
-    throw new Error("Kitchen admins cannot leave the kitchen.");
+    const { rows } = await pool.query<{ count: string }>(
+      `SELECT count(*) FROM kitchen_members WHERE kitchen_id = $1 AND role = 'ADMIN'`,
+      [kitchenId]
+    );
+    const adminCount = parseInt(rows[0]?.count || "0", 10);
+    if (adminCount <= 1) {
+      throw new Error(
+        "Bitte ernenne zuerst ein anderes Mitglied zum Admin / Promote another member to Admin before leaving"
+      );
+    }
   }
 
   const deleteSql = `

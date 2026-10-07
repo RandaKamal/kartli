@@ -18,9 +18,15 @@ export interface DbUser {
   username: string;
   password_hash: string;
   preferred_currency?: string;
+  has_completed_tour: boolean;
   created_at: Date;
   updated_at: Date;
 }
+
+/**
+ * Policy for creating new household staples.
+ */
+export type StaplePermission = "open" | "approval" | "admin_only";
 
 /**
  * Represents a kitchen record in the `kitchens` table.
@@ -30,6 +36,8 @@ export interface Kitchen {
   name: string;
   space_type: KitchenSpaceType;
   public_view_token: string;
+  creator_id?: string | null;
+  staple_permission?: StaplePermission;
   created_at: Date;
   updated_at: Date;
 }
@@ -46,6 +54,7 @@ export interface KitchenMember {
   invite_token: string | null;
   joined_at: Date | null;
   created_at: Date;
+  updated_at?: Date | null;
 }
 
 /**
@@ -145,6 +154,8 @@ export interface PantryItem {
   kitchen_id: string;
   name: string;
   is_out_of_stock: boolean;
+  is_approved?: boolean;
+  proposed_by?: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -179,6 +190,8 @@ export interface UpdateKitchenSettingsInput {
   name: string;
   spaceType?: KitchenSpaceType;
   space_type?: KitchenSpaceType;
+  staplePermission?: StaplePermission;
+  staple_permission?: StaplePermission;
 }
 
 export interface Checkout {
