@@ -28,7 +28,7 @@ const STEPS: TourStepConfig[] = [
     key: "step1",
     icon: Package,
     tile: "bg-emerald-500/10 border-emerald-500/30",
-    glow: "bg-emerald-500/25",
+    glow: "bg-emerald-500/20",
     iconColor: "text-emerald-600 dark:text-emerald-400",
     dotActive: "bg-emerald-500",
   },
@@ -36,7 +36,7 @@ const STEPS: TourStepConfig[] = [
     key: "step2",
     icon: PlusCircle,
     tile: "bg-teal-500/10 border-teal-500/30",
-    glow: "bg-teal-500/25",
+    glow: "bg-teal-500/20",
     iconColor: "text-teal-600 dark:text-teal-400",
     dotActive: "bg-teal-500",
   },
@@ -44,7 +44,7 @@ const STEPS: TourStepConfig[] = [
     key: "step3",
     icon: ShoppingCart,
     tile: "bg-cyan-500/10 border-cyan-500/30",
-    glow: "bg-cyan-500/25",
+    glow: "bg-cyan-500/20",
     iconColor: "text-cyan-600 dark:text-cyan-400",
     dotActive: "bg-cyan-500",
   },
@@ -52,7 +52,7 @@ const STEPS: TourStepConfig[] = [
     key: "step4",
     icon: Receipt,
     tile: "bg-violet-500/10 border-violet-500/30",
-    glow: "bg-violet-500/25",
+    glow: "bg-violet-500/20",
     iconColor: "text-violet-600 dark:text-violet-400",
     dotActive: "bg-violet-500",
   },
@@ -69,6 +69,7 @@ export function KitchenTourModal({ isOpen, onOpenChange, onComplete }: KitchenTo
   const { t } = useTranslation();
   const [step, setStep] = React.useState(0);
   const [direction, setDirection] = React.useState<1 | -1>(1);
+  const touchStartRef = React.useRef<{ x: number; y: number } | null>(null);
 
   // Always restart from the first step when (re)opened
   React.useEffect(() => {
@@ -103,13 +104,41 @@ export function KitchenTourModal({ isOpen, onOpenChange, onComplete }: KitchenTo
     }
   };
 
+  const SWIPE_THRESHOLD = 50;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) {
+      touchStartRef.current = null;
+      return;
+    }
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start || e.changedTouches.length === 0) return;
+
+    const deltaX = e.changedTouches[0].clientX - start.x;
+    const deltaY = e.changedTouches[0].clientY - start.y;
+
+    // Direction lock: only treat predominantly horizontal gestures as swipes
+    if (Math.abs(deltaX) <= Math.abs(deltaY)) return;
+
+    if (deltaX < -SWIPE_THRESHOLD) {
+      handleNext();
+    } else if (deltaX > SWIPE_THRESHOLD && step > 0) {
+      goTo(step - 1);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent
         onDismiss={() => handleOpenChange(false)}
         className={cn(
           // Locked height keeps the card from jumping between steps
-          "h-[min(30rem,88dvh)] sm:h-auto sm:min-h-[26rem] sm:max-h-[85vh] max-w-full",
+          "h-[min(32rem,90dvh)] sm:h-auto sm:min-h-[26rem] sm:max-h-[85vh] max-w-full",
           "sm:max-w-md w-full bg-card/95 backdrop-blur-2xl border-border shadow-2xl sm:rounded-3xl",
           "p-5 sm:p-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pb-6"
         )}
@@ -120,18 +149,27 @@ export function KitchenTourModal({ isOpen, onOpenChange, onComplete }: KitchenTo
         </DialogHeader>
 
         {/* Step content */}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col items-center justify-center text-center px-1 sm:pt-4">
+        <div
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col items-center justify-center text-center px-1 pt-4 pb-2 touch-pan-y select-none"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={() => (touchStartRef.current = null)}
+        >
           <div
             key={step}
             className={cn(
-              "w-full flex flex-col items-center gap-5 animate-in fade-in-0 duration-300",
+              "w-full flex flex-col items-center gap-2 animate-in fade-in-0 duration-300",
               direction === 1 ? "slide-in-from-right-6" : "slide-in-from-left-6"
             )}
           >
-            <div className="relative">
+            {/* isolate keeps the -z-10 glow inside this wrapper (behind the tile, above the card) */}
+            <div className="relative isolate flex items-center justify-center my-6">
               <div
                 aria-hidden
-                className={cn("absolute inset-0 -m-4 rounded-full blur-2xl", current.glow)}
+                className={cn(
+                  "absolute inset-0 max-h-24 max-w-24 mx-auto rounded-full blur-2xl pointer-events-none -z-10",
+                  current.glow
+                )}
               />
               <div
                 className={cn(
@@ -182,7 +220,7 @@ export function KitchenTourModal({ isOpen, onOpenChange, onComplete }: KitchenTo
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center gap-3 pt-1">
+        <div className="flex items-center gap-3 pt-1 pl-8 sm:pl-0">
           <button
             type="button"
             onClick={() => handleOpenChange(false)}

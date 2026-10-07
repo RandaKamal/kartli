@@ -62,7 +62,7 @@ import {
   Briefcase,
   Layers,
   Loader2,
-  Sparkles,
+  HelpCircle,
   Receipt,
   RotateCcw,
   Share2,
@@ -519,7 +519,7 @@ export function KitchenSpaceView({
               title={t.tour.triggerTooltip}
               aria-label={t.tour.triggerTooltip}
             >
-              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
             {/* Pulse / Stats Flyout Button */}
