@@ -308,7 +308,8 @@ export function KitchenSpaceView({
     });
   };
 
-  const handlePantryItemRestocked = (itemId: string) => {
+  const handlePantryItemRestocked = (itemOrId: string | PantryItem) => {
+    const itemId = typeof itemOrId === "string" ? itemOrId : itemOrId.id;
     setLocalPantryItems((prev) =>
       prev.map((p) => (p.id === itemId ? { ...p, is_out_of_stock: false } : p))
     );
@@ -827,6 +828,10 @@ export function KitchenSpaceView({
         initialStats={initialPulseStats}
         pantryItems={localPantryItems}
         myCheckouts={myCheckouts}
+        onStartShoppingRun={() => {
+          setIsStatsFlyoutOpen(false);
+          handleModeChange("supermarket");
+        }}
       />
     </div>
   );

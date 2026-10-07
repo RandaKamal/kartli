@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { getUserMembership } from "@/lib/kitchen";
 import { getGuestCartCookieName } from "@/lib/guestCart";
+import { pool } from "@/lib/db";
 import {
   getPantryItems,
   addPantryItem,
@@ -65,6 +66,29 @@ export async function setPantryItemStockAction(
   const item = await setPantryItemStock(kitchenId, itemId, isOutOfStock);
   revalidateKitchen(kitchenId);
   return item;
+}
+
+export async function updateItemStockAction(
+  param1: string,
+  param2: string | boolean,
+  param3?: boolean
+) {
+  if (typeof param2 === "boolean") {
+    // Called as updateItemStockAction(itemId, isOutOfStock)
+    const itemId = param1;
+    const isOutOfStock = param2;
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("You must be logged in.");
+    const { rows } = await pool.query<{ kitchen_id: string }>(
+      `SELECT kitchen_id FROM pantry_items WHERE id = $1`,
+      [itemId]
+    );
+    if (!rows[0]) throw new Error("Item not found");
+    return setPantryItemStockAction(rows[0].kitchen_id, itemId, isOutOfStock);
+  } else {
+    // Called as updateItemStockAction(kitchenId, itemId, isOutOfStock)
+    return setPantryItemStockAction(param1, param2 as string, Boolean(param3));
+  }
 }
 
 export async function deletePantryItemAction(kitchenId: string, itemId: string) {
