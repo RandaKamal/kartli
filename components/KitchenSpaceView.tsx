@@ -22,7 +22,6 @@ import {
 import { getPendingRefundsCountAction } from "@/app/actions/checkout";
 import { useTranslation } from "@/lib/i18n";
 import { PantrySection } from "@/components/PantrySection";
-import { ShoppingListSection } from "@/components/ShoppingListSection";
 import { ActiveCartSection } from "@/components/ActiveCartSection";
 import { RoommatesView } from "@/components/kitchen/RoommatesView";
 import { RoommatesModal } from "@/components/kitchen/RoommatesModal";
@@ -132,7 +131,7 @@ export function KitchenSpaceView({
   initialPulseStats,
   myCheckouts = [],
 }: KitchenSpaceViewProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -714,69 +713,76 @@ export function KitchenSpaceView({
               )}
             </form>
 
-            {/* RESTING STATE OR URGENT RESTOCK BANNER */}
-            {neededItemsCount > 0 ? (
-              <div className="rounded-2xl bg-amber-500/[0.08] border border-amber-500/25 p-4 sm:py-5 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-amber-500/20 border border-amber-500/35 flex items-center justify-center text-amber-500 shrink-0">
-                    <ShoppingCart className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="relative flex h-2 w-2 shrink-0">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
-                      </span>
-                      <h3 className="text-sm sm:text-base font-bold text-foreground tracking-tight truncate">
-                        {neededItemsCount} {neededItemsCount === 1 ? t.kitchen.status.itemsReadyRestockSingular : t.kitchen.status.itemsReadyRestock}
-                      </h3>
-                    </div>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {t.kitchen.status.inventoryUpdated}
-                    </p>
-                  </div>
-                </div>
-
-                <Button
+            {/* STATUS ZONE: fixed height, both states stacked in one grid cell and crossfaded */}
+            <div className="grid grid-cols-[minmax(0,1fr)] w-full min-w-0 min-h-[72px] sm:min-h-[80px] my-3">
+              <div
+                aria-hidden={neededItemsCount === 0}
+                className={cn(
+                  "col-start-1 row-start-1 w-full min-w-0 flex items-center justify-center transition-[opacity,transform] duration-200 ease-out",
+                  neededItemsCount > 0
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-1 pointer-events-none"
+                )}
+              >
+                <button
                   type="button"
-                  size="default"
+                  tabIndex={neededItemsCount > 0 ? 0 : -1}
                   onClick={() => handleModeChange("supermarket")}
-                  className="rounded-xl h-10 px-5 bg-accent-brand text-accent-foreground font-bold text-xs sm:text-sm shrink-0 flex items-center gap-2 cursor-pointer shadow-md hover:bg-accent-brand/90 hover:shadow-lg transition-all"
+                  className="w-full min-w-0 h-full min-h-[72px] sm:min-h-[80px] text-left rounded-2xl border border-primary/20 bg-primary/[0.04] px-3.5 py-3 sm:px-4 sm:py-3.5 flex items-center justify-between gap-3 overflow-hidden hover:bg-primary/[0.07] transition-colors shadow-sm cursor-pointer"
                 >
-                  <span>{t.kitchen.status.readyToBuy}</span>
-                </Button>
+                  <span className="flex items-center gap-3 min-w-0 flex-1">
+                    <span className="h-9 w-9 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
+                      <ShoppingCart className="w-4 h-4" />
+                    </span>
+                    <span className="min-w-0 flex-1 block">
+                      <span className="block text-sm font-semibold text-foreground truncate">
+                        {t.kitchen.status.readyToShopTitle}
+                      </span>
+                      <span className="block text-xs text-muted-foreground truncate">
+                        {t.kitchen.status.readyToShopSubtitle}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="shrink-0 h-9 px-3 sm:px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-xs flex items-center gap-1 shadow-sm whitespace-nowrap">
+                    <span className="hidden sm:inline">
+                      {locale === "de" ? "Einkaufsrunde" : "Start run"}
+                    </span>
+                    <span className="sm:hidden">{locale === "de" ? "Starten" : "Start"}</span>
+                    <span aria-hidden>→</span>
+                  </span>
+                </button>
               </div>
-            ) : (
-              <div className="rounded-2xl bg-emerald-500/[0.03] border border-emerald-500/15 py-6 px-8 text-center flex flex-col items-center justify-center gap-2.5">
-                <div className="w-9 h-9 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                  <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-sm sm:text-base font-bold text-foreground tracking-tight">
-                    {t.kitchen.status.fullyStocked}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground max-w-sm mx-auto">
-                    {t.kitchen.status.allStockedDesc}
-                  </p>
-                </div>
-              </div>
-            )}
 
-            {/* ACTIVE SHOPPING QUEUE (Auto-hidden when empty) */}
-            <ShoppingListSection
-              kitchenId={initialKitchen.id}
-              items={localShoppingListItems}
-              currentUserId={currentUserId}
-              isAdmin={isAdmin}
-              spaceType={initialKitchen.space_type}
-              hideInput={true}
-              onAddToCart={handleItemMovedToCart}
-              onItemMovedToCart={handleItemMovedToCart}
-              onItemReturnedToList={handleItemReturnedToList}
-              onItemRemoved={handleItemRemoved}
-              onItemAdded={(item) => setLocalShoppingListItems((prev) => [item, ...prev])}
-              onViewCart={() => handleModeChange("supermarket")}
-            />
+              <div
+                aria-hidden={neededItemsCount > 0}
+                className={cn(
+                  "col-start-1 row-start-1 w-full min-w-0 flex items-center justify-center transition-[opacity,transform] duration-200 ease-out pointer-events-none",
+                  neededItemsCount === 0
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 -translate-y-1"
+                )}
+              >
+                <div className="w-full h-full min-h-[72px] sm:min-h-[80px] rounded-2xl bg-emerald-500/[0.04] border border-emerald-500/20 p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-sm">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-9 w-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-500 dark:text-emerald-400 shrink-0">
+                      <Check className="w-4 h-4 stroke-[2.5]" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-foreground truncate">
+                        {t.kitchen.status.fullyStocked}
+                      </h3>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {t.kitchen.status.allStockedDesc}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold shrink-0">
+                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span className="hidden sm:inline">100%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* HOUSEHOLD STAPLES BENTO GRID */}
             <PantrySection

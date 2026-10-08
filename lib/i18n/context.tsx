@@ -30,6 +30,8 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export interface LanguageProviderProps {
   children: React.ReactNode;
   initialLocale?: Locale;
+  /** True when initialLocale came from the signed-in user's saved preference */
+  isLocaleAuthoritative?: boolean;
 }
 
 function detectDefaultLocale(): Locale {
@@ -65,6 +67,7 @@ function detectDefaultLocale(): Locale {
 export function LanguageProvider({
   children,
   initialLocale,
+  isLocaleAuthoritative = false,
 }: LanguageProviderProps) {
   const [locale, setLocaleState] = useState<Locale>(() => {
     return initialLocale || "en";
@@ -72,7 +75,14 @@ export function LanguageProvider({
 
   // Client-side detection on initial mount if not explicitly set via server cookie
   useEffect(() => {
-    const detected = detectDefaultLocale();
+    const detected =
+      isLocaleAuthoritative && initialLocale ? initialLocale : detectDefaultLocale();
+    if (isLocaleAuthoritative && initialLocale) {
+      try {
+        localStorage.setItem("kartli_locale", initialLocale);
+        document.cookie = `kartli_locale=${initialLocale};path=/;max-age=31536000;SameSite=Lax`;
+      } catch {}
+    }
     if (detected !== locale) {
       setLocaleState(detected);
     }

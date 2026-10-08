@@ -119,7 +119,7 @@ export function ShoppingListSection({
       onItemMovedToCart?.(item);
 
       try {
-        await moveToCartAction(kitchenId, item.id);
+        await moveToCartAction(kitchenId, item.id, item.name);
         router.refresh();
         toast.success(`Added "${item.name}" to cart`, {
           action: onViewCart
@@ -209,7 +209,7 @@ export function ShoppingListSection({
   }
 
   return (
-    <div className="space-y-2 select-none">
+    <div className="space-y-2 select-none transition-all duration-200 animate-in fade-in-50">
       {/* Editorial Section Label */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">

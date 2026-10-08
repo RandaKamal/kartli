@@ -142,9 +142,9 @@ export async function setPantryItemStockAction(
   isOutOfStock: boolean
 ) {
   await requireMembership(kitchenId);
-  const item = await setPantryItemStock(kitchenId, itemId, isOutOfStock);
-  revalidateKitchen(kitchenId);
-  return item;
+  // No revalidatePath here: it would force a full RSC re-render and stall the
+  // client transition. The client holds optimistic state; the next navigation/poll syncs.
+  return await setPantryItemStock(kitchenId, itemId, isOutOfStock);
 }
 
 export async function updateItemStockAction(
@@ -200,9 +200,14 @@ export async function togglePurchasedAction(
   return item;
 }
 
-export async function putItemInCartAction(kitchenId: string, itemId: string) {
+export async function putItemInCartAction(
+  kitchenId: string,
+  itemId: string,
+  itemName?: string
+) {
   const userId = await requireMembership(kitchenId);
-  const item = await putItemInCart(kitchenId, itemId, userId);
+  // putItemInCart validates the UUID and resolves temp-* ids by kitchen + name
+  const item = await putItemInCart(kitchenId, itemId, userId, itemName);
   revalidateKitchen(kitchenId);
   return item;
 }

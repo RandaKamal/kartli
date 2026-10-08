@@ -299,11 +299,48 @@ export async function addCustomShoppingItem(
  * Puts an item into the user's active cart.
  * Atomically updates is_in_cart = true, is_purchased = false, purchased_by = userId.
  */
-export async function putItemInCart(
+export const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Resolves an optimistic client-side id (e.g. "temp-123") to the real database UUID
+ * by matching kitchen_id + item name within a recent creation window. Never lets a
+ * non-UUID string reach a uuid-typed SQL parameter.
+ */
+export async function resolveShoppingItemId(
   kitchenId: string,
   itemId: string,
-  userId: string
+  itemName?: string | null
+): Promise<string> {
+  if (UUID_REGEX.test(itemId)) return itemId;
+  const name = itemName?.trim();
+  if (!itemId.startsWith("temp-") || !name || !UUID_REGEX.test(kitchenId)) {
+    throw new Error("Item is still syncing. Please try again in a moment.");
+  }
+  // The server action that creates the real row may still be in flight: retry briefly.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { rows } = await pool.query<{ id: string }>(
+      `SELECT id FROM shopping_list_items
+       WHERE kitchen_id = $1 AND LOWER(name) = LOWER($2)
+         AND is_purchased = FALSE AND checkout_id IS NULL
+         AND created_at > NOW() - INTERVAL '10 minutes'
+       ORDER BY COALESCE(is_in_cart, FALSE) ASC, created_at DESC
+       LIMIT 1`,
+      [kitchenId, name]
+    );
+    if (rows[0]) return rows[0].id;
+    await new Promise((r) => setTimeout(r, 300));
+  }
+  throw new Error("Item is still syncing. Please try again in a moment.");
+}
+
+export async function putItemInCart(
+  kitchenId: string,
+  rawItemId: string,
+  userId: string,
+  itemName?: string | null
 ): Promise<ShoppingListItem> {
+  const itemId = await resolveShoppingItemId(kitchenId, rawItemId, itemName);
   const client = await pool.connect();
   try {
     await client.query("BEGIN");

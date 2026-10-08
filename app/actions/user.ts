@@ -42,3 +42,36 @@ export async function markTourCompletedAction() {
 
   return { success: true };
 }
+
+/**
+ * Persists the current user's preferred UI language.
+ */
+export async function setUserLanguageAction(language: "de" | "en") {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in.");
+  }
+  if (language !== "de" && language !== "en") {
+    throw new Error("Unsupported language.");
+  }
+
+  await pool.query(
+    `UPDATE users SET language = $1, updated_at = NOW() WHERE id = $2`,
+    [language, session.user.id]
+  );
+
+  return { success: true, language };
+}
+
+export async function getUserLanguage(userId: string): Promise<"de" | "en" | null> {
+  try {
+    const { rows } = await pool.query<{ language: string }>(
+      `SELECT language FROM users WHERE id = $1`,
+      [userId]
+    );
+    const lang = rows[0]?.language;
+    return lang === "de" || lang === "en" ? lang : null;
+  } catch {
+    return null;
+  }
+}

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { auth } from "@/auth";
+import { getUserLanguage } from "@/app/actions/user";
 import { Header } from "@/components/Header";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
@@ -34,8 +35,10 @@ export default async function RootLayout({
   const initialTheme = normalizeTheme(culinaryTheme);
 
   const cookieLocale = cookieStore.get("kartli_locale")?.value;
+  const userLanguage = session?.user?.id ? await getUserLanguage(session.user.id) : null;
   const initialLocale: Locale | undefined =
-    cookieLocale === "de" || cookieLocale === "en" ? (cookieLocale as Locale) : undefined;
+    userLanguage ??
+    (cookieLocale === "de" || cookieLocale === "en" ? (cookieLocale as Locale) : undefined);
 
   return (
     <html
@@ -59,7 +62,7 @@ export default async function RootLayout({
           themes={["light", "dark", "system"]}
           disableTransitionOnChange
         >
-          <LanguageProvider initialLocale={initialLocale}>
+          <LanguageProvider initialLocale={initialLocale} isLocaleAuthoritative={!!userLanguage}>
             <TooltipProvider delayDuration={200}>
               <Header session={session} />
 
@@ -69,7 +72,7 @@ export default async function RootLayout({
 
               <SiteFooter />
 
-              <Toaster position="top-right" richColors />
+              <Toaster position="top-center" richColors />
             </TooltipProvider>
           </LanguageProvider>
         </ThemeProvider>

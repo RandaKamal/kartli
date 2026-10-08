@@ -121,7 +121,7 @@ export function ActiveCartSection({
 
     startTransition(async () => {
       try {
-        await moveToCartAction(kitchenId, item.id);
+        await moveToCartAction(kitchenId, item.id, item.name);
         router.refresh();
         toast.success(`Added "${item.name}" to your basket`);
       } catch (err: any) {
@@ -363,7 +363,7 @@ export function ActiveCartSection({
                         <Check className="w-3.5 h-3.5 stroke-[2.5] group-hover:hidden" />
                         <RotateCcw className="w-3.5 h-3.5 hidden group-hover:inline stroke-[2.5]" />
                         <span className="line-through group-hover:no-underline">{staple.name}</span>
-                        <span className="text-[10px] font-mono opacity-70 ml-0.5 group-hover:hidden">In Basket</span>
+                        <span className="text-[10px] font-mono opacity-70 ml-0.5 group-hover:hidden">{t.cart.inBasket}</span>
                         <span className="text-[10px] font-mono opacity-70 ml-0.5 hidden group-hover:inline">Remove</span>
                       </button>
                     );
@@ -492,54 +492,49 @@ export function ActiveCartSection({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column: Your Basket */}
         <Card className="border border-border/80 bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between gap-3 pb-2 border-b border-border/60">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <CartIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground leading-tight">
-                  {t.supermarket.yourBasket}
-                </h2>
-                <Badge
-                  variant="secondary"
-                  className="text-xs font-mono font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25"
-                >
+          <div className="pb-3 border-b border-border/60">
+            {/* Header Row */}
+            <div className="flex items-center justify-between gap-3">
+              {/* Left: Cart icon + "Dein Korb" + compact count pill (2) */}
+              <div className="text-base sm:text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
+                <CartIcon className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>{t.cart.title}</span>
+                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 shrink-0">
                   {myCartItems.length}
-                </Badge>
+                </span>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {t.supermarket.yourBasketSub}
-              </p>
-            </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              {myCartItems.length > 0 && (
-                <Button
+              {/* Right Action Cluster */}
+              <div className="flex items-center gap-2 shrink-0">
+                {myCartItems.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearCart}
+                    disabled={isPending}
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex items-center justify-center rounded-lg transition-colors cursor-pointer"
+                    title="Empty basket"
+                    aria-label="Empty basket"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleClearCart}
-                  disabled={isPending}
-                  className="rounded-xl text-xs font-semibold h-8.5 px-3 border-border hover:bg-secondary gap-1 cursor-pointer"
-                  title="Empty basket"
+                  onClick={handleProceedToCheckout}
+                  disabled={myCartItems.length === 0}
+                  className="h-9 px-4 rounded-xl bg-foreground text-background font-semibold text-xs flex items-center gap-1.5 shadow-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  title="Proceed to checkout"
                 >
-                  <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span className="hidden sm:inline">Empty</span>
-                </Button>
-              )}
-
-              <Button
-                type="button"
-                variant="default"
-                size="sm"
-                onClick={handleProceedToCheckout}
-                disabled={myCartItems.length === 0}
-                className="rounded-xl text-xs font-bold h-8.5 px-3.5 gap-1.5 shadow-sm cursor-pointer"
-                title="Proceed to checkout"
-              >
-                <Receipt className="w-3.5 h-3.5" />
-                <span>{t.supermarket.checkoutBtn}</span>
-              </Button>
+                  <span>{t.cart.checkout}</span>
+                </button>
+              </div>
             </div>
+
+            {/* Subtitle: Keep concise and non-intrusive */}
+            <span className="text-xs text-muted-foreground mt-1 block">
+              {t.cart.subtitle}
+            </span>
           </div>
 
           {myCartItems.length === 0 ? (
@@ -630,13 +625,12 @@ export function ActiveCartSection({
                       </span>
                       <div className="flex items-center gap-1.5 pt-0.5">
                         <span className="text-[10px] font-mono text-muted-foreground">
-                          {item.is_purchased ? "✓ In Basket • Bought" : "To Pick Up"}
+                          {item.is_purchased
+                            ? `✓ ${t.cart.inBasket}`
+                            : item.pantry_item_id
+                            ? `${t.cart.toPickUp} · ${t.cart.staple}`
+                            : t.cart.toPickUp}
                         </span>
-                        {item.pantry_item_id && (
-                          <span className="text-[9px] font-mono text-muted-foreground/70 uppercase">
-                            • Staple
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -673,7 +667,7 @@ export function ActiveCartSection({
                 {otherCartItems.length}
               </Badge>
             </div>
-            <span className="text-[11px] text-muted-foreground">Read-only store view</span>
+            <span className="text-[11px] text-muted-foreground">{t.cart.readOnlyView}</span>
           </div>
 
           {otherCartItems.length === 0 ? (
@@ -711,7 +705,7 @@ export function ActiveCartSection({
                           variant="outline"
                           className="text-[10px] px-1.5 py-0 font-medium text-muted-foreground shrink-0 border-border"
                         >
-                          Staple
+                          {t.cart.staple}
                         </Badge>
                       )}
                     </div>

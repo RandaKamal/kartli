@@ -27,6 +27,7 @@ Stores registered user credentials, profile preferences, and account metadata.
 | `has_completed_tour` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Flag indicating if user completed or skipped the onboarding tour. |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL`, `DEFAULT now()` | Account creation timestamp. |
 | `updated_at` | `TIMESTAMPTZ` | `NOT NULL`, `DEFAULT now()` | Last account update timestamp. |
+| `language` | `varchar(5)` | `NOT NULL`,  DEFAULT `'de'` | (User's preferred UI language: `'de'` / `'en'`)
 
 * **Indexes**:
   * `users_pkey` UNIQUE (`id`)

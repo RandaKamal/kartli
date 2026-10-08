@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserDropdown } from "@/components/UserDropdown";
 import { useTranslation } from "@/lib/i18n";
+import { setUserLanguageAction } from "@/app/actions/user";
 
 export interface NavbarUser {
   id?: string;
@@ -52,7 +53,13 @@ export function Navbar({ user }: NavbarProps) {
             {/* Understated language switcher pill */}
             <button
               type="button"
-              onClick={() => setLocale(locale === "en" ? "de" : "en")}
+              onClick={() => {
+                const next = locale === "en" ? "de" : "en";
+                setLocale(next);
+                if (user) {
+                  void setUserLanguageAction(next).catch(() => {});
+                }
+              }}
               className="h-7 px-2 text-[11px] font-mono rounded-lg border border-border/60 bg-secondary/30 md:h-8 md:px-2.5 md:text-xs md:rounded-xl md:border-border hover:bg-secondary font-semibold transition-colors flex items-center gap-1 cursor-pointer select-none text-foreground"
               title={locale === "en" ? "Auf Deutsch umschalten" : "Switch to English"}
               aria-label={`Current language: ${locale.toUpperCase()}. Toggle language.`}

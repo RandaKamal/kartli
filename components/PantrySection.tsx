@@ -173,6 +173,8 @@ export function PantrySection({
     if (item.is_approved === false) return;
     const nextValue = !item.is_out_of_stock;
 
+    // Instant local feedback: no router.refresh(), no awaiting before paint.
+    // Server sync runs non-blocking inside a transition.
     startTransition(async () => {
       setOptimisticItems({ type: "stock", id: item.id, is_out_of_stock: nextValue });
       if (nextValue) {
@@ -194,7 +196,6 @@ export function PantrySection({
         } else {
           onItemEmptied?.(item);
         }
-        setOptimisticItems({ type: "stock", id: item.id, is_out_of_stock: !nextValue });
         toast.error(err.message || "Failed to update stock status.");
       }
     });
@@ -371,7 +372,7 @@ export function PantrySection({
                     }
                   }}
                   className={cn(
-                    "group relative flex flex-col justify-between rounded-2xl min-h-[96px] p-4 transition-all select-none",
+                    "group relative flex flex-col justify-between rounded-2xl min-h-[96px] h-full p-4 transition-colors duration-150 select-none touch-manipulation",
                     isPending && "bg-secondary/30 border border-dashed border-border/80 opacity-80 cursor-default",
                     !isPending && "cursor-pointer active:scale-[0.98]",
                     isStocked && "bg-card hover:bg-muted/40 border border-border/70 hover:border-border shadow-xs",
@@ -387,7 +388,7 @@ export function PantrySection({
                   }
                 >
                   {/* Top Status Indicator & Trash Button */}
-                  <div className="flex items-center justify-between gap-1 w-full">
+                  <div className="flex items-center justify-between gap-1 w-full h-5 overflow-hidden whitespace-nowrap">
                     {isPending && (
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500/70 shrink-0" />
@@ -407,8 +408,8 @@ export function PantrySection({
                     )}
 
                     {isNeeded && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="relative flex h-2 w-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="relative flex h-2 w-2 shrink-0">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
                         </span>
@@ -421,7 +422,7 @@ export function PantrySection({
                     {isInCart && (
                       <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_6px_rgba(6,182,212,0.5)] shrink-0" />
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-800 dark:text-cyan-200 border border-cyan-500/30">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded truncate bg-cyan-500/15 text-cyan-800 dark:text-cyan-200 border border-cyan-500/30">
                           {t.kitchen.staples.inCart} · {stagedByName}
                         </span>
                       </div>

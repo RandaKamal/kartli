@@ -95,7 +95,7 @@ export function GuestShoppingView({
 
       startMutation(async () => {
         try {
-          await moveToCartAction(kitchen.id, item.id);
+          await moveToCartAction(kitchen.id, item.id, item.name);
           toast.success(`Moved "${item.name}" to cart`);
         } catch (err: any) {
           setOpenItems(initialOpenItems);
