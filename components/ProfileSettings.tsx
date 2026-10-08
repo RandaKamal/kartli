@@ -35,6 +35,7 @@ import { logoutAction } from "@/app/actions/auth";
 import { updatePreferredCurrencyAction } from "@/app/actions/user";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { toast } from "sonner";
+import { PasswordChangeForm, AccountDeletionZone } from "@/components/settings/UserSettingsModal";
 
 interface ProfileSettingsProps {
   user: {
@@ -147,11 +148,6 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const handleSaveSecurity = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast.info("Password update functionality is coming soon");
   };
 
   return (
@@ -487,10 +483,13 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
         {/* Tab 3: Security & Danger Zone */}
         <TabsContent value="security" className="space-y-6 animate-in fade-in-50">
+          <PasswordChangeForm />
+
+          {/* Session Management */}
           <Card className="p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-6">
             <CardHeader className="p-0 space-y-1">
               <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-                <Key className="w-5 h-5 text-muted-foreground" />
+                <Shield className="w-5 h-5 text-muted-foreground" />
                 <span>{t.profile.securitySectionTitle}</span>
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
@@ -498,62 +497,8 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               </CardDescription>
             </CardHeader>
 
-            <form onSubmit={handleSaveSecurity} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="current-password">{t.profile.currentPasswordLabel}</Label>
-                <Input
-                  id="current-password"
-                  type="password"
-                  placeholder="••••••••"
-                  className="rounded-xl"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="new-password">{t.profile.newPasswordLabel}</Label>
-                  <Input
-                    id="new-password"
-                    type="password"
-                    placeholder={t.profile.newPasswordPlaceholder}
-                    className="rounded-xl"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-new-password">{t.profile.confirmPasswordLabel}</Label>
-                  <Input
-                    id="confirm-new-password"
-                    type="password"
-                    placeholder={t.profile.confirmPasswordPlaceholder}
-                    className="rounded-xl"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-2 flex justify-end">
-                <Button type="submit" variant="secondary" className="rounded-xl font-semibold">
-                  {t.profile.updatePasswordBtn}
-                </Button>
-              </div>
-            </form>
-
-            <Separator className="bg-border/60" />
-
-            {/* Danger Zone */}
-            <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-destructive/10 text-destructive border border-destructive/20">
-                  <AlertOctagon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-foreground">{t.profile.dangerZoneTitle}</h4>
-                  <p className="text-xs text-muted-foreground">
-                    {t.profile.dangerZoneSub}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-0.5">
                   <span className="text-xs font-semibold text-foreground">{t.profile.signOutDeviceTitle}</span>
                   <p className="text-[11px] text-muted-foreground">
@@ -562,7 +507,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                 </div>
                 <Button
                   type="button"
-                  variant="destructive"
+                  variant="outline"
                   size="sm"
                   onClick={async () => {
                     await logoutAction();
@@ -573,7 +518,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                 </Button>
               </div>
 
-              <Separator className="bg-destructive/20" />
+              <Separator className="bg-border/60" />
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-0.5">
@@ -596,6 +541,9 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               </div>
             </div>
           </Card>
+
+          {/* GDPR-compliant Account Deletion Zone */}
+          <AccountDeletionZone />
         </TabsContent>
       </Tabs>
 

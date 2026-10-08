@@ -197,7 +197,7 @@ export interface UpdateKitchenSettingsInput {
 export interface Checkout {
   id: string;
   kitchen_id: string;
-  user_id: string;
+  user_id: string | null;
   store_name: string | null;
   note: string | null;
   total_claimed_amount: number;
