@@ -184,8 +184,8 @@ export async function deleteAccountAction(
   }>(
     `SELECT 
        km.kitchen_id,
-       (SELECT COUNT(*) FROM kitchen_members km_all WHERE km_all.kitchen_id = km.kitchen_id) AS total_members,
-       (SELECT COUNT(*) FROM kitchen_members km_admins WHERE km_admins.kitchen_id = km.kitchen_id AND km_admins.role = 'ADMIN') AS admin_count
+       (SELECT COUNT(*) FROM kitchen_members km_all WHERE km_all.kitchen_id = km.kitchen_id AND km_all.user_id IS NOT NULL) AS total_members,
+       (SELECT COUNT(*) FROM kitchen_members km_admins WHERE km_admins.kitchen_id = km.kitchen_id AND km_admins.role = 'ADMIN' AND km_admins.user_id IS NOT NULL) AS admin_count
      FROM kitchen_members km
      WHERE km.user_id = $1 AND km.role = 'ADMIN'`,
     [userId]
@@ -197,7 +197,7 @@ export async function deleteAccountAction(
     if (totalMembers > 1 && adminCount <= 1) {
       const errorMsg = isGerman
         ? "Bitte ernenne zuerst ein anderes Mitglied zum Admin in deinen Küchen."
-        : "Please promote another roommate to Admin before deleting your account.";
+        : "Promote another member to Admin before deleting your account.";
       return { success: false, error: errorMsg };
     }
   }
@@ -241,8 +241,28 @@ export async function deleteAccountAction(
     // Delete user push subscriptions
     await client.query(`DELETE FROM push_subscriptions WHERE user_id = $1`, [userId]);
 
-    // Delete the user record (cascades sessions/auth records)
-    await client.query(`DELETE FROM users WHERE id = $1`, [userId]);
+    // Invalidate any Neon Auth sessions that may exist for this account.
+    // The app uses JWT credentials sessions, which are cleared via cookies below.
+    // The schema check keeps account deletion working on self-hosted databases
+    // that do not include the optional neon_auth schema.
+    const { rows: neonSessionTable } = await client.query<{ exists: boolean }>(
+      `SELECT to_regclass('neon_auth.session') IS NOT NULL AS exists`
+    );
+    if (neonSessionTable[0]?.exists) {
+      await client.query(`DELETE FROM neon_auth.session WHERE "userId" = $1`, [userId]);
+    }
+
+    // Anonymize the account instead of deleting the row. This removes all
+    // personal identifiers while keeping foreign-key history intact and
+    // preventing the old credentials from ever being reused.
+    await client.query(
+      `UPDATE users
+       SET username = 'deleted_user_' || gen_random_uuid(),
+           password_hash = 'DISABLED_ACCOUNT_' || gen_random_uuid(),
+           updated_at = NOW()
+       WHERE id = $1`,
+      [userId]
+    );
 
     await client.query("COMMIT");
   } catch (dbErr) {
@@ -253,7 +273,8 @@ export async function deleteAccountAction(
     client.release();
   }
 
-  // 5. Clear auth session cookies and redirect
+  // 5. Clear auth session cookies. Any remaining JWT cookie is removed below;
+  // the client then navigates to /login once this action resolves.
   const cookieStore = await cookies();
   cookieStore.delete(PENDING_INVITE_COOKIE_NAME);
   const allCookies = cookieStore.getAll();
@@ -264,12 +285,11 @@ export async function deleteAccountAction(
   }
 
   try {
-    await signOut({ redirectTo: "/login" });
-  } catch (err: any) {
-    const isRedirect =
-      err?.message === "NEXT_REDIRECT" ||
-      err?.digest?.startsWith("NEXT_REDIRECT");
-    if (isRedirect) throw err;
+    await signOut({ redirect: false });
+  } catch (err) {
+    // Cookie cleanup above already invalidates the local session. Do not fail
+    // account deletion if the NextAuth sign-out step cannot complete.
+    console.error("Failed to sign out after account deletion:", err);
   }
 
   return { success: true };

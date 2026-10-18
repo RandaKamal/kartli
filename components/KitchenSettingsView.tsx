@@ -123,7 +123,9 @@ export function KitchenSettingsView({
   const publicGuestUrl = `${baseUrl}/kitchen/view/${publicViewToken}`;
   const displayGuestUrl = `${baseUrl.replace(/^https?:\/\//, "")}/view/${publicViewToken.slice(0, 8)}...`;
 
-  const activeMembers = members.filter((m) => m.joined_at !== null);
+  const activeMembers = members.filter(
+    (m) => m.joined_at !== null && m.user_id !== null
+  );
   const pendingInvites = members.filter(
     (m) => m.joined_at === null && m.invite_token !== null
   );

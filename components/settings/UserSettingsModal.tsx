@@ -237,8 +237,11 @@ export function AccountDeletionZone() {
         setIsDeleting(false);
       } else {
         toast.success(t.settings.deleteSuccess);
+        setConfirmPassword("");
+        setDeletionError(null);
         setIsConfirmOpen(false);
-        // Fallback navigation if server redirect is not triggered immediately
+        // The server action returns after clearing the session cookies; navigate
+        // explicitly so the deleted account cannot remain on a cached page.
         window.location.href = "/login";
       }
     } catch (err: any) {

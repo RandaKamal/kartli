@@ -603,6 +603,9 @@ export const de: typeof en = {
     roommates: {
       title: "Mitbewohner",
       activeMembers: "Aktive Mitbewohner",
+      formerMembers: "Ehemalige Mitglieder",
+      formerBadge: "Ehemalig",
+      formerMemberReadOnly: "Nur zur Ansicht – ehemaliges Mitglied",
       inviteInput: "Name oder Spitzname (z. B. Maya)...",
       generateLink: "Einladung erstellen",
       subtitle: "Verwalte Mitbewohner und aktive Einladungs-Links.",

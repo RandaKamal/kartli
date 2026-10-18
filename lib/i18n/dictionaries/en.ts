@@ -601,6 +601,9 @@ export const en = {
     roommates: {
       title: "Roommates",
       activeMembers: "Active Members",
+      formerMembers: "Former members",
+      formerBadge: "Former member",
+      formerMemberReadOnly: "Read-only historical entry",
       inviteInput: "Name or nickname (e.g. Maya)...",
       generateLink: "Generate Link",
       subtitle: "Manage household members and active invite codes.",
@@ -720,7 +723,7 @@ export const en = {
     deleteConfirmBtn: "Permanently Delete Account",
     deletingBtn: "Deleting...",
     cancelBtn: "Cancel",
-    soleAdminError: "Please promote another roommate to Admin before deleting your account.",
+    soleAdminError: "Promote another member to Admin before deleting your account.",
     deleteSuccess: "Account deleted successfully.",
     deleteFailed: "Failed to delete account.",
   },
