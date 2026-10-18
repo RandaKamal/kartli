@@ -44,13 +44,13 @@ Represents a shared kitchen / household space.
 | `name` | `VARCHAR(255)` | `NOT NULL` | Kitchen display name. |
 | `space_type` | `kitchen_space_type` | `NOT NULL`, `DEFAULT 'FLATSHARE'` | Contextual space preset (`'FLATSHARE'`, `'FAMILY'`, `'NEUTRAL'`, `'OFFICE'`). |
 | `public_view_token` | `VARCHAR(255)` | `NOT NULL`, **UNIQUE** (`kitchens_public_view_token_key`) | Regeneratable token for unauthenticated supermarket read-only guest access. |
-| `creator_id` | `UUID` | Nullable, **FK -> `users.id`** (NO ACTION / RESTRICT) | User who created the kitchen. |
+| `creator_id` | `UUID` | Nullable, **FK -> `users.id` (ON DELETE SET NULL)** | User who created the kitchen. |
 | `staple_permission` | `TEXT` | `NOT NULL`, `DEFAULT 'open'` | Permission mode for managing staples (e.g., `'open'` vs restricted). |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL`, `DEFAULT now()` | Kitchen creation timestamp. |
 | `updated_at` | `TIMESTAMPTZ` | `NOT NULL`, `DEFAULT now()` | Last kitchen update timestamp. |
 
 * **Foreign Keys**:
-  * `kitchens_creator_id_fkey`: `FOREIGN KEY ("creator_id") REFERENCES "users"("id")` (Default cascade behavior / NO ACTION).
+  * `kitchens_creator_id_fkey`: `FOREIGN KEY ("creator_id") REFERENCES "users"("id") ON DELETE SET NULL`.
 * **Indexes**:
   * `kitchens_pkey` UNIQUE (`id`)
   * `kitchens_public_view_token_key` UNIQUE (`public_view_token`)
@@ -92,13 +92,13 @@ Persistent inventory of shared staples (spices, oil, cleaning supplies).
 | `name` | `VARCHAR(255)` | `NOT NULL` | Staple item name. |
 | `is_out_of_stock` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Depletion / out-of-stock alert trigger. |
 | `is_approved` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Approval status for proposed staples. |
-| `proposed_by` | `UUID` | Nullable, **FK -> `users.id`** (NO ACTION / RESTRICT) | User who proposed the staple item. |
+| `proposed_by` | `UUID` | Nullable, **FK -> `users.id` (ON DELETE SET NULL)** | User who proposed the staple item. |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL`, `DEFAULT now()` | Creation timestamp. |
 | `updated_at` | `TIMESTAMPTZ` | `NOT NULL`, `DEFAULT now()` | Last update timestamp. |
 
 * **Foreign Keys**:
   * `pantry_items_kitchen_id_fkey`: `FOREIGN KEY ("kitchen_id") REFERENCES "kitchens"("id") ON DELETE CASCADE`
-  * `pantry_items_proposed_by_fkey`: `FOREIGN KEY ("proposed_by") REFERENCES "users"("id")` (Default cascade behavior / NO ACTION).
+  * `pantry_items_proposed_by_fkey`: `FOREIGN KEY ("proposed_by") REFERENCES "users"("id") ON DELETE SET NULL`.
 * **Indexes**:
   * `pantry_items_pkey` UNIQUE (`id`)
   * `idx_pantry_items_kitchen` (`kitchen_id`)
@@ -147,7 +147,7 @@ Receipt upload batches and manual checkouts for reimbursement.
 |---|---|---|---|
 | `id` | `UUID` | **PK**, `DEFAULT gen_random_uuid()` | Primary key. |
 | `kitchen_id` | `UUID` | `NOT NULL`, **FK -> `kitchens.id` (ON DELETE CASCADE)** | Associated kitchen. |
-| `user_id` | `UUID` | `NOT NULL`, **FK -> `users.id` (ON DELETE CASCADE)** | User requesting refund. |
+| `user_id` | `UUID` | Nullable, **FK -> `users.id` (ON DELETE SET NULL)** | User requesting refund (`NULL` when user deletes account). |
 | `receipt_filename` | `TEXT` | Nullable | Primary receipt filename (`NULL` for receiptless checkouts). |
 | `is_refunded` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Admin settlement status. |
 | `refunded_at` | `TIMESTAMPTZ` | Nullable | Timestamp when admin settled the refund. |
@@ -161,7 +161,7 @@ Receipt upload batches and manual checkouts for reimbursement.
 
 * **Foreign Keys**:
   * `checkouts_kitchen_id_fkey`: `FOREIGN KEY ("kitchen_id") REFERENCES "kitchens"("id") ON DELETE CASCADE`
-  * `checkouts_user_id_fkey`: `FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE`
+  * `checkouts_user_id_fkey`: `FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL`
 * **Indexes**:
   * `checkouts_pkey` UNIQUE (`id`)
   * `idx_checkouts_kitchen` (`kitchen_id`)
@@ -324,17 +324,17 @@ Integrated Neon Auth provider tables for sessions, accounts, and organizations.
 
 | Source Table (`Child`) | Source Column | Target Table (`Parent`) | Target Column | Cascade Behavior |
 |---|---|---|---|---|
-| `kitchens` | `creator_id` | `users` | `id` | `NO ACTION` (Default) |
+| `kitchens` | `creator_id` | `users` | `id` | `ON DELETE SET NULL` |
 | `kitchen_members` | `kitchen_id` | `kitchens` | `id` | `ON DELETE CASCADE` |
 | `kitchen_members` | `user_id` | `users` | `id` | `ON DELETE SET NULL` |
 | `pantry_items` | `kitchen_id` | `kitchens` | `id` | `ON DELETE CASCADE` |
-| `pantry_items` | `proposed_by` | `users` | `id` | `NO ACTION` (Default) |
+| `pantry_items` | `proposed_by` | `users` | `id` | `ON DELETE SET NULL` |
 | `shopping_list_items` | `kitchen_id` | `kitchens` | `id` | `ON DELETE CASCADE` |
 | `shopping_list_items` | `pantry_item_id` | `pantry_items` | `id` | `ON DELETE CASCADE` |
 | `shopping_list_items` | `checkout_id` | `checkouts` | `id` | `ON DELETE SET NULL` |
 | `shopping_list_items` | `purchased_by` | `users` | `id` | `ON DELETE SET NULL` |
 | `checkouts` | `kitchen_id` | `kitchens` | `id` | `ON DELETE CASCADE` |
-| `checkouts` | `user_id` | `users` | `id` | `ON DELETE CASCADE` |
+| `checkouts` | `user_id` | `users` | `id` | `ON DELETE SET NULL` |
 | `checkout_receipts` | `checkout_id` | `checkouts` | `id` | `ON DELETE CASCADE` |
 | `push_subscriptions` | `user_id` | `users` | `id` | `ON DELETE CASCADE` |
 | `neon_auth.account` | `userId` | `neon_auth.user` | `id` | `ON DELETE CASCADE` |

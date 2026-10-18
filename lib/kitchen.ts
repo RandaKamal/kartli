@@ -509,7 +509,7 @@ export async function getUserKitchensWithStats(userId: string): Promise<UserKitc
       m.invite_token AS m_invite_token,
       m.joined_at AS m_joined_at,
       m.created_at AS m_created_at,
-      (SELECT COUNT(*)::int FROM kitchen_members km2 WHERE km2.kitchen_id = k.id AND km2.joined_at IS NOT NULL) AS member_count,
+      (SELECT COUNT(*)::int FROM kitchen_members km2 WHERE km2.kitchen_id = k.id AND km2.joined_at IS NOT NULL AND km2.user_id IS NOT NULL) AS member_count,
       (SELECT COUNT(*)::int FROM shopping_list_items sli WHERE sli.kitchen_id = k.id AND sli.is_purchased = false) AS needed_count,
       COALESCE((
         SELECT ARRAY_AGG(sub.name)
@@ -524,7 +524,7 @@ export async function getUserKitchensWithStats(userId: string): Promise<UserKitc
         SELECT ARRAY_AGG(sub_m.kitchen_display_name)
         FROM (
           SELECT kitchen_display_name FROM kitchen_members
-          WHERE kitchen_id = k.id AND joined_at IS NOT NULL
+          WHERE kitchen_id = k.id AND joined_at IS NOT NULL AND user_id IS NOT NULL
           ORDER BY CASE WHEN role = 'ADMIN' THEN 0 ELSE 1 END, created_at ASC
           LIMIT 5
         ) sub_m
@@ -703,7 +703,7 @@ export async function leaveKitchen(
 
   if (membership.role === "ADMIN") {
     const { rows } = await pool.query<{ count: string }>(
-      `SELECT count(*) FROM kitchen_members WHERE kitchen_id = $1 AND role = 'ADMIN'`,
+      `SELECT count(*) FROM kitchen_members WHERE kitchen_id = $1 AND role = 'ADMIN' AND user_id IS NOT NULL`,
       [kitchenId]
     );
     const adminCount = parseInt(rows[0]?.count || "0", 10);

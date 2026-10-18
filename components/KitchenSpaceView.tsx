@@ -194,9 +194,10 @@ export function KitchenSpaceView({
   const [, startTransition] = useTransition();
 
   const terminology = getSpaceTerminology(initialKitchen.space_type);
-  const activeMembers = localMembers.filter((m) => m.joined_at !== null && m.joined_at !== undefined);
-  const displayMembers = activeMembers.length > 0 ? activeMembers : localMembers;
-  const roommatesCount = Math.max(displayMembers.length, 1);
+  const activeMembers = localMembers.filter(
+    (m) => m.user_id !== null && m.joined_at !== null && m.joined_at !== undefined
+  );
+  const roommatesCount = activeMembers.length;
 
   const neededItemsCount = localShoppingListItems.filter(
     (i) => !i.is_in_cart && !i.is_purchased && !i.is_guest_staged
@@ -507,7 +508,7 @@ export function KitchenSpaceView({
               aria-label={t.kitchen.roommates.title}
             >
               <div className="flex items-center overflow-hidden py-0.5">
-                {displayMembers.slice(0, 3).map((m) => (
+                {activeMembers.slice(0, 3).map((m) => (
                   <div
                     key={m.id}
                     className="inline-flex items-center justify-center h-7 w-7 rounded-full text-[11px] font-bold ring-2 ring-card bg-secondary text-foreground -ml-2 first:ml-0 shadow-sm uppercase group-hover:scale-105 transition-transform select-none"

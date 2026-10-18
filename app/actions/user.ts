@@ -1,9 +1,12 @@
 "use server";
 
-import { auth } from "@/auth";
+import { auth, signOut } from "@/auth";
 import { pool } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
+import { hashPasswordAsync, verifyPasswordAsync } from "@/lib/password";
+import { PENDING_INVITE_COOKIE_NAME } from "@/lib/invite";
 
 export async function updatePreferredCurrencyAction(currency: string) {
   const session = await auth();
@@ -74,4 +77,220 @@ export async function getUserLanguage(userId: string): Promise<"de" | "en" | nul
   } catch {
     return null;
   }
+}
+
+/**
+ * Server Action to change the authenticated user's password.
+ */
+export async function changePasswordAction(
+  currentPassword: string,
+  newPassword: string
+): Promise<{ success: boolean; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You must be logged in." };
+  }
+
+  if (!currentPassword || !newPassword) {
+    return { success: false, error: "All fields are required." };
+  }
+
+  if (newPassword.length < 6) {
+    return {
+      success: false,
+      error: "Password must be at least 6 characters.",
+    };
+  }
+
+  // Fetch current user credentials and language preference
+  const { rows } = await pool.query<{ password_hash: string; language?: string }>(
+    `SELECT password_hash, language FROM users WHERE id = $1`,
+    [session.user.id]
+  );
+
+  if (rows.length === 0) {
+    return { success: false, error: "User not found." };
+  }
+
+  const user = rows[0];
+  const isGerman = user.language !== "en";
+
+  // Verify current password against stored bcrypt hash
+  const isValid = await verifyPasswordAsync(currentPassword, user.password_hash);
+  if (!isValid) {
+    const errorMsg = isGerman
+      ? "Aktuelles Passwort ist falsch"
+      : "Current password is incorrect";
+    return { success: false, error: errorMsg };
+  }
+
+  // Hash new password and update record
+  const newHash = await hashPasswordAsync(newPassword);
+  await pool.query(
+    `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2`,
+    [newHash, session.user.id]
+  );
+
+  revalidatePath("/profile");
+  return { success: true };
+}
+
+/**
+ * Server Action for privacy-compliant GDPR account deletion.
+ * Anonymizes past kitchen purchases, checks for sole admin ownership,
+ * clears user credentials, and invalidates auth session cookies.
+ */
+export async function deleteAccountAction(
+  confirmationPassword: string
+): Promise<{ success: boolean; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You must be logged in." };
+  }
+
+  if (!confirmationPassword) {
+    return { success: false, error: "Password is required." };
+  }
+
+  const userId = session.user.id;
+
+  // 1. Fetch user credentials & language
+  const { rows: userRows } = await pool.query<{ password_hash: string; language?: string }>(
+    `SELECT password_hash, language FROM users WHERE id = $1`,
+    [userId]
+  );
+
+  if (userRows.length === 0) {
+    return { success: false, error: "User not found." };
+  }
+
+  const user = userRows[0];
+  const isGerman = user.language !== "en";
+
+  // 2. Verify confirmation password matches stored password hash
+  const isValid = await verifyPasswordAsync(confirmationPassword, user.password_hash);
+  if (!isValid) {
+    const errorMsg = isGerman
+      ? "Aktuelles Passwort ist falsch"
+      : "Current password is incorrect";
+    return { success: false, error: errorMsg };
+  }
+
+  // 3. Protection Rule: Check if user is the sole 'ADMIN' in any kitchen with > 1 member
+  const { rows: adminKitchens } = await pool.query<{
+    kitchen_id: string;
+    total_members: string;
+    admin_count: string;
+  }>(
+    `SELECT 
+       km.kitchen_id,
+       (SELECT COUNT(*) FROM kitchen_members km_all WHERE km_all.kitchen_id = km.kitchen_id AND km_all.user_id IS NOT NULL) AS total_members,
+       (SELECT COUNT(*) FROM kitchen_members km_admins WHERE km_admins.kitchen_id = km.kitchen_id AND km_admins.role = 'ADMIN' AND km_admins.user_id IS NOT NULL) AS admin_count
+     FROM kitchen_members km
+     WHERE km.user_id = $1 AND km.role = 'ADMIN'`,
+    [userId]
+  );
+
+  for (const k of adminKitchens) {
+    const totalMembers = parseInt(k.total_members, 10);
+    const adminCount = parseInt(k.admin_count, 10);
+    if (totalMembers > 1 && adminCount <= 1) {
+      const errorMsg = isGerman
+        ? "Bitte ernenne zuerst ein anderes Mitglied zum Admin in deinen Küchen."
+        : "Promote another member to Admin before deleting your account.";
+      return { success: false, error: errorMsg };
+    }
+  }
+
+  // 4. Deletion / Anonymization Logic executed in database transaction
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Fetch user's kitchen membership records
+    const { rows: memberRows } = await client.query<{ id: string; kitchen_display_name: string }>(
+      `SELECT id, kitchen_display_name FROM kitchen_members WHERE user_id = $1`,
+      [userId]
+    );
+
+    const suffix = isGerman ? " (ehemals)" : " (deleted)";
+    for (const m of memberRows) {
+      const currentName = m.kitchen_display_name || "Mitglied";
+      const updatedName = (currentName.includes("(ehemals)") || currentName.includes("(deleted)"))
+        ? currentName
+        : `${currentName}${suffix}`.slice(0, 255);
+
+      await client.query(
+        `UPDATE kitchen_members 
+         SET user_id = NULL, 
+             kitchen_display_name = $1, 
+             role = 'MEMBER', 
+             updated_at = NOW() 
+         WHERE id = $2`,
+        [updatedName, m.id]
+      );
+    }
+
+    // Preserve flatmate ledger: keep past checkouts intact by nulling user_id
+    await client.query(`UPDATE checkouts SET user_id = NULL WHERE user_id = $1`, [userId]);
+
+    // Nullify creator/proposer relations to avoid foreign key violations
+    await client.query(`UPDATE kitchens SET creator_id = NULL WHERE creator_id = $1`, [userId]);
+    await client.query(`UPDATE pantry_items SET proposed_by = NULL WHERE proposed_by = $1`, [userId]);
+
+    // Delete user push subscriptions
+    await client.query(`DELETE FROM push_subscriptions WHERE user_id = $1`, [userId]);
+
+    // Invalidate any Neon Auth sessions that may exist for this account.
+    // The app uses JWT credentials sessions, which are cleared via cookies below.
+    // The schema check keeps account deletion working on self-hosted databases
+    // that do not include the optional neon_auth schema.
+    const { rows: neonSessionTable } = await client.query<{ exists: boolean }>(
+      `SELECT to_regclass('neon_auth.session') IS NOT NULL AS exists`
+    );
+    if (neonSessionTable[0]?.exists) {
+      await client.query(`DELETE FROM neon_auth.session WHERE "userId" = $1`, [userId]);
+    }
+
+    // Anonymize the account instead of deleting the row. This removes all
+    // personal identifiers while keeping foreign-key history intact and
+    // preventing the old credentials from ever being reused.
+    await client.query(
+      `UPDATE users
+       SET username = 'deleted_user_' || gen_random_uuid(),
+           password_hash = 'DISABLED_ACCOUNT_' || gen_random_uuid(),
+           updated_at = NOW()
+       WHERE id = $1`,
+      [userId]
+    );
+
+    await client.query("COMMIT");
+  } catch (dbErr) {
+    await client.query("ROLLBACK");
+    console.error("Account deletion transaction failed:", dbErr);
+    throw dbErr;
+  } finally {
+    client.release();
+  }
+
+  // 5. Clear auth session cookies. Any remaining JWT cookie is removed below;
+  // the client then navigates to /login once this action resolves.
+  const cookieStore = await cookies();
+  cookieStore.delete(PENDING_INVITE_COOKIE_NAME);
+  const allCookies = cookieStore.getAll();
+  for (const c of allCookies) {
+    if (c.name.includes("auth") || c.name.includes("session")) {
+      cookieStore.delete(c.name);
+    }
+  }
+
+  try {
+    await signOut({ redirect: false });
+  } catch (err) {
+    // Cookie cleanup above already invalidates the local session. Do not fail
+    // account deletion if the NextAuth sign-out step cannot complete.
+    console.error("Failed to sign out after account deletion:", err);
+  }
+
+  return { success: true };
 }

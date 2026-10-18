@@ -17,6 +17,7 @@ import {
   Shield,
   ShieldCheck,
   ChevronDown,
+  ChevronUp,
   Loader2,
   Mail,
   UserCheck,
@@ -77,10 +78,19 @@ export function RoommatesView({
   const [isAdding, setIsAdding] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<KitchenMemberWithUser | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [, startTransition] = useTransition();
 
   const terminology = getSpaceTerminology(spaceType);
-  const activeMembers = members.filter((m) => m.joined_at !== null);
+  const isFormerMember = (member: KitchenMemberWithUser) =>
+    member.user_id === null;
+
+  const formerMembers = members.filter(
+    (m) => m.joined_at !== null && isFormerMember(m)
+  );
+  const activeMembers = members.filter(
+    (m) => m.joined_at !== null && m.user_id !== null
+  );
   const pendingInvites = members.filter((m) => m.joined_at === null && m.invite_token !== null);
 
   const [optimisticRoles, setOptimisticRoles] = useState<Record<string, KitchenRole>>({});
@@ -312,6 +322,66 @@ export function RoommatesView({
           })}
         </div>
       </div>
+
+      {/* Former Members Section - collapsible, read-only historical ledger */}
+      {formerMembers.length > 0 && (
+        <div className="space-y-2 pt-2 border-t border-border/60">
+          <button
+            type="button"
+            onClick={() => setIsCollapsed((prev) => !prev)}
+            aria-expanded={!isCollapsed}
+            aria-controls="former-members-panel"
+            className="w-full min-h-[40px] flex items-center justify-between gap-2 py-2 px-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            <span className="font-semibold uppercase tracking-wider font-sans">
+              {t.kitchen.roommates.formerMembers} ({formerMembers.length})
+            </span>
+            {isCollapsed ? (
+              <ChevronDown className="w-4 h-4 shrink-0" aria-hidden="true" />
+            ) : (
+              <ChevronUp className="w-4 h-4 shrink-0" aria-hidden="true" />
+            )}
+          </button>
+
+          <div
+            id="former-members-panel"
+            className={`grid transition-all duration-200 ease-out ${
+              isCollapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+            }`}
+          >
+            <div className="overflow-hidden">
+              <div className="space-y-2 pb-1">
+                {formerMembers.map((member) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between gap-3 p-2.5 rounded-2xl bg-muted/30 border border-border/50 opacity-70"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="w-8 h-8 border border-border/60 grayscale">
+                        <AvatarFallback className="text-xs font-bold uppercase bg-muted text-muted-foreground">
+                          {member.kitchen_display_name.slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 space-y-0.5">
+                        <span className="text-sm font-medium text-muted-foreground truncate block">
+                          {member.kitchen_display_name}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/70">
+                          {t.kitchen.roommates.formerMemberReadOnly}
+                        </span>
+                      </div>
+                    </div>
+
+                    <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border bg-muted text-muted-foreground border-border/60">
+                      {t.kitchen.roommates.formerBadge}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pending Invites Section */}
       {pendingInvites.length > 0 && (

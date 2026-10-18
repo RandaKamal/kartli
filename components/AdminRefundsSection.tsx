@@ -144,9 +144,11 @@ export function AdminRefundsSection({
     return <AdminRefundsSkeleton />;
   }
 
-  const getMemberInfo = (userId: string, usernameFallback?: string | null) => {
-    const found = memberMap.get(userId);
-    if (found) return found;
+  const getMemberInfo = (userId: string | null, usernameFallback?: string | null) => {
+    if (userId) {
+      const found = memberMap.get(userId);
+      if (found) return found;
+    }
     const name = usernameFallback ? capitalize(usernameFallback) : (t.kitchen.header.roommateSingular || "Roommate");
     return {
       displayName: name,

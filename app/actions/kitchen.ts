@@ -214,7 +214,25 @@ export async function promoteMemberAction(
       return { success: false, newRole: "MEMBER", error: "Unauthorized: Only kitchen admins can manage roles." };
     }
 
-    // 2. Input sanitization: Strictly map input roles to uppercase enum values ('ADMIN' | 'MEMBER')
+    // 2. Former/deleted member safeguard: A kitchen_member whose user_id is
+    // NULL is a historical ledger entry (or an unclaimed invite). It must never
+    // be promoted/demoted, even if the caller knows its member record id.
+    const { rows: targetMemberRows } = await pool.query<{ user_id: string | null }>(
+      `SELECT user_id FROM kitchen_members WHERE kitchen_id = $1 AND (user_id = $2 OR id = $2) LIMIT 1`,
+      [kitchenId, targetMemberOrUserId]
+    );
+    if (targetMemberRows.length === 0) {
+      return { success: false, newRole: "MEMBER", error: "Member not found in this kitchen." };
+    }
+    if (targetMemberRows[0].user_id === null) {
+      return {
+        success: false,
+        newRole: "MEMBER",
+        error: "Ehemalige oder gelöschte Mitglieder können nicht bearbeitet werden.",
+      };
+    }
+
+    // 3. Input sanitization: Strictly map input roles to uppercase enum values ('ADMIN' | 'MEMBER')
     const normalized = (newRole || "").trim().toUpperCase();
     if (normalized !== "ADMIN" && normalized !== "MEMBER") {
       return {
@@ -225,7 +243,7 @@ export async function promoteMemberAction(
     }
     const roleUpper: KitchenRole = normalized as KitchenRole;
 
-    // 3. Demotion safeguard: Ensure kitchen does not become admin-less
+    // 4. Demotion safeguard: Ensure kitchen does not become admin-less
     if (roleUpper === "MEMBER") {
       const { rows: memberRows } = await pool.query<{ role: KitchenRole }>(
         `SELECT role FROM kitchen_members WHERE kitchen_id = $1 AND (user_id = $2 OR id = $2)`,
@@ -233,7 +251,7 @@ export async function promoteMemberAction(
       );
       if (memberRows.length > 0 && memberRows[0].role === "ADMIN") {
         const { rows } = await pool.query<{ count: string }>(
-          `SELECT count(*) FROM kitchen_members WHERE kitchen_id = $1 AND role = 'ADMIN'`,
+          `SELECT count(*) FROM kitchen_members WHERE kitchen_id = $1 AND role = 'ADMIN' AND user_id IS NOT NULL`,
           [kitchenId]
         );
         const adminCount = parseInt(rows[0]?.count || "0", 10);
@@ -247,11 +265,13 @@ export async function promoteMemberAction(
       }
     }
 
-    // 4. Execution query: UPDATE role = $1 and updated_at = NOW()
+    // 5. Execution query: UPDATE role = $1 and updated_at = NOW()
+    // user_id IS NOT NULL is repeated as a race-safe guard in case the account
+    // is deleted between the check above and this write.
     const updateSql = `
       UPDATE kitchen_members
       SET role = $1, updated_at = NOW()
-      WHERE kitchen_id = $2 AND (user_id = $3 OR id = $3)
+      WHERE kitchen_id = $2 AND (user_id = $3 OR id = $3) AND user_id IS NOT NULL
       RETURNING id, kitchen_id, user_id, kitchen_display_name, role, invite_token, joined_at, created_at, updated_at
     `;
     const { rows: updatedRows } = await pool.query<KitchenMember>(updateSql, [
