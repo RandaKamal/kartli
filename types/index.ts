@@ -110,6 +110,7 @@ export type ClaimInviteErrorCode =
   | "INVITE_NOT_FOUND"
   | "INVITE_ALREADY_CLAIMED"
   | "ALREADY_MEMBER"
+  | "RATE_LIMITED"
   | "INTERNAL_ERROR";
 
 /**

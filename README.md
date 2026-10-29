@@ -162,6 +162,7 @@ Open `http://<your-local-ip>:3000` (e.g. `http://192.168.1.100:3000`) on your mo
 - `npm run dev`: Starts the Next.js development server with Turbopack.
 - `npm run build`: Generates an optimized production build with full TypeScript verification.
 - `npm run start`: Starts the Next.js production server.
+- `npm run generate:assets`: Renders favicons, PWA icons, OpenGraph image, and README banners/cards with headless Chromium (requires the Puppeteer browser or a local Chrome install).
 - `npm run lint`: Runs ESLint to check code quality.
 
 ---

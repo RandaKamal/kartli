@@ -56,6 +56,16 @@ export function InviteWelcome({
       <p className="text-center text-[11px] text-muted-foreground/70 mt-8">
         {t.invite.footerNote}
       </p>
+
+      <div className="flex items-center justify-center gap-3 text-[11px] text-muted-foreground/75 mt-3">
+        <Link href="/legal/imprint" className="hover:text-foreground transition-colors underline-offset-4 hover:underline">
+          {t.legal.navImprint}
+        </Link>
+        <span className="text-border/60">&middot;</span>
+        <Link href="/legal/privacy" className="hover:text-foreground transition-colors underline-offset-4 hover:underline">
+          {t.legal.navPrivacy}
+        </Link>
+      </div>
     </div>
   );
 }

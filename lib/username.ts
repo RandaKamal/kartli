@@ -11,6 +11,8 @@ export interface UsernameAvailability {
   suggestion?: string;
   /** Candidate was empty / too short after sanitizing - no DB lookup was made. */
   invalid?: boolean;
+  /** Optional rejection or throttling reason */
+  reason?: string;
 }
 
 /** Lowercase, trim, keep only a-z, 0-9, "." and "_". */

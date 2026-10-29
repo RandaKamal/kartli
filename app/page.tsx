@@ -27,6 +27,20 @@ export default async function HomePage() {
         <p>© {new Date().getFullYear()} kartli. Lean, email-free kitchen management.</p>
         <div className="flex items-center gap-4">
           <a
+            href="/legal/imprint"
+            className="hover:text-foreground transition-colors underline-offset-4 hover:underline"
+          >
+            Impressum
+          </a>
+          <span className="text-border/60">·</span>
+          <a
+            href="/legal/privacy"
+            className="hover:text-foreground transition-colors underline-offset-4 hover:underline"
+          >
+            Datenschutz
+          </a>
+          <span className="text-border/60">·</span>
+          <a
             href="https://github.com/randakamal/kartli"
             target="_blank"
             rel="noopener noreferrer"
