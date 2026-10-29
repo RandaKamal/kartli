@@ -1,6 +1,6 @@
 <div align="center">
 
-# kartli
+<img src="assets/readme/hero-banner.png" alt="kartli — The shared kitchen & household operating system." width="100%" />
 
 **The modern, artisanal kitchen & pantry management platform for flatshares, families, and creative teams.**
 
