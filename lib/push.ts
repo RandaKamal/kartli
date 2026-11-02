@@ -1,5 +1,7 @@
 import webpush from "web-push";
 import { pool } from "@/lib/db";
+import { en } from "@/lib/i18n/dictionaries/en";
+import { de } from "@/lib/i18n/dictionaries/de";
 
 let vapidConfigured = false;
 
@@ -97,19 +99,71 @@ export async function setNotificationPref(userId: string, kind: PushKind, enable
   ]);
 }
 
+type PushLocale = "en" | "de";
+type PushStrings = typeof en.push;
+type PushRenderer = (t: PushStrings, locale: PushLocale) => { title: string; body: string };
+
+const PUSH_STRINGS: Record<PushLocale, PushStrings> = { en: en.push, de: de.push };
+
+function fill(template: string, values: Record<string, string>): string {
+  return template.replace(/\{(\w+)\}/g, (_, key) => values[key] ?? "");
+}
+
+/** "€23.40" for English recipients, "23,40 €" for German ones. */
+function formatAmount(amount: number, currency: string, locale: PushLocale): string {
+  try {
+    return new Intl.NumberFormat(locale === "en" ? "en-US" : "de-DE", {
+      style: "currency",
+      currency: currency || "EUR",
+    }).format(amount);
+  } catch {
+    // Unknown currency code: fall back to a plain number rather than dropping the push.
+    return `${amount.toFixed(2)} ${currency}`;
+  }
+}
+
+/** All push wording lives here and in the `push` dictionary section. */
+export const pushMessages = {
+  outOfStock: (item: string): PushRenderer => (t) => ({
+    title: t.outOfStockTitle,
+    body: fill(t.outOfStockBody, { item }),
+  }),
+  refundPending: (
+    name: string,
+    amount: number,
+    currency: string,
+    store?: string | null
+  ): PushRenderer => (t, locale) => ({
+    title: t.refundPendingTitle,
+    body: fill(store ? t.refundPendingBody : t.refundPendingBodyNoStore, {
+      name,
+      amount: formatAmount(amount, currency, locale),
+      store: store ?? "",
+    }),
+  }),
+  refundComplete: (amount: number, currency: string): PushRenderer => (t, locale) => ({
+    title: t.refundCompleteTitle,
+    body: fill(t.refundCompleteBody, { amount: formatAmount(amount, currency, locale) }),
+  }),
+  newMember: (name: string): PushRenderer => (t) => ({
+    title: t.newMemberTitle,
+    body: fill(t.newMemberBody, { name }),
+  }),
+};
+
 /**
  * Notifies the members of a kitchen who have this kind of alert turned on and
- * haven't muted the kitchen. Narrow the audience with `adminsOnly`, `userIds`,
- * and `excludeUserId` (usually whoever triggered the event).
+ * haven't muted the kitchen, each in their own language. Narrow the audience
+ * with `adminsOnly`, `userIds`, and `excludeUserId` (usually whoever triggered the event).
  */
 export async function notifyKitchen(
   kitchenId: string,
   kind: PushKind,
-  payload: { title: string; body: string; url?: string },
+  message: { render: PushRenderer; url?: string },
   opts: { excludeUserId?: string; adminsOnly?: boolean; userIds?: string[] } = {}
 ): Promise<void> {
-  const { rows } = await pool.query<{ user_id: string }>(
-    `SELECT km.user_id
+  const { rows } = await pool.query<{ user_id: string; language: string | null }>(
+    `SELECT km.user_id, u.language
        FROM kitchen_members km
        JOIN users u ON u.id = km.user_id
       WHERE km.kitchen_id = $1
@@ -121,8 +175,19 @@ export async function notifyKitchen(
         AND ($4::uuid[] IS NULL OR km.user_id = ANY($4::uuid[]))`,
     [kitchenId, opts.excludeUserId ?? null, opts.adminsOnly ?? false, opts.userIds ?? null]
   );
-  await sendPushToUsers(
-    rows.map((r) => r.user_id),
-    payload
+
+  // users.language defaults to 'de', so anything that isn't 'en' gets German.
+  const byLocale: Record<PushLocale, string[]> = { en: [], de: [] };
+  for (const row of rows) byLocale[row.language === "en" ? "en" : "de"].push(row.user_id);
+
+  await Promise.all(
+    (Object.keys(byLocale) as PushLocale[])
+      .filter((locale) => byLocale[locale].length > 0)
+      .map((locale) =>
+        sendPushToUsers(byLocale[locale], {
+          ...message.render(PUSH_STRINGS[locale], locale),
+          url: message.url,
+        })
+      )
   );
 }

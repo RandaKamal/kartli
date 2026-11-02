@@ -9,7 +9,8 @@ import {
 } from "@/lib/invite";
 import type { ClaimInviteResult, InviteDetails } from "@/types";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { notifyKitchen } from "@/lib/push";
+import { notifyKitchen, pushMessages } from "@/lib/push";
+import { capitalize } from "@/lib/utils";
 
 async function getClientIdentifier(): Promise<string> {
   const headerList = await headers();
@@ -77,8 +78,7 @@ export async function claimInviteAction(
       result.kitchenId,
       "members",
       {
-        title: "New member",
-        body: `${result.kitchenDisplayName} just joined your kitchen.`,
+        render: pushMessages.newMember(capitalize(result.kitchenDisplayName)),
         url: `/kitchen/${result.kitchenId}`,
       },
       { excludeUserId: session.user.id }

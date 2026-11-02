@@ -11,7 +11,7 @@ import {
   refundCheckout,
   deleteReceiptForSide,
 } from "@/lib/pantry";
-import { notifyKitchen } from "@/lib/push";
+import { notifyKitchen, pushMessages } from "@/lib/push";
 import type { Checkout, CheckoutWithDetails } from "@/types";
 
 async function requireMembership(kitchenId: string): Promise<string> {
@@ -73,8 +73,10 @@ export async function refundCheckoutAction(kitchenId: string, checkoutId: string
       kitchenId,
       "checkout",
       {
-        title: "Refund settled!",
-        body: `Your ${Number(result.total_claimed_amount).toFixed(2)} ${result.currency || "EUR"} purchase has been refunded.`,
+        render: pushMessages.refundComplete(
+          Number(result.total_claimed_amount),
+          result.currency || "EUR"
+        ),
         url: `/kitchen/${kitchenId}`,
       },
       { userIds: [result.user_id] }

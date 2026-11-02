@@ -776,5 +776,16 @@ export const de: typeof en = {
     deleteSuccess: "Account erfolgreich gelöscht.",
     deleteFailed: "Account konnte nicht gelöscht werden.",
   },
+  push: {
+    outOfStockTitle: "Aufgebraucht",
+    outOfStockBody: "{item} auf die Einkaufsliste gesetzt.",
+    refundPendingTitle: "Erstattung offen",
+    refundPendingBody: "{name}: {amount} bei {store}.",
+    refundPendingBodyNoStore: "{name}: {amount}",
+    refundCompleteTitle: "Erstattung erledigt",
+    refundCompleteBody: "{amount} wurden erstattet.",
+    newMemberTitle: "Neues Mitglied",
+    newMemberBody: "{name} ist der Küche beigetreten.",
+  },
 };
 

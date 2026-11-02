@@ -3,7 +3,8 @@
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { getUserMembership } from "@/lib/kitchen";
-import { notifyKitchen } from "@/lib/push";
+import { notifyKitchen, pushMessages } from "@/lib/push";
+import { capitalize } from "@/lib/utils";
 import { pool } from "@/lib/db";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { put, del } from "@vercel/blob";
@@ -266,8 +267,12 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
       kitchenId,
       "checkout",
       {
-        title: "New checkout",
-        body: `${storeName || "A purchase"} — ${totalClaimedAmount.toFixed(2)} ${currency} claimed.`,
+        render: pushMessages.refundPending(
+          capitalize(membership.kitchen_display_name),
+          totalClaimedAmount,
+          currency,
+          storeName
+        ),
         url: `/kitchen/${kitchenId}/admin`,
       },
       { adminsOnly: true, excludeUserId: userId }
@@ -380,8 +385,12 @@ export async function receiptlessCheckoutAction(formData: FormData) {
       kitchenId,
       "checkout",
       {
-        title: "New checkout",
-        body: `${storeName || "A purchase"} — ${totalAmount.toFixed(2)} ${currency} claimed.`,
+        render: pushMessages.refundPending(
+          capitalize(membership.kitchen_display_name),
+          totalAmount,
+          currency,
+          storeName
+        ),
         url: `/kitchen/${kitchenId}/admin`,
       },
       { adminsOnly: true, excludeUserId: userId }

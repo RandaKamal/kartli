@@ -774,5 +774,17 @@ export const en = {
     deleteSuccess: "Account deleted successfully.",
     deleteFailed: "Failed to delete account.",
   },
+  // Push notifications (sent from the server in each recipient's language)
+  push: {
+    outOfStockTitle: "Out of stock",
+    outOfStockBody: "{item} added to Shopping List.",
+    refundPendingTitle: "Refund pending",
+    refundPendingBody: "{name}: {amount} at {store}.",
+    refundPendingBodyNoStore: "{name}: {amount}",
+    refundCompleteTitle: "Refund complete",
+    refundCompleteBody: "{amount} has been refunded.",
+    newMemberTitle: "New member",
+    newMemberBody: "{name} joined the kitchen.",
+  },
 };
 

@@ -8,7 +8,7 @@ import {
   getKitchenById,
   isUserKitchenAdmin,
 } from "@/lib/kitchen";
-import { notifyKitchen } from "@/lib/push";
+import { notifyKitchen, pushMessages } from "@/lib/push";
 import { getGuestCartCookieName } from "@/lib/guestCart";
 import { pool } from "@/lib/db";
 import {
@@ -155,11 +155,7 @@ export async function setPantryItemStockAction(
     notifyKitchen(
       kitchenId,
       "restock",
-      {
-        title: "Item out of stock",
-        body: `${item.name} just ran out — added to the shopping list.`,
-        url: `/kitchen/${kitchenId}`,
-      },
+      { render: pushMessages.outOfStock(item.name), url: `/kitchen/${kitchenId}` },
       { excludeUserId: userId }
     ).catch((err) => console.error("Push notification failed:", err));
   }
