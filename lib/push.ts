@@ -1,11 +1,24 @@
 import webpush from "web-push";
 import { pool } from "@/lib/db";
 
-webpush.setVapidDetails(
-  "mailto:contact@kartli.app",
-  process.env.VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
+let vapidConfigured = false;
+
+/**
+ * Configures web-push on first use instead of at import time, so a build or a
+ * container without VAPID keys still works — push is just skipped.
+ */
+function ensureVapid(): boolean {
+  if (vapidConfigured) return true;
+  const publicKey = process.env.VAPID_PUBLIC_KEY;
+  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  if (!publicKey || !privateKey) {
+    console.warn("VAPID keys missing — skipping push notification.");
+    return false;
+  }
+  webpush.setVapidDetails("mailto:contact@kartli.app", publicKey, privateKey);
+  vapidConfigured = true;
+  return true;
+}
 
 /**
  * Sends a push notification to every device a user has subscribed on.
@@ -15,6 +28,8 @@ export async function sendPushToUser(
   userId: string,
   payload: { title: string; body: string; url?: string }
 ): Promise<void> {
+  if (!ensureVapid()) return;
+
   const { rows } = await pool.query<{ id: string; endpoint: string; p256dh: string; auth: string }>(
     `SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = $1`,
     [userId]
