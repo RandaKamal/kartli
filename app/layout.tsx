@@ -51,6 +51,11 @@ export const metadata: Metadata = {
     description: "Lean, email-free shared kitchen management, pantries, and grocery lists for flatshares.",
     images: ["/og-image.png"],
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "kartli",
+  },
 };
 
 export default async function RootLayout({
