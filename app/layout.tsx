@@ -11,8 +11,46 @@ import { LanguageProvider, type Locale } from "@/lib/i18n";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "kartli - Shared Kitchens",
-  description: "Lean, email-free shared kitchen management and grocery lists.",
+  metadataBase: new URL(process.env.NEXTAUTH_URL || "https://kartli.org"),
+  title: {
+    default: "kartli – Shared Kitchens",
+    template: "%s | kartli – Shared Kitchens",
+  },
+  description:
+    "Lean, email-free shared kitchen management, pantries, and grocery lists for flatshares.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png" },
+    ],
+  },
+  openGraph: {
+    title: "kartli – Shared Kitchens",
+    description: "Lean, email-free shared kitchen management, pantries, and grocery lists for flatshares.",
+    url: "https://kartli.org",
+    siteName: "kartli",
+    locale: "de_DE",
+    alternateLocale: ["en_US"],
+    type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "kartli – Shared Kitchens",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "kartli – Shared Kitchens",
+    description: "Lean, email-free shared kitchen management, pantries, and grocery lists for flatshares.",
+    images: ["/og-image.png"],
+  },
 };
 
 export default async function RootLayout({
