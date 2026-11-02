@@ -35,12 +35,12 @@ export const en = {
   },
   landing: {
     badge: "kartli 1.0 · Shared Kitchen OS",
-    heroTitle: "Kitchen management for spaces that love good food and zero drama.",
-    heroTitlePrefix: "Kitchen management for spaces that love ",
-    heroTitleAccent: "good food and zero drama.",
+    heroTitle: "Everything your shared kitchen needs, in one place.",
+    heroTitlePrefix: "Everything your shared kitchen needs, ",
+    heroTitleAccent: "in one place.",
     heroTitleSuffix: "",
     heroSubtitle:
-      "Track pantry staples, coordinate grocery runs with flatmates in real time, split supermarket receipts with Gemini Vision, and balance household expenses with one tap.",
+      "Keep track of essentials, manage a shared Shopping List, scan receipts with Gemini, and settle expenses with your flatmates.",
     ctaDashboard: "Go to Dashboard",
     ctaCreate: "Create Space",
     startKitchen: "Start Your Kitchen",
