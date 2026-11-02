@@ -2,8 +2,8 @@
 
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
-import { getUserMembership, getKitchenMembersWithUsers } from "@/lib/kitchen";
-import { sendPushToUsers } from "@/lib/push";
+import { getUserMembership } from "@/lib/kitchen";
+import { notifyKitchen } from "@/lib/push";
 import { pool } from "@/lib/db";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { put, del } from "@vercel/blob";
@@ -262,15 +262,16 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
     revalidatePath(`/kitchen/${kitchenId}/member`);
     revalidatePath(`/kitchen/${kitchenId}/admin`);
 
-    const admins = await getKitchenMembersWithUsers(kitchenId);
-    const adminUserIds = admins
-      .filter((m) => m.role === "ADMIN" && m.user_id && m.user_id !== userId)
-      .map((m) => m.user_id!);
-    sendPushToUsers(adminUserIds, {
-      title: "New checkout",
-      body: `${storeName || "A purchase"} — ${totalClaimedAmount.toFixed(2)} ${currency} claimed.`,
-      url: `/kitchen/${kitchenId}/admin`,
-    }).catch((err) => console.error("Push notification failed:", err));
+    notifyKitchen(
+      kitchenId,
+      "checkout",
+      {
+        title: "New checkout",
+        body: `${storeName || "A purchase"} — ${totalClaimedAmount.toFixed(2)} ${currency} claimed.`,
+        url: `/kitchen/${kitchenId}/admin`,
+      },
+      { adminsOnly: true, excludeUserId: userId }
+    ).catch((err) => console.error("Push notification failed:", err));
 
     return { success: true, checkoutId, totalClaimedAmount, currency };
   } catch (error) {
@@ -375,15 +376,16 @@ export async function receiptlessCheckoutAction(formData: FormData) {
     revalidatePath(`/kitchen/${kitchenId}/member`);
     revalidatePath(`/kitchen/${kitchenId}/admin`);
 
-    const admins = await getKitchenMembersWithUsers(kitchenId);
-    const adminUserIds = admins
-      .filter((m) => m.role === "ADMIN" && m.user_id && m.user_id !== userId)
-      .map((m) => m.user_id!);
-    sendPushToUsers(adminUserIds, {
-      title: "New checkout",
-      body: `${storeName || "A purchase"} — ${totalAmount.toFixed(2)} ${currency} claimed.`,
-      url: `/kitchen/${kitchenId}/admin`,
-    }).catch((err) => console.error("Push notification failed:", err));
+    notifyKitchen(
+      kitchenId,
+      "checkout",
+      {
+        title: "New checkout",
+        body: `${storeName || "A purchase"} — ${totalAmount.toFixed(2)} ${currency} claimed.`,
+        url: `/kitchen/${kitchenId}/admin`,
+      },
+      { adminsOnly: true, excludeUserId: userId }
+    ).catch((err) => console.error("Push notification failed:", err));
 
     return { success: true, checkoutId, totalClaimedAmount: totalAmount };
   } catch (error) {

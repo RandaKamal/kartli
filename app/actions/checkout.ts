@@ -11,7 +11,7 @@ import {
   refundCheckout,
   deleteReceiptForSide,
 } from "@/lib/pantry";
-import { sendPushToUser } from "@/lib/push";
+import { notifyKitchen } from "@/lib/push";
 import type { Checkout, CheckoutWithDetails } from "@/types";
 
 async function requireMembership(kitchenId: string): Promise<string> {
@@ -69,11 +69,16 @@ export async function refundCheckoutAction(kitchenId: string, checkoutId: string
   revalidateKitchen(kitchenId);
 
   if (result.user_id) {
-    sendPushToUser(result.user_id, {
-      title: "Refund settled!",
-      body: `Your ${Number(result.total_claimed_amount).toFixed(2)} ${result.currency || "EUR"} purchase has been refunded.`,
-      url: `/kitchen/${kitchenId}`,
-    }).catch((err) => console.error("Push notification failed:", err));
+    notifyKitchen(
+      kitchenId,
+      "checkout",
+      {
+        title: "Refund settled!",
+        body: `Your ${Number(result.total_claimed_amount).toFixed(2)} ${result.currency || "EUR"} purchase has been refunded.`,
+        url: `/kitchen/${kitchenId}`,
+      },
+      { userIds: [result.user_id] }
+    ).catch((err) => console.error("Push notification failed:", err));
   }
 
   return result;

@@ -28,6 +28,9 @@ Stores registered user credentials, profile preferences, and account metadata.
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL`, `DEFAULT now()` | Account creation timestamp. |
 | `updated_at` | `TIMESTAMPTZ` | `NOT NULL`, `DEFAULT now()` | Last account update timestamp. |
 | `language` | `varchar(5)` | `NOT NULL`,  DEFAULT `'de'` | (User's preferred UI language: `'de'` / `'en'`)
+| `notify_restock` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Push alert when a pantry item is marked out of stock. |
+| `notify_checkout` | `BOOLEAN` | `NOT NULL`, `DEFAULT true` | Push alerts for new checkouts (admins) and settled refunds. |
+| `notify_members` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Push alert when someone claims an invite and joins a kitchen. |
 
 * **Indexes**:
   * `users_pkey` UNIQUE (`id`)
@@ -71,6 +74,7 @@ Represents kitchen memberships, roles, and claimable invitation slots.
 | `joined_at` | `TIMESTAMPTZ` | Nullable | Timestamp when invite was claimed (`now()` for creator). |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL`, `DEFAULT now()` | Record creation timestamp. |
 | `updated_at` | `TIMESTAMPTZ` | Nullable, `DEFAULT now()` | Record update timestamp. |
+| `notifications_muted` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Member muted push notifications for this kitchen (dashboard bell). |
 
 * **Constraints & Unique Indexes**:
   * `kitchen_members_pkey` UNIQUE (`id`)

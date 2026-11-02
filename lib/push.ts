@@ -60,3 +60,69 @@ export async function sendPushToUsers(
 ): Promise<void> {
   await Promise.all(userIds.map((id) => sendPushToUser(id, payload)));
 }
+
+export type PushKind = "restock" | "checkout" | "members";
+
+export interface NotificationPrefs {
+  restock: boolean;
+  checkout: boolean;
+  members: boolean;
+}
+
+// Whitelisted column names: never interpolate user input into these queries.
+const PREF_COLUMN: Record<PushKind, string> = {
+  restock: "notify_restock",
+  checkout: "notify_checkout",
+  members: "notify_members",
+};
+
+export async function getNotificationPrefs(userId: string): Promise<NotificationPrefs> {
+  const { rows } = await pool.query<{
+    notify_restock: boolean;
+    notify_checkout: boolean;
+    notify_members: boolean;
+  }>(`SELECT notify_restock, notify_checkout, notify_members FROM users WHERE id = $1`, [userId]);
+  const row = rows[0];
+  return {
+    restock: row?.notify_restock ?? true,
+    checkout: row?.notify_checkout ?? true,
+    members: row?.notify_members ?? false,
+  };
+}
+
+export async function setNotificationPref(userId: string, kind: PushKind, enabled: boolean) {
+  await pool.query(`UPDATE users SET ${PREF_COLUMN[kind]} = $2, updated_at = now() WHERE id = $1`, [
+    userId,
+    enabled,
+  ]);
+}
+
+/**
+ * Notifies the members of a kitchen who have this kind of alert turned on and
+ * haven't muted the kitchen. Narrow the audience with `adminsOnly`, `userIds`,
+ * and `excludeUserId` (usually whoever triggered the event).
+ */
+export async function notifyKitchen(
+  kitchenId: string,
+  kind: PushKind,
+  payload: { title: string; body: string; url?: string },
+  opts: { excludeUserId?: string; adminsOnly?: boolean; userIds?: string[] } = {}
+): Promise<void> {
+  const { rows } = await pool.query<{ user_id: string }>(
+    `SELECT km.user_id
+       FROM kitchen_members km
+       JOIN users u ON u.id = km.user_id
+      WHERE km.kitchen_id = $1
+        AND km.joined_at IS NOT NULL
+        AND km.notifications_muted = false
+        AND u.${PREF_COLUMN[kind]} = true
+        AND ($2::uuid IS NULL OR km.user_id <> $2::uuid)
+        AND ($3::boolean = false OR km.role = 'ADMIN')
+        AND ($4::uuid[] IS NULL OR km.user_id = ANY($4::uuid[]))`,
+    [kitchenId, opts.excludeUserId ?? null, opts.adminsOnly ?? false, opts.userIds ?? null]
+  );
+  await sendPushToUsers(
+    rows.map((r) => r.user_id),
+    payload
+  );
+}

@@ -19,21 +19,20 @@ import {
 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { useTheme } from "next-themes";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { CopyButton } from "@/components/CopyButton";
 import { logoutAction } from "@/app/actions/auth";
 import { updatePreferredCurrencyAction } from "@/app/actions/user";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { toast } from "sonner";
 import { PasswordChangeForm, AccountDeletionZone } from "@/components/settings/UserSettingsModal";
+import { NotificationToggle, usePushNotifications } from "@/components/NotificationToggle";
+import { updateNotificationPrefAction } from "@/app/actions/push";
+import type { NotificationPrefs, PushKind } from "@/lib/push";
 
 interface ProfileSettingsProps {
   user: {
@@ -43,6 +42,7 @@ interface ProfileSettingsProps {
     culinary_theme?: string;
     theme?: string;
   };
+  notificationPrefs: NotificationPrefs;
 }
 
 interface CulinaryTheme {
@@ -52,7 +52,7 @@ interface CulinaryTheme {
   colors: [string, string, string]; // [Primary, Success/In-Cart, Warning/Needed]
 }
 
-export function ProfileSettings({ user }: ProfileSettingsProps) {
+export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProps) {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -72,7 +72,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
     },
   ];
 
-  const [activeTab, setActiveTab] = useState("account");
+  const [activeTab, setActiveTab] = useState("preferences");
   const { theme, setTheme } = useTheme();
 
   const userTheme = user.culinary_theme || user.theme;
@@ -80,20 +80,35 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
   const currentTheme = userTheme || savedTheme || "black-truffle";
 
   const [preferredCurrency, setPreferredCurrency] = useState<string>(user.preferred_currency || "EUR");
-  const [notifyPantry, setNotifyPantry] = useState(true);
-  const [notifyShopping, setNotifyShopping] = useState(true);
-  const [notifyMembers, setNotifyMembers] = useState(false);
+  const [prefs, setPrefs] = useState<NotificationPrefs>(notificationPrefs);
+  const push = usePushNotifications();
+  const prefsLocked = push.status !== "on";
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (tabParam === "settings" || tabParam === "preferences") {
+    // "account" is the removed tab; old links to it land on preferences.
+    if (tabParam === "settings" || tabParam === "preferences" || tabParam === "account") {
       setActiveTab("preferences");
     } else if (tabParam === "security") {
       setActiveTab("security");
-    } else if (tabParam === "account") {
-      setActiveTab("account");
+    }
+    // Dashboard mute buttons link to /profile?tab=preferences#notifications
+    if (window.location.hash === "#notifications") {
+      requestAnimationFrame(() =>
+        document.getElementById("notifications")?.scrollIntoView({ behavior: "smooth", block: "start" })
+      );
     }
   }, [tabParam]);
+
+  const handlePrefChange = async (kind: PushKind, enabled: boolean) => {
+    setPrefs((prev) => ({ ...prev, [kind]: enabled }));
+    try {
+      await updateNotificationPrefAction(kind, enabled);
+    } catch {
+      setPrefs((prev) => ({ ...prev, [kind]: !enabled }));
+      toast.error(t.profile.notifPrefSaveFailed);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -134,8 +149,6 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
     toast.success(`Theme updated to ${selected?.name || normalizedKey}`);
   };
 
-  const initial = (user.username || "?").charAt(0).toUpperCase();
-
   const handleSavePreferences = async () => {
     setIsSaving(true);
     try {
@@ -172,10 +185,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto mb-6 bg-muted/70 border border-border/80 p-1 rounded-2xl">
-          <TabsTrigger value="account" className="rounded-xl text-xs font-semibold">
-            {t.profile.accountTab}
-          </TabsTrigger>
+        <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto mb-6 bg-muted/70 border border-border/80 p-1 rounded-2xl">
           <TabsTrigger value="preferences" className="rounded-xl text-xs font-semibold">
             {t.profile.preferencesTab}
           </TabsTrigger>
@@ -184,74 +194,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab 1: Account Info */}
-        <TabsContent value="account" className="space-y-6 animate-in fade-in-50">
-          <Card className="p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16 border border-border/80">
-                  <AvatarFallback className="bg-secondary text-xl font-bold text-foreground">
-                    {initial}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold text-foreground tracking-tight">
-                      @{user.username}
-                    </h2>
-                    <Badge variant="secondary" className="text-[10px]">
-                      Active
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Registered Kitchen Member
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs text-muted-foreground font-mono">
-                  ID: {user.id.slice(0, 8)}...
-                </Badge>
-                <CopyButton text={user.id} label="Copy Full ID" size="sm" />
-              </div>
-            </div>
-
-            <Separator className="bg-border/60" />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="profile-username">{t.profile.usernameLabel}</Label>
-                <Input
-                  id="profile-username"
-                  value={user.username}
-                  readOnly
-                  disabled
-                  className="rounded-xl bg-muted/40 font-mono text-foreground"
-                />
-                <span className="text-[11px] text-muted-foreground block">
-                  {t.profile.usernameHelper}
-                </span>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="profile-auth-type">{t.profile.authMethodLabel}</Label>
-                <Input
-                  id="profile-auth-type"
-                  value="Credentials (Encrypted JWT Session)"
-                  readOnly
-                  disabled
-                  className="rounded-xl bg-muted/40 font-medium text-foreground"
-                />
-                <span className="text-[11px] text-muted-foreground block">
-                  Managed via NextAuth.js / Auth.js v5.
-                </span>
-              </div>
-            </div>
-          </Card>
-        </TabsContent>
-
-        {/* Tab 2: Preferences */}
+        {/* Tab 1: Preferences */}
         <TabsContent value="preferences" className="space-y-6 animate-in fade-in-50">
           {/* Card 1: Appearance & Culinary Themes */}
           <Card className="p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-6">
@@ -381,7 +324,10 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
           </Card>
 
           {/* Card 2: Notification Preferences & Alerts */}
-          <Card className="p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-4">
+          <Card
+            id="notifications"
+            className="p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-4 scroll-mt-24"
+          >
             <CardHeader className="p-0 space-y-1">
               <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
                 <Bell className="w-5 h-5 text-muted-foreground" />
@@ -392,8 +338,29 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               </CardDescription>
             </CardHeader>
 
-            <div className="space-y-3 pt-1">
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
+            {/* Device push switch: gates the per-type preferences below */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-border/70">
+              <div className="space-y-0.5">
+                <p className="text-sm font-semibold text-foreground">{t.profile.notificationsLabel}</p>
+                <p className="text-xs text-muted-foreground">
+                  {push.status === "unsupported"
+                    ? t.profile.notificationsUnsupported
+                    : t.profile.notificationsSubtext}
+                </p>
+              </div>
+              <div className="shrink-0">
+                <NotificationToggle push={push} />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {prefsLocked && push.status !== "checking" && (
+                <p className="text-xs text-muted-foreground">{t.profile.notificationsLockedHint}</p>
+              )}
+
+              <div
+                className={`flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70 transition-opacity ${prefsLocked ? "opacity-50" : ""}`}
+              >
                 <div className="space-y-0.5">
                   <Label htmlFor="notify-pantry" className="text-sm font-medium text-foreground cursor-pointer">
                     {t.profile.notifRestockTitle}
@@ -404,12 +371,15 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                 </div>
                 <Switch
                   id="notify-pantry"
-                  checked={notifyPantry}
-                  onCheckedChange={setNotifyPantry}
+                  checked={prefs.restock}
+                  onCheckedChange={(v) => handlePrefChange("restock", v)}
+                  disabled={prefsLocked}
                 />
               </div>
 
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
+              <div
+                className={`flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70 transition-opacity ${prefsLocked ? "opacity-50" : ""}`}
+              >
                 <div className="space-y-0.5">
                   <Label htmlFor="notify-shopping" className="text-sm font-medium text-foreground cursor-pointer">
                     {t.profile.notifCheckoutTitle}
@@ -420,12 +390,15 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                 </div>
                 <Switch
                   id="notify-shopping"
-                  checked={notifyShopping}
-                  onCheckedChange={setNotifyShopping}
+                  checked={prefs.checkout}
+                  onCheckedChange={(v) => handlePrefChange("checkout", v)}
+                  disabled={prefsLocked}
                 />
               </div>
 
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70">
+              <div
+                className={`flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70 transition-opacity ${prefsLocked ? "opacity-50" : ""}`}
+              >
                 <div className="space-y-0.5">
                   <Label htmlFor="notify-members" className="text-sm font-medium text-foreground cursor-pointer">
                     {t.profile.notifMemberTitle}
@@ -436,8 +409,9 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                 </div>
                 <Switch
                   id="notify-members"
-                  checked={notifyMembers}
-                  onCheckedChange={setNotifyMembers}
+                  checked={prefs.members}
+                  onCheckedChange={(v) => handlePrefChange("members", v)}
+                  disabled={prefsLocked}
                 />
               </div>
             </div>
@@ -479,7 +453,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
           </Card>
         </TabsContent>
 
-        {/* Tab 3: Security & Danger Zone */}
+        {/* Tab 2: Security & Danger Zone */}
         <TabsContent value="security" className="space-y-6 animate-in fade-in-50">
           <PasswordChangeForm />
 

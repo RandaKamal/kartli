@@ -5,14 +5,13 @@ import { useRouter } from "next/navigation";
 import {
   returnToShoppingListAction,
   clearCartAction,
-  completeItemPurchaseAction,
   moveToCartAction,
   moveAllNeededToCartAction,
   duplicateShoppingListItemAction,
 } from "@/app/actions/pantry";
 import type { ShoppingListItem, KitchenSpaceType, PantryItem } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
-import { capitalize, cn } from "@/lib/utils";
+import { capitalize } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { CheckoutDialog } from "@/components/CheckoutDialog";
 import {
@@ -26,9 +25,9 @@ import {
   Check,
   Plus,
   Sparkles,
-  ChevronDown,
-  ChevronUp,
+  Loader2,
   Search,
+  X,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,9 +44,10 @@ export interface ActiveCartSectionProps {
   onSwitchTab?: (tab: string) => void;
   onItemReturnedToList?: (item: ShoppingListItem) => void;
   onItemMovedToCart?: (item: ShoppingListItem) => void;
-  onItemPurchasedToggle?: (item: ShoppingListItem, isPurchased: boolean) => void;
   onQuickAddStaple?: (pantryItem: PantryItem) => void;
   onAllItemsMovedToCart?: () => void;
+  /** Adds a one-time item to the shopping list; resolves true on success. */
+  onAddOneOff?: (name: string) => Promise<boolean>;
 }
 
 export function ActiveCartSection({
@@ -59,9 +59,9 @@ export function ActiveCartSection({
   onSwitchTab,
   onItemReturnedToList,
   onItemMovedToCart,
-  onItemPurchasedToggle,
   onQuickAddStaple,
   onAllItemsMovedToCart,
+  onAddOneOff,
 }: ActiveCartSectionProps) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -69,9 +69,9 @@ export function ActiveCartSection({
   const [isPending, startTransition] = useTransition();
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
 
-  // Quick-Add Staples Collapsible Tray State
-  const [isStaplesTrayOpen, setIsStaplesTrayOpen] = useState(true);
   const [stapleSearch, setStapleSearch] = useState("");
+  const [oneOffName, setOneOffName] = useState("");
+  const [isAddingOneOff, setIsAddingOneOff] = useState(false);
 
   const terminology = getSpaceTerminology(spaceType);
 
@@ -99,9 +99,22 @@ export function ActiveCartSection({
       (i.purchased_by !== currentUserId || i.is_guest_staged)
   );
 
-  const filteredStaples = pantryItems.filter((staple) =>
-    staple.name.toLowerCase().includes(stapleSearch.trim().toLowerCase())
+  // Essentials already needed show up in the list itself, so the chips only offer the rest.
+  const grabbableStaples = pantryItems.filter(
+    (staple) =>
+      !neededItems.some((i) => i.pantry_item_id === staple.id) &&
+      staple.name.toLowerCase().includes(stapleSearch.trim().toLowerCase())
   );
+
+  const handleAddOneOffSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = oneOffName.trim();
+    if (!name || isAddingOneOff || !onAddOneOff) return;
+    setIsAddingOneOff(true);
+    const added = await onAddOneOff(name);
+    if (added) setOneOffName("");
+    setIsAddingOneOff(false);
+  };
 
   // One-tap move needed item directly to basket
   const handleMoveNeededToCart = (item: ShoppingListItem) => {
@@ -153,35 +166,6 @@ export function ActiveCartSection({
       } catch (err: any) {
         setAllItems(items);
         toast.error(err.message || "Failed to move items to basket.");
-      }
-    });
-  };
-
-  // Toggle item bought (large touch target check-off)
-  const handleToggleItemBought = (item: ShoppingListItem) => {
-    const nextPurchased = !item.is_purchased;
-    const updated: ShoppingListItem = {
-      ...item,
-      is_purchased: nextPurchased,
-      is_in_cart: true,
-    };
-
-    setAllItems((prev) =>
-      prev.map((i) => (i.id === item.id ? updated : i))
-    );
-
-    onItemPurchasedToggle?.(item, nextPurchased);
-
-    startTransition(async () => {
-      try {
-        await completeItemPurchaseAction(kitchenId, item.id, nextPurchased);
-        router.refresh();
-        toast.success(
-          nextPurchased ? `Marked "${item.name}" as bought` : `Unchecked "${item.name}"`
-        );
-      } catch (err: any) {
-        setAllItems(items);
-        toast.error(err.message || "Failed to update item.");
       }
     });
   };
@@ -296,155 +280,76 @@ export function ActiveCartSection({
 
   return (
     <div className="space-y-6">
-      {/* 1. COMPACT "QUICK-ADD STAPLES" COLLAPSIBLE TRAY */}
-      {pantryItems && pantryItems.length > 0 && (
-        <Card className="border border-border/80 bg-card rounded-2xl overflow-hidden shadow-xs">
-          <div className="p-3.5 sm:p-4 flex items-center justify-between gap-3 bg-muted/20">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xs sm:text-sm font-bold text-foreground tracking-tight">
-                    {t.supermarket.quickAddTitle}
-                  </h3>
-                  <Badge variant="outline" className="text-[10px] font-mono py-0 px-1.5 border-border">
-                    {pantryItems.length}
-                  </Badge>
-                </div>
-                <p className="text-[11px] text-muted-foreground truncate">
-                  {t.supermarket.quickAddSub}
-                </p>
-              </div>
+      {/* 1. SHOPPING LIST: one-time items, needed items, and essentials to grab (formerly Quick-Add + Needed) */}
+      <Card className="border border-border/80 bg-card rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/60">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
+              <ShoppingBag className="w-4 h-4" />
             </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm sm:text-base font-bold text-foreground tracking-tight">
+                  {t.supermarket.neededForThisRun}
+                </h3>
+                <Badge variant="secondary" className="text-xs font-mono font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/25">
+                  {neededItems.length}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {t.supermarket.listSubtitle}
+              </p>
+            </div>
+          </div>
 
+          {neededItems.length > 1 && (
             <Button
               type="button"
-              variant="ghost"
               size="sm"
-              onClick={() => setIsStaplesTrayOpen(!isStaplesTrayOpen)}
-              className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground shrink-0 rounded-lg gap-1"
+              variant="outline"
+              onClick={handleAllNeededToCart}
+              disabled={isPending}
+              className="h-8.5 rounded-xl text-xs font-semibold px-3 border-border hover:bg-secondary shrink-0 gap-1.5 cursor-pointer"
             >
-              <span>{isStaplesTrayOpen ? t.supermarket.collapse : t.supermarket.expand}</span>
-              {isStaplesTrayOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              <Plus className="w-3.5 h-3.5" />
+              <span>Put All in Basket</span>
             </Button>
-          </div>
-
-          {isStaplesTrayOpen && (
-            <div className="p-3.5 sm:p-4 pt-2 border-t border-border/60 space-y-3">
-              {pantryItems.length > 8 && (
-                <div className="relative w-full max-w-xs">
-                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
-                  <Input
-                    value={stapleSearch}
-                    onChange={(e) => setStapleSearch(e.target.value)}
-                    placeholder={t.supermarket.searchStaples}
-                    className="h-8 pl-8 pr-3 text-xs rounded-lg bg-secondary/30 border-border/70"
-                  />
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-1">
-                {filteredStaples.map((staple) => {
-                  const isInMyCart = myCartItems.some((i) => i.pantry_item_id === staple.id);
-                  const isNeeded = neededItems.some((i) => i.pantry_item_id === staple.id);
-
-                  if (isInMyCart) {
-                    const cartItem = myCartItems.find((i) => i.pantry_item_id === staple.id);
-                    return (
-                      <button
-                        key={staple.id}
-                        type="button"
-                        onClick={() => cartItem && handleReturnToList(cartItem)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shadow-2xs select-none cursor-pointer transition-all group"
-                        title="Tap to remove from basket and return to queue"
-                      >
-                        <Check className="w-3.5 h-3.5 stroke-[2.5] group-hover:hidden" />
-                        <RotateCcw className="w-3.5 h-3.5 hidden group-hover:inline stroke-[2.5]" />
-                        <span className="line-through group-hover:no-underline">{staple.name}</span>
-                        <span className="text-[10px] font-mono opacity-70 ml-0.5 group-hover:hidden">{t.cart.inBasket}</span>
-                        <span className="text-[10px] font-mono opacity-70 ml-0.5 hidden group-hover:inline">Remove</span>
-                      </button>
-                    );
-                  }
-
-                  if (isNeeded) {
-                    const neededItem = neededItems.find((i) => i.pantry_item_id === staple.id)!;
-                    return (
-                      <button
-                        key={staple.id}
-                        type="button"
-                        onClick={() => handleMoveNeededToCart(neededItem)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-800 dark:text-amber-200 transition-all cursor-pointer shadow-2xs active:scale-95 select-none"
-                        title="Click to drop into your basket"
-                      >
-                        <Plus className="w-3.5 h-3.5 text-amber-500" />
-                        <span>{staple.name}</span>
-                        <span className="text-[10px] font-mono text-amber-700 dark:text-amber-300 font-normal ml-0.5">
-                          + Basket
-                        </span>
-                      </button>
-                    );
-                  }
-
-                  return (
-                    <button
-                      key={staple.id}
-                      type="button"
-                      onClick={() => onQuickAddStaple?.(staple)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-secondary/60 hover:bg-secondary border border-border/70 hover:border-border text-foreground transition-all cursor-pointer shadow-2xs active:scale-95 select-none"
-                      title="Grab staple into basket"
-                    >
-                      <Plus className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span>{staple.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           )}
-        </Card>
-      )}
+        </div>
 
-      {/* 2. NEEDED ITEMS QUICK-REFERENCE (Tap directly into basket) */}
-      {neededItems.length > 0 && (
-        <Card className="border border-border/80 bg-card rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/60">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
-                <ShoppingBag className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm sm:text-base font-bold text-foreground tracking-tight">
-                    Needed for This Run
-                  </h3>
-                  <Badge variant="secondary" className="text-xs font-mono font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/25">
-                    {neededItems.length}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Tap any item to drop it directly into your basket.
-                </p>
-              </div>
+        {/* One-time item input (replaces the board's command bar) */}
+        {onAddOneOff && (
+          <form onSubmit={handleAddOneOffSubmit} className="flex items-center gap-2">
+            <div className="relative flex-1 min-w-0">
+              <Plus className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+              <Input
+                value={oneOffName}
+                onChange={(e) => setOneOffName(e.target.value)}
+                placeholder={t.supermarket.addOneOffPlaceholder}
+                disabled={isAddingOneOff}
+                maxLength={255}
+                className="h-10 pl-8 pr-3 text-sm rounded-xl bg-secondary/30 border-border/70"
+              />
             </div>
+            <Button
+              type="submit"
+              size="sm"
+              variant="secondary"
+              disabled={isAddingOneOff || !oneOffName.trim()}
+              className="h-10 rounded-xl px-4 text-xs font-semibold shrink-0 cursor-pointer"
+            >
+              {isAddingOneOff ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <span>{t.supermarket.addOneOffBtn}</span>
+              )}
+            </Button>
+          </form>
+        )}
 
-            {neededItems.length > 1 && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={handleAllNeededToCart}
-                disabled={isPending}
-                className="h-8.5 rounded-xl text-xs font-semibold px-3 border-border hover:bg-secondary shrink-0 gap-1.5 cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Put All in Basket</span>
-              </Button>
-            )}
-          </div>
-
+        {neededItems.length === 0 ? (
+          <p className="text-xs text-muted-foreground px-1 py-1">{t.supermarket.listEmpty}</p>
+        ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
             {neededItems.map((item) => (
               <div
@@ -485,10 +390,71 @@ export function ActiveCartSection({
               </div>
             ))}
           </div>
-        </Card>
-      )}
+        )}
 
-      {/* 3. ACTIVE SHOPPING CHECKLIST WORKSPACE */}
+        {/* Essentials that aren't on the list: tap to drop straight into the basket */}
+        {pantryItems.length > 0 && (
+          <div className="pt-3 border-t border-border/60 space-y-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{t.supermarket.alsoGrab}</span>
+              </span>
+              {pantryItems.length > 8 && (
+                <div className="relative w-full max-w-[200px]">
+                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                  <Input
+                    value={stapleSearch}
+                    onChange={(e) => setStapleSearch(e.target.value)}
+                    placeholder={t.supermarket.searchStaples}
+                    className="h-8 pl-8 pr-3 text-xs rounded-lg bg-secondary/30 border-border/70"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-1">
+                {grabbableStaples.map((staple) => {
+                  const isInMyCart = myCartItems.some((i) => i.pantry_item_id === staple.id);
+
+                  if (isInMyCart) {
+                    const cartItem = myCartItems.find((i) => i.pantry_item_id === staple.id);
+                    return (
+                      <button
+                        key={staple.id}
+                        type="button"
+                        onClick={() => cartItem && handleReturnToList(cartItem)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shadow-2xs select-none cursor-pointer transition-all group"
+                        title="Tap to remove from basket and return to queue"
+                      >
+                        <Check className="w-3.5 h-3.5 stroke-[2.5] group-hover:hidden" />
+                        <RotateCcw className="w-3.5 h-3.5 hidden group-hover:inline stroke-[2.5]" />
+                        <span className="line-through group-hover:no-underline">{staple.name}</span>
+                        <span className="text-[10px] font-mono opacity-70 ml-0.5 group-hover:hidden">{t.cart.inBasket}</span>
+                        <span className="text-[10px] font-mono opacity-70 ml-0.5 hidden group-hover:inline">Remove</span>
+                      </button>
+                    );
+                  }
+
+                  return (
+                    <button
+                      key={staple.id}
+                      type="button"
+                      onClick={() => onQuickAddStaple?.(staple)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-secondary/60 hover:bg-secondary border border-border/70 hover:border-border text-foreground transition-all cursor-pointer shadow-2xs active:scale-95 select-none"
+                      title="Grab staple into basket"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>{staple.name}</span>
+                    </button>
+                  );
+                })}
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* 2. ACTIVE SHOPPING CHECKLIST WORKSPACE */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column: Your Basket */}
         <Card className="border border-border/80 bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
@@ -548,7 +514,7 @@ export function ActiveCartSection({
                 </p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   {neededItems.length > 0
-                    ? "Tap any item in 'Needed for This Run' above to add it to your basket."
+                    ? t.supermarket.neededItemsEmptyHint
                     : t.supermarket.basketEmptySub}
                 </p>
               </div>
@@ -572,64 +538,26 @@ export function ActiveCartSection({
               {myCartItems.map((item) => (
                 <div
                   key={item.id}
-                  className={cn(
-                    "p-3 sm:p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 min-h-[56px] select-none",
-                    item.is_purchased
-                      ? "bg-muted/30 border-border/50 opacity-80"
-                      : "bg-secondary/40 hover:bg-secondary/70 border-border/80 shadow-2xs"
-                  )}
+                  className="p-3 sm:p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 min-h-[56px] select-none bg-secondary/40 border-border/80 shadow-2xs"
                 >
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => handleToggleItemBought(item)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        handleToggleItemBought(item);
-                      }
-                    }}
-                    className="flex items-center gap-3.5 min-w-0 flex-1 cursor-pointer"
-                  >
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleItemBought(item);
-                      }}
-                      aria-label={
-                        item.is_purchased
-                          ? `Mark ${item.name} as not bought`
-                          : `Mark ${item.name} as bought`
-                      }
-                      className={cn(
-                        "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0 cursor-pointer",
-                        item.is_purchased
-                          ? "bg-accent-brand border-accent-brand text-accent-foreground shadow-xs"
-                          : "border-muted-foreground/40 hover:border-accent-brand bg-background"
-                      )}
+                  {/* Being in the cart is the "done" state: no separate tick step. */}
+                  <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                    <span
+                      aria-hidden
+                      className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-accent-brand text-accent-foreground shadow-xs"
                     >
-                      {item.is_purchased && <Check className="w-4 h-4 stroke-[3]" />}
-                    </button>
+                      <Check className="w-4 h-4 stroke-[3]" />
+                    </span>
 
                     <div className="min-w-0 flex-1">
-                      <span
-                        className={cn(
-                          "text-sm sm:text-base font-semibold block truncate leading-tight transition-all",
-                          item.is_purchased
-                            ? "line-through text-muted-foreground"
-                            : "text-foreground"
-                        )}
-                      >
+                      <span className="text-sm sm:text-base font-semibold block truncate leading-tight text-foreground">
                         {item.name}
                       </span>
                       <div className="flex items-center gap-1.5 pt-0.5">
                         <span className="text-[10px] font-mono text-muted-foreground">
-                          {item.is_purchased
-                            ? `✓ ${t.cart.inBasket}`
-                            : item.pantry_item_id
-                            ? `${t.cart.toPickUp} · ${t.cart.staple}`
-                            : t.cart.toPickUp}
+                          {item.pantry_item_id
+                            ? `${t.cart.inBasket} · ${t.cart.staple}`
+                            : t.cart.inBasket}
                         </span>
                       </div>
                     </div>
@@ -643,10 +571,10 @@ export function ActiveCartSection({
                       onClick={() => handleReturnToList(item)}
                       disabled={isPending}
                       className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer"
-                      title="Return to needed list"
-                      aria-label={`Return ${item.name} to list`}
+                      title="Remove from cart (back to the shopping list)"
+                      aria-label={`Remove ${item.name} from cart`}
                     >
-                      <RotateCcw className="w-3.5 h-3.5" />
+                      <X className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>

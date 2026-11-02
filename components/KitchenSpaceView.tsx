@@ -14,7 +14,6 @@ import type {
 } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import {
-  addPantryItemAction,
   addCustomShoppingItemAction,
   quickAddStapleToCartAction,
   moveAllNeededToCartAction,
@@ -51,15 +50,12 @@ import {
   Settings,
   BarChart3,
   ExternalLink,
-  Plus,
   CheckCircle2,
-  ArrowRight,
   ArrowLeft,
   Home,
   Heart,
   Briefcase,
   Layers,
-  Loader2,
   HelpCircle,
   Receipt,
   RotateCcw,
@@ -178,9 +174,6 @@ export function KitchenSpaceView({
   }, [initialMembers]);
 
   // Universal Command Bar State
-  const [commandInput, setCommandInput] = useState("");
-  const [commandType, setCommandType] = useState<"one-off" | "staple">("one-off");
-  const [isSubmittingCommand, setIsSubmittingCommand] = useState(false);
 
   // Overlays State
   const [isRoommatesOpen, setIsRoommatesOpen] = useState(false);
@@ -280,44 +273,19 @@ export function KitchenSpaceView({
   const isStaplesAdminOnlyNonAdmin =
     initialKitchen.staple_permission === "admin_only" && !isAdmin;
 
-  // Universal Command Bar Add Handler
-  const handleCommandSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const name = commandInput.trim();
-    if (!name || isSubmittingCommand) return;
-
-    if (commandType === "staple" && isStaplesAdminOnlyNonAdmin) {
-      toast.error(t.kitchen.commandBar.staplesAdminOnlyHelper);
-      return;
+  // One-time (non-essential) items are added from the Shopping List in the Shopping tab.
+  // Resolves true on success so the input there knows to clear itself.
+  const handleAddOneOff = async (name: string): Promise<boolean> => {
+    try {
+      const newItem = await addCustomShoppingItemAction(initialKitchen.id, name);
+      setLocalShoppingListItems((prev) => [newItem, ...prev]);
+      router.refresh();
+      toast.success(`Added "${name}" to the shopping list`);
+      return true;
+    } catch (err: any) {
+      toast.error(err.message || "Failed to add item.");
+      return false;
     }
-
-    setIsSubmittingCommand(true);
-    startTransition(async () => {
-      try {
-        if (commandType === "staple") {
-          const item = await addPantryItemAction(initialKitchen.id, name);
-          setLocalPantryItems((prev) =>
-            [...prev, item].sort((a, b) => a.name.localeCompare(b.name))
-          );
-          router.refresh();
-          if (item.is_approved === false) {
-            toast.success(t.kitchen.staples.proposalSubmitted);
-          } else {
-            toast.success(`Tracked "${name}" in household staples`);
-          }
-        } else {
-          const newItem = await addCustomShoppingItemAction(initialKitchen.id, name);
-          setLocalShoppingListItems((prev) => [newItem, ...prev]);
-          router.refresh();
-          toast.success(`Added "${name}" to shopping queue`);
-        }
-        setCommandInput("");
-      } catch (err: any) {
-        toast.error(err.message || "Failed to stage item.");
-      } finally {
-        setIsSubmittingCommand(false);
-      }
-    });
   };
 
   // State sync handlers between Pantry & Shopping List
@@ -386,11 +354,6 @@ export function KitchenSpaceView({
     }
   };
 
-  const handleItemPurchasedToggle = (item: ShoppingListItem, isPurchased: boolean) => {
-    setLocalShoppingListItems((prev) =>
-      prev.map((i) => (i.id === item.id ? { ...i, is_purchased: isPurchased } : i))
-    );
-  };
 
   const handleQuickAddStapleToCart = (staple: PantryItem) => {
     const existing = localShoppingListItems.find(
@@ -581,9 +544,6 @@ export function KitchenSpaceView({
           >
             <UtensilsCrossed className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>{t.kitchen.modes.kitchenBoard}</span>
-            <span className="hidden sm:inline text-[11px] opacity-70 font-normal">
-              {t.kitchen.modes.inventoryPrep}
-            </span>
             {neededItemsCount > 0 && (
               <span
                 className={cn(
@@ -610,9 +570,6 @@ export function KitchenSpaceView({
           >
             <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>{t.kitchen.modes.supermarketRun}</span>
-            <span className="hidden sm:inline text-[11px] opacity-70 font-normal">
-              {t.kitchen.modes.storeChecklist}
-            </span>
             {(activeCartCount > 0 || isCartBadgePulsing) && (
               <span
                 className={cn(
@@ -633,87 +590,6 @@ export function KitchenSpaceView({
         {/* MODE 1: KITCHEN BOARD */}
         {mode === "board" && (
           <main className="space-y-6 sm:space-y-8 animate-in fade-in-50 duration-200">
-            {/* HIGH-END INPUT AFFORDANCE (THE COMMAND BAR) */}
-            <form onSubmit={handleCommandSubmit} className="relative w-full">
-              <div className="relative w-full h-12 sm:h-13 bg-card border border-border/70 rounded-2xl flex items-center px-3.5 sm:px-4 focus-within:border-accent-brand/40 focus-within:ring-2 focus-within:ring-accent-brand/10 shadow-sm transition-all">
-                <Plus className="w-4 h-4 text-muted-foreground/50 shrink-0 mr-2.5 sm:mr-3" />
-                <input
-                  type="text"
-                  value={commandInput}
-                  onChange={(e) => setCommandInput(e.target.value)}
-                  placeholder={t.kitchen.commandBar.placeholder}
-                  disabled={isSubmittingCommand}
-                  className="w-full bg-transparent border-none text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-0 min-w-0 pr-2 sm:pr-3"
-                />
-
-                {/* Right Actions: Micro segmented pill for [ One-off | Staple ] + Minimalist circular Enter button */}
-                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                  <div className="flex items-center gap-0.5 bg-secondary/60 border border-border/70 p-0.5 rounded-lg shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setCommandType("one-off")}
-                      className={cn(
-                        "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-semibold transition-all cursor-pointer select-none",
-                        commandType === "one-off"
-                          ? "bg-background text-foreground shadow-2xs border border-border/60"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {t.kitchen.commandBar.oneOff}
-                    </button>
-                    {isStaplesAdminOnlyNonAdmin ? (
-                      <button
-                        type="button"
-                        disabled
-                        className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-semibold transition-all select-none opacity-40 cursor-not-allowed text-muted-foreground"
-                        title={t.kitchen.commandBar.staplesAdminOnlyHelper}
-                      >
-                        {t.kitchen.commandBar.staple}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setCommandType("staple")}
-                        className={cn(
-                          "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-semibold transition-all cursor-pointer select-none",
-                          commandType === "staple"
-                            ? "bg-accent-brand/15 text-accent-brand border border-accent-brand/25 shadow-2xs"
-                            : "text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        {t.kitchen.commandBar.staple}
-                      </button>
-                    )}
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isSubmittingCommand || !commandInput.trim()}
-                    className={cn(
-                      "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 transition-all cursor-pointer",
-                      commandInput.trim()
-                        ? "bg-accent-brand text-accent-foreground shadow-md shadow-accent-brand/20 active:scale-95"
-                        : "bg-muted text-muted-foreground/30 cursor-not-allowed border border-border/50"
-                    )}
-                    title={t.kitchen.commandBar.add}
-                    aria-label={t.kitchen.commandBar.add}
-                  >
-                    {isSubmittingCommand ? (
-                      <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
-                    ) : (
-                      <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
-                    )}
-                  </button>
-                </div>
-              </div>
-              {isStaplesAdminOnlyNonAdmin && (
-                <p className="text-[11px] text-muted-foreground/80 mt-1.5 px-2 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
-                  <span>{t.kitchen.commandBar.staplesAdminOnlyHelper}</span>
-                </p>
-              )}
-            </form>
-
             {/* STATUS ZONE: fixed height, both states stacked in one grid cell and crossfaded */}
             <div className="grid grid-cols-[minmax(0,1fr)] w-full min-w-0 min-h-[72px] sm:min-h-[80px] my-3">
               <div
@@ -746,7 +622,7 @@ export function KitchenSpaceView({
                   </span>
                   <span className="shrink-0 h-9 px-3 sm:px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-xs flex items-center gap-1 shadow-sm whitespace-nowrap">
                     <span className="hidden sm:inline">
-                      {locale === "de" ? "Einkaufsrunde" : "Start run"}
+                      {locale === "de" ? "Einkaufsrunde" : "Start Shopping"}
                     </span>
                     <span className="sm:hidden">{locale === "de" ? "Starten" : "Start"}</span>
                     <span aria-hidden>→</span>
@@ -793,6 +669,12 @@ export function KitchenSpaceView({
               currentUserId={currentUserId}
               isAdmin={isAdmin}
               hideInput={true}
+              canAdd={!isStaplesAdminOnlyNonAdmin}
+              onItemAdded={(item) =>
+                setLocalPantryItems((prev) =>
+                  [...prev, item].sort((a, b) => a.name.localeCompare(b.name))
+                )
+              }
               onItemEmptied={handlePantryItemEmptied}
               onItemRestocked={handlePantryItemRestocked}
               onItemDeleted={(itemId) =>
@@ -874,9 +756,9 @@ export function KitchenSpaceView({
               }}
               onItemReturnedToList={handleItemReturnedToList}
               onItemMovedToCart={handleItemMovedToCart}
-              onItemPurchasedToggle={handleItemPurchasedToggle}
               onQuickAddStaple={handleQuickAddStapleToCart}
               onAllItemsMovedToCart={handleAllItemsMovedToCart}
+              onAddOneOff={handleAddOneOff}
             />
           </main>
         )}

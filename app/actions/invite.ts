@@ -9,6 +9,7 @@ import {
 } from "@/lib/invite";
 import type { ClaimInviteResult, InviteDetails } from "@/types";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { notifyKitchen } from "@/lib/push";
 
 async function getClientIdentifier(): Promise<string> {
   const headerList = await headers();
@@ -70,6 +71,19 @@ export async function claimInviteAction(
   }
 
   const result = await claimInvite(inviteToken, session.user.id);
+
+  if (result.success) {
+    notifyKitchen(
+      result.kitchenId,
+      "members",
+      {
+        title: "New member",
+        body: `${result.kitchenDisplayName} just joined your kitchen.`,
+        url: `/kitchen/${result.kitchenId}`,
+      },
+      { excludeUserId: session.user.id }
+    ).catch((err) => console.error("Push notification failed:", err));
+  }
 
   if (result.success || result.error === "ALREADY_MEMBER") {
     const cookieStore = await cookies();
