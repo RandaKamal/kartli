@@ -48,6 +48,8 @@ async function requireMembership(kitchenId: string): Promise<string> {
 
 function revalidateKitchen(kitchenId: string) {
   revalidatePath(`/kitchen/${kitchenId}`);
+  revalidatePath(`/kitchen/view/${kitchenId}`);
+  revalidatePath("/kitchen/view/[id]", "page");
 }
 
 export async function getPantryItemsAction(kitchenId: string): Promise<PantryItem[]> {

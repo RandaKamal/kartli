@@ -69,8 +69,8 @@ export default async function PublicKitchenViewPage({
   const membership = userId ? await getUserMembership(kitchen.id, userId) : null;
 
   const allItems = await getShoppingListItems(kitchen.id);
-  const openItems = allItems.filter((item) => !item.is_purchased);
-  const inCartItems = allItems.filter((item) => item.is_purchased && !item.checkout_id);
+  const openItems = allItems.filter((item) => !item.is_purchased && !item.is_in_cart);
+  const inCartItems = allItems.filter((item) => (item.is_purchased || item.is_in_cart) && !item.checkout_id);
 
   const sessionUser = session?.user
     ? {
