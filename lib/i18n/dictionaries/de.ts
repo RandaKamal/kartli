@@ -37,12 +37,12 @@ export const de: typeof en = {
   },
   landing: {
     badge: "kartli 1.0 · Das Küchen-Betriebssystem",
-    heroTitle: "Küchen-Management für WGs, die gutes Essen lieben und null Drama.",
-    heroTitlePrefix: "Küchen-Management für WGs, die ",
-    heroTitleAccent: "gutes Essen und null Drama",
-    heroTitleSuffix: " lieben.",
+    heroTitle: "Alles, was eure WG-Küche braucht, an einem Ort.",
+    heroTitlePrefix: "Alles, was eure WG-Küche braucht, ",
+    heroTitleAccent: "an einem Ort.",
+    heroTitleSuffix: "",
     heroSubtitle:
-      "Verwalte Vorräte, plane Einkäufe in Echtzeit mit deinen Mitbewohnern, scanne Supermarktbelege per KI und gleiche WG-Ausgaben mit einem Klick aus.",
+      "Behalte die WG-Basics im Blick, verwalte eine gemeinsame Einkaufsliste, scanne Belege mit Gemini und gleiche Ausgaben mit deinen Mitbewohnern aus.",
     ctaDashboard: "Zum Dashboard",
     ctaCreate: "Küche erstellen",
     startKitchen: "Küche starten",
