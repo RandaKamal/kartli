@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { auth } from "@/auth";
 import { getUserLanguage } from "@/app/actions/user";
 import { Header } from "@/components/Header";
@@ -10,8 +10,16 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { LanguageProvider, type Locale } from "@/lib/i18n";
 import "./globals.css";
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+  ],
+  colorScheme: "dark",
+};
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXTAUTH_URL || "https://kartli.org"),
+  metadataBase: new URL(process.env.NEXTAUTH_URL || "https://kartli.app"),
   title: {
     default: "kartli – Shared Kitchens",
     template: "%s | kartli – Shared Kitchens",
@@ -31,7 +39,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "kartli – Shared Kitchens",
     description: "Lean, email-free shared kitchen management, pantries, and grocery lists for flatshares.",
-    url: "https://kartli.org",
+    url: "https://kartli.app",
     siteName: "kartli",
     locale: "de_DE",
     alternateLocale: ["en_US"],
@@ -56,6 +64,8 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "kartli",
   },
+  formatDetection: { telephone: false },
+  other: { "mobile-web-app-capable": "yes" },
 };
 
 export default async function RootLayout({
@@ -123,4 +133,3 @@ export default async function RootLayout({
     </html>
   );
 }
-

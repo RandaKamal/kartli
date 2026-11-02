@@ -9,6 +9,8 @@ self.addEventListener("push", (event) => {
   const title = data.title || "kartli";
   const options = {
     body: data.body || "",
+    icon: "/icon.png",
+    badge: "/favicon.png",
     data: { url: data.url || "/" },
   };
 

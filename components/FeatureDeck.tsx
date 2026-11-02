@@ -245,7 +245,7 @@ export function FeatureDeck() {
           <div className="space-y-2.5 pt-2">
             {/* Sleek Balance Row */}
             <div className="flex items-center justify-between p-2.5 rounded-xl bg-secondary/50 border border-border/70 text-xs">
-              <span className="font-medium text-foreground">Colin +€28.20</span>
+              <span className="font-medium text-foreground">Finn +€28.20</span>
               <span className="text-muted-foreground/60">&middot;</span>
               <span className="font-medium text-foreground">Lisa -€14.10</span>
             </div>

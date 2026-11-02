@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXTAUTH_URL || "https://kartli.org";
+  const baseUrl = process.env.NEXTAUTH_URL || "https://kartli.app";
   const now = new Date();
 
   const routes = [
