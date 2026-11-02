@@ -3,6 +3,11 @@
 import { auth } from "@/auth";
 import { pool } from "@/lib/db";
 
+// Read at runtime so the key comes from Cloud Run's env, not whatever was present at build time.
+export async function getVapidPublicKey(): Promise<string | null> {
+  return process.env.VAPID_PUBLIC_KEY || null;
+}
+
 export async function subscribeToPush(subscription: {
   endpoint: string;
   keys: { p256dh: string; auth: string };

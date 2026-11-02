@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Bell, BellOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { subscribeToPush, unsubscribeFromPush } from "@/app/actions/push";
+import { getVapidPublicKey, subscribeToPush, unsubscribeFromPush } from "@/app/actions/push";
 import { useTranslation } from "@/lib/i18n";
 import { toast } from "sonner";
 
@@ -39,10 +39,12 @@ export function NotificationToggle() {
         toast.error(t.kitchenSettings.notificationsDenied);
         return;
       }
+      const publicKey = await getVapidPublicKey();
+      if (!publicKey) throw new Error("VAPID_PUBLIC_KEY is not configured on the server.");
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
       });
       const json = subscription.toJSON();
       await subscribeToPush({
