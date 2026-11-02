@@ -682,6 +682,14 @@ export const de: typeof en = {
       title: "Ausgaben & Bons",
       desc: "Scanne Belege per KI oder trage Summen ein. kartli hält eure WG-Finanzen transparent und stressfrei.",
     },
+    step5: {
+      title: "Benachrichtigungen",
+      desc: "Verwalte Benachrichtigungen unter Einstellungen & Profil oder tippe auf das Glockensymbol auf einer Küchenkarte, um zu wählen, welche Benachrichtigungen du bekommst.",
+    },
+    step6: {
+      title: "Einstellungen",
+      desc: "Öffne Einstellungen & Profil über dein Profilmenü, um dein Farbthema festzulegen.",
+    },
   },
   invite: {
     backHome: "Zurück zur Startseite",

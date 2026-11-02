@@ -680,6 +680,14 @@ export const en = {
       title: "Expenses & Receipts",
       desc: "Scan receipts with AI or log quick checkouts. kartli keeps household balances fair with zero drama.",
     },
+    step5: {
+      title: "Notifications",
+      desc: "Manage alerts in Settings & Profile, or tap the bell icon on a kitchen card to choose which notifications you receive.",
+    },
+    step6: {
+      title: "Preferences",
+      desc: "Open Settings & Profile from your profile menu to set your color theme.",
+    },
   },
   invite: {
     backHome: "Back to Home",
