@@ -3,9 +3,15 @@
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { getUserMembership, getKitchenMembersWithUsers } from "@/lib/kitchen";
+import {
+  getUserMembership,
+  getKitchenById,
+  isUserKitchenAdmin,
+  getKitchenMembersWithUsers,
+} from "@/lib/kitchen";
 import { sendPushToUsers } from "@/lib/push";
 import { getGuestCartCookieName } from "@/lib/guestCart";
+import { pool } from "@/lib/db";
 import {
   getPantryItems,
   addPantryItem,
@@ -14,6 +20,9 @@ import {
   getShoppingListItems,
   addCustomShoppingItem,
   togglePurchased,
+  putItemInCart,
+  returnItemToShoppingList,
+  completeItemPurchase,
   removeShoppingListItem,
   clearUserCart,
   clearBoughtShoppingListItems,
@@ -21,6 +30,8 @@ import {
   moveAllNeededToCart,
   stageGuestShoppingItem as stageGuestShoppingItemDb,
   unstageGuestItem as unstageGuestItemDb,
+  quickAddStapleToCart,
+  duplicateShoppingListItem,
 } from "@/lib/pantry";
 import type { PantryItem, ShoppingListItem } from "@/types";
 
@@ -45,11 +56,90 @@ export async function getPantryItemsAction(kitchenId: string): Promise<PantryIte
   return await getPantryItems(kitchenId);
 }
 
-export async function addPantryItemAction(kitchenId: string, name: string) {
-  await requireMembership(kitchenId);
-  const item = await addPantryItem(kitchenId, name);
+export async function createPantryItemAction(kitchenId: string, name: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in.");
+  }
+  const membership = await getUserMembership(kitchenId, session.user.id);
+  if (!membership) {
+    throw new Error("You are not a member of this kitchen.");
+  }
+
+  const kitchen = await getKitchenById(kitchenId);
+  if (!kitchen) {
+    throw new Error("Kitchen not found.");
+  }
+
+  const isAdmin = membership.role === "ADMIN";
+  const staplePermission = kitchen.staple_permission || "open";
+
+  let isApproved = true;
+  let proposedBy: string | null = null;
+
+  if (isAdmin) {
+    isApproved = true;
+  } else {
+    if (staplePermission === "admin_only") {
+      throw new Error("Nur Admins können Vorräte hinzufügen / Only admins can add staples");
+    } else if (staplePermission === "approval") {
+      isApproved = false;
+      proposedBy = session.user.id;
+    } else {
+      isApproved = true;
+    }
+  }
+
+  const item = await addPantryItem(kitchenId, name, {
+    is_approved: isApproved,
+    proposed_by: proposedBy,
+  });
   revalidateKitchen(kitchenId);
   return item;
+}
+
+export const addPantryItemAction = createPantryItemAction;
+
+/**
+ * Approves a proposed pantry staple (Admin only).
+ */
+export async function approvePantryItemAction(kitchenId: string, itemId: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in.");
+  }
+  const isAdmin = await isUserKitchenAdmin(kitchenId, session.user.id);
+  if (!isAdmin) {
+    throw new Error("Unauthorized: Only admins can approve staples.");
+  }
+
+  await pool.query(
+    `UPDATE pantry_items SET is_approved = true, updated_at = NOW() WHERE id = $1 AND kitchen_id = $2`,
+    [itemId, kitchenId]
+  );
+  revalidateKitchen(kitchenId);
+  return { success: true };
+}
+
+/**
+ * Rejects and deletes a proposed pantry staple (Admin only).
+ */
+export async function rejectPantryItemAction(kitchenId: string, itemId: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in.");
+  }
+  const isAdmin = await isUserKitchenAdmin(kitchenId, session.user.id);
+  if (!isAdmin) {
+    throw new Error("Unauthorized: Only admins can reject staples.");
+  }
+
+  await pool.query(
+    `DELETE FROM pantry_items WHERE id = $1 AND kitchen_id = $2 AND is_approved = false`,
+    [itemId, kitchenId]
+  );
+  revalidateKitchen(kitchenId);
+  return { success: true };
 }
 
 export async function setPantryItemStockAction(
@@ -58,22 +148,49 @@ export async function setPantryItemStockAction(
   isOutOfStock: boolean
 ) {
   const userId = await requireMembership(kitchenId);
+  // No revalidatePath here: it would force a full RSC re-render and stall the
+  // client transition. The client holds optimistic state; the next navigation/poll syncs.
   const item = await setPantryItemStock(kitchenId, itemId, isOutOfStock);
-  revalidateKitchen(kitchenId);
 
   if (isOutOfStock) {
-    const members = await getKitchenMembersWithUsers(kitchenId);
-    const otherUserIds = members
-      .map((m) => m.user_id)
-      .filter((id): id is string => !!id && id !== userId);
-    sendPushToUsers(otherUserIds, {
-      title: "Item out of stock",
-      body: `${item.name} just ran out — added to the shopping list.`,
-      url: `/kitchen/${kitchenId}`,
-    }).catch((err) => console.error("Push notification failed:", err));
+    getKitchenMembersWithUsers(kitchenId)
+      .then((members) => {
+        const otherUserIds = members
+          .map((m) => m.user_id)
+          .filter((id): id is string => !!id && id !== userId);
+        return sendPushToUsers(otherUserIds, {
+          title: "Item out of stock",
+          body: `${item.name} just ran out — added to the shopping list.`,
+          url: `/kitchen/${kitchenId}`,
+        });
+      })
+      .catch((err) => console.error("Push notification failed:", err));
   }
 
   return item;
+}
+
+export async function updateItemStockAction(
+  param1: string,
+  param2: string | boolean,
+  param3?: boolean
+) {
+  if (typeof param2 === "boolean") {
+    // Called as updateItemStockAction(itemId, isOutOfStock)
+    const itemId = param1;
+    const isOutOfStock = param2;
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("You must be logged in.");
+    const { rows } = await pool.query<{ kitchen_id: string }>(
+      `SELECT kitchen_id FROM pantry_items WHERE id = $1`,
+      [itemId]
+    );
+    if (!rows[0]) throw new Error("Item not found");
+    return setPantryItemStockAction(rows[0].kitchen_id, itemId, isOutOfStock);
+  } else {
+    // Called as updateItemStockAction(kitchenId, itemId, isOutOfStock)
+    return setPantryItemStockAction(param1, param2 as string, Boolean(param3));
+  }
 }
 
 export async function deletePantryItemAction(kitchenId: string, itemId: string) {
@@ -106,12 +223,54 @@ export async function togglePurchasedAction(
   return item;
 }
 
-export async function moveToCartAction(kitchenId: string, itemId: string) {
-  return await togglePurchasedAction(kitchenId, itemId, true);
+export async function putItemInCartAction(
+  kitchenId: string,
+  itemId: string,
+  itemName?: string
+) {
+  const userId = await requireMembership(kitchenId);
+  // putItemInCart validates the UUID and resolves temp-* ids by kitchen + name
+  const item = await putItemInCart(kitchenId, itemId, userId, itemName);
+  revalidateKitchen(kitchenId);
+  return item;
+}
+
+export const moveToCartAction = putItemInCartAction;
+
+export async function quickAddStapleToCartAction(kitchenId: string, pantryItemId: string) {
+  const userId = await requireMembership(kitchenId);
+  const item = await quickAddStapleToCart(kitchenId, pantryItemId, userId);
+  revalidateKitchen(kitchenId);
+  return item;
 }
 
 export async function returnToShoppingListAction(kitchenId: string, itemId: string) {
-  return await togglePurchasedAction(kitchenId, itemId, false);
+  const userId = await requireMembership(kitchenId);
+  const item = await returnItemToShoppingList(kitchenId, itemId, userId);
+  revalidateKitchen(kitchenId);
+  return item;
+}
+
+export async function duplicateShoppingListItemAction(
+  kitchenId: string,
+  itemId: string,
+  addToCart: boolean = true
+) {
+  const userId = await requireMembership(kitchenId);
+  const item = await duplicateShoppingListItem(kitchenId, itemId, userId, addToCart);
+  revalidateKitchen(kitchenId);
+  return item;
+}
+
+export async function completeItemPurchaseAction(
+  kitchenId: string,
+  itemId: string,
+  isPurchased: boolean
+) {
+  const userId = await requireMembership(kitchenId);
+  const item = await completeItemPurchase(kitchenId, itemId, userId, isPurchased);
+  revalidateKitchen(kitchenId);
+  return item;
 }
 
 export async function moveAllNeededToCartAction(kitchenId: string) {

@@ -478,9 +478,9 @@ export function CheckoutDialog({
               {receipts.length > 0 && (
                 <div className="space-y-1.5">
                   {receipts.map((r, i) => (
-                    <div key={r.receiptPath} className="w-full flex items-center justify-between gap-2.5 p-3 rounded-2xl border border-border bg-muted/30">
+                    <div key={r.receiptPath} className="w-full flex items-center justify-between gap-2.5 p-3 rounded-xl border border-border/80 bg-secondary/40">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-8 h-8 rounded-xl bg-muted border border-border flex items-center justify-center text-accent-success shrink-0">
+                        <div className="w-8 h-8 rounded-xl bg-secondary border border-border flex items-center justify-center text-emerald-500 shrink-0">
                           <Receipt className="w-4 h-4" />
                         </div>
                         <div className="min-w-0">
@@ -524,9 +524,9 @@ export function CheckoutDialog({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full flex items-center gap-2.5 p-3 rounded-2xl border-2 border-dashed border-border hover:border-muted-foreground/50 hover:bg-muted/30 transition-all text-left"
+                className="w-full flex items-center gap-2.5 p-3 rounded-2xl border-2 border-dashed border-border/80 hover:border-muted-foreground/50 hover:bg-secondary/30 transition-all text-left"
               >
-                <div className="w-8 h-8 rounded-xl bg-muted border border-border flex items-center justify-center text-muted-foreground shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-secondary border border-border flex items-center justify-center text-muted-foreground shrink-0">
                   {receipts.length > 0 ? <Plus className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
                 </div>
                 <div>
@@ -548,7 +548,7 @@ export function CheckoutDialog({
                   placeholder="e.g. Corner Bakery, Weekly Market, Lidl"
                   value={storeName}
                   onChange={(e) => setStoreName(e.target.value)}
-                  className="h-9 text-xs rounded-xl border-border bg-transparent"
+                  className="h-9 text-xs rounded-xl border-border/80 bg-secondary/30 focus-visible:bg-secondary/50 transition-colors"
                   disabled={isPending}
                 />
               </div>
@@ -566,7 +566,7 @@ export function CheckoutDialog({
                   placeholder="0.00"
                   value={totalAmount}
                   onChange={(e) => setTotalAmount(e.target.value)}
-                  className="h-9 text-xs font-mono rounded-xl border-border bg-transparent"
+                  className="h-9 text-xs font-mono font-medium rounded-xl border-border/80 bg-secondary/30 focus-visible:bg-secondary/50 transition-colors"
                   disabled={isPending}
                 />
               </div>
@@ -582,7 +582,7 @@ export function CheckoutDialog({
                   placeholder="e.g. Used petty cash, paid cash at farm stand, bought bulk discount"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  className="flex min-h-[64px] w-full rounded-xl border border-border bg-transparent p-2.5 text-xs shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                  className="flex min-h-[64px] w-full rounded-xl border border-border/80 bg-secondary/20 p-2.5 text-xs shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-transparent disabled:cursor-not-allowed disabled:opacity-50 resize-none"
                   disabled={isPending}
                 />
               </div>

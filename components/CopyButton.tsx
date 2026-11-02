@@ -14,6 +14,7 @@ export function CopyButton({
   variant = "secondary",
   iconOnly = false,
   className,
+  tooltip,
 }: {
   text: string;
   label?: string;
@@ -21,6 +22,7 @@ export function CopyButton({
   variant?: "default" | "secondary" | "outline" | "ghost";
   iconOnly?: boolean;
   className?: string;
+  tooltip?: string;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -56,13 +58,13 @@ export function CopyButton({
           </Button>
         </TooltipTrigger>
         <TooltipContent side="top">
-          {copied ? "Copied!" : label}
+          {copied ? "Copied!" : (tooltip || label)}
         </TooltipContent>
       </Tooltip>
     );
   }
 
-  return (
+  const button = (
     <Button
       type="button"
       size="sm"
@@ -83,5 +85,18 @@ export function CopyButton({
       )}
     </Button>
   );
+
+  if (tooltip) {
+    return (
+      <Tooltip open={copied ? true : undefined}>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-center text-xs">
+          {copied ? "Copied!" : tooltip}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return button;
 }
 

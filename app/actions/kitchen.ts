@@ -16,12 +16,16 @@ import {
   updateKitchenSettings as updateKitchenSettingsDb,
   regeneratePublicViewToken as regeneratePublicViewTokenDb,
   leaveKitchen as leaveKitchenDb,
+  deleteKitchen as deleteKitchenDb,
 } from "@/lib/kitchen";
+import { pool } from "@/lib/db";
 import type {
   CreateKitchenInput,
   CreateKitchenResult,
   Kitchen,
+  KitchenMember,
   KitchenMemberWithUser,
+  KitchenRole,
   KitchenSpaceType,
   UpdateKitchenNameInput,
   UpdateKitchenSettingsInput,
@@ -187,7 +191,124 @@ export async function updateKitchenName(
 export const updateKitchenNameAction = updateKitchenName;
 
 /**
- * Server Action for an admin to update kitchen settings including name and space type.
+ * Server Action for an admin to promote or demote a kitchen member.
+ */
+export async function promoteMemberAction(
+  kitchenId: string,
+  targetMemberOrUserId: string,
+  newRole: string
+): Promise<{ success: boolean; newRole: KitchenRole; member?: KitchenMember; error?: string }> {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return { success: false, newRole: "MEMBER", error: "You must be logged in to manage roles." };
+    }
+
+    if (!kitchenId || !targetMemberOrUserId) {
+      return { success: false, newRole: "MEMBER", error: "Missing required parameters." };
+    }
+
+    // 1. Authorization check: Caller must be an active ADMIN
+    const isAdmin = await isUserKitchenAdmin(kitchenId, session.user.id);
+    if (!isAdmin) {
+      return { success: false, newRole: "MEMBER", error: "Unauthorized: Only kitchen admins can manage roles." };
+    }
+
+    // 2. Former/deleted member safeguard: A kitchen_member whose user_id is
+    // NULL is a historical ledger entry (or an unclaimed invite). It must never
+    // be promoted/demoted, even if the caller knows its member record id.
+    const { rows: targetMemberRows } = await pool.query<{ user_id: string | null }>(
+      `SELECT user_id FROM kitchen_members WHERE kitchen_id = $1 AND (user_id = $2 OR id = $2) LIMIT 1`,
+      [kitchenId, targetMemberOrUserId]
+    );
+    if (targetMemberRows.length === 0) {
+      return { success: false, newRole: "MEMBER", error: "Member not found in this kitchen." };
+    }
+    if (targetMemberRows[0].user_id === null) {
+      return {
+        success: false,
+        newRole: "MEMBER",
+        error: "Ehemalige oder gelöschte Mitglieder können nicht bearbeitet werden.",
+      };
+    }
+
+    // 3. Input sanitization: Strictly map input roles to uppercase enum values ('ADMIN' | 'MEMBER')
+    const normalized = (newRole || "").trim().toUpperCase();
+    if (normalized !== "ADMIN" && normalized !== "MEMBER") {
+      return {
+        success: false,
+        newRole: "MEMBER",
+        error: "Invalid role value. Allowed roles are 'ADMIN' or 'MEMBER'.",
+      };
+    }
+    const roleUpper: KitchenRole = normalized as KitchenRole;
+
+    // 4. Demotion safeguard: Ensure kitchen does not become admin-less
+    if (roleUpper === "MEMBER") {
+      const { rows: memberRows } = await pool.query<{ role: KitchenRole }>(
+        `SELECT role FROM kitchen_members WHERE kitchen_id = $1 AND (user_id = $2 OR id = $2)`,
+        [kitchenId, targetMemberOrUserId]
+      );
+      if (memberRows.length > 0 && memberRows[0].role === "ADMIN") {
+        const { rows } = await pool.query<{ count: string }>(
+          `SELECT count(*) FROM kitchen_members WHERE kitchen_id = $1 AND role = 'ADMIN' AND user_id IS NOT NULL`,
+          [kitchenId]
+        );
+        const adminCount = parseInt(rows[0]?.count || "0", 10);
+        if (adminCount <= 1) {
+          return {
+            success: false,
+            newRole: "ADMIN",
+            error: "Promote another member to Admin before demoting the last Admin.",
+          };
+        }
+      }
+    }
+
+    // 5. Execution query: UPDATE role = $1 and updated_at = NOW()
+    // user_id IS NOT NULL is repeated as a race-safe guard in case the account
+    // is deleted between the check above and this write.
+    const updateSql = `
+      UPDATE kitchen_members
+      SET role = $1, updated_at = NOW()
+      WHERE kitchen_id = $2 AND (user_id = $3 OR id = $3) AND user_id IS NOT NULL
+      RETURNING id, kitchen_id, user_id, kitchen_display_name, role, invite_token, joined_at, created_at, updated_at
+    `;
+    const { rows: updatedRows } = await pool.query<KitchenMember>(updateSql, [
+      roleUpper,
+      kitchenId,
+      targetMemberOrUserId,
+    ]);
+
+    if (updatedRows.length === 0) {
+      return { success: false, newRole: roleUpper, error: "Member not found in this kitchen." };
+    }
+
+    const updatedMember = updatedRows[0];
+
+    revalidatePath(`/kitchen/${kitchenId}`);
+    revalidatePath(`/kitchen/${kitchenId}/admin`);
+    revalidatePath(`/kitchen/${kitchenId}/settings`);
+
+    return {
+      success: true,
+      newRole: updatedMember.role,
+      member: updatedMember,
+    };
+  } catch (err: any) {
+    console.error("Error updating member role:", err);
+    return {
+      success: false,
+      newRole: "MEMBER",
+      error: err?.message || "Failed to update member role.",
+    };
+  }
+}
+
+export const updateMemberRoleAction = promoteMemberAction;
+
+/**
+ * Server Action for an admin to update kitchen settings including name, space type, and staple permission.
  */
 export async function updateKitchenSettingsAction(
   params: UpdateKitchenSettingsInput
@@ -198,22 +319,27 @@ export async function updateKitchenSettingsAction(
   }
 
   const spaceType = params.spaceType || params.space_type || "FLATSHARE";
+  const staplePermission = params.staplePermission || params.staple_permission || "open";
+
   const validated = updateKitchenSettingsSchema.parse({
     kitchenId: params.kitchenId,
     name: params.name,
     space_type: spaceType,
+    staple_permission: staplePermission,
   });
 
   const updatedKitchen = await updateKitchenSettingsDb(
     validated.kitchenId,
     validated.name,
     validated.space_type,
-    session.user.id
+    session.user.id,
+    validated.staple_permission
   );
 
   revalidatePath(`/kitchen/${params.kitchenId}`);
   revalidatePath(`/kitchen/${params.kitchenId}/admin`);
   revalidatePath(`/kitchen/${params.kitchenId}/member`);
+  revalidatePath(`/kitchen/${params.kitchenId}/settings`);
   revalidatePath(`/kitchen/${params.kitchenId}/admin/purchases`);
   revalidatePath(`/kitchen/view/${updatedKitchen.public_view_token}`);
   revalidatePath("/");
@@ -249,15 +375,26 @@ export async function regeneratePublicViewTokenAction(
 export const regeneratePublicViewToken = regeneratePublicViewTokenAction;
 
 /**
- * Server Action for a regular member to leave a kitchen.
+ * Server Action for a member to leave a kitchen.
  */
-export async function leaveKitchenAction(kitchenId: string): Promise<{ success: boolean }> {
+export async function leaveKitchenAction(
+  kitchenId: string,
+  userId?: string
+): Promise<{ success: boolean }> {
   const session = await auth();
   if (!session?.user?.id) {
     throw new Error("You must be logged in to leave a kitchen.");
   }
 
-  await leaveKitchenDb(kitchenId, session.user.id);
+  const targetUserId = userId || session.user.id;
+  if (targetUserId !== session.user.id) {
+    const isAdmin = await isUserKitchenAdmin(kitchenId, session.user.id);
+    if (!isAdmin) {
+      throw new Error("Unauthorized: Only admins can remove other members.");
+    }
+  }
+
+  await leaveKitchenDb(kitchenId, targetUserId);
   revalidatePath("/");
   revalidatePath("/dashboard");
   revalidatePath(`/kitchen/${kitchenId}`);
@@ -265,5 +402,22 @@ export async function leaveKitchenAction(kitchenId: string): Promise<{ success: 
 }
 
 export const leaveKitchen = leaveKitchenAction;
+
+/**
+ * Server Action for an admin to permanently delete a kitchen.
+ */
+export async function deleteKitchenAction(kitchenId: string): Promise<{ success: boolean }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in to delete a kitchen.");
+  }
+
+  await deleteKitchenDb(kitchenId, session.user.id);
+  revalidatePath("/");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export const deleteKitchen = deleteKitchenAction;
 
 

@@ -1,0 +1,21 @@
+{
+  "name": "kartli – Shared Kitchens",
+  "short_name": "kartli",
+  "description": "Lean, email-free shared kitchen management and grocery lists.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

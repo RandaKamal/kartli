@@ -147,7 +147,7 @@ export function ReceiptlessCheckoutDialog({
               placeholder="e.g. Corner Bakery, Weekly Market, Lidl"
               value={storeName}
               onChange={(e) => setStoreName(e.target.value)}
-              className="h-9 text-xs rounded-xl border-border bg-transparent"
+              className="h-9 text-xs rounded-xl border-border/80 bg-secondary/30 focus-visible:bg-secondary/50 transition-colors"
               disabled={isPending}
             />
           </div>
@@ -167,13 +167,13 @@ export function ReceiptlessCheckoutDialog({
                 placeholder="0.00"
                 value={totalAmount}
                 onChange={(e) => setTotalAmount(e.target.value)}
-                className="h-9 text-xs font-mono rounded-xl border-border bg-transparent flex-1"
+                className="h-9 text-xs font-mono font-medium rounded-xl border-border/80 bg-secondary/30 focus-visible:bg-secondary/50 transition-colors flex-1"
                 disabled={isPending}
               />
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="h-9 text-xs font-semibold bg-card border border-border rounded-xl px-2.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shrink-0"
+                className="h-9 text-xs font-semibold bg-secondary/40 border border-border/80 rounded-xl px-2.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shrink-0"
                 aria-label="Currency"
                 disabled={isPending}
               >
@@ -198,7 +198,7 @@ export function ReceiptlessCheckoutDialog({
               placeholder="e.g. Used petty cash, paid cash at farm stand, bought bulk discount"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="flex min-h-[64px] w-full rounded-xl border border-border bg-transparent p-2.5 text-xs shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+              className="flex min-h-[64px] w-full rounded-xl border border-border/80 bg-secondary/20 p-2.5 text-xs shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-transparent disabled:cursor-not-allowed disabled:opacity-50 resize-none"
               disabled={isPending}
             />
           </div>

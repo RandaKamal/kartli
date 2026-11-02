@@ -109,7 +109,7 @@ export async function getUserByUsername(username: string): Promise<DbUser | null
   if (!cleanUsername) return null;
 
   const sql = `
-    SELECT id, username, password_hash, preferred_currency, created_at, updated_at
+    SELECT id, username, password_hash, preferred_currency, has_completed_tour, created_at, updated_at
     FROM users
     WHERE LOWER(username) = LOWER($1)
   `;
@@ -125,10 +125,29 @@ export async function getUserByUsername(username: string): Promise<DbUser | null
  */
 export async function getUserById(id: string): Promise<DbUser | null> {
   const sql = `
-    SELECT id, username, password_hash, preferred_currency, created_at, updated_at
+    SELECT id, username, password_hash, preferred_currency, has_completed_tour, created_at, updated_at
     FROM users
     WHERE id = $1
   `;
   const { rows } = await pool.query<DbUser>(sql, [id]);
   return rows.length > 0 ? rows[0] : null;
+}
+
+/**
+ * Reads the onboarding tour completion flag fresh from the database.
+ *
+ * Deliberately NOT cached in the JWT: the token is minted at sign-in, so a flag
+ * stored there would go stale (and re-prompt) once the tour is finished on
+ * another device or session.
+ *
+ * @param id - User UUID.
+ * @returns `true` if the user has completed (or skipped) the tour.
+ */
+export async function getUserHasCompletedTour(id: string): Promise<boolean> {
+  const { rows } = await pool.query<{ has_completed_tour: boolean }>(
+    `SELECT has_completed_tour FROM users WHERE id = $1`,
+    [id]
+  );
+  // Unknown user -> don't nag
+  return rows.length > 0 ? rows[0].has_completed_tour : true;
 }

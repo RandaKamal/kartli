@@ -68,11 +68,13 @@ export async function refundCheckoutAction(kitchenId: string, checkoutId: string
   const result = await refundCheckout(kitchenId, checkoutId, session.user.id);
   revalidateKitchen(kitchenId);
 
-  sendPushToUser(result.user_id, {
-    title: "Refund settled!",
-    body: `Your ${Number(result.total_claimed_amount).toFixed(2)} ${result.currency || "EUR"} purchase has been refunded.`,
-    url: `/kitchen/${kitchenId}`,
-  }).catch((err) => console.error("Push notification failed:", err));
+  if (result.user_id) {
+    sendPushToUser(result.user_id, {
+      title: "Refund settled!",
+      body: `Your ${Number(result.total_claimed_amount).toFixed(2)} ${result.currency || "EUR"} purchase has been refunded.`,
+      url: `/kitchen/${kitchenId}`,
+    }).catch((err) => console.error("Push notification failed:", err));
+  }
 
   return result;
 }

@@ -7,7 +7,6 @@ import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import { CopyButton } from "@/components/CopyButton";
 import { Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -54,7 +53,7 @@ export function AdminPendingInvitesList({
 
   if (invites.length === 0) {
     return (
-      <p className="text-xs text-muted-foreground py-4 text-center">
+      <p className="text-xs text-muted-foreground py-1">
         No pending invites. All invited {terminology.memberLabelPlural.toLowerCase()} have claimed their links.
       </p>
     );
@@ -73,18 +72,18 @@ export function AdminPendingInvitesList({
               key={invite.id}
               className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
             >
-              <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8 opacity-60">
+              <div className="flex items-center gap-3 min-w-0">
+                <Avatar className="h-8 w-8 opacity-60 shrink-0">
                   <AvatarFallback className="bg-muted text-xs font-semibold text-muted-foreground">
                     {initial}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-foreground text-sm">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-foreground text-sm truncate">
                       {invite.kitchen_display_name}
                     </span>
-                    <span className="bg-amber-500/10 text-amber-400 border border-amber-500/25 text-[10px] font-medium px-2 py-0.5 rounded-full font-mono">
+                    <span className="bg-amber-500/10 text-amber-400 border border-amber-500/25 text-[10px] font-medium px-2 py-0.5 rounded-full font-mono shrink-0">
                       Pending
                     </span>
                   </div>
@@ -94,26 +93,26 @@ export function AdminPendingInvitesList({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 self-end sm:self-center">
+              <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
                 <Input
                   type="text"
                   readOnly
                   value={inviteUrl}
-                  className="h-8 px-2 text-xs text-muted-foreground font-mono w-40 sm:w-56 select-all rounded-lg bg-secondary/50 border-input focus-visible:ring-ring"
+                  className="h-8 px-2 text-xs text-muted-foreground font-mono flex-1 sm:w-56 sm:flex-none select-all rounded-lg bg-secondary/50 border-input focus-visible:ring-ring min-w-0"
                 />
                 <CopyButton
                   text={inviteUrl}
                   label="Copy"
                   size="sm"
                   variant="secondary"
-                  className="hover:bg-secondary/80 hover:text-foreground transition-colors"
+                  className="hover:bg-secondary/80 hover:text-foreground transition-colors shrink-0"
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => setSelectedInvite(invite)}
-                  className="text-muted-foreground hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent"
+                  className="text-muted-foreground hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent shrink-0"
                   title="Cancel invite"
                   aria-label={`Cancel invite for ${invite.kitchen_display_name}`}
                 >

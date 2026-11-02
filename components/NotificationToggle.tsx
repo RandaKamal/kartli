@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Bell, BellOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { subscribeToPush, unsubscribeFromPush } from "@/app/actions/push";
+import { useTranslation } from "@/lib/i18n";
 import { toast } from "sonner";
 
 function urlBase64ToUint8Array(base64String: string) {
@@ -14,6 +15,7 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export function NotificationToggle() {
+  const { t } = useTranslation();
   const [subscribed, setSubscribed] = useState(false);
   const [supported, setSupported] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -34,7 +36,7 @@ export function NotificationToggle() {
     try {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
-        toast.error("Notification permission denied.");
+        toast.error(t.kitchenSettings.notificationsDenied);
         return;
       }
       const registration = await navigator.serviceWorker.ready;
@@ -48,10 +50,10 @@ export function NotificationToggle() {
         keys: { p256dh: json.keys!.p256dh, auth: json.keys!.auth },
       });
       setSubscribed(true);
-      toast.success("Notifications enabled!");
+      toast.success(t.kitchenSettings.notificationsEnabled);
     } catch (error) {
       console.error(error);
-      toast.error("Couldn't enable notifications.");
+      toast.error(t.kitchenSettings.notificationsEnableFailed);
     } finally {
       setLoading(false);
     }
@@ -67,10 +69,10 @@ export function NotificationToggle() {
         await subscription.unsubscribe();
       }
       setSubscribed(false);
-      toast.success("Notifications disabled.");
+      toast.success(t.kitchenSettings.notificationsDisabled);
     } catch (error) {
       console.error(error);
-      toast.error("Couldn't disable notifications.");
+      toast.error(t.kitchenSettings.notificationsDisableFailed);
     } finally {
       setLoading(false);
     }
@@ -88,7 +90,9 @@ export function NotificationToggle() {
       className="rounded-xl text-xs gap-1.5"
     >
       {subscribed ? <BellOff className="w-3.5 h-3.5" /> : <Bell className="w-3.5 h-3.5" />}
-      <span>{subscribed ? "Disable Notifications" : "Enable Notifications"}</span>
+      <span>
+        {subscribed ? t.kitchenSettings.disableNotifications : t.kitchenSettings.enableNotifications}
+      </span>
     </Button>
   );
 }

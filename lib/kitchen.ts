@@ -7,6 +7,7 @@ import type {
   CreateKitchenInput,
   CreateKitchenResult,
   PublicKitchenContext,
+  StaplePermission,
 } from "@/types";
 
 /**
@@ -59,14 +60,15 @@ export async function createKitchen(
         : "FLATSHARE";
 
     const insertKitchenSql = `
-      INSERT INTO kitchens (name, space_type, public_view_token, created_at, updated_at)
-      VALUES ($1, $2, $3, NOW(), NOW())
-      RETURNING id, name, space_type, public_view_token, created_at, updated_at
+      INSERT INTO kitchens (name, space_type, public_view_token, creator_id, staple_permission, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, 'open', NOW(), NOW())
+      RETURNING id, name, space_type, public_view_token, creator_id, staple_permission, created_at, updated_at
     `;
     const { rows: kitchenRows } = await client.query<Kitchen>(insertKitchenSql, [
       kitchenName,
       spaceType,
       publicViewToken,
+      creatorUserId,
     ]);
     const kitchen = kitchenRows[0];
 
@@ -277,7 +279,7 @@ export async function removeKitchenMember(
  */
 export async function getKitchenById(kitchenId: string): Promise<Kitchen | null> {
   const sql = `
-    SELECT id, name, space_type, public_view_token, created_at, updated_at
+    SELECT id, name, space_type, public_view_token, creator_id, staple_permission, created_at, updated_at
     FROM kitchens
     WHERE id = $1
   `;
@@ -304,6 +306,7 @@ export async function getKitchenMembersWithUsers(
       km.invite_token,
       km.joined_at,
       km.created_at,
+      km.updated_at,
       u.username
     FROM kitchen_members km
     LEFT JOIN users u ON km.user_id = u.id
@@ -482,6 +485,8 @@ export interface UserKitchenWithStats {
   memberCount: number;
   neededItemCount: number;
   sampleNeededItems: string[];
+  sampleMembers: string[];
+  pendingInviteToken?: string | null;
 }
 
 /**
@@ -504,7 +509,7 @@ export async function getUserKitchensWithStats(userId: string): Promise<UserKitc
       m.invite_token AS m_invite_token,
       m.joined_at AS m_joined_at,
       m.created_at AS m_created_at,
-      (SELECT COUNT(*)::int FROM kitchen_members km2 WHERE km2.kitchen_id = k.id AND km2.joined_at IS NOT NULL) AS member_count,
+      (SELECT COUNT(*)::int FROM kitchen_members km2 WHERE km2.kitchen_id = k.id AND km2.joined_at IS NOT NULL AND km2.user_id IS NOT NULL) AS member_count,
       (SELECT COUNT(*)::int FROM shopping_list_items sli WHERE sli.kitchen_id = k.id AND sli.is_purchased = false) AS needed_count,
       COALESCE((
         SELECT ARRAY_AGG(sub.name)
@@ -514,7 +519,22 @@ export async function getUserKitchensWithStats(userId: string): Promise<UserKitc
           ORDER BY created_at ASC
           LIMIT 4
         ) sub
-      ), ARRAY[]::TEXT[]) AS sample_needed_items
+      ), ARRAY[]::TEXT[]) AS sample_needed_items,
+      COALESCE((
+        SELECT ARRAY_AGG(sub_m.kitchen_display_name)
+        FROM (
+          SELECT kitchen_display_name FROM kitchen_members
+          WHERE kitchen_id = k.id AND joined_at IS NOT NULL AND user_id IS NOT NULL
+          ORDER BY CASE WHEN role = 'ADMIN' THEN 0 ELSE 1 END, created_at ASC
+          LIMIT 5
+        ) sub_m
+      ), ARRAY[]::TEXT[]) AS sample_members,
+      (
+        SELECT invite_token FROM kitchen_members km_inv
+        WHERE km_inv.kitchen_id = k.id AND km_inv.user_id IS NULL AND km_inv.joined_at IS NULL
+        ORDER BY km_inv.created_at ASC
+        LIMIT 1
+      ) AS pending_invite_token
     FROM kitchens k
     JOIN kitchen_members m ON k.id = m.kitchen_id
     WHERE m.user_id = $1 AND m.joined_at IS NOT NULL
@@ -544,6 +564,10 @@ export async function getUserKitchensWithStats(userId: string): Promise<UserKitc
     memberCount: Number(row.member_count) || 1,
     neededItemCount: Number(row.needed_count) || 0,
     sampleNeededItems: Array.isArray(row.sample_needed_items) ? row.sample_needed_items : [],
+    sampleMembers: Array.isArray(row.sample_members) && row.sample_members.length > 0
+      ? row.sample_members
+      : [row.m_kitchen_display_name],
+    pendingInviteToken: row.pending_invite_token || null,
   }));
 }
 
@@ -588,7 +612,8 @@ export async function updateKitchenSettings(
   kitchenId: string,
   name: string,
   spaceType: Kitchen["space_type"],
-  adminUserId: string
+  adminUserId: string,
+  staplePermission?: StaplePermission
 ): Promise<Kitchen> {
   const cleanName = name?.trim();
   if (!cleanName) {
@@ -601,6 +626,9 @@ export async function updateKitchenSettings(
   const validSpaceType: Kitchen["space_type"] =
     spaceType === "FAMILY" || spaceType === "NEUTRAL" || spaceType === "OFFICE" ? spaceType : "FLATSHARE";
 
+  const validStaplePermission: StaplePermission =
+    staplePermission === "admin_only" || staplePermission === "approval" ? staplePermission : "open";
+
   const isAdmin = await isUserKitchenAdmin(kitchenId, adminUserId);
   if (!isAdmin) {
     throw new Error("Unauthorized: Only kitchen admins can update kitchen settings.");
@@ -608,11 +636,11 @@ export async function updateKitchenSettings(
 
   const sql = `
     UPDATE kitchens
-    SET name = $1, space_type = $2, updated_at = NOW()
-    WHERE id = $3
-    RETURNING id, name, space_type, public_view_token, created_at, updated_at
+    SET name = $1, space_type = $2, staple_permission = $3, updated_at = NOW()
+    WHERE id = $4
+    RETURNING id, name, space_type, public_view_token, creator_id, staple_permission, created_at, updated_at
   `;
-  const { rows } = await pool.query<Kitchen>(sql, [cleanName, validSpaceType, kitchenId]);
+  const { rows } = await pool.query<Kitchen>(sql, [cleanName, validSpaceType, validStaplePermission, kitchenId]);
   if (rows.length === 0) {
     throw new Error("Kitchen not found.");
   }
@@ -654,7 +682,7 @@ export async function regeneratePublicViewToken(
 
 /**
  * Removes the authenticated user's own membership from a kitchen (Member leave action).
- * Admins cannot leave directly.
+ * If the user is an admin, blocks leave if they are the sole admin.
  *
  * @param kitchenId - UUID of the kitchen.
  * @param userId - UUID of the leaving user.
@@ -674,7 +702,16 @@ export async function leaveKitchen(
   }
 
   if (membership.role === "ADMIN") {
-    throw new Error("Kitchen admins cannot leave the kitchen.");
+    const { rows } = await pool.query<{ count: string }>(
+      `SELECT count(*) FROM kitchen_members WHERE kitchen_id = $1 AND role = 'ADMIN' AND user_id IS NOT NULL`,
+      [kitchenId]
+    );
+    const adminCount = parseInt(rows[0]?.count || "0", 10);
+    if (adminCount <= 1) {
+      throw new Error(
+        "Bitte ernenne zuerst ein anderes Mitglied zum Admin / Promote another member to Admin before leaving"
+      );
+    }
   }
 
   const deleteSql = `
@@ -684,6 +721,62 @@ export async function leaveKitchen(
   const result = await pool.query(deleteSql, [kitchenId, userId]);
   return (result.rowCount ?? 0) > 0;
 }
+
+/**
+ * Permanently deletes a kitchen and cascades all related data (Admin only action).
+ *
+ * @param kitchenId - UUID of the kitchen.
+ * @param adminUserId - UUID of the requesting admin.
+ * @returns True if kitchen was deleted.
+ */
+export async function deleteKitchen(
+  kitchenId: string,
+  adminUserId: string
+): Promise<boolean> {
+  const isAdmin = await isUserKitchenAdmin(kitchenId, adminUserId);
+  if (!isAdmin) {
+    throw new Error("Unauthorized: Only kitchen admins can delete this kitchen.");
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // 1. Delete checkout receipts (if table exists)
+    try {
+      await client.query(
+        `DELETE FROM checkout_receipts WHERE checkout_id IN (SELECT id FROM checkouts WHERE kitchen_id = $1)`,
+        [kitchenId]
+      );
+    } catch {
+      // Table may not exist or error ignored
+    }
+
+    // 2. Delete checkouts
+    await client.query(`DELETE FROM checkouts WHERE kitchen_id = $1`, [kitchenId]);
+
+    // 3. Delete shopping list items
+    await client.query(`DELETE FROM shopping_list_items WHERE kitchen_id = $1`, [kitchenId]);
+
+    // 4. Delete pantry items
+    await client.query(`DELETE FROM pantry_items WHERE kitchen_id = $1`, [kitchenId]);
+
+    // 5. Delete kitchen members
+    await client.query(`DELETE FROM kitchen_members WHERE kitchen_id = $1`, [kitchenId]);
+
+    // 6. Delete the kitchen record
+    const res = await client.query(`DELETE FROM kitchens WHERE id = $1`, [kitchenId]);
+
+    await client.query("COMMIT");
+    return (res.rowCount ?? 0) > 0;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 
 
 

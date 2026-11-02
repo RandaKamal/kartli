@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LogOut, Settings, Loader2, UtensilsCrossed } from "lucide-react";
+import { LogOut, Settings, Loader2, LayoutDashboard } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,15 +14,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { logoutAction } from "@/app/actions/auth";
+import { useTranslation } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 interface UserDropdownProps {
   user: {
-    username: string;
+    username?: string | null;
   };
+  className?: string;
 }
 
-export function UserDropdown({ user }: UserDropdownProps) {
+export function UserDropdown({ user, className }: UserDropdownProps) {
+  const { t } = useTranslation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const username = user.username || "user";
+  const initial = username.charAt(0).toUpperCase() || "U";
 
   const handleLogout = async () => {
     try {
@@ -39,32 +45,38 @@ export function UserDropdown({ user }: UserDropdownProps) {
       <DropdownMenuTrigger asChild>
         <Button
           variant="secondary"
-          size="sm"
-          className="flex items-center gap-2 rounded-xl border border-border/70 px-2.5"
+          className={cn(
+            "h-8 w-8 rounded-full border border-border bg-secondary flex items-center justify-center font-bold text-xs p-0 text-foreground md:h-9 md:w-auto md:px-3 md:rounded-xl md:border-border/70 md:font-medium md:gap-2 shadow-xs hover:border-border hover:bg-secondary/80 transition-all cursor-pointer",
+            className
+          )}
+          aria-label={`User menu for @${username}`}
         >
-          <Avatar className="h-5 w-5 border-0">
-            <AvatarFallback className="bg-secondary text-[10px] text-foreground font-semibold">
-              {user.username?.charAt(0).toUpperCase() || "U"}
+          <span className="md:hidden select-none">{initial}</span>
+          <Avatar className="hidden md:flex h-5 w-5 border border-border/60 shadow-2xs">
+            <AvatarFallback className="bg-secondary-foreground/10 text-[10px] text-foreground font-bold flex items-center justify-center">
+              {initial}
             </AvatarFallback>
           </Avatar>
-          <span className="text-xs font-medium max-w-[90px] sm:max-w-none truncate">@{user.username}</span>
+          <span className="hidden md:inline text-xs font-medium max-w-[90px] sm:max-w-none truncate">
+            @{username}
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel className="font-normal text-xs text-muted-foreground">
-          Signed in as <strong className="text-foreground">@{user.username}</strong>
+          {t.userDropdown.signedInAs} <strong className="text-foreground">@{username}</strong>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild className="hover:bg-white/10 dark:hover:bg-white/5 hover:text-foreground transition-colors duration-150 rounded-lg">
           <Link href="/dashboard" className="flex items-center gap-2 w-full cursor-pointer">
-            <UtensilsCrossed className="w-3.5 h-3.5" />
-            <span>My Kitchens</span>
+            <LayoutDashboard className="w-3.5 h-3.5" />
+            <span>{t.userDropdown.dashboard}</span>
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild className="hover:bg-white/10 dark:hover:bg-white/5 hover:text-foreground transition-colors duration-150 rounded-lg">
           <Link href="/profile" className="flex items-center gap-2 w-full cursor-pointer">
             <Settings className="w-3.5 h-3.5" />
-            <span>Settings &amp; Profile</span>
+            <span>{t.userDropdown.settingsAndProfile}</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -74,17 +86,17 @@ export function UserDropdown({ user }: UserDropdownProps) {
             handleLogout();
           }}
           disabled={isLoggingOut}
-          className="flex items-center gap-2 w-full text-destructive focus:text-destructive cursor-pointer text-xs"
+          className="flex items-center gap-2 w-full text-destructive focus:text-destructive hover:bg-white/10 dark:hover:bg-white/5 hover:text-destructive focus:bg-white/10 dark:focus:bg-white/5 data-[highlighted]:bg-white/10 dark:data-[highlighted]:bg-white/5 cursor-pointer text-xs transition-colors duration-150 rounded-lg"
         >
           {isLoggingOut ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span>Signing out...</span>
+              <span>{t.userDropdown.signingOut}</span>
             </>
           ) : (
             <>
               <LogOut className="w-3.5 h-3.5" />
-              <span>Sign out</span>
+              <span>{t.userDropdown.signOut}</span>
             </>
           )}
         </DropdownMenuItem>

@@ -59,6 +59,48 @@ export interface KitchenVitals {
   deadStock: DeadStockItem[];
 }
 
+export interface MemberRosterItem {
+  userId: string;
+  name: string;
+  runCount: number;
+  spend: number;
+  isTopRestocker?: boolean;
+}
+
+export interface DepletedEssentialItem {
+  id: string;
+  name: string;
+  updated_at: string | Date;
+  created_at: string | Date;
+  empty_seconds: number;
+}
+
+export interface IdleStapleItem {
+  id: string;
+  name: string;
+  updated_at: string | Date;
+  idle_days: number;
+}
+
+export interface MonthCheckoutItem {
+  id: string;
+  kitchen_id: string;
+  user_id: string;
+  store_name: string;
+  note: string | null;
+  total_claimed_amount: number;
+  total_receipt_amount: number | null;
+  receipt_filename: string | null;
+  is_refunded: boolean;
+  currency?: string;
+  created_at: string | Date;
+  refunded_at: string | Date | null;
+  username: string | null;
+  paid_by_name: string;
+  items: Array<{ id: string; name: string; item_price: number | null }>;
+  receipts: Array<{ id: string; receipt_filename: string }>;
+}
+
 export interface KitchenPulseStats {
   kitchenId: string;
   monthLabel: string;
@@ -85,6 +127,13 @@ export interface KitchenPulseStats {
   pantryStockRatio: PantryStockRatio;
   deadStockItems: DeadStockItem[];
   hasData: boolean;
+
+  // Overhaul additions
+  topRestocker: MemberRosterItem | null;
+  memberRoster: MemberRosterItem[];
+  depletedEssentials: DepletedEssentialItem[];
+  idleStaples: IdleStapleItem[];
+  monthCheckouts: MonthCheckoutItem[];
 }
 
 interface RawSqlStatsRow {
@@ -95,10 +144,13 @@ interface RawSqlStatsRow {
   total_receipts_count: number;
   currency: string | null;
   store_breakdown: Array<{ name: string; amount: number | string; count: number }> | null;
+  member_roster: Array<{ userId: string; name: string; runCount: number; spend: number | string }> | null;
   top_items: Array<{ name: string; count: number }> | null;
   pantry_total: number;
   pantry_in_stock: number;
   pantry_out_of_stock: number;
+  depleted_essentials: Array<{ id: string; name: string; updated_at: string; created_at: string; empty_seconds: number }> | null;
+  idle_staples: Array<{ id: string; name: string; updated_at: string; idle_days: number }> | null;
   dead_stock_items: Array<{ name: string; idle_days: number }> | null;
   avg_latency_seconds: string | number;
   latency_samples: number;
@@ -110,6 +162,24 @@ interface RawSqlStatsRow {
   user_pending_count: number;
   user_settled_count: number;
   user_top_items: Array<{ name: string; count: number }> | null;
+  month_checkouts: Array<{
+    id: string;
+    kitchen_id: string;
+    user_id: string;
+    store_name: string;
+    note: string | null;
+    total_claimed_amount: string | number;
+    total_receipt_amount: string | number | null;
+    receipt_filename: string | null;
+    is_refunded: boolean;
+    currency?: string;
+    created_at: string;
+    refunded_at: string | null;
+    username: string | null;
+    paid_by_name: string;
+    items: Array<{ id: string; name: string; item_price: number | null }>;
+    receipts: Array<{ id: string; receipt_filename: string }>;
+  }> | null;
 }
 
 function formatLatencyCompact(seconds: number, sampleCount: number): string {
@@ -154,7 +224,11 @@ function formatVelocity(days: number, sampleCount: number): string {
  * Executes a single-roundtrip PostgreSQL aggregation (SUM, COUNT, DATE_TRUNC, GROUP BY)
  * with zero database bloat and strict read latency optimization.
  */
-export async function getKitchenStats(kitchenId: string, userId?: string): Promise<KitchenPulseStats> {
+export async function getKitchenStats(
+  kitchenId: string,
+  userId?: string,
+  targetMonthKey?: string
+): Promise<KitchenPulseStats> {
   // Resolve effective user ID
   let targetUserId = userId;
   if (!targetUserId) {
@@ -171,21 +245,32 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
     throw new Error("Unauthorized: You are not a member of this kitchen.");
   }
 
+  // Parse targetMonthKey (format "YYYY-MM") if provided, else null defaults to CURRENT_TIMESTAMP
+  let targetDateIso: string | null = null;
+  if (targetMonthKey && /^\d{4}-\d{2}$/.test(targetMonthKey)) {
+    const [y, m] = targetMonthKey.split("-").map(Number);
+    const parsedDate = new Date(Date.UTC(y, m - 1, 1));
+    if (!isNaN(parsedDate.getTime())) {
+      targetDateIso = parsedDate.toISOString();
+    }
+  }
+
   const query = `
     WITH month_bounds AS (
       SELECT 
-        DATE_TRUNC('month', CURRENT_TIMESTAMP) AS cur_start,
-        DATE_TRUNC('month', CURRENT_TIMESTAMP) + INTERVAL '1 month' AS cur_end,
-        DATE_TRUNC('month', CURRENT_TIMESTAMP) - INTERVAL '1 month' AS prev_start
+        DATE_TRUNC('month', COALESCE($3::timestamptz, CURRENT_TIMESTAMP)) AS cur_start,
+        DATE_TRUNC('month', COALESCE($3::timestamptz, CURRENT_TIMESTAMP)) + INTERVAL '1 month' AS cur_end,
+        DATE_TRUNC('month', COALESCE($3::timestamptz, CURRENT_TIMESTAMP)) - INTERVAL '1 month' AS prev_start
     ),
     monthly_checkouts AS (
       SELECT 
         c.id,
         c.user_id,
         c.total_claimed_amount,
-        COALESCE(NULLIF(TRIM(c.store_name), ''), 'General / Uncategorized') AS store_name,
+        COALESCE(NULLIF(TRIM(c.store_name), ''), 'Sonstige') AS store_name,
         c.currency,
-        c.created_at
+        c.created_at,
+        c.is_refunded
       FROM checkouts c, month_bounds mb
       WHERE c.kitchen_id = $1
         AND c.created_at >= mb.prev_start
@@ -223,8 +308,34 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
         WHERE created_at >= mb.cur_start
         GROUP BY store_name
         ORDER BY store_spend DESC
-        LIMIT 10
       ) s
+    ),
+    member_roster AS (
+      SELECT 
+        COALESCE(json_agg(
+          json_build_object(
+            'userId', member_user_id,
+            'name', member_name,
+            'runCount', run_count,
+            'spend', total_spend
+          ) ORDER BY run_count DESC, total_spend DESC
+        ), '[]'::json) AS roster
+      FROM (
+        SELECT 
+          c.user_id AS member_user_id,
+          COALESCE(NULLIF(TRIM(km.kitchen_display_name), ''), NULLIF(TRIM(u.username), ''), 'Mitglied') AS member_name,
+          COUNT(c.id)::int AS run_count,
+          SUM(c.total_claimed_amount)::numeric AS total_spend
+        FROM checkouts c
+        LEFT JOIN users u ON c.user_id = u.id
+        LEFT JOIN kitchen_members km ON km.kitchen_id = c.kitchen_id AND km.user_id = c.user_id
+        CROSS JOIN month_bounds mb
+        WHERE c.kitchen_id = $1
+          AND c.created_at >= mb.cur_start
+          AND c.created_at < mb.cur_end
+        GROUP BY c.user_id, member_name
+        ORDER BY run_count DESC, total_spend DESC
+      ) mr
     ),
     top_items AS (
       SELECT 
@@ -260,23 +371,41 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
       FROM pantry_items
       WHERE kitchen_id = $1
     ),
-    dead_stock AS (
+    depleted_essentials AS (
+      SELECT
+        COALESCE(json_agg(
+          json_build_object(
+            'id', id,
+            'name', name,
+            'updated_at', updated_at,
+            'created_at', created_at,
+            'empty_seconds', GREATEST(0, ROUND(EXTRACT(EPOCH FROM (NOW() - COALESCE(updated_at, created_at)))))::bigint
+          ) ORDER BY COALESCE(updated_at, created_at) DESC
+        ), '[]'::json) AS items
+      FROM pantry_items
+      WHERE kitchen_id = $1 AND is_out_of_stock = TRUE
+    ),
+    idle_staples AS (
       SELECT 
         COALESCE(json_agg(
           json_build_object(
+            'id', id,
             'name', name,
+            'updated_at', updated_at,
             'idle_days', idle_days
-          ) ORDER BY idle_days DESC
+          ) ORDER BY idle_days DESC, updated_at ASC
         ), '[]'::json) AS items
       FROM (
         SELECT 
+          id,
           name,
+          COALESCE(updated_at, created_at) AS updated_at,
           GREATEST(0, ROUND(EXTRACT(EPOCH FROM (NOW() - COALESCE(updated_at, created_at))) / 86400))::int AS idle_days
         FROM pantry_items
         WHERE kitchen_id = $1
           AND is_out_of_stock = FALSE
         ORDER BY COALESCE(updated_at, created_at) ASC
-        LIMIT 3
+        LIMIT 6
       ) d
     ),
     restock_metrics AS (
@@ -360,6 +489,50 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
         ORDER BY item_count DESC, TRIM(sli.name) ASC
         LIMIT 5
       ) uti
+    ),
+    month_checkouts AS (
+      SELECT 
+        COALESCE(json_agg(
+          json_build_object(
+            'id', c.id,
+            'kitchen_id', c.kitchen_id,
+            'user_id', c.user_id,
+            'store_name', COALESCE(NULLIF(TRIM(c.store_name), ''), 'Sonstige'),
+            'note', c.note,
+            'total_claimed_amount', c.total_claimed_amount,
+            'total_receipt_amount', c.total_receipt_amount,
+            'receipt_filename', c.receipt_filename,
+            'is_refunded', c.is_refunded,
+            'currency', c.currency,
+            'created_at', c.created_at,
+            'refunded_at', c.refunded_at,
+            'username', u.username,
+            'paid_by_name', COALESCE(NULLIF(TRIM(km.kitchen_display_name), ''), NULLIF(TRIM(u.username), ''), 'Mitglied'),
+            'items', COALESCE(
+              (
+                SELECT json_agg(json_build_object('id', sli.id, 'name', sli.name, 'item_price', sli.item_price))
+                FROM shopping_list_items sli
+                WHERE sli.checkout_id = c.id
+              ),
+              '[]'::json
+            ),
+            'receipts', COALESCE(
+              (
+                SELECT json_agg(json_build_object('id', cr.id, 'receipt_filename', cr.receipt_filename))
+                FROM checkout_receipts cr
+                WHERE cr.checkout_id = c.id
+              ),
+              '[]'::json
+            )
+          ) ORDER BY c.created_at DESC
+        ), '[]'::json) AS checkouts
+      FROM checkouts c
+      LEFT JOIN users u ON c.user_id = u.id
+      LEFT JOIN kitchen_members km ON km.kitchen_id = c.kitchen_id AND km.user_id = c.user_id
+      CROSS JOIN month_bounds mb
+      WHERE c.kitchen_id = $1
+        AND c.created_at >= mb.cur_start
+        AND c.created_at < mb.cur_end
     )
     SELECT 
       s.current_month_spend,
@@ -369,11 +542,13 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
       s.total_receipts_count,
       s.currency,
       sb.breakdown AS store_breakdown,
+      mr.roster AS member_roster,
       ti.items AS top_items,
       p.total_items AS pantry_total,
       p.in_stock_items AS pantry_in_stock,
       p.out_of_stock_items AS pantry_out_of_stock,
-      ds.items AS dead_stock_items,
+      de.items AS depleted_essentials,
+      ds.items AS idle_staples,
       rm.avg_latency_seconds,
       rm.latency_samples,
       rv.avg_in_stock_days,
@@ -383,20 +558,24 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
       us.settled_amount AS user_settled_amount,
       us.pending_count AS user_pending_count,
       us.settled_count AS user_settled_count,
-      uti.items AS user_top_items
+      uti.items AS user_top_items,
+      mc.checkouts AS month_checkouts
     FROM spend_stats s
     CROSS JOIN store_breakdown sb
+    CROSS JOIN member_roster mr
     CROSS JOIN top_items ti
     CROSS JOIN pantry_stats p
-    CROSS JOIN dead_stock ds
+    CROSS JOIN depleted_essentials de
+    CROSS JOIN idle_staples ds
     CROSS JOIN restock_metrics rm
     CROSS JOIN restock_velocity rv
     CROSS JOIN user_footprint uf
     CROSS JOIN user_settlement us
-    CROSS JOIN user_top_items uti;
+    CROSS JOIN user_top_items uti
+    CROSS JOIN month_checkouts mc;
   `;
 
-  const { rows } = await pool.query<RawSqlStatsRow>(query, [kitchenId, targetUserId]);
+  const { rows } = await pool.query<RawSqlStatsRow>(query, [kitchenId, targetUserId, targetDateIso]);
   const row = rows[0];
 
   const currentSpend = parseFloat(String(row?.current_month_spend ?? "0"));
@@ -433,7 +612,7 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
     const amountNum = parseFloat(String(item.amount ?? "0"));
     const pct = currentSpend > 0 ? Math.round((amountNum / currentSpend) * 100) : 0;
     return {
-      name: item.name,
+      name: item.name || "Sonstige",
       amount: amountNum,
       count: Number(item.count) || 0,
       percentage: pct,
@@ -449,6 +628,64 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
 
   const userSpendSharePercentage =
     currentSpend > 0 ? Math.min(100, Math.round((userSpend / currentSpend) * 100)) : 0;
+
+  // Member Roster & Top Restocker
+  const rawMemberRoster = Array.isArray(row?.member_roster) ? row.member_roster : [];
+  const memberRoster: MemberRosterItem[] = rawMemberRoster.map((m, idx) => ({
+    userId: m.userId,
+    name: m.name || "Mitglied",
+    runCount: Number(m.runCount) || 0,
+    spend: parseFloat(String(m.spend ?? "0")),
+    isTopRestocker: idx === 0 && Number(m.runCount) > 0,
+  }));
+  const topRestocker: MemberRosterItem | null =
+    memberRoster.length > 0 && memberRoster[0].runCount > 0 ? memberRoster[0] : null;
+
+  // Depleted Essentials
+  const rawDepleted = Array.isArray(row?.depleted_essentials) ? row.depleted_essentials : [];
+  const depletedEssentials: DepletedEssentialItem[] = rawDepleted.map((item) => ({
+    id: item.id,
+    name: item.name,
+    updated_at: item.updated_at,
+    created_at: item.created_at,
+    empty_seconds: Number(item.empty_seconds) || 0,
+  }));
+
+  // Idle Staples
+  const rawIdleStaples = Array.isArray(row?.idle_staples) ? row.idle_staples : [];
+  const idleStaples: IdleStapleItem[] = rawIdleStaples.map((item) => ({
+    id: item.id,
+    name: item.name,
+    updated_at: item.updated_at,
+    idle_days: Number(item.idle_days) || 0,
+  }));
+
+  // Month Checkouts
+  const rawMonthCheckouts = Array.isArray(row?.month_checkouts) ? row.month_checkouts : [];
+  const monthCheckouts: MonthCheckoutItem[] = rawMonthCheckouts.map((c) => ({
+    id: c.id,
+    kitchen_id: c.kitchen_id,
+    user_id: c.user_id,
+    store_name: c.store_name || "Sonstige",
+    note: c.note,
+    total_claimed_amount: parseFloat(String(c.total_claimed_amount ?? "0")),
+    total_receipt_amount: c.total_receipt_amount !== null ? parseFloat(String(c.total_receipt_amount)) : null,
+    receipt_filename: c.receipt_filename,
+    is_refunded: Boolean(c.is_refunded),
+    currency: c.currency || "EUR",
+    created_at: c.created_at,
+    refunded_at: c.refunded_at,
+    username: c.username,
+    paid_by_name: c.paid_by_name || c.username || "Mitglied",
+    items: Array.isArray(c.items)
+      ? c.items.map((it) => ({
+          id: it.id,
+          name: it.name,
+          item_price: it.item_price !== null ? parseFloat(String(it.item_price)) : null,
+        }))
+      : [],
+    receipts: Array.isArray(c.receipts) ? c.receipts : [],
+  }));
 
   // User Primary Category Footprint
   let userCategoryFootprint: UserCategoryFootprint | null = null;
@@ -523,7 +760,7 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
   const pantryInStock = Number(row?.pantry_in_stock ?? 0);
   const pantryOutOfStock = Number(row?.pantry_out_of_stock ?? 0);
   const inStockPercentage =
-    pantryTotal > 0 ? Math.round((pantryInStock / pantryTotal) * 100) : 100;
+    pantryTotal > 0 ? Math.round(((pantryTotal - pantryOutOfStock) / pantryTotal) * 100) : 100;
 
   // Dead Stock / Pantry Mummies
   const rawDeadStock = Array.isArray(row?.dead_stock_items) ? row.dead_stock_items : [];
@@ -552,9 +789,9 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
     deadStock: deadStockItems,
   };
 
-  const now = new Date();
-  const monthLabel = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(now);
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const selectedDate = targetDateIso ? new Date(targetDateIso) : new Date();
+  const monthLabel = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(selectedDate);
+  const monthKey = `${selectedDate.getUTCFullYear()}-${String(selectedDate.getUTCMonth() + 1).padStart(2, "0")}`;
 
   const hasData =
     currentSpend > 0 ||
@@ -592,5 +829,10 @@ export async function getKitchenStats(kitchenId: string, userId?: string): Promi
     },
     deadStockItems,
     hasData,
+    topRestocker,
+    memberRoster,
+    depletedEssentials,
+    idleStaples,
+    monthCheckouts,
   };
 }
