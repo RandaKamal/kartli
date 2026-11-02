@@ -509,6 +509,7 @@ export async function getUserKitchensWithStats(userId: string): Promise<UserKitc
       m.invite_token AS m_invite_token,
       m.joined_at AS m_joined_at,
       m.created_at AS m_created_at,
+      m.notifications_muted AS m_notifications_muted,
       (SELECT COUNT(*)::int FROM kitchen_members km2 WHERE km2.kitchen_id = k.id AND km2.joined_at IS NOT NULL AND km2.user_id IS NOT NULL) AS member_count,
       (SELECT COUNT(*)::int FROM shopping_list_items sli WHERE sli.kitchen_id = k.id AND sli.is_purchased = false) AS needed_count,
       COALESCE((
@@ -560,6 +561,7 @@ export async function getUserKitchensWithStats(userId: string): Promise<UserKitc
       invite_token: row.m_invite_token,
       joined_at: row.m_joined_at,
       created_at: row.m_created_at,
+      notifications_muted: row.m_notifications_muted ?? false,
     },
     memberCount: Number(row.member_count) || 1,
     neededItemCount: Number(row.needed_count) || 0,

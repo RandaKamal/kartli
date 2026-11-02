@@ -55,6 +55,7 @@ export interface KitchenMember {
   joined_at: Date | null;
   created_at: Date;
   updated_at?: Date | null;
+  notifications_muted?: boolean;
 }
 
 /**

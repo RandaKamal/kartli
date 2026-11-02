@@ -9,6 +9,8 @@ import {
 } from "@/lib/invite";
 import type { ClaimInviteResult, InviteDetails } from "@/types";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { notifyKitchen, pushMessages } from "@/lib/push";
+import { capitalize } from "@/lib/utils";
 
 async function getClientIdentifier(): Promise<string> {
   const headerList = await headers();
@@ -70,6 +72,18 @@ export async function claimInviteAction(
   }
 
   const result = await claimInvite(inviteToken, session.user.id);
+
+  if (result.success) {
+    notifyKitchen(
+      result.kitchenId,
+      "members",
+      {
+        render: pushMessages.newMember(capitalize(result.kitchenDisplayName)),
+        url: `/kitchen/${result.kitchenId}`,
+      },
+      { excludeUserId: session.user.id }
+    ).catch((err) => console.error("Push notification failed:", err));
+  }
 
   if (result.success || result.error === "ALREADY_MEMBER") {
     const cookieStore = await cookies();

@@ -19,6 +19,8 @@ import {
 import type { UserKitchenWithStats } from "@/lib/kitchen";
 import { capitalize, cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
+import { KitchenMuteButton } from "@/components/KitchenMuteButton";
+import type { PushStatus } from "@/components/NotificationToggle";
 
 export function getSpaceIcon(spaceType?: string, className: string = "w-3.5 h-3.5") {
   switch (spaceType) {
@@ -133,12 +135,14 @@ export interface SpaceCardProps {
   kitchenWithStats: UserKitchenWithStats;
   baseUrl: string;
   variant?: "hero" | "card";
+  pushStatus: PushStatus;
 }
 
 export function SpaceCard({
   kitchenWithStats,
   baseUrl,
   variant = "card",
+  pushStatus,
 }: SpaceCardProps) {
   const { t, locale } = useTranslation();
   const { kitchen, membership, memberCount, neededItemCount, sampleNeededItems } =
@@ -167,6 +171,11 @@ export function SpaceCard({
               <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-secondary text-muted-foreground font-semibold border border-border/40">
                 {membership.role === "ADMIN" ? t.kitchen.header.admin : t.kitchen.header.member}
               </span>
+              <KitchenMuteButton
+                kitchenId={kitchen.id}
+                initialMuted={membership.notifications_muted ?? false}
+                pushStatus={pushStatus}
+              />
             </div>
 
             <div className="space-y-1.5">
@@ -302,14 +311,21 @@ export function SpaceCard({
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground/70">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
-          <span>
-            {new Date(kitchen.created_at).toLocaleDateString(locale === "de" ? "de-DE" : "en-US", {
-              month: "short",
-              day: "numeric",
-            })}
-          </span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground/70">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
+            <span>
+              {new Date(kitchen.created_at).toLocaleDateString(locale === "de" ? "de-DE" : "en-US", {
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+          </div>
+          <KitchenMuteButton
+            kitchenId={kitchen.id}
+            initialMuted={membership.notifications_muted ?? false}
+            pushStatus={pushStatus}
+          />
         </div>
       </div>
 

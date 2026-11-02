@@ -12,6 +12,7 @@ import { DashboardInviteJoin } from "@/components/DashboardInviteJoin";
 import { SpaceCard } from "@/components/SpaceCard";
 import type { UserKitchenWithStats } from "@/lib/kitchen";
 import { useTranslation } from "@/lib/i18n";
+import { usePushNotifications } from "@/components/NotificationToggle";
 
 export interface DashboardViewProps {
   userKitchens: UserKitchenWithStats[];
@@ -25,6 +26,8 @@ export function DashboardView({
   baseUrl,
 }: DashboardViewProps) {
   const { t } = useTranslation();
+  // Checked once here instead of per card: each check registers the service worker.
+  const { status: pushStatus } = usePushNotifications();
   const isSingleSpace = userKitchens.length === 1;
 
   return (
@@ -160,6 +163,7 @@ export function DashboardView({
               kitchenWithStats={userKitchens[0]}
               baseUrl={baseUrl}
               variant="hero"
+              pushStatus={pushStatus}
             />
           </div>
         ) : (
@@ -177,6 +181,7 @@ export function DashboardView({
                   kitchenWithStats={kitchenWithStats}
                   baseUrl={baseUrl}
                   variant="card"
+                  pushStatus={pushStatus}
                 />
               ))}
             </div>

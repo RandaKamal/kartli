@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, BellOff } from "lucide-react";
+import { Bell, BellOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getVapidPublicKey, subscribeToPush, unsubscribeFromPush } from "@/app/actions/push";
 import { useTranslation } from "@/lib/i18n";
@@ -14,21 +14,31 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
 
-export function NotificationToggle() {
+/** Push state of *this* browser/device; the subscription lives in the browser, not the account. */
+export type PushStatus = "checking" | "unsupported" | "off" | "on";
+
+export interface PushNotifications {
+  status: PushStatus;
+  loading: boolean;
+  enable: () => Promise<void>;
+  disable: () => Promise<void>;
+}
+
+export function usePushNotifications(): PushNotifications {
   const { t } = useTranslation();
-  const [subscribed, setSubscribed] = useState(false);
-  const [supported, setSupported] = useState(true);
+  const [status, setStatus] = useState<PushStatus>("checking");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      setSupported(false);
+      setStatus("unsupported");
       return;
     }
-    navigator.serviceWorker.register("/sw.js").then(async (registration) => {
-      const existing = await registration.pushManager.getSubscription();
-      setSubscribed(!!existing);
-    });
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((registration) => registration.pushManager.getSubscription())
+      .then((existing) => setStatus(existing ? "on" : "off"))
+      .catch(() => setStatus("off"));
   }, []);
 
   const enable = async () => {
@@ -36,7 +46,7 @@ export function NotificationToggle() {
     try {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
-        toast.error(t.kitchenSettings.notificationsDenied);
+        toast.error(t.profile.notificationsDenied);
         return;
       }
       const publicKey = await getVapidPublicKey();
@@ -51,11 +61,11 @@ export function NotificationToggle() {
         endpoint: json.endpoint!,
         keys: { p256dh: json.keys!.p256dh, auth: json.keys!.auth },
       });
-      setSubscribed(true);
-      toast.success(t.kitchenSettings.notificationsEnabled);
+      setStatus("on");
+      toast.success(t.profile.notificationsEnabled);
     } catch (error) {
       console.error(error);
-      toast.error(t.kitchenSettings.notificationsEnableFailed);
+      toast.error(t.profile.notificationsEnableFailed);
     } finally {
       setLoading(false);
     }
@@ -70,31 +80,41 @@ export function NotificationToggle() {
         await unsubscribeFromPush(subscription.endpoint);
         await subscription.unsubscribe();
       }
-      setSubscribed(false);
-      toast.success(t.kitchenSettings.notificationsDisabled);
+      setStatus("off");
+      toast.success(t.profile.notificationsDisabled);
     } catch (error) {
       console.error(error);
-      toast.error(t.kitchenSettings.notificationsDisableFailed);
+      toast.error(t.profile.notificationsDisableFailed);
     } finally {
       setLoading(false);
     }
   };
 
-  if (!supported) return null;
+  return { status, loading, enable, disable };
+}
 
+export function NotificationToggle({ push }: { push: PushNotifications }) {
+  const { t } = useTranslation();
+  if (push.status === "unsupported") return null;
+
+  const isOn = push.status === "on";
   return (
     <Button
       type="button"
       variant="outline"
       size="sm"
-      onClick={subscribed ? disable : enable}
-      disabled={loading}
+      onClick={isOn ? push.disable : push.enable}
+      disabled={push.loading || push.status === "checking"}
       className="rounded-xl text-xs gap-1.5"
     >
-      {subscribed ? <BellOff className="w-3.5 h-3.5" /> : <Bell className="w-3.5 h-3.5" />}
-      <span>
-        {subscribed ? t.kitchenSettings.disableNotifications : t.kitchenSettings.enableNotifications}
-      </span>
+      {push.loading ? (
+        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+      ) : isOn ? (
+        <BellOff className="w-3.5 h-3.5" />
+      ) : (
+        <Bell className="w-3.5 h-3.5" />
+      )}
+      <span>{isOn ? t.profile.disableNotifications : t.profile.enableNotifications}</span>
     </Button>
   );
 }

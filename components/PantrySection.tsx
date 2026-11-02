@@ -20,6 +20,7 @@ import {
   Loader2,
   Check,
   RotateCcw,
+  X,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +50,8 @@ export interface PantrySectionProps {
   onItemAdded?: (item: PantryItem) => void;
   onItemUpdated?: (item: PantryItem) => void;
   hideInput?: boolean;
+  /** Shows the "+ Add essential" tile at the end of the grid (false when staples are admin-only). */
+  canAdd?: boolean;
 }
 
 export function PantrySection({
@@ -63,6 +66,7 @@ export function PantrySection({
   onItemAdded,
   onItemUpdated,
   hideInput = false,
+  canAdd = false,
 }: PantrySectionProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -93,6 +97,7 @@ export function PantrySection({
   const [newItemName, setNewItemName] = useState("");
   const [itemToDelete, setItemToDelete] = useState<PantryItem | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [isAddTileOpen, setIsAddTileOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [processingItemId, setProcessingItemId] = useState<string | null>(null);
 
@@ -111,11 +116,12 @@ export function PantrySection({
         const item = await addPantryItemAction(kitchenId, name);
         onItemAdded?.(item);
         setNewItemName("");
+        setIsAddTileOpen(false);
         router.refresh();
         if (item.is_approved === false) {
           toast.success(t.kitchen.staples.proposalSubmitted);
         } else {
-          toast.success(`Tracked "${name}" in staples`);
+          toast.success(`Tracked "${name}" in Essentials`);
         }
       } catch (err: any) {
         toast.error(err.message || "Failed to add staple.");
@@ -326,7 +332,7 @@ export function PantrySection({
         )}
 
         {/* Tactile Bento Grid */}
-        {displayItems.length === 0 ? (
+        {displayItems.length === 0 && (
           <div className="py-10 px-4 text-center rounded-2xl border border-dashed border-border/70 bg-card/40 space-y-1.5">
             <Package className="w-6 h-6 text-muted-foreground mx-auto opacity-60" />
             <p className="text-xs font-semibold text-foreground">No staples tracked yet</p>
@@ -334,7 +340,9 @@ export function PantrySection({
               Add permanent household essentials like Olive Oil, Salt, or Coffee that your kitchen should always have in stock.
             </p>
           </div>
-        ) : (
+        )}
+
+        {(displayItems.length > 0 || canAdd) && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {displayItems.map((item) => {
               const isPending = item.is_approved === false;
@@ -454,6 +462,70 @@ export function PantrySection({
                 </div>
               );
             })}
+
+            {/* Add Essential Tile: replaces the old board command bar */}
+            {canAdd &&
+              (isAddTileOpen ? (
+                <form
+                  onSubmit={handleAdd}
+                  className="flex flex-col justify-between gap-2 rounded-2xl min-h-[96px] h-full p-3 bg-card border border-primary/40 shadow-xs"
+                >
+                  <input
+                    autoFocus
+                    type="text"
+                    value={newItemName}
+                    onChange={(e) => setNewItemName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        setIsAddTileOpen(false);
+                        setNewItemName("");
+                      }
+                    }}
+                    placeholder={t.kitchen.staples.addEssentialPlaceholder}
+                    aria-label={t.kitchen.staples.addEssential}
+                    disabled={isAdding}
+                    maxLength={255}
+                    className="w-full bg-transparent text-sm font-semibold text-foreground placeholder:text-muted-foreground/50 placeholder:font-normal focus:outline-none select-text"
+                  />
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAddTileOpen(false);
+                        setNewItemName("");
+                      }}
+                      disabled={isAdding}
+                      title={t.kitchen.staples.cancelAdd}
+                      aria-label={t.kitchen.staples.cancelAdd}
+                      className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isAdding || !newItemName.trim()}
+                      title={t.kitchen.staples.addEssential}
+                      aria-label={t.kitchen.staples.addEssential}
+                      className="p-1.5 rounded-md bg-primary text-primary-foreground transition-opacity disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      {isAdding ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                      )}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsAddTileOpen(true)}
+                  className="flex flex-col items-center justify-center gap-1.5 rounded-2xl min-h-[96px] h-full p-4 border border-dashed border-border/80 text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/30 transition-colors cursor-pointer select-none"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="text-xs font-medium">{t.kitchen.staples.addEssential}</span>
+                </button>
+              ))}
           </div>
         )}
       </div>

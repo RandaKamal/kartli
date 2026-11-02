@@ -60,10 +60,8 @@ import {
   AlertTriangle,
   RotateCcw,
   Package,
-  Bell,
 } from "lucide-react";
 import { capitalize, cn } from "@/lib/utils";
-import { NotificationToggle } from "@/components/NotificationToggle";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
 
@@ -688,30 +686,6 @@ export function KitchenSettingsView({
               >
                 <ExternalLink className="w-3.5 h-3.5" />
               </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* ========================================================
-            GROUP 2b: PUSH-BENACHRICHTIGUNGEN
-           ======================================================== */}
-        <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-sm p-4 sm:p-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start sm:items-center gap-3 min-w-0">
-              <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0 mt-0.5 sm:mt-0">
-                <Bell className="w-4 h-4" />
-              </div>
-              <div className="space-y-0.5 min-w-0">
-                <span className="text-sm font-semibold text-foreground">
-                  {t.kitchenSettings.notificationsLabel}
-                </span>
-                <p className="text-xs text-muted-foreground">
-                  {t.kitchenSettings.notificationsSubtext}
-                </p>
-              </div>
-            </div>
-            <div className="shrink-0">
-              <NotificationToggle />
             </div>
           </div>
         </div>

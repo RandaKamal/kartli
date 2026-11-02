@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { getUserById } from "@/lib/auth-service";
+import { getNotificationPrefs } from "@/lib/push";
 import { Suspense } from "react";
 
 export default async function ProfilePage() {
@@ -11,7 +12,10 @@ export default async function ProfilePage() {
     redirect("/login?callbackUrl=/profile");
   }
 
-  const dbUser = await getUserById(session.user.id);
+  const [dbUser, notificationPrefs] = await Promise.all([
+    getUserById(session.user.id),
+    getNotificationPrefs(session.user.id),
+  ]);
   const preferredCurrency = dbUser?.preferred_currency || session.user.preferred_currency || "EUR";
 
   return (
@@ -23,6 +27,7 @@ export default async function ProfilePage() {
             username: session.user.username,
             preferred_currency: preferredCurrency,
           }}
+          notificationPrefs={notificationPrefs}
         />
       </Suspense>
     </div>
