@@ -24,6 +24,15 @@ export default async function LoginPage({
       {/* Card Container */}
       <div className="relative w-full max-w-[400px] sm:max-w-md">
         <div className="relative rounded-3xl border border-border/70 dark:border-border/50 bg-card/90 dark:bg-card/75 text-card-foreground p-6 sm:p-7 backdrop-blur-xl shadow-xl space-y-4">
+          <div className="text-center">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground text-center">
+              Welcome to{" "}
+              <span className="bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500 dark:from-emerald-400 dark:via-teal-300 dark:to-cyan-400 bg-clip-text text-transparent font-extrabold">
+                Kartli
+              </span>
+            </h1>
+          </div>
+
           {/* 4 & 5. Form Inputs & Primary Action CTA */}
           <LoginForm
             callbackUrl={callbackUrl}
