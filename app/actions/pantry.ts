@@ -335,6 +335,8 @@ export async function stageGuestShoppingItemAction(
 
   const item = await stageGuestShoppingItemDb(kitchenId, itemId, isStaged);
   revalidateKitchen(kitchenId);
+  // Guests load the public page at /kitchen/view/[token], which revalidateKitchen does not cover.
+  revalidatePath("/kitchen/view", "layout");
   return item;
 }
 
