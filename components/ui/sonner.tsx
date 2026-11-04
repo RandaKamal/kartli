@@ -20,11 +20,13 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       position="top-center"
       offset={20}
+      duration={2500}
+      swipeDirections={["top", "left", "right"]}
       className="toaster group !z-[100] pointer-events-none"
       toastOptions={{
         classNames: {
           toast:
-            "group toast pointer-events-none mx-auto w-fit max-w-[92vw] sm:max-w-md justify-center text-center px-4 py-2.5 rounded-2xl bg-card/95 text-foreground border border-border/80 shadow-2xl backdrop-blur-xl flex items-center gap-2 text-xs font-medium font-sans animate-in fade-in slide-in-from-top-2 duration-150",
+            "group toast pointer-events-auto cursor-grab active:cursor-grabbing mx-auto w-fit max-w-[92vw] sm:max-w-md justify-center text-center px-4 py-2.5 rounded-2xl bg-card/95 text-foreground border border-border/80 shadow-2xl backdrop-blur-xl flex items-center gap-2 text-xs font-medium font-sans animate-in fade-in slide-in-from-top-2 duration-150",
           description: "group-[.toast]:text-muted-foreground text-xs",
           actionButton:
             "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground group-[.toast]:font-semibold group-[.toast]:rounded-lg group-[.toast]:text-xs",

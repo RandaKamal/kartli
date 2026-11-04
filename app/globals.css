@@ -331,7 +331,8 @@
   margin-inline: auto !important;
   width: fit-content !important;
   max-width: 100% !important;
-  pointer-events: none !important;
-  transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+  pointer-events: auto !important;
+  touch-action: none;
+  transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
