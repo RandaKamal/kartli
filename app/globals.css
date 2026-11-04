@@ -316,12 +316,21 @@
   position: fixed !important;
   top: 1rem !important;
   left: 50% !important;
+  right: auto !important;
   transform: translateX(-50%) !important;
-  z-index: 50 !important;
+  width: min(92vw, 26rem) !important;
+  z-index: 100 !important;
   pointer-events: none !important;
+  display: flex !important;
+  justify-content: center !important;
 }
 
 [data-sonner-toast] {
+  left: 0 !important;
+  right: 0 !important;
+  margin-inline: auto !important;
+  width: fit-content !important;
+  max-width: 100% !important;
   pointer-events: none !important;
   transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1) !important;
 }

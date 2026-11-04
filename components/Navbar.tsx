@@ -37,7 +37,7 @@ export function Navbar({ user }: NavbarProps) {
           className="flex items-center gap-2.5 font-bold text-lg text-foreground tracking-tight group"
           aria-label="kartli home"
         >
-          <span className="w-8 h-8 rounded-xl bg-card border border-border/70 flex items-center justify-center text-xs font-black relative shadow-xs group-hover:border-accent-brand/50 transition-colors">
+          <span className="w-8 h-8 rounded-xl bg-card border border-border/70 flex items-center justify-center text-xs font-black relative shadow-xs group-hover:border-accent-brand/50 transition-colors shrink-0 leading-none">
             <span className="text-foreground">k</span>
             <span className="w-1.5 h-1.5 rounded-full bg-accent-brand absolute top-1.5 right-1.5" />
           </span>
@@ -60,7 +60,7 @@ export function Navbar({ user }: NavbarProps) {
                   void setUserLanguageAction(next).catch(() => {});
                 }
               }}
-              className="h-7 px-2 text-[11px] font-mono rounded-lg border border-border/60 bg-secondary/30 md:h-8 md:px-2.5 md:text-xs md:rounded-xl md:border-border hover:bg-secondary font-semibold transition-colors flex items-center gap-1 cursor-pointer select-none text-foreground"
+              className="h-8 min-w-8 px-2.5 text-[11px] leading-none font-mono rounded-lg border border-border/60 bg-secondary/30 md:h-9 md:px-3 md:text-xs md:rounded-xl md:border-border hover:bg-secondary font-semibold transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer select-none text-foreground"
               title={locale === "en" ? "Auf Deutsch umschalten" : "Switch to English"}
               aria-label={`Current language: ${locale.toUpperCase()}. Toggle language.`}
             >

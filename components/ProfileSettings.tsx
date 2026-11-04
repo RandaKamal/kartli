@@ -185,11 +185,11 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto mb-6 bg-muted/70 border border-border/80 p-1 rounded-2xl">
-          <TabsTrigger value="preferences" className="rounded-xl text-xs font-semibold">
+        <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto mb-6 h-11 bg-muted/70 border border-border/80 p-1 rounded-2xl items-center">
+          <TabsTrigger value="preferences" className="w-full h-full rounded-xl text-xs font-semibold flex items-center justify-center text-center leading-none">
             {t.profile.preferencesTab}
           </TabsTrigger>
-          <TabsTrigger value="security" className="rounded-xl text-xs font-semibold">
+          <TabsTrigger value="security" className="w-full h-full rounded-xl text-xs font-semibold flex items-center justify-center text-center leading-none">
             {t.profile.securityTab}
           </TabsTrigger>
         </TabsList>
@@ -197,7 +197,7 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
         {/* Tab 1: Preferences */}
         <TabsContent value="preferences" className="space-y-6 animate-in fade-in-50">
           {/* Card 1: Appearance & Culinary Themes */}
-          <Card className="p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-6">
+          <Card className="p-4 sm:p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-6">
             <div className="space-y-3">
               <div className="space-y-0.5">
                 <h3 className="text-base font-bold text-foreground flex items-center gap-2">
@@ -209,41 +209,41 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 pt-1">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-1">
                 <button
                   type="button"
                   onClick={() => setTheme("light")}
-                  className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
+                  className={`w-full h-11 sm:h-12 px-2 sm:px-3 rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 font-semibold text-xs leading-none border transition-all cursor-pointer shadow-xs ${
                     theme === "light"
                       ? "bg-primary text-primary-foreground border-primary shadow-sm"
                       : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
                   }`}
                 >
-                  <Sun className="w-4 h-4" />
+                  <Sun className="w-4 h-4 shrink-0" />
                   <span>{t.profile.lightMode}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setTheme("dark")}
-                  className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
+                  className={`w-full h-11 sm:h-12 px-2 sm:px-3 rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 font-semibold text-xs leading-none border transition-all cursor-pointer shadow-xs ${
                     theme === "dark"
                       ? "bg-primary text-primary-foreground border-primary shadow-sm"
                       : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
                   }`}
                 >
-                  <Moon className="w-4 h-4" />
+                  <Moon className="w-4 h-4 shrink-0" />
                   <span>{t.profile.darkMode}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setTheme("system")}
-                  className={`h-12 rounded-2xl flex items-center justify-center gap-2 font-semibold text-xs border transition-all cursor-pointer shadow-xs ${
+                  className={`w-full h-11 sm:h-12 px-2 sm:px-3 rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 font-semibold text-xs leading-none border transition-all cursor-pointer shadow-xs ${
                     theme === "system"
                       ? "bg-primary text-primary-foreground border-primary shadow-sm"
                       : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
                   }`}
                 >
-                  <Laptop className="w-4 h-4" />
+                  <Laptop className="w-4 h-4 shrink-0" />
                   <span>{t.profile.systemMode}</span>
                 </button>
               </div>
@@ -275,7 +275,7 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
                       key={theme.id}
                       type="button"
                       onClick={() => handleCulinaryThemeChange(theme.id)}
-                      className={`flex flex-col justify-between p-4 rounded-xl border transition-all h-[110px] text-left cursor-pointer ${
+                      className={`flex flex-col justify-between p-4 rounded-xl border transition-all min-h-[110px] gap-3 w-full text-left cursor-pointer ${
                         isSelected
                           ? "border-accent-primary bg-accent-primary/5 ring-2 ring-accent-primary/20 shadow-xs"
                           : "bg-card border-border hover:border-primary/60 hover:bg-muted/30"
@@ -283,7 +283,7 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
                     >
                       {/* Top Row */}
                       <div className="flex items-start justify-between gap-2 w-full">
-                        <div>
+                        <div className="min-w-0 flex-1">
                           <div className="text-sm font-semibold text-foreground">
                             {theme.name}
                           </div>
@@ -293,24 +293,24 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
                         </div>
 
                         {isSelected ? (
-                          <div className="w-5 h-5 rounded-full bg-accent-primary text-primary-foreground flex items-center justify-center shrink-0">
+                          <div className="mt-0.5 w-5 h-5 rounded-full bg-accent-primary text-primary-foreground flex items-center justify-center shrink-0">
                             <Check className="w-3 h-3 stroke-[3]" />
                           </div>
                         ) : (
-                          <div className="w-5 h-5 rounded-full border border-border shrink-0" />
+                          <div className="mt-0.5 w-5 h-5 rounded-full border border-border shrink-0" />
                         )}
                       </div>
 
                       {/* Bottom Row */}
-                      <div className="flex items-center justify-between pt-2 border-t border-border/40 mt-auto w-full">
-                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+                      <div className="flex items-center justify-between pt-2.5 border-t border-border/40 mt-auto w-full">
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium leading-none">
                           {t.profile.paletteLabel}
                         </span>
-                        <div className="flex items-center gap-1.5">
+                        <div className="inline-flex items-center justify-end gap-1.5 shrink-0">
                           {theme.colors.map((hex, idx) => (
                             <span
                               key={idx}
-                              className="w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/10 shrink-0 shadow-xs"
+                              className="block w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/10 shrink-0 shadow-xs"
                               style={{ backgroundColor: hex }}
                             />
                           ))}
@@ -326,7 +326,7 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
           {/* Card 2: Notification Preferences & Alerts */}
           <Card
             id="notifications"
-            className="p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-4 scroll-mt-24"
+            className="p-4 sm:p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-4 scroll-mt-24"
           >
             <CardHeader className="p-0 space-y-1">
               <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
@@ -418,7 +418,7 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
           </Card>
 
           {/* Card 3: Preferred Currency */}
-          <Card className="p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-4">
+          <Card className="p-4 sm:p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-4">
             <div className="space-y-0.5">
               <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-accent-primary" />
@@ -458,7 +458,7 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
           <PasswordChangeForm />
 
           {/* Session Management */}
-          <Card className="p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-6">
+          <Card className="p-4 sm:p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-6">
             <CardHeader className="p-0 space-y-1">
               <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
                 <Shield className="w-5 h-5 text-muted-foreground" />
