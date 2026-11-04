@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 interface ReceiptLine {
   raw_name: string;
@@ -80,6 +81,7 @@ export function CheckoutDialog({
   onOpenChange,
 }: CheckoutDialogProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<"form" | "scanning" | "review" | "confirm-unmatched">("form");
   const [storeName, setStoreName] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
@@ -574,17 +576,20 @@ export function CheckoutDialog({
               <div className="space-y-1.5">
                 <Label htmlFor="checkout-note" className="text-xs font-medium text-foreground flex items-center gap-1.5">
                   <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Note to Admin</span>
+                  <span>{t.kitchen.ledger.noteToAdminOptional}</span>
                 </Label>
                 <textarea
                   id="checkout-note"
                   rows={2}
-                  placeholder="e.g. Used petty cash, paid cash at farm stand, bought bulk discount"
+                  placeholder={t.kitchen.ledger.noteToAdminPlaceholder}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   className="flex min-h-[64px] w-full rounded-xl border border-border/80 bg-secondary/20 p-2.5 text-xs shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-transparent disabled:cursor-not-allowed disabled:opacity-50 resize-none"
                   disabled={isPending}
                 />
+                <p className="text-[11px] leading-snug text-muted-foreground">
+                  {t.kitchen.ledger.noteToAdminHelp}
+                </p>
               </div>
 
               <DialogFooter className="pt-2 border-t border-border flex flex-col sm:flex-row gap-2">

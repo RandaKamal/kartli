@@ -933,9 +933,9 @@ export async function refundCheckout(
   }
 
   const { rows } = await pool.query<Checkout>(
-    `UPDATE checkouts SET is_refunded = TRUE, refunded_at = NOW()
+    `UPDATE checkouts SET is_refunded = TRUE, refunded_at = NOW(), note = NULL
      WHERE id = $1 AND kitchen_id = $2
-     RETURNING id, kitchen_id, user_id, receipt_filename, is_refunded, created_at, refunded_at`,
+     RETURNING id, kitchen_id, user_id, receipt_filename, note, is_refunded, created_at, refunded_at`,
     [checkoutId, kitchenId]
   );
   if (rows.length === 0) {

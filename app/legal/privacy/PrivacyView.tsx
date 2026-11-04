@@ -197,6 +197,17 @@ export function PrivacyView() {
                 </>
               )}
             </p>
+            <p>
+              {isDe ? (
+                <>
+                  <strong>Freiwilliges Notizfeld bei Einkäufen:</strong> Nutzer können optional Hinweise für Admins hinterlegen (z. B. PayPal-Name zur Auslagenerstattung). Die Angabe von Kreditkarten- oder Bankkartendaten ist unzulässig. Die Notiz ist nur für Haushalts-Admins sichtbar und wird nach Begleichung der Ausgabe automatisch gelöscht (Art. 6 Abs. 1 lit. b/f DSGVO, Datenminimierung).
+                </>
+              ) : (
+                <>
+                  <strong>Optional Purchase Notes:</strong> Users may optionally provide notes for admins (e.g. PayPal handle for refund). Entering credit or debit card data is prohibited. The note is visible only to household admins and is automatically deleted once the purchase is settled (Art. 6(1)(b)/(f) GDPR, data minimization).
+                </>
+              )}
+            </p>
           </div>
         </Card>
 
