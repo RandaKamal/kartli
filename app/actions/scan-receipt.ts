@@ -3,6 +3,8 @@
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { getUserMembership } from "@/lib/kitchen";
+import { notifyKitchen, pushMessages } from "@/lib/push";
+import { capitalize } from "@/lib/utils";
 import { pool } from "@/lib/db";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { put, del } from "@vercel/blob";
@@ -261,6 +263,21 @@ export async function submitReceiptCheckoutAction(formData: FormData) {
     revalidatePath(`/kitchen/${kitchenId}/member`);
     revalidatePath(`/kitchen/${kitchenId}/admin`);
 
+    notifyKitchen(
+      kitchenId,
+      "checkout",
+      {
+        render: pushMessages.refundPending(
+          capitalize(membership.kitchen_display_name),
+          totalClaimedAmount,
+          currency,
+          storeName
+        ),
+        url: `/kitchen/${kitchenId}/admin`,
+      },
+      { adminsOnly: true, excludeUserId: userId }
+    ).catch((err) => console.error("Push notification failed:", err));
+
     return { success: true, checkoutId, totalClaimedAmount, currency };
   } catch (error) {
     await client.query('ROLLBACK');
@@ -363,6 +380,21 @@ export async function receiptlessCheckoutAction(formData: FormData) {
     revalidatePath(`/kitchen/${kitchenId}`);
     revalidatePath(`/kitchen/${kitchenId}/member`);
     revalidatePath(`/kitchen/${kitchenId}/admin`);
+
+    notifyKitchen(
+      kitchenId,
+      "checkout",
+      {
+        render: pushMessages.refundPending(
+          capitalize(membership.kitchen_display_name),
+          totalAmount,
+          currency,
+          storeName
+        ),
+        url: `/kitchen/${kitchenId}/admin`,
+      },
+      { adminsOnly: true, excludeUserId: userId }
+    ).catch((err) => console.error("Push notification failed:", err));
 
     return { success: true, checkoutId, totalClaimedAmount: totalAmount };
   } catch (error) {

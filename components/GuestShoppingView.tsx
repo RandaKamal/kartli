@@ -68,10 +68,16 @@ export function GuestShoppingView({
 
   // Load guest cookie on initial mount
   useEffect(() => {
+    if (sessionUser?.isMember) return;
+    // Merge cookie with server-staged items so checks survive cookie loss/reloads
     const saved = readGuestCartCookie(kitchen.id);
-    if (saved && saved.length > 0) {
-      setCheckedIds(new Set(saved));
+    const staged = initialOpenItems.filter((i) => i.is_guest_staged).map((i) => i.id);
+    const merged = Array.from(new Set([...saved, ...staged]));
+    if (merged.length > 0) {
+      setCheckedIds(new Set(merged));
+      writeGuestCartCookie(kitchen.id, merged);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kitchen.id]);
 
   useEffect(() => {

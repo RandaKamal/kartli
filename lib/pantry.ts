@@ -1030,10 +1030,11 @@ export async function transferGuestCartToUser(
 
     const updateSql = `
       UPDATE shopping_list_items
-      SET is_purchased = TRUE, purchased_by = $1, is_guest_staged = FALSE
+      SET is_in_cart = TRUE, is_purchased = FALSE, purchased_by = $1, is_guest_staged = FALSE
       WHERE kitchen_id = $2
         AND id = ANY($3::uuid[])
         AND checkout_id IS NULL
+        AND (purchased_by IS NULL OR purchased_by = $1)
       RETURNING id, pantry_item_id
     `;
     const { rows } = await client.query<{ id: string; pantry_item_id: string | null }>(
@@ -1082,11 +1083,12 @@ export async function stageGuestShoppingItem(
     const { rows: existingRows } = await client.query<{
       id: string;
       is_purchased: boolean;
+      is_in_cart: boolean;
       purchased_by: string | null;
       checkout_id: string | null;
       pantry_item_id: string | null;
     }>(
-      `SELECT id, is_purchased, purchased_by, checkout_id, pantry_item_id
+      `SELECT id, is_purchased, COALESCE(is_in_cart, FALSE) AS is_in_cart, purchased_by, checkout_id, pantry_item_id
        FROM shopping_list_items
        WHERE id = $1 AND kitchen_id = $2`,
       [itemId, kitchenId]
@@ -1099,15 +1101,15 @@ export async function stageGuestShoppingItem(
     if (existing.checkout_id) {
       throw new Error("This item has already been checked out.");
     }
-    if (existing.is_purchased && existing.purchased_by) {
+    if ((existing.is_purchased || existing.is_in_cart) && existing.purchased_by) {
       throw new Error("This item is already in a member's cart.");
     }
 
     const { rows } = await client.query<ShoppingListItem>(
       `UPDATE shopping_list_items
-       SET is_guest_staged = $1, is_purchased = FALSE, purchased_by = NULL
+       SET is_guest_staged = $1
        WHERE id = $2 AND kitchen_id = $3
-       RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, purchased_by, is_guest_staged, checkout_id, created_at`,
+       RETURNING id, kitchen_id, pantry_item_id, name, is_purchased, is_in_cart, purchased_by, is_guest_staged, checkout_id, created_at`,
       [isStaged, itemId, kitchenId]
     );
     const item = rows[0];

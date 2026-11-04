@@ -37,12 +37,12 @@ export const de: typeof en = {
   },
   landing: {
     badge: "kartli 1.0 · Das Küchen-Betriebssystem",
-    heroTitle: "Küchen-Management für WGs, die gutes Essen lieben und null Drama.",
-    heroTitlePrefix: "Küchen-Management für WGs, die ",
-    heroTitleAccent: "gutes Essen und null Drama",
-    heroTitleSuffix: " lieben.",
+    heroTitle: "Alles, was eure WG-Küche braucht, an einem Ort.",
+    heroTitlePrefix: "Alles, was eure WG-Küche braucht, ",
+    heroTitleAccent: "an einem Ort.",
+    heroTitleSuffix: "",
     heroSubtitle:
-      "Verwalte Vorräte, plane Einkäufe in Echtzeit mit deinen Mitbewohnern, scanne Supermarktbelege per KI und gleiche WG-Ausgaben mit einem Klick aus.",
+      "Behalte die WG-Basics im Blick, verwalte eine gemeinsame Einkaufsliste, scanne Belege mit Gemini und gleiche Ausgaben mit deinen Mitbewohnern aus.",
     ctaDashboard: "Zum Dashboard",
     ctaCreate: "Küche erstellen",
     startKitchen: "Küche starten",
@@ -67,6 +67,12 @@ export const de: typeof en = {
     markSettled: "Als ausgeglichen markieren",
   },
   dashboard: {
+    muteKitchen: "Benachrichtigungen für diese Küche stummschalten",
+    unmuteKitchen: "Benachrichtigungen für diese Küche wieder einschalten",
+    notificationsOffHint: "Benachrichtigungen sind auf diesem Gerät aus. Klicken zum Einrichten.",
+    kitchenMuted: "Küche stummgeschaltet",
+    kitchenUnmuted: "Stummschaltung aufgehoben",
+    muteFailed: "Stummschaltung konnte nicht geändert werden.",
     welcome: "Willkommen zurück",
     welcomeBadge: "Willkommen bei kartli",
     activeSpaces: "Aktive Küchen",
@@ -120,6 +126,11 @@ export const de: typeof en = {
     emptySearch: "Keine Basics für diese Suche gefunden.",
     searchStaples: "Basics suchen...",
     neededForThisRun: "Für diesen Einkauf benötigt",
+    listSubtitle: "Tippe auf einen Artikel, um ihn direkt in den Korb zu legen.",
+    listEmpty: "Noch nichts auf der Liste.",
+    addOneOffPlaceholder: "Einmaligen Artikel hinzufügen…",
+    addOneOffBtn: "Hinzufügen",
+    alsoGrab: "WG-Basics",
     neededSub: "Tippe auf einen Artikel, um ihn direkt in den Korb zu legen.",
     putAllInBasket: "Alle in den Korb",
     tapToPutInBasket: "Tippen zum Einpacken",
@@ -279,6 +290,18 @@ export const de: typeof en = {
     notifCheckoutDesc: "Bestätigung erhalten, wenn jemand einen Einkauf abschließt.",
     notifMemberTitle: "MITGLIEDER-AKTIVITÄT",
     notifMemberDesc: "Benachrichtigen, wenn ein neues Mitglied deiner Küche beitritt.",
+    notificationsLabel: "Push-Benachrichtigungen",
+    notificationsSubtext: "Werde benachrichtigt, wenn etwas ausgeht, jemand einkauft oder deine Erstattung ausgeglichen ist.",
+    notificationsLockedHint: "Aktiviere Push-Benachrichtigungen auf diesem Gerät, um festzulegen, welche du bekommst.",
+    notificationsUnsupported: "Dieser Browser unterstützt keine Push-Benachrichtigungen. Auf dem iPhone: kartli zum Home-Bildschirm hinzufügen und von dort öffnen.",
+    enableNotifications: "Benachrichtigungen aktivieren",
+    disableNotifications: "Benachrichtigungen deaktivieren",
+    notificationsEnabled: "Benachrichtigungen aktiviert!",
+    notificationsDisabled: "Benachrichtigungen deaktiviert.",
+    notificationsDenied: "Benachrichtigungen wurden nicht erlaubt.",
+    notificationsEnableFailed: "Benachrichtigungen konnten nicht aktiviert werden.",
+    notificationsDisableFailed: "Benachrichtigungen konnten nicht deaktiviert werden.",
+    notifPrefSaveFailed: "Einstellung konnte nicht gespeichert werden.",
     currencyHelper: "Standardwährung für Belege, Einkäufe und automatische Ausgleiche.",
     securitySectionTitle: "Passwort & Sicherheit",
     securitySectionSub: "Aktualisiere deine Zugangsdaten oder verwalte aktive Sitzungen.",
@@ -416,8 +439,6 @@ export const de: typeof en = {
     modes: {
       kitchenBoard: "Küchen-Board",
       supermarketRun: "Einkaufsrunde",
-      inventoryPrep: "(Vorrat & Planung)",
-      storeChecklist: "(Einkaufsliste)",
       backToBoard: "Zurück zum Küchen-Board",
     },
     header: {
@@ -465,6 +486,9 @@ export const de: typeof en = {
     },
     staples: {
       title: "WG-Basics",
+      addEssential: "Basic hinzufügen",
+      addEssentialPlaceholder: "z. B. Olivenöl",
+      cancelAdd: "Abbrechen",
       tapHint: "Antippen, wenn leer",
       stocked: "Da",
       empty: "Leer",
@@ -651,7 +675,7 @@ export const de: typeof en = {
     },
     step2: {
       title: "Spontane Wünsche",
-      desc: "Braucht ihr spontan Hafermilch oder Snacks? Trage Einmalkäufe sekundenschnell über die Eingabezeile ein.",
+      desc: "Braucht ihr spontan Hafermilch oder Snacks? Trage Einmalkäufe direkt in der Einkaufsliste im Einkaufs-Tab ein.",
     },
     step3: {
       title: "Gemeinsam einkaufen",
@@ -660,6 +684,14 @@ export const de: typeof en = {
     step4: {
       title: "Ausgaben & Bons",
       desc: "Scanne Belege per KI oder trage Summen ein. kartli hält eure WG-Finanzen transparent und stressfrei.",
+    },
+    step5: {
+      title: "Benachrichtigungen",
+      desc: "Verwalte Benachrichtigungen unter Einstellungen & Profil oder tippe auf das Glockensymbol auf einer Küchenkarte, um zu wählen, welche Benachrichtigungen du bekommst.",
+    },
+    step6: {
+      title: "Einstellungen",
+      desc: "Öffne Einstellungen & Profil über dein Profilmenü, um dein Farbthema festzulegen.",
     },
   },
   invite: {
@@ -754,6 +786,17 @@ export const de: typeof en = {
     soleAdminError: "Bitte ernenne zuerst ein anderes Mitglied zum Admin in deinen Küchen.",
     deleteSuccess: "Account erfolgreich gelöscht.",
     deleteFailed: "Account konnte nicht gelöscht werden.",
+  },
+  push: {
+    outOfStockTitle: "Aufgebraucht",
+    outOfStockBody: "{item} auf die Einkaufsliste gesetzt.",
+    refundPendingTitle: "Erstattung offen",
+    refundPendingBody: "{name}: {amount} bei {store}.",
+    refundPendingBodyNoStore: "{name}: {amount}",
+    refundCompleteTitle: "Erstattung erledigt",
+    refundCompleteBody: "{amount} wurden erstattet.",
+    newMemberTitle: "Neues Mitglied",
+    newMemberBody: "{name} ist der Küche beigetreten.",
   },
 };
 

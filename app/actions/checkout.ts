@@ -11,6 +11,7 @@ import {
   refundCheckout,
   deleteReceiptForSide,
 } from "@/lib/pantry";
+import { notifyKitchen, pushMessages } from "@/lib/push";
 import type { Checkout, CheckoutWithDetails } from "@/types";
 
 async function requireMembership(kitchenId: string): Promise<string> {
@@ -66,6 +67,22 @@ export async function refundCheckoutAction(kitchenId: string, checkoutId: string
   if (!session?.user?.id) throw new Error("You must be logged in.");
   const result = await refundCheckout(kitchenId, checkoutId, session.user.id);
   revalidateKitchen(kitchenId);
+
+  if (result.user_id) {
+    notifyKitchen(
+      kitchenId,
+      "checkout",
+      {
+        render: pushMessages.refundComplete(
+          Number(result.total_claimed_amount),
+          result.currency || "EUR"
+        ),
+        url: `/kitchen/${kitchenId}`,
+      },
+      { userIds: [result.user_id] }
+    ).catch((err) => console.error("Push notification failed:", err));
+  }
+
   return result;
 }
 

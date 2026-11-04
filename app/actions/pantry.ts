@@ -3,7 +3,12 @@
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { getUserMembership, getKitchenById, isUserKitchenAdmin } from "@/lib/kitchen";
+import {
+  getUserMembership,
+  getKitchenById,
+  isUserKitchenAdmin,
+} from "@/lib/kitchen";
+import { notifyKitchen, pushMessages } from "@/lib/push";
 import { getGuestCartCookieName } from "@/lib/guestCart";
 import { pool } from "@/lib/db";
 import {
@@ -43,6 +48,8 @@ async function requireMembership(kitchenId: string): Promise<string> {
 
 function revalidateKitchen(kitchenId: string) {
   revalidatePath(`/kitchen/${kitchenId}`);
+  revalidatePath(`/kitchen/view/${kitchenId}`);
+  revalidatePath("/kitchen/view/[id]", "page");
 }
 
 export async function getPantryItemsAction(kitchenId: string): Promise<PantryItem[]> {
@@ -141,10 +148,21 @@ export async function setPantryItemStockAction(
   itemId: string,
   isOutOfStock: boolean
 ) {
-  await requireMembership(kitchenId);
+  const userId = await requireMembership(kitchenId);
   // No revalidatePath here: it would force a full RSC re-render and stall the
   // client transition. The client holds optimistic state; the next navigation/poll syncs.
-  return await setPantryItemStock(kitchenId, itemId, isOutOfStock);
+  const item = await setPantryItemStock(kitchenId, itemId, isOutOfStock);
+
+  if (isOutOfStock) {
+    notifyKitchen(
+      kitchenId,
+      "restock",
+      { render: pushMessages.outOfStock(item.name), url: `/kitchen/${kitchenId}` },
+      { excludeUserId: userId }
+    ).catch((err) => console.error("Push notification failed:", err));
+  }
+
+  return item;
 }
 
 export async function updateItemStockAction(

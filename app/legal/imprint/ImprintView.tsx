@@ -71,7 +71,7 @@ export function ImprintView() {
             <div className="bg-muted/40 p-4 rounded-xl border border-border/50 font-mono text-xs text-foreground/90 space-y-1">
               <p>
                 <span className="text-muted-foreground">E-Mail: </span>
-                <span className="text-foreground font-semibold">[contact@example.com / support@kartli.org]</span>
+                <span className="text-foreground font-semibold">[contact@example.com / support@kartli.app]</span>
               </p>
               <p>
                 <span className="text-muted-foreground">Webseite: </span>

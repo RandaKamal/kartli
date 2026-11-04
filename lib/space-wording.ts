@@ -53,7 +53,7 @@ export function getSpaceWording(spaceType: SpaceType = 'FLATSHARE') {
         stagedByOthers: 'Grabbed by Roomies',
         inviteAction: 'Add New Roomie',
         inviteDescription: 'Generate a quick claim link for your next flatmate.',
-        invitePlaceholder: 'e.g. Lisa, Finn, Sam',
+        invitePlaceholder: 'e.g. Lisa, Sophie, Finn',
       };
   }
 }

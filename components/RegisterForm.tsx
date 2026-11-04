@@ -108,7 +108,7 @@ export function RegisterForm({
             autoComplete="username"
             minLength={2}
             onKeyDown={handleKeyDown}
-            placeholder="e.g. sophie, alex, finn"
+            placeholder="e.g. lisa, sophie, finn"
             className="w-full h-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-sm text-foreground placeholder:text-muted-foreground/60 p-0"
           />
         </div>

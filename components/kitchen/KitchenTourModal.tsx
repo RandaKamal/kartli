@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Package, PlusCircle, ShoppingCart, Receipt } from "lucide-react";
+import { Package, PlusCircle, ShoppingCart, Receipt, Bell, SlidersHorizontal } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
   Dialog,
@@ -14,7 +14,7 @@ import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 interface TourStepConfig {
-  key: "step1" | "step2" | "step3" | "step4";
+  key: "step1" | "step2" | "step3" | "step4" | "step5" | "step6";
   icon: LucideIcon;
   // Full class strings so Tailwind can detect them statically
   tile: string;
@@ -55,6 +55,22 @@ const STEPS: TourStepConfig[] = [
     glow: "bg-violet-500/20",
     iconColor: "text-violet-600 dark:text-violet-400",
     dotActive: "bg-violet-500",
+  },
+  {
+    key: "step5",
+    icon: Bell,
+    tile: "bg-amber-500/10 border-amber-500/30",
+    glow: "bg-amber-500/20",
+    iconColor: "text-amber-600 dark:text-amber-400",
+    dotActive: "bg-amber-500",
+  },
+  {
+    key: "step6",
+    icon: SlidersHorizontal,
+    tile: "bg-rose-500/10 border-rose-500/30",
+    glow: "bg-rose-500/20",
+    iconColor: "text-rose-600 dark:text-rose-400",
+    dotActive: "bg-rose-500",
   },
 ];
 
@@ -145,7 +161,7 @@ export function KitchenTourModal({ isOpen, onOpenChange, onComplete }: KitchenTo
       >
         <DialogHeader className="sr-only">
           <DialogTitle>{copy.title}</DialogTitle>
-          <DialogDescription>{copy.desc}</DialogDescription>
+          <DialogDescription>{copy.desc.replaceAll("**", "")}</DialogDescription>
         </DialogHeader>
 
         {/* Step content */}
@@ -191,7 +207,16 @@ export function KitchenTourModal({ isOpen, onOpenChange, onComplete }: KitchenTo
                 {copy.title}
               </h2>
               <p className="text-sm text-muted-foreground leading-relaxed text-pretty break-words">
-                {copy.desc}
+                {/* **text** in tour copy renders bold */}
+                {copy.desc.split("**").map((part, i) =>
+                  i % 2 === 1 ? (
+                    <strong key={i} className="font-semibold text-foreground">
+                      {part}
+                    </strong>
+                  ) : (
+                    part
+                  )
+                )}
               </p>
             </div>
           </div>
