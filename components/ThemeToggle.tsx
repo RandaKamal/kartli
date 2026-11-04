@@ -30,7 +30,7 @@ export function ThemeToggle({
         variant="ghost"
         size="icon"
         className={cn(
-          "h-7 w-7 rounded-lg border-0 md:h-9 md:w-9 md:rounded-xl md:border md:border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors",
+          "relative h-8 w-8 rounded-lg border-0 md:h-9 md:w-9 md:rounded-xl md:border md:border-border/70 inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors",
           className
         )}
         aria-label="Toggle theme"
@@ -47,7 +47,7 @@ export function ThemeToggle({
           variant="ghost"
           size="icon"
           className={cn(
-            "h-7 w-7 rounded-lg border-0 md:h-9 md:w-9 md:rounded-xl md:border md:border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors",
+            "relative h-8 w-8 rounded-lg border-0 md:h-9 md:w-9 md:rounded-xl md:border md:border-border/70 inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors",
             className
           )}
           aria-label="Toggle theme"

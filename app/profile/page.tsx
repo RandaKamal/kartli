@@ -19,7 +19,7 @@ export default async function ProfilePage() {
   const preferredCurrency = dbUser?.preferred_currency || session.user.preferred_currency || "EUR";
 
   return (
-    <div className="max-w-3xl mx-auto w-full px-6 pt-12 pb-24 space-y-6">
+    <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 pt-6 sm:pt-12 pb-24 space-y-6">
       <Suspense fallback={<div className="p-8 text-center text-xs text-muted-foreground">Loading settings...</div>}>
         <ProfileSettings
           user={{
