@@ -52,8 +52,9 @@ interface ReceiptLine {
 }
 
 interface ScannedReceipt {
-  receiptPath: string;
+  receiptUrl: string | null;
   storeName: string;
+  currency: string;
   totalReceiptAmount: number;
   lines: ReceiptLine[];
   lineStates: Array<{ checked: boolean; price: number }>;
@@ -65,6 +66,62 @@ interface StagedCartItem {
   id: string;
   name: string;
   pantry_item_id: string | null;
+}
+
+const MAX_IMAGE_DIMENSION = 1600;
+const JPEG_QUALITY = 0.82;
+
+/**
+ * Resize and re-encode a receipt photo in the browser before upload.
+ * Phone cameras produce 2–8 MB images that blow past the Server Action body
+ * limit; scaling the longest edge to 1600px keeps receipt text legible while
+ * usually shrinking the file to a few hundred KB.
+ */
+async function compressReceiptImage(file: File): Promise<File> {
+  // Only raster images can go through a canvas. PDFs and anything else are
+  // passed through untouched.
+  if (!file.type.startsWith("image/")) return file;
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    const { width, height } = bitmap;
+    const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(width, height));
+    const targetWidth = Math.max(1, Math.round(width * scale));
+    const targetHeight = Math.max(1, Math.round(height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      bitmap.close();
+      return file;
+    }
+
+    // Fill white first so transparent PNGs don't turn black in JPEG.
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, targetWidth, targetHeight);
+    ctx.drawImage(bitmap, 0, 0, targetWidth, targetHeight);
+    bitmap.close();
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", JPEG_QUALITY)
+    );
+
+    if (!blob || blob.size >= file.size) return file;
+
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "receipt";
+    return new File([blob], `${baseName}.jpg`, {
+      type: "image/jpeg",
+      lastModified: Date.now(),
+    });
+  } catch (error) {
+    // createImageBitmap can fail for unsupported formats (e.g. HEIC in some
+    // browsers); fall back to the original file rather than blocking upload.
+    console.warn("Receipt image compression failed, using original file:", error);
+    return file;
+  }
 }
 
 interface CheckoutDialogProps {
@@ -133,17 +190,30 @@ export function CheckoutDialog({
       const previewUrl = URL.createObjectURL(file);
       setPhase("scanning");
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("kitchenId", kitchenId);
-      formData.append("stagedCartItems", JSON.stringify(stagedCartItems));
-
       startTransition(async () => {
         try {
-          const result = await scanReceiptAction(formData);
+          const uploadFile = await compressReceiptImage(file);
+
+          const formData = new FormData();
+          formData.append("file", uploadFile);
+          formData.append("kitchenId", kitchenId);
+          formData.append("stagedCartItems", JSON.stringify(stagedCartItems));
+
+          const res = await scanReceiptAction(formData);
+
+          if (!res.ok) {
+            URL.revokeObjectURL(previewUrl);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+            toast.error(res.error);
+            setPhase("form");
+            return;
+          }
+
+          const result = res.data;
           const newReceipt: ScannedReceipt = {
-            receiptPath: result.receiptPath,
+            receiptUrl: result.receiptUrl,
             storeName: result.storeName,
+            currency: result.currency,
             totalReceiptAmount: result.totalReceiptAmount,
             lines: result.lines,
             lineStates: result.lines.map((line: ReceiptLine) => ({
@@ -267,8 +337,11 @@ export function CheckoutDialog({
       const receipt = receipts[index];
       if (!receipt) return;
 
+      const receiptUrl = receipt.receiptUrl;
       startTransition(async () => {
-        await deleteReceiptFileAction(receipt.receiptPath);
+        if (receiptUrl) {
+          await deleteReceiptFileAction(receiptUrl);
+        }
       });
 
       if (receipt.previewUrl) URL.revokeObjectURL(receipt.previewUrl);
@@ -283,8 +356,10 @@ export function CheckoutDialog({
 
   const handleClose = useCallback(() => {
     receipts.forEach((r) => {
+      const url = r.receiptUrl;
+      if (!url) return;
       startTransition(async () => {
-        await deleteReceiptFileAction(r.receiptPath);
+        await deleteReceiptFileAction(url);
       });
     });
     resetAll();
@@ -359,7 +434,15 @@ export function CheckoutDialog({
 
       const formData = new FormData();
       formData.append("kitchenId", kitchenId);
-      formData.append("receiptPaths", JSON.stringify(receipts.map((r) => r.receiptPath)));
+      formData.append("currency", receipts[0]?.currency || "EUR");
+      formData.append(
+        "receiptPaths",
+        JSON.stringify(
+          receipts
+            .map((r) => r.receiptUrl)
+            .filter((url): url is string => Boolean(url))
+        )
+      );
       formData.append("storeName", storeName.trim());
       formData.append("note", note.trim());
       formData.append("totalReceiptAmount", totalReceiptAmount.toString());
@@ -480,7 +563,7 @@ export function CheckoutDialog({
               {receipts.length > 0 && (
                 <div className="space-y-1.5">
                   {receipts.map((r, i) => (
-                    <div key={r.receiptPath} className="w-full flex items-center justify-between gap-2.5 p-3 rounded-xl border border-border/80 bg-secondary/40">
+                    <div key={r.receiptUrl ?? `receipt-${i}`} className="w-full flex items-center justify-between gap-2.5 p-3 rounded-xl border border-border/80 bg-secondary/40">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div className="w-8 h-8 rounded-xl bg-secondary border border-border flex items-center justify-center text-emerald-500 shrink-0">
                           <Receipt className="w-4 h-4" />

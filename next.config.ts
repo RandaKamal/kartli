@@ -28,6 +28,13 @@ const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname),
   serverExternalPackages: ["puppeteer"],
+  experimental: {
+    serverActions: {
+      // Receipt photos are uploaded through a Server Action. Even after
+      // client-side compression, allow generous headroom above the 1 MB default.
+      bodySizeLimit: "10mb",
+    },
+  },
   devIndicators: false,
   headers: async () => {
     return [

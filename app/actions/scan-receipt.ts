@@ -10,25 +10,291 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { put, del } from "@vercel/blob";
 import crypto from "node:crypto";
 
-export async function scanReceiptAction(formData: FormData) {
+export interface ScannedReceiptLine {
+  raw_name: string;
+  price: number;
+  quantity: number;
+  matched_cart_item_id: string | null;
+}
+
+export interface ScanResult {
+  receiptUrl: string | null;
+  storeName: string;
+  currency: string;
+  totalReceiptAmount: number;
+  lines: ScannedReceiptLine[];
+}
+
+export type ScanReceiptResult =
+  | { ok: true; data: ScanResult }
+  | { ok: false; error: string };
+
+/** Primary OCR transport: Requesty's OpenAI-compatible router. */
+const REQUESTY_API_URL = "https://router.requesty.ai/v1/chat/completions";
+
+/**
+ * Ordered free Vision models on Requesty. Each attempt gets its own short
+ * timeout so a stalled provider fails fast and the next one is tried.
+ */
+const REQUESTY_VISION_MODELS = [
+  "gemma-4-31b-it",
+  "muse-glimmer-30b",
+  "nemotron-3-nano-omni-30b",
+] as const;
+
+const REQUESTY_REQUEST_TIMEOUT_MS = 12_000;
+
+/** Last-resort direct Gemini model, used only when all Requesty models fail. */
+const GEMINI_MODEL_ID = "gemini-3.5-flash-lite";
+
+const GEMINI_REQUEST_TIMEOUT_MS = 15_000;
+
+const ALL_PROVIDERS_FAILED_MESSAGE =
+  "Receipt scanner is temporarily busy across all providers. Please try again in a moment.";
+
+/** Shape we ask every provider to return. */
+interface ExtractedReceipt {
+  store?: unknown;
+  date?: unknown;
+  currency?: unknown;
+  total?: unknown;
+  items?: Array<{
+    raw_name?: unknown;
+    normalized_name?: unknown;
+    quantity?: unknown;
+    price?: unknown;
+  }>;
+}
+
+type ExtractedReceiptItem = NonNullable<ExtractedReceipt["items"]>[number];
+
+interface StagedCartItem {
+  id?: unknown;
+  name?: unknown;
+}
+
+function normalizeName(value: unknown): string {
+  return String(value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+/**
+ * Match a receipt line to a staged cart item ourselves, so the provider
+ * schema stays a plain receipt extraction with no app-specific ids.
+ */
+function matchCartItem(
+  item: ExtractedReceiptItem,
+  stagedItems: StagedCartItem[]
+): string | null {
+  const candidates = [item?.normalized_name, item?.raw_name]
+    .map(normalizeName)
+    .filter((candidate) => candidate.length > 0);
+  if (candidates.length === 0) return null;
+
+  let best: { id: string; length: number } | null = null;
+
+  for (const staged of stagedItems) {
+    const stagedId = typeof staged?.id === "string" ? staged.id : null;
+    const target = normalizeName(staged?.name);
+    if (!stagedId || target.length < 3) continue;
+
+    for (const candidate of candidates) {
+      if (candidate.includes(target) || target.includes(candidate)) {
+        if (!best || target.length > best.length) {
+          best = { id: stagedId, length: target.length };
+        }
+        break;
+      }
+    }
+  }
+
+  return best?.id ?? null;
+}
+
+function buildExtractionPrompt(stagedItems: StagedCartItem[]): string {
+  return `You are a receipt OCR extraction assistant. Extract every purchased line item from the attached supermarket receipt image.
+
+Inspect the receipt text for currency symbols or abbreviations (e.g. "CHF", "EUR", "USD", "GBP", "€", "$", "£", "Fr."). Return a standard 3-letter uppercase ISO code in the "currency" field. Default to "EUR" if ambiguous or not explicitly specified.
+
+Return a JSON object with exactly this structure:
+{
+  "store": "<store name as printed, e.g. Lidl, Rewe, or Supermarket if unclear>",
+  "date": "<purchase date as YYYY-MM-DD, or null if unreadable>",
+  "currency": "<ISO code: 'EUR', 'CHF', 'USD', 'GBP', etc. Default 'EUR'>",
+  "total": <number, the overall gross receipt total>,
+  "items": [
+    {
+      "raw_name": "<text exactly as printed on the receipt>",
+      "normalized_name": "<short clean product name, e.g. 'Milk'>",
+      "quantity": <number, default 1>,
+      "price": <number, line price for this item>
+    }
+  ]
+}
+
+Return ONLY the JSON object. No markdown, no code fences, no extra text.
+
+Known staged cart item names (for context only): ${JSON.stringify(
+    stagedItems.map((item) => String(item?.name ?? "")).filter(Boolean)
+  )}`;
+}
+
+/** Strip code fences / prose and parse the provider's JSON answer. */
+function parseReceiptJson(raw: string): ExtractedReceipt {
+  let clean = raw.trim();
+
+  if (clean.startsWith("```")) {
+    clean = clean
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/, "");
+  }
+
+  const firstBrace = clean.indexOf("{");
+  const lastBrace = clean.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    clean = clean.slice(firstBrace, lastBrace + 1);
+  }
+
+  const parsed = JSON.parse(clean);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("AI returned a non-object receipt payload.");
+  }
+  return parsed as ExtractedReceipt;
+}
+
+function readMessageContent(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (part && typeof part === "object" && typeof (part as any).text === "string") {
+          return (part as any).text as string;
+        }
+        return "";
+      })
+      .join("");
+  }
+  return "";
+}
+
+async function extractWithRequesty(
+  model: string,
+  prompt: string,
+  mimeType: string,
+  base64: string
+): Promise<ExtractedReceipt> {
+  const response = await fetch(REQUESTY_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.REQUESTY_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.1,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "You extract structured data from receipt images. Reply with a single strict JSON object and nothing else.",
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            {
+              type: "image_url",
+              image_url: { url: `data:${mimeType};base64,${base64}` },
+            },
+          ],
+        },
+      ],
+    }),
+    // Fail fast per model so the chain advances instead of hanging the UI.
+    signal: AbortSignal.timeout(REQUESTY_REQUEST_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    const error = new Error(
+      `Requesty model "${model}" responded ${response.status} ${response.statusText}: ${body.slice(0, 500)}`
+    ) as Error & { status?: number };
+    error.status = response.status;
+    throw error;
+  }
+
+  const payload: any = await response.json();
+  const content = readMessageContent(payload?.choices?.[0]?.message?.content);
+  if (!content.trim()) {
+    throw new Error(`Requesty model "${model}" returned an empty completion.`);
+  }
+
+  return parseReceiptJson(content);
+}
+
+async function extractWithGemini(
+  apiKey: string,
+  prompt: string,
+  mimeType: string,
+  base64: string
+): Promise<ExtractedReceipt> {
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel(
+    {
+      model: GEMINI_MODEL_ID,
+      generationConfig: {
+        responseMimeType: "application/json",
+      },
+    },
+    {
+      // Aborts the request after 15s instead of hanging indefinitely.
+      timeout: GEMINI_REQUEST_TIMEOUT_MS,
+    }
+  );
+
+  const result = await model.generateContent([
+    prompt,
+    {
+      inlineData: {
+        mimeType,
+        data: base64,
+      },
+    },
+  ]);
+
+  return parseReceiptJson(result.response.text());
+}
+
+export async function scanReceiptAction(formData: FormData): Promise<ScanReceiptResult> {
   const file = formData.get("file") as File;
   const kitchenId = formData.get("kitchenId") as string;
   const stagedCartItemsStr = formData.get("stagedCartItems") as string;
 
   if (!file || !kitchenId) {
-    throw new Error("Missing required fields");
+    return { ok: false, error: "Missing required fields" };
   }
 
   const session = await auth();
-  if (!session?.user?.id) throw new Error("You must be logged in.");
+  if (!session?.user?.id) {
+    return { ok: false, error: "You must be logged in." };
+  }
 
   const membership = await getUserMembership(kitchenId, session.user.id);
   if (!membership) {
-    throw new Error("You are not a member of this kitchen.");
+    return { ok: false, error: "You are not a member of this kitchen." };
   }
 
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY is not configured.");
+  if (!process.env.REQUESTY_API_KEY && !process.env.GEMINI_API_KEY) {
+    return {
+      ok: false,
+      error:
+        "Receipt OCR is not configured. Set REQUESTY_API_KEY (or GEMINI_API_KEY as a fallback).",
+    };
   }
 
   let uploadedUrl: string | null = null;
@@ -38,90 +304,116 @@ export async function scanReceiptAction(formData: FormData) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const mimeType = file.type || 'image/jpeg';
 
-    const blob = await put(filename, buffer, {
-      access: 'public',
-      contentType: mimeType,
-    });
-    uploadedUrl = blob.url;
-
+    // Convert to base64 up front so OCR works independently of Blob storage.
     const base64 = buffer.toString('base64');
 
-
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-3.5-flash-lite",
-      generationConfig: {
-        responseMimeType: "application/json",
-      },
-    });
-    
-    const stagedItems = JSON.parse(stagedCartItemsStr || '[]');
-    
-    const prompt = `You are a receipt OCR extraction assistant. Extract all line items from this supermarket receipt.
-
-Inspect receipt text for currency symbols or abbreviations (e.g., "CHF", "EUR", "USD", "GBP", "€", "$", "£", "Fr."). Return a standard 3-letter uppercase ISO code in the "currency" field. Default to "EUR" if ambiguous or not explicitly specified.
-
-Return a JSON object with this exact structure:
-{
-  "store_name": "<store name as printed, e.g. Lidl, Rewe, or Supermarket if unclear>",
-  "currency": "<ISO code: 'EUR', 'CHF', 'USD', 'GBP', etc. Default 'EUR'>",
-  "total_receipt_amount": <number, the overall gross receipt total>,
-  "lines": [
-    {
-      "raw_name": "<text as printed on receipt>",
-      "price": <number, price for this line>,
-      "quantity": <number, default 1>,
-      "matched_cart_item_id": <string or null>
+    // Blob storage is optional: locally (and wherever no token is configured)
+    // the scan should still run, just without a persisted receipt image.
+    if (process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_OIDC_TOKEN) {
+      try {
+        const blob = await put(filename, buffer, {
+          access: 'public',
+          contentType: mimeType,
+        });
+        uploadedUrl = blob.url;
+      } catch (blobErr) {
+        console.warn("[scanReceiptAction] Blob upload skipped/failed:", blobErr);
+        uploadedUrl = null;
+      }
     }
-  ]
-}
 
-For matched_cart_item_id: try to match each receipt line to one of these staged cart items by comparing names (fuzzy match OK, e.g. "H-MILCH 3.5%" matches "Milch"):
-${JSON.stringify(stagedItems.map((i: any) => ({ id: i.id, name: i.name })))}
+    const stagedItems: StagedCartItem[] = JSON.parse(stagedCartItemsStr || "[]");
+    const prompt = buildExtractionPrompt(stagedItems);
 
-Set matched_cart_item_id to the item's id if it matches, or null if it doesn't match any cart item.
+    let extracted: ExtractedReceipt | null = null;
+    let usedProvider: string | null = null;
 
-IMPORTANT: Return ONLY the JSON object, no markdown, no code fences, no extra text.`;
+    // Primary: Requesty free Vision chain.
+    if (process.env.REQUESTY_API_KEY) {
+      for (const model of REQUESTY_VISION_MODELS) {
+        try {
+          extracted = await extractWithRequesty(model, prompt, mimeType, base64);
+          usedProvider = `requesty:${model}`;
+          break;
+        } catch (modelErr) {
+          console.warn(
+            "[scanReceiptAction] Model failed, trying next fallback:",
+            model,
+            modelErr
+          );
+        }
+      }
+    } else {
+      console.warn(
+        "[scanReceiptAction] REQUESTY_API_KEY not configured; using direct Gemini fallback."
+      );
+    }
 
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
+    // Last resort: direct Gemini, only if the Requesty chain produced nothing.
+    if (!extracted && process.env.GEMINI_API_KEY) {
+      try {
+        extracted = await extractWithGemini(
+          process.env.GEMINI_API_KEY,
+          prompt,
           mimeType,
-          data: base64,
-        },
-      },
-    ]);
-    
-    const responseText = result.response.text();
-
-    // Strip potential markdown code fences
-    let cleanJson = responseText.trim();
-    if (cleanJson.startsWith('```')) {
-      cleanJson = cleanJson.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
-    }
-    
-    let parsed;
-    try {
-      parsed = JSON.parse(cleanJson);
-    } catch {
-      throw new Error("Could not parse the receipt data returned by AI. Please try again with a clearer picture.");
+          base64
+        );
+        usedProvider = `gemini:${GEMINI_MODEL_ID}`;
+      } catch (geminiErr: any) {
+        console.error("[scanReceiptAction] Raw Gemini error:", {
+          model: GEMINI_MODEL_ID,
+          name: geminiErr?.name,
+          status: geminiErr?.status,
+          statusText: geminiErr?.statusText,
+          code: geminiErr?.code,
+          message: geminiErr?.message ?? String(geminiErr),
+          errorDetails: geminiErr?.errorDetails,
+        });
+      }
     }
 
-    const rawCurrency = (parsed.currency || 'EUR').toString().trim().toUpperCase();
-    const currency = rawCurrency.length === 3 ? rawCurrency : 'EUR';
+    if (!extracted) {
+      console.error("[scanReceiptAction] All OCR providers failed.");
+      if (uploadedUrl) {
+        try {
+          await del(uploadedUrl);
+        } catch {
+          // ignore cleanup error
+        }
+        uploadedUrl = null;
+      }
+      return { ok: false, error: ALL_PROVIDERS_FAILED_MESSAGE };
+    }
+
+    console.log(`[scanReceiptAction] OCR succeeded with ${usedProvider}`);
+
+    const rawCurrency = String(extracted.currency ?? "EUR")
+      .trim()
+      .toUpperCase();
+    const currency = rawCurrency.length === 3 ? rawCurrency : "EUR";
+    const storeName =
+      typeof extracted.store === "string" && extracted.store.trim()
+        ? extracted.store.trim()
+        : "Supermarket";
+
+    const lines = Array.isArray(extracted.items)
+      ? extracted.items.map((line) => ({
+          raw_name: typeof line?.raw_name === "string" ? line.raw_name : "",
+          price: Number(line?.price) || 0,
+          quantity: Number(line?.quantity) || 1,
+          matched_cart_item_id: matchCartItem(line, stagedItems),
+        }))
+      : [];
 
     return {
-      receiptPath: uploadedUrl,
-      storeName: parsed.store_name || 'Supermarket',
-      currency,
-      totalReceiptAmount: Number(parsed.total_receipt_amount) || 0,
-      lines: (parsed.lines || []).map((line: any) => ({
-        raw_name: line.raw_name || '',
-        price: Number(line.price) || 0,
-        quantity: Number(line.quantity) || 1,
-        matched_cart_item_id: line.matched_cart_item_id || null,
-      })),
+      ok: true,
+      data: {
+        receiptUrl: uploadedUrl,
+        storeName,
+        currency,
+        totalReceiptAmount: Number(extracted.total) || 0,
+        lines,
+      },
     };
 
   } catch (error: any) {
@@ -133,26 +425,73 @@ IMPORTANT: Return ONLY the JSON object, no markdown, no code fences, no extra te
       }
     }
 
-    console.error("Receipt scanning error:", error);
+    const status: number | undefined =
+      typeof error?.status === "number" ? error.status : undefined;
+    const rawMessage: string =
+      typeof error?.message === "string" ? error.message : String(error);
+    const errorName: string = typeof error?.name === "string" ? error.name : "";
+
+    // Full upstream detail: without this a 400/404/503 is indistinguishable
+    // from a genuine quota error in production logs.
+    console.error("[scanReceiptAction] Raw OCR error:", {
+      name: errorName || undefined,
+      status,
+      statusText: error?.statusText,
+      code: error?.code,
+      message: rawMessage,
+      errorDetails: error?.errorDetails,
+    });
 
     let userMessage = "Failed to scan receipt. Please try again with a clear photo.";
-    if (error?.message) {
-      if (error.message.includes("GEMINI_API_KEY")) {
-        userMessage = error.message;
-      } else if (error.message.includes("404") || error.message.includes("not found") || error.message.includes("no longer available")) {
-        userMessage = "The AI model endpoint is currently unavailable. Please verify model configuration.";
-      } else if (error.message.includes("API key") || error.message.includes("unauthorized") || error.message.includes("403") || error.message.includes("401") || error.message.includes("API_KEY_INVALID")) {
-        userMessage = "AI service authentication error. Please verify your GEMINI_API_KEY.";
-      } else if (error.message.includes("quota") || error.message.includes("rate") || error.message.includes("429") || error.message.includes("RESOURCE_EXHAUSTED")) {
-        userMessage = "AI rate limit reached. Please wait a moment and try again.";
-      } else if (error.message.includes("Could not parse the receipt data")) {
-        userMessage = error.message;
-      } else if (error.message.includes("You must be logged in") || error.message.includes("not a member") || error.message.includes("Missing required fields")) {
-        userMessage = error.message;
-      }
+
+    if (rawMessage === ALL_PROVIDERS_FAILED_MESSAGE) {
+      userMessage = ALL_PROVIDERS_FAILED_MESSAGE;
+    } else if (rawMessage.includes("Could not parse the receipt data")) {
+      userMessage = rawMessage;
+    } else if (rawMessage.includes("GEMINI_API_KEY")) {
+      userMessage = rawMessage;
+    } else if (rawMessage.includes("You must be logged in") || rawMessage.includes("not a member") || rawMessage.includes("Missing required fields")) {
+      userMessage = rawMessage;
+    } else if (
+      errorName === "TimeoutError" ||
+      errorName === "GoogleGenerativeAIAbortError" ||
+      /aborted|timed? ?out/i.test(rawMessage)
+    ) {
+      userMessage = `The AI request timed out after ${GEMINI_REQUEST_TIMEOUT_MS / 1000} seconds. Please try again.`;
+    } else if (
+      status === 429 ||
+      rawMessage.includes("RESOURCE_EXHAUSTED") ||
+      /quota/i.test(rawMessage)
+    ) {
+      userMessage = "AI rate limit reached. Please wait a moment and try again.";
+    } else if (
+      status === 503 ||
+      status === 502 ||
+      status === 504 ||
+      rawMessage.includes("UNAVAILABLE") ||
+      /overload/i.test(rawMessage)
+    ) {
+      userMessage = "The AI model is temporarily overloaded. Please retry in a moment.";
+    } else if (
+      status === 401 ||
+      status === 403 ||
+      rawMessage.includes("API_KEY_INVALID") ||
+      /API key|unauthorized/i.test(rawMessage)
+    ) {
+      userMessage =
+        "AI service authentication error. Please verify your REQUESTY_API_KEY / GEMINI_API_KEY.";
+    } else if (
+      status === 400 ||
+      status === 404 ||
+      /invalid model|not found|no longer available/i.test(rawMessage)
+    ) {
+      userMessage = "The AI model endpoint is unavailable (invalid model or request). Please check the model configuration.";
+    } else if (/JSON|Unexpected token|non-object receipt payload/i.test(rawMessage)) {
+      userMessage =
+        "Could not parse the receipt data returned by AI. Please try again with a clearer picture.";
     }
 
-    throw new Error(userMessage);
+    return { ok: false, error: userMessage };
   }
 }
 
