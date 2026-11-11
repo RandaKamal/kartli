@@ -6,7 +6,7 @@ import { getUserMembership } from "@/lib/kitchen";
 import { notifyKitchen, pushMessages } from "@/lib/push";
 import { capitalize } from "@/lib/utils";
 import { pool } from "@/lib/db";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType, type ResponseSchema } from "@google/generative-ai";
 import { put, del } from "@vercel/blob";
 import crypto from "node:crypto";
 
@@ -29,28 +29,68 @@ export type ScanReceiptResult =
   | { ok: true; data: ScanResult }
   | { ok: false; error: string };
 
-/** Primary OCR transport: Requesty's OpenAI-compatible router. */
-const REQUESTY_API_URL = "https://router.requesty.ai/v1/chat/completions";
-
-/**
- * Ordered free Vision models on Requesty. Each attempt gets its own short
- * timeout so a stalled provider fails fast and the next one is tried.
- */
-const REQUESTY_VISION_MODELS = [
-  "nemotron-3-nano-omni-30b-a3b-reasoning",
-  "muse-glimmer-30b",
-  "gemma-4-31b-it",
-] as const;
-
-const REQUESTY_REQUEST_TIMEOUT_MS = 12_000;
-
-/** Last-resort direct Gemini model, used only when all Requesty models fail. */
+/** Primary OCR engine: Google AI Studio gemini-3.5-flash-lite */
 const GEMINI_MODEL_ID = "gemini-3.5-flash-lite";
+const GEMINI_REQUEST_TIMEOUT_MS = 8_000;
 
-const GEMINI_REQUEST_TIMEOUT_MS = 15_000;
+/** Optional secondary fallback: DeepSeek deepseek-flash */
+const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
+const DEEPSEEK_MODEL_ID = "deepseek-flash";
+const DEEPSEEK_REQUEST_TIMEOUT_MS = 10_000;
 
 const ALL_PROVIDERS_FAILED_MESSAGE =
   "Receipt scanner is temporarily busy across all providers. Please try again in a moment.";
+
+/** Strict JSON schema for native Gemini constrained decoding */
+const receiptResponseSchema: ResponseSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    store: {
+      type: SchemaType.STRING,
+      description: "Store name as printed on the receipt, e.g. Lidl, Rewe, or Supermarket if unclear",
+    },
+    date: {
+      type: SchemaType.STRING,
+      description: "Purchase date as YYYY-MM-DD or null/empty if unreadable",
+      nullable: true,
+    },
+    currency: {
+      type: SchemaType.STRING,
+      description: "3-letter uppercase ISO code: EUR, CHF, USD, GBP, etc. Default EUR",
+    },
+    total: {
+      type: SchemaType.NUMBER,
+      description: "Overall gross receipt total as a number",
+    },
+    items: {
+      type: SchemaType.ARRAY,
+      description: "List of purchased receipt line items",
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          raw_name: {
+            type: SchemaType.STRING,
+            description: "Concise item name text as printed on the receipt (omit filler and excess whitespace)",
+          },
+          normalized_name: {
+            type: SchemaType.STRING,
+            description: "Concise clean product name (e.g. Milk, Bananas)",
+          },
+          quantity: {
+            type: SchemaType.NUMBER,
+            description: "Quantity of the item (default 1)",
+          },
+          price: {
+            type: SchemaType.NUMBER,
+            description: "Total line price for this item",
+          },
+        },
+        required: ["raw_name", "price", "quantity"],
+      },
+    },
+  },
+  required: ["store", "currency", "total", "items"],
+};
 
 /** Shape we ask every provider to return. */
 interface ExtractedReceipt {
@@ -119,23 +159,15 @@ function buildExtractionPrompt(stagedItems: StagedCartItem[]): string {
 
 Inspect the receipt text for currency symbols or abbreviations (e.g. "CHF", "EUR", "USD", "GBP", "€", "$", "£", "Fr."). Return a standard 3-letter uppercase ISO code in the "currency" field. Default to "EUR" if ambiguous or not explicitly specified.
 
-Return a JSON object with exactly this structure:
-{
-  "store": "<store name as printed, e.g. Lidl, Rewe, or Supermarket if unclear>",
-  "date": "<purchase date as YYYY-MM-DD, or null if unreadable>",
-  "currency": "<ISO code: 'EUR', 'CHF', 'USD', 'GBP', etc. Default 'EUR'>",
-  "total": <number, the overall gross receipt total>,
-  "items": [
-    {
-      "raw_name": "<text exactly as printed on the receipt>",
-      "normalized_name": "<short clean product name, e.g. 'Milk'>",
-      "quantity": <number, default 1>,
-      "price": <number, line price for this item>
-    }
-  ]
-}
+IMPORTANT FORMATTING RULES:
+- Output compact, minified JSON with no extra whitespace, indentation, or newlines to conserve tokens.
+- Keep "raw_name" and "normalized_name" strings concise (omit redundant store codes, discounts, or excess whitespace).
+- Ensure all line items are extracted completely without truncating the items array.
 
-Return ONLY the JSON object. No markdown, no code fences, no extra text.
+Return a JSON object with this structure:
+{"store":"...","date":"YYYY-MM-DD or null","currency":"EUR","total":0.00,"items":[{"raw_name":"...","normalized_name":"...","quantity":1,"price":0.00}]}
+
+Return ONLY the compact JSON object. No markdown, no code fences, no extra text.
 
 Known staged cart item names (for context only): ${JSON.stringify(
     stagedItems.map((item) => String(item?.name ?? "")).filter(Boolean)
@@ -143,8 +175,8 @@ Known staged cart item names (for context only): ${JSON.stringify(
 }
 
 /** Strip reasoning blocks, code fences / prose and parse the provider's JSON answer. */
-function parseReceiptJson(raw: string): ExtractedReceipt {
-  // Reasoning models may emit  thinking...</think> before the actual JSON.
+function parseReceiptJson(raw: string, finishReason?: string): ExtractedReceipt {
+  // Reasoning models may emit thinking blocks before the actual JSON.
   // Drop those blocks first so they can never break JSON.parse().
   let clean = raw.replace(/<think\b[^>]*>[\s\S]*?<\/think>/gi, "").trim();
 
@@ -160,11 +192,21 @@ function parseReceiptJson(raw: string): ExtractedReceipt {
     clean = clean.slice(firstBrace, lastBrace + 1);
   }
 
-  const parsed = JSON.parse(clean);
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("AI returned a non-object receipt payload.");
+  try {
+    const parsed = JSON.parse(clean);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error("AI returned a non-object receipt payload.");
+    }
+    return parsed as ExtractedReceipt;
+  } catch (err: any) {
+    if (err instanceof SyntaxError || err?.name === "SyntaxError") {
+      const rawSnippet = raw.slice(Math.max(0, raw.length - 300));
+      console.error(
+        `[parseReceiptJson] SyntaxError parsing receipt JSON (finishReason: ${finishReason || "unknown"}). Truncated raw text tail:\n${rawSnippet}`
+      );
+    }
+    throw err;
   }
-  return parsed as ExtractedReceipt;
 }
 
 function readMessageContent(content: unknown): string {
@@ -183,62 +225,6 @@ function readMessageContent(content: unknown): string {
   return "";
 }
 
-async function extractWithRequesty(
-  model: string,
-  prompt: string,
-  mimeType: string,
-  base64: string
-): Promise<ExtractedReceipt> {
-  const response = await fetch(REQUESTY_API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.REQUESTY_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      temperature: 0.1,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            "You extract structured data from receipt images. Reply with a single strict JSON object and nothing else.",
-        },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            {
-              type: "image_url",
-              image_url: { url: `data:${mimeType};base64,${base64}` },
-            },
-          ],
-        },
-      ],
-    }),
-    // Fail fast per model so the chain advances instead of hanging the UI.
-    signal: AbortSignal.timeout(REQUESTY_REQUEST_TIMEOUT_MS),
-  });
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    const error = new Error(
-      `Requesty model "${model}" responded ${response.status} ${response.statusText}: ${body.slice(0, 500)}`
-    ) as Error & { status?: number };
-    error.status = response.status;
-    throw error;
-  }
-
-  const payload: any = await response.json();
-  const content = readMessageContent(payload?.choices?.[0]?.message?.content);
-  if (!content.trim()) {
-    throw new Error(`Requesty model "${model}" returned an empty completion.`);
-  }
-
-  return parseReceiptJson(content);
-}
-
 async function extractWithGemini(
   apiKey: string,
   prompt: string,
@@ -251,10 +237,12 @@ async function extractWithGemini(
       model: GEMINI_MODEL_ID,
       generationConfig: {
         responseMimeType: "application/json",
+        responseSchema: receiptResponseSchema,
+        temperature: 0.1,
+        maxOutputTokens: 4096,
       },
     },
     {
-      // Aborts the request after 15s instead of hanging indefinitely.
       timeout: GEMINI_REQUEST_TIMEOUT_MS,
     }
   );
@@ -269,7 +257,133 @@ async function extractWithGemini(
     },
   ]);
 
-  return parseReceiptJson(result.response.text());
+  const candidate = result.response.candidates?.[0];
+  const finishReason = candidate?.finishReason;
+  let rawText = "";
+  try {
+    rawText = result.response.text?.() ?? "";
+  } catch (textErr: any) {
+    console.warn(
+      `[extractWithGemini] Failed to read candidate response text (finishReason: ${finishReason}):`,
+      textErr?.message
+    );
+  }
+
+  if (finishReason === "MAX_TOKENS") {
+    const rawSnippet = rawText.slice(Math.max(0, rawText.length - 300));
+    console.error(
+      `[extractWithGemini] Gemini hit MAX_TOKENS truncation (finishReason: ${finishReason}). Truncated text tail:\n${rawSnippet}`
+    );
+    const error = new Error(
+      `Gemini response truncated by MAX_TOKENS (${rawText.length} chars). Truncated snippet: ...${rawSnippet}`
+    );
+    (error as any).finishReason = finishReason;
+    (error as any).rawSnippet = rawSnippet;
+    (error as any).isTruncated = true;
+    throw error;
+  }
+
+  try {
+    return parseReceiptJson(rawText, finishReason);
+  } catch (err: any) {
+    if (err instanceof SyntaxError || err?.name === "SyntaxError") {
+      const rawSnippet = rawText.slice(Math.max(0, rawText.length - 300));
+      console.error(
+        `[extractWithGemini] SyntaxError parsing Gemini JSON (finishReason: ${finishReason || "unknown"}). Truncated text tail:\n${rawSnippet}`,
+        err
+      );
+      (err as any).finishReason = finishReason;
+      (err as any).rawSnippet = rawSnippet;
+      (err as any).isTruncated = true;
+    }
+    throw err;
+  }
+}
+
+async function extractWithDeepSeek(
+  apiKey: string,
+  prompt: string,
+  mimeType: string,
+  base64: string
+): Promise<ExtractedReceipt> {
+  const response = await fetch(DEEPSEEK_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: DEEPSEEK_MODEL_ID,
+      temperature: 0.1,
+      max_tokens: 4096,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "You extract structured data from receipt images. Reply with a single strict compact minified JSON object with concise item names and no extra whitespace or newlines: { store, date, currency, total, items: [{ raw_name, normalized_name, quantity, price }] }.",
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            {
+              type: "image_url",
+              image_url: { url: `data:${mimeType};base64,${base64}` },
+            },
+          ],
+        },
+      ],
+    }),
+    signal: AbortSignal.timeout(DEEPSEEK_REQUEST_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    const error = new Error(
+      `DeepSeek model "${DEEPSEEK_MODEL_ID}" responded ${response.status} ${response.statusText}: ${body.slice(0, 500)}`
+    ) as Error & { status?: number };
+    error.status = response.status;
+    throw error;
+  }
+
+  const payload: any = await response.json();
+  const choice = payload?.choices?.[0];
+  const finishReason = choice?.finish_reason;
+  const content = readMessageContent(choice?.message?.content);
+  if (!content.trim()) {
+    throw new Error(`DeepSeek model "${DEEPSEEK_MODEL_ID}" returned an empty completion.`);
+  }
+
+  if (finishReason === "length") {
+    const rawSnippet = content.slice(Math.max(0, content.length - 300));
+    console.error(
+      `[extractWithDeepSeek] DeepSeek hit length/max_tokens truncation (finish_reason: ${finishReason}). Truncated text tail:\n${rawSnippet}`
+    );
+    const error = new Error(
+      `DeepSeek response truncated by max_tokens (${content.length} chars). Truncated snippet: ...${rawSnippet}`
+    );
+    (error as any).finishReason = finishReason;
+    (error as any).rawSnippet = rawSnippet;
+    (error as any).isTruncated = true;
+    throw error;
+  }
+
+  try {
+    return parseReceiptJson(content, finishReason);
+  } catch (err: any) {
+    if (err instanceof SyntaxError || err?.name === "SyntaxError") {
+      const rawSnippet = content.slice(Math.max(0, content.length - 300));
+      console.error(
+        `[extractWithDeepSeek] SyntaxError parsing DeepSeek JSON (finish_reason: ${finishReason || "unknown"}). Truncated text tail:\n${rawSnippet}`,
+        err
+      );
+      (err as any).finishReason = finishReason;
+      (err as any).rawSnippet = rawSnippet;
+      (err as any).isTruncated = true;
+    }
+    throw err;
+  }
 }
 
 export async function scanReceiptAction(formData: FormData): Promise<ScanReceiptResult> {
@@ -291,11 +405,13 @@ export async function scanReceiptAction(formData: FormData): Promise<ScanReceipt
     return { ok: false, error: "You are not a member of this kitchen." };
   }
 
-  if (!process.env.REQUESTY_API_KEY && !process.env.GEMINI_API_KEY) {
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  const deepseekApiKey = process.env.DEEPSEEK_API_KEY;
+
+  if (!geminiApiKey && !deepseekApiKey) {
     return {
       ok: false,
-      error:
-        "Receipt OCR is not configured. Set REQUESTY_API_KEY (or GEMINI_API_KEY as a fallback).",
+      error: "Receipt OCR is not configured. Please set GEMINI_API_KEY.",
     };
   }
 
@@ -305,87 +421,99 @@ export async function scanReceiptAction(formData: FormData): Promise<ScanReceipt
     const filename = `receipts/${crypto.randomUUID()}-${Date.now()}.${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
     const mimeType = file.type || 'image/jpeg';
-
-    // Convert to base64 up front so OCR works independently of Blob storage.
     const base64 = buffer.toString('base64');
-
-    // Blob storage is optional: locally (and wherever no token is configured)
-    // the scan should still run, just without a persisted receipt image.
-    if (process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_OIDC_TOKEN) {
-      try {
-        const blob = await put(filename, buffer, {
-          access: 'public',
-          contentType: mimeType,
-        });
-        uploadedUrl = blob.url;
-      } catch (blobErr) {
-        console.warn("[scanReceiptAction] Blob upload skipped/failed:", blobErr);
-        uploadedUrl = null;
-      }
-    }
 
     const stagedItems: StagedCartItem[] = JSON.parse(stagedCartItemsStr || "[]");
     const prompt = buildExtractionPrompt(stagedItems);
 
-    let extracted: ExtractedReceipt | null = null;
-    let usedProvider: string | null = null;
+    // Parallel Task 1: Vercel Blob upload (runs concurrently with OCR to cut wall-clock time)
+    const blobPromise: Promise<string | null> =
+      process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_OIDC_TOKEN
+        ? put(filename, buffer, {
+            access: 'public',
+            contentType: mimeType,
+          })
+            .then((blob) => blob.url)
+            .catch((blobErr) => {
+              console.warn("[scanReceiptAction] Blob upload skipped/failed:", blobErr);
+              return null;
+            })
+        : Promise.resolve(null);
 
-    // Primary: Requesty free Vision chain.
-    if (process.env.REQUESTY_API_KEY) {
-      for (const model of REQUESTY_VISION_MODELS) {
+    // Parallel Task 2: Primary Gemini 3.5 Flash Lite + Optional DeepSeek fallback
+    const ocrPromise: Promise<{ extracted: ExtractedReceipt; usedProvider: string }> = (async () => {
+      let lastError: any = null;
+
+      // Primary: Google AI Studio Gemini 3.5 Flash Lite
+      if (geminiApiKey) {
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const startMs = Date.now();
+            const extracted = await extractWithGemini(geminiApiKey, prompt, mimeType, base64);
+            console.log(
+              `[scanReceiptAction] Gemini attempt ${attempt + 1} succeeded in ${Date.now() - startMs}ms`
+            );
+            return { extracted, usedProvider: `gemini:${GEMINI_MODEL_ID}` };
+          } catch (err: any) {
+            lastError = err;
+            const isTruncatedOrInvalid =
+              err?.finishReason === "MAX_TOKENS" ||
+              err?.isTruncated === true ||
+              err instanceof SyntaxError ||
+              err?.name === "SyntaxError" ||
+              /JSON|Unexpected token|MAX_TOKENS/i.test(err?.message || "");
+
+            const isTransient =
+              err?.status === 503 ||
+              err?.status === 502 ||
+              err?.status === 504 ||
+              err?.name === "TimeoutError" ||
+              err?.name === "GoogleGenerativeAIAbortError" ||
+              /UNAVAILABLE|overload|timed? ?out/i.test(err?.message || "");
+
+            if (attempt === 0 && isTransient && !isTruncatedOrInvalid) {
+              const backoff = 400 + Math.floor(Math.random() * 150);
+              console.warn(
+                `[scanReceiptAction] Gemini transient error (${err?.status || err?.message}). Retrying in ${backoff}ms...`
+              );
+              await new Promise((resolve) => setTimeout(resolve, backoff));
+              continue;
+            }
+            console.warn(
+              `[scanReceiptAction] Gemini attempt ${attempt + 1} failed:`,
+              err?.finishReason
+                ? `finishReason=${err.finishReason} (truncated/fallback-eligible)`
+                : err?.status || err?.message
+            );
+            // Truncation or invalid JSON is fallback-eligible: break from Gemini loop to try DeepSeek
+            break;
+          }
+        }
+      }
+
+      // Secondary fallback: DeepSeek Flash
+      if (deepseekApiKey) {
         try {
-          extracted = await extractWithRequesty(model, prompt, mimeType, base64);
-          usedProvider = `requesty:${model}`;
-          break;
-        } catch (modelErr) {
-          console.warn(
-            "[scanReceiptAction] Model failed, trying next fallback:",
-            model,
-            modelErr
+          console.log("[scanReceiptAction] Attempting DeepSeek fallback...");
+          const startMs = Date.now();
+          const extracted = await extractWithDeepSeek(deepseekApiKey, prompt, mimeType, base64);
+          console.log(
+            `[scanReceiptAction] DeepSeek succeeded in ${Date.now() - startMs}ms`
           );
+          return { extracted, usedProvider: `deepseek:${DEEPSEEK_MODEL_ID}` };
+        } catch (err: any) {
+          console.error("[scanReceiptAction] DeepSeek fallback failed:", err);
+          lastError = err;
         }
       }
-    } else {
-      console.warn(
-        "[scanReceiptAction] REQUESTY_API_KEY not configured; using direct Gemini fallback."
-      );
-    }
 
-    // Last resort: direct Gemini, only if the Requesty chain produced nothing.
-    if (!extracted && process.env.GEMINI_API_KEY) {
-      try {
-        extracted = await extractWithGemini(
-          process.env.GEMINI_API_KEY,
-          prompt,
-          mimeType,
-          base64
-        );
-        usedProvider = `gemini:${GEMINI_MODEL_ID}`;
-      } catch (geminiErr: any) {
-        console.error("[scanReceiptAction] Raw Gemini error:", {
-          model: GEMINI_MODEL_ID,
-          name: geminiErr?.name,
-          status: geminiErr?.status,
-          statusText: geminiErr?.statusText,
-          code: geminiErr?.code,
-          message: geminiErr?.message ?? String(geminiErr),
-          errorDetails: geminiErr?.errorDetails,
-        });
-      }
-    }
+      throw lastError || new Error(ALL_PROVIDERS_FAILED_MESSAGE);
+    })();
 
-    if (!extracted) {
-      console.error("[scanReceiptAction] All OCR providers failed.");
-      if (uploadedUrl) {
-        try {
-          await del(uploadedUrl);
-        } catch {
-          // ignore cleanup error
-        }
-        uploadedUrl = null;
-      }
-      return { ok: false, error: ALL_PROVIDERS_FAILED_MESSAGE };
-    }
+    // Concurrently await Blob upload and OCR
+    const [blobUrl, ocrResult] = await Promise.all([blobPromise, ocrPromise]);
+    uploadedUrl = blobUrl;
+    const { extracted, usedProvider } = ocrResult;
 
     console.log(`[scanReceiptAction] OCR succeeded with ${usedProvider}`);
 
@@ -433,15 +561,15 @@ export async function scanReceiptAction(formData: FormData): Promise<ScanReceipt
       typeof error?.message === "string" ? error.message : String(error);
     const errorName: string = typeof error?.name === "string" ? error.name : "";
 
-    // Full upstream detail: without this a 400/404/503 is indistinguishable
-    // from a genuine quota error in production logs.
     console.error("[scanReceiptAction] Raw OCR error:", {
       name: errorName || undefined,
       status,
       statusText: error?.statusText,
       code: error?.code,
+      finishReason: error?.finishReason,
       message: rawMessage,
       errorDetails: error?.errorDetails,
+      rawSnippet: error?.rawSnippet,
     });
 
     let userMessage = "Failed to scan receipt. Please try again with a clear photo.";
@@ -452,14 +580,18 @@ export async function scanReceiptAction(formData: FormData): Promise<ScanReceipt
       userMessage = rawMessage;
     } else if (rawMessage.includes("GEMINI_API_KEY")) {
       userMessage = rawMessage;
-    } else if (rawMessage.includes("You must be logged in") || rawMessage.includes("not a member") || rawMessage.includes("Missing required fields")) {
+    } else if (
+      rawMessage.includes("You must be logged in") ||
+      rawMessage.includes("not a member") ||
+      rawMessage.includes("Missing required fields")
+    ) {
       userMessage = rawMessage;
     } else if (
       errorName === "TimeoutError" ||
       errorName === "GoogleGenerativeAIAbortError" ||
       /aborted|timed? ?out/i.test(rawMessage)
     ) {
-      userMessage = `The AI request timed out after ${GEMINI_REQUEST_TIMEOUT_MS / 1000} seconds. Please try again.`;
+      userMessage = `The AI request timed out after ${GEMINI_REQUEST_TIMEOUT_MS / 1000}s. Please retry.`;
     } else if (
       status === 429 ||
       rawMessage.includes("RESOURCE_EXHAUSTED") ||
@@ -480,15 +612,14 @@ export async function scanReceiptAction(formData: FormData): Promise<ScanReceipt
       rawMessage.includes("API_KEY_INVALID") ||
       /API key|unauthorized/i.test(rawMessage)
     ) {
-      userMessage =
-        "AI service authentication error. Please verify your REQUESTY_API_KEY / GEMINI_API_KEY.";
+      userMessage = "AI service authentication error. Please verify your GEMINI_API_KEY.";
     } else if (
       status === 400 ||
       status === 404 ||
       /invalid model|not found|no longer available/i.test(rawMessage)
     ) {
-      userMessage = "The AI model endpoint is unavailable (invalid model or request). Please check the model configuration.";
-    } else if (/JSON|Unexpected token|non-object receipt payload/i.test(rawMessage)) {
+      userMessage = "The AI model endpoint is unavailable. Please check configuration.";
+    } else if (/JSON|Unexpected token|non-object receipt payload|MAX_TOKENS/i.test(rawMessage)) {
       userMessage =
         "Could not parse the receipt data returned by AI. Please try again with a clearer picture.";
     }
