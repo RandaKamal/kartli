@@ -509,7 +509,7 @@ export const en = {
       pendingExpenseSingular: "pending expense to settle",
       loggedReceipts: "logged receipts in space history",
       settle: "Settle →",
-      modalTitle: "Expense & Refund Ledger",
+      modalTitle: "Settlements",
       modalSubtitle: "Shared household balances, receipt checkouts, and refund claims.",
       adminSectionTitle: "Household Purchases & Refunds",
       adminSectionSubtitle: "Review receipts uploaded by {members} and mark refunds as settled.",

@@ -37,9 +37,9 @@ const REQUESTY_API_URL = "https://router.requesty.ai/v1/chat/completions";
  * timeout so a stalled provider fails fast and the next one is tried.
  */
 const REQUESTY_VISION_MODELS = [
-  "gemma-4-31b-it",
+  "nemotron-3-nano-omni-30b-a3b-reasoning",
   "muse-glimmer-30b",
-  "nemotron-3-nano-omni-30b",
+  "gemma-4-31b-it",
 ] as const;
 
 const REQUESTY_REQUEST_TIMEOUT_MS = 12_000;
@@ -142,9 +142,11 @@ Known staged cart item names (for context only): ${JSON.stringify(
   )}`;
 }
 
-/** Strip code fences / prose and parse the provider's JSON answer. */
+/** Strip reasoning blocks, code fences / prose and parse the provider's JSON answer. */
 function parseReceiptJson(raw: string): ExtractedReceipt {
-  let clean = raw.trim();
+  // Reasoning models may emit  thinking...</think> before the actual JSON.
+  // Drop those blocks first so they can never break JSON.parse().
+  let clean = raw.replace(/<think\b[^>]*>[\s\S]*?<\/think>/gi, "").trim();
 
   if (clean.startsWith("```")) {
     clean = clean

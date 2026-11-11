@@ -511,7 +511,7 @@ export const de: typeof en = {
       pendingExpenseSingular: "offene Ausgabe abzurechnen",
       loggedReceipts: "erfasste Bons in der Küchen-Historie",
       settle: "Abrechnen →",
-      modalTitle: "Ausgaben- & Abrechnungs-Journal",
+      modalTitle: "Abrechnungen",
       modalSubtitle: "Gemeinsame WG-Ausgaben, Belege und Abrechnungen.",
       adminSectionTitle: "Gemeinsame Einkäufe & Abrechnungen",
       adminSectionSubtitle: "Prüfe eingereichte Belege von {members} und gleiche Ausgaben aus.",
