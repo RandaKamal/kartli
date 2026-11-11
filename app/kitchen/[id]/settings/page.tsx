@@ -4,7 +4,6 @@ import { headers } from "next/headers";
 import {
   getKitchenById,
   getUserMembership,
-  getKitchenMembersWithUsers,
 } from "@/lib/kitchen";
 import { KitchenSettingsView } from "@/components/KitchenSettingsView";
 import type { Metadata } from "next";
@@ -36,10 +35,9 @@ export default async function KitchenSettingsPage({
     redirect(`/login?callbackUrl=/kitchen/${id}/settings`);
   }
 
-  const [membership, kitchen, members] = await Promise.all([
+  const [membership, kitchen] = await Promise.all([
     getUserMembership(id, session.user.id),
     getKitchenById(id),
-    getKitchenMembersWithUsers(id),
   ]);
 
   if (!kitchen) {
@@ -58,8 +56,6 @@ export default async function KitchenSettingsPage({
     <KitchenSettingsView
       kitchen={kitchen}
       membership={membership}
-      members={members}
-      currentUserId={session.user.id}
       baseUrl={baseUrl}
     />
   );

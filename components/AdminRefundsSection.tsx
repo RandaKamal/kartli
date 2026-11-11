@@ -6,26 +6,17 @@ import { ReceiptExpiryBadge } from "@/components/ReceiptExpiryBadge";
 import { refundCheckoutAction, deleteReceiptForAdminAction, getKitchenCheckoutsAction } from "@/app/actions/checkout";
 import { getKitchenMembersAction } from "@/app/actions/kitchen";
 import type { CheckoutWithDetails, KitchenMemberWithUser, KitchenSpaceType } from "@/types";
-import { getSpaceTerminology } from "@/lib/spaceTerminology";
-import { capitalize, formatCurrency, daysUntilReceiptAutoDelete } from "@/lib/utils";
+import { capitalize, formatCurrency } from "@/lib/utils";
 import {
   Receipt,
   CheckCircle2,
-  Clock,
-  ExternalLink,
-  Calendar,
-  User,
-  Shield,
   Loader2,
   Check,
   Package,
   Store,
-  ImageIcon,
   MessageSquare,
   Trash2,
 } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -37,30 +28,19 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
 
 export function AdminRefundsSkeleton() {
   return (
-    <div className="space-y-6">
-      <Card className="border border-border bg-card rounded-3xl p-6 shadow-sm space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-2">
-            <Skeleton className="h-6 w-48 rounded-lg" />
-            <Skeleton className="h-4 w-72 rounded-md" />
-          </div>
-          <div className="flex gap-2">
-            <Skeleton className="h-9 w-20 rounded-xl" />
-            <Skeleton className="h-9 w-20 rounded-xl" />
-            <Skeleton className="h-9 w-20 rounded-xl" />
-          </div>
-        </div>
-        <div className="space-y-3 pt-2">
-          <Skeleton className="h-20 w-full rounded-2xl" />
-          <Skeleton className="h-20 w-full rounded-2xl" />
-          <Skeleton className="h-20 w-full rounded-2xl" />
-        </div>
-      </Card>
+    <div className="space-y-3">
+      <Skeleton className="h-9 w-64 rounded-lg" />
+      <div className="rounded-xl border border-white/[0.06] bg-zinc-900/40 divide-y divide-white/[0.06]">
+        <Skeleton className="h-[68px] w-full rounded-none" />
+        <Skeleton className="h-[68px] w-full rounded-none" />
+        <Skeleton className="h-[68px] w-full rounded-none" />
+      </div>
     </div>
   );
 }
@@ -77,7 +57,6 @@ export function AdminRefundsSection({
   kitchenId,
   checkouts: initialCheckouts,
   members,
-  spaceType = "FLATSHARE",
   onCheckoutsLoaded,
 }: AdminRefundsSectionProps) {
   const router = useRouter();
@@ -127,8 +106,6 @@ export function AdminRefundsSection({
       isMounted = false;
     };
   }, [kitchenId, initialCheckouts, members]);
-
-  const terminology = getSpaceTerminology(spaceType);
 
   const memberMap = new Map<string, { displayName: string; username: string; initial: string }>();
   membersList.forEach((m) => {
@@ -212,328 +189,257 @@ export function AdminRefundsSection({
 
   const dateLocale = locale === "de" ? "de-DE" : "en-US";
 
+  const filters: Array<{ key: "all" | "pending" | "settled"; label: string; count: number }> = [
+    { key: "all", label: t.kitchen.ledger.filterAll, count: checkoutsList.length },
+    { key: "pending", label: t.kitchen.ledger.filterPending, count: pendingCheckouts.length },
+    { key: "settled", label: t.kitchen.ledger.filterSettled, count: settledCheckouts.length },
+  ];
+
+  const emptyStateTitle =
+    filterStatus === "pending"
+      ? t.kitchen.ledger.noPendingRefunds
+      : filterStatus === "settled"
+      ? t.kitchen.ledger.noSettledPurchases
+      : t.kitchen.ledger.noPurchases;
+
+  const emptyStateDescription =
+    filterStatus === "pending"
+      ? t.kitchen.ledger.noPendingRefundsDesc
+      : t.kitchen.ledger.noPurchasesDesc;
+
   return (
-    <div className="space-y-6">
-      {/* Top Header Card */}
-      <Card className="border border-white/[0.08] bg-card/80 backdrop-blur-md rounded-3xl p-4 sm:p-6 md:p-7 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 mb-1">
-              <Badge variant="secondary" className="border border-border text-muted-foreground text-[11px] font-medium uppercase tracking-wider gap-1 rounded-full">
-                <Receipt className="w-3 h-3 text-muted-foreground" />
-                <span>{t.kitchen.ledger.adminBadge}</span>
-              </Badge>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
-              {t.kitchen.ledger.adminSectionTitle}
-            </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              {t.kitchen.ledger.adminSectionSubtitle.replace("{members}", terminology.memberLabelPlural.toLowerCase())}
-            </p>
-          </div>
-
-          {/* Quick Metrics Bar */}
-          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-            <button
-              type="button"
-              onClick={() => setFilterStatus("all")}
-              className={`px-4 py-2 rounded-full border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
-                filterStatus === "all"
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-secondary/60 text-muted-foreground border-border hover:text-foreground"
-              }`}
-            >
-              <span>{t.kitchen.ledger.filterAll}</span>
-              <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-full bg-background/50">
-                {checkoutsList.length}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setFilterStatus("pending")}
-              className={`px-4 py-2 rounded-full border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
-                filterStatus === "pending"
-                  ? "bg-amber-500/20 text-amber-500 dark:text-amber-400 border-amber-500/50 shadow-xs"
-                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/15"
-              }`}
-            >
-              <Clock className="w-3.5 h-3.5" />
-              <span>{t.kitchen.ledger.filterPending}</span>
-              <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-full bg-background/50 text-amber-600 dark:text-amber-400">
-                {pendingCheckouts.length}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setFilterStatus("settled")}
-              className={`px-4 py-2 rounded-full border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
-                filterStatus === "settled"
-                  ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 shadow-xs"
-                  : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/15"
-              }`}
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>{t.kitchen.ledger.filterSettled}</span>
-              <span className="font-mono text-[11px] px-1.5 py-0.5 rounded-full bg-background/50 text-emerald-600 dark:text-emerald-400">
-                {settledCheckouts.length}
-              </span>
-            </button>
-          </div>
+    <div className="space-y-4">
+      {/* Segmented status filter */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="inline-flex items-center bg-zinc-900/80 p-1 rounded-lg border border-white/[0.06]">
+          {filters.map((filter) => {
+            const isActive = filterStatus === filter.key;
+            return (
+              <button
+                key={filter.key}
+                type="button"
+                onClick={() => setFilterStatus(filter.key)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium transition-colors cursor-pointer",
+                  isActive
+                    ? "bg-zinc-800 text-white shadow-xs"
+                    : "text-zinc-400 hover:text-zinc-200"
+                )}
+              >
+                <span>{filter.label}</span>
+                <span className={cn("text-[11px] tabular-nums", isActive ? "text-zinc-400" : "text-zinc-600")}>
+                  {filter.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
-      </Card>
+      </div>
 
-      {/* Checkouts Feed */}
+      {/* Checkouts feed */}
       {displayedCheckouts.length === 0 ? (
-        <Card className="border border-dashed border-border bg-card/50 rounded-3xl p-12 text-center space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-muted border border-border flex items-center justify-center mx-auto text-muted-foreground">
-            <Receipt className="w-6 h-6" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-foreground">
-              {filterStatus === "pending"
-                ? t.kitchen.ledger.noPendingRefunds
-                : filterStatus === "settled"
-                ? t.kitchen.ledger.noSettledPurchases
-                : t.kitchen.ledger.noPurchases}
-            </h3>
-            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              {filterStatus === "pending"
-                ? t.kitchen.ledger.noPendingRefundsDesc
-                : t.kitchen.ledger.noPurchasesDesc}
-            </p>
-          </div>
-        </Card>
+        <div className="py-14 text-center space-y-2">
+          <Receipt className="w-5 h-5 mx-auto text-zinc-600" />
+          <p className="text-sm font-medium text-zinc-300">{emptyStateTitle}</p>
+          <p className="text-xs text-zinc-500 max-w-sm mx-auto">{emptyStateDescription}</p>
+        </div>
       ) : (
-        <div className="space-y-3">
+        <div className="rounded-xl border border-white/[0.06] bg-zinc-900/40 divide-y divide-white/[0.06]">
           {displayedCheckouts.map((checkout) => {
             const memberInfo = getMemberInfo(checkout.user_id, checkout.username);
             const isSettling = isPending && settlingId === checkout.id;
+            const itemNames = checkout.items.map((item) => item.name).join(", ");
 
             return (
-              <Card
+              <div
                 key={checkout.id}
-                className="border border-border/70 bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs hover:border-border hover:bg-card/80 transition-colors"
+                className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-4 py-3.5 transition-colors hover:bg-white/[0.02]"
               >
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  {/* Left Column: User & Context */}
-                  <div className="flex items-start gap-3.5 min-w-0 lg:w-72 shrink-0">
-                    <Avatar className="h-10 w-10 border border-border shrink-0 mt-0.5 sm:mt-0">
-                      <AvatarFallback className="bg-secondary text-xs font-bold text-foreground">
-                        {memberInfo.initial}
-                      </AvatarFallback>
-                    </Avatar>
+                {/* Left: identity + context */}
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarFallback className="bg-zinc-800 text-[11px] font-semibold text-zinc-300">
+                      {memberInfo.initial}
+                    </AvatarFallback>
+                  </Avatar>
 
-                    <div className="min-w-0 space-y-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-semibold text-sm text-foreground truncate">
-                          {memberInfo.displayName}
-                        </span>
-                        <span className="text-[11px] font-mono text-muted-foreground">
-                          {memberInfo.username}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-muted-foreground shrink-0" />
-                          <span>
-                            {new Date(checkout.created_at).toLocaleDateString(dateLocale, {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
-                          </span>
-                        </div>
-                        <span>&middot;</span>
-                        <span>{checkout.items.length} {checkout.items.length === 1 ? t.kitchen.ledger.item : t.kitchen.ledger.items}</span>
-                      </div>
-
-                      {/* Optional Note Snippet */}
-                      {checkout.note && (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground italic pt-0.5">
-                          <MessageSquare className="w-3 h-3 text-muted-foreground/70 shrink-0 not-italic" />
-                          <span className="truncate max-w-[220px]">&ldquo;{checkout.note}&rdquo;</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Middle Column: Purchased Items */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap gap-1.5 items-center">
-                      {checkout.items.slice(0, 3).map((item) => (
-                        <span
-                          key={item.id}
-                          className="px-2 py-0.5 text-xs rounded-md bg-muted text-muted-foreground truncate max-w-[180px]"
-                        >
-                          {item.name}
-                        </span>
-                      ))}
-                      {checkout.items.length > 3 && (
-                        <span className="px-1.5 py-0.5 text-xs text-muted-foreground font-mono">
-                          +{checkout.items.length - 3} more
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right Column: Financials & Settlement Action */}
-                  <div className="flex items-center justify-between lg:justify-end gap-4 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-border">
-                    {/* Amount */}
-                    <div className="text-left lg:text-right shrink-0">
-                      <span className="text-base font-semibold text-foreground tracking-tight">
-                        {formatCurrency(checkout.total_claimed_amount, checkout.currency)}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-2 min-w-0">
+                      <span className="font-medium text-sm text-foreground truncate">
+                        {memberInfo.displayName}
+                      </span>
+                      <span className="text-[11px] text-zinc-500 truncate">
+                        {memberInfo.username}
                       </span>
                     </div>
 
-                    {/* Receipt Action / Indicator */}
-                    {checkout.receipts.length > 0 ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedCheckout(checkout)}
-                        className="rounded-full text-xs font-medium h-8 px-3 gap-1.5 text-muted-foreground hover:text-foreground hover:bg-muted"
-                      >
-                        <Receipt className="w-3.5 h-3.5" />
-                        <span>{t.kitchen.ledger.viewReceipt}{checkout.receipts.length > 1 ? ` (${checkout.receipts.length})` : ""}</span>
-                      </Button>
-                    ) : checkout.totalReceiptsEverAttached > 0 ? (
-                      <div
-                        className="p-1.5 text-muted-foreground/50"
-                        title={t.kitchen.ledger.receiptDeleted}
-                      >
-                        <Receipt className="w-3.5 h-3.5 line-through opacity-40" />
-                      </div>
-                    ) : (
-                      <div
-                        className="p-1.5 text-muted-foreground/30"
-                        title={t.kitchen.ledger.noReceipt}
-                      >
-                        <Receipt className="w-3.5 h-3.5 opacity-30" />
-                      </div>
-                    )}
+                    <p className="text-xs text-zinc-500 truncate tabular-nums">
+                      {new Date(checkout.created_at).toLocaleDateString(dateLocale, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                      {itemNames && <span> · {itemNames}</span>}
+                    </p>
 
-                    {/* Status Badge & Settle Action */}
-                    {checkout.is_refunded ? (
-                      <div className="flex items-center gap-1.5">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>{t.kitchen.ledger.settled}</span>
-                        </div>
-                        {checkout.receipts.length > 0 && checkout.refunded_at && (
-                          <ReceiptExpiryBadge refundedAt={checkout.refunded_at} />
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border bg-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/20">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                          <span>{t.kitchen.ledger.pending}</span>
-                        </div>
-
-                        <Button
-                          type="button"
-                          variant="success"
-                          size="sm"
-                          onClick={() => handleMarkAsSettled(checkout.id)}
-                          disabled={isPending}
-                          className="rounded-full text-xs font-semibold h-8 px-3.5 shadow-xs gap-1.5"
-                        >
-                          {isSettling ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Check className="w-3.5 h-3.5" />
-                          )}
-                          <span>{isSettling ? t.kitchen.ledger.settlingAction : t.kitchen.ledger.settleAction}</span>
-                        </Button>
-                      </div>
+                    {checkout.note && (
+                      <p className="text-xs text-zinc-400 truncate">
+                        &ldquo;{checkout.note}&rdquo;
+                      </p>
                     )}
                   </div>
                 </div>
-              </Card>
+
+                {/* Right: amount + receipt + status/action */}
+                <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pl-11 sm:pl-0">
+                  <span className="text-sm font-semibold text-foreground tabular-nums whitespace-nowrap">
+                    {formatCurrency(checkout.total_claimed_amount, checkout.currency)}
+                  </span>
+
+                  {checkout.receipts.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCheckout(checkout)}
+                      aria-label={t.kitchen.ledger.viewReceipt}
+                      title={t.kitchen.ledger.viewReceipt}
+                      className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-zinc-500 hover:text-foreground hover:bg-white/[0.06] transition-colors cursor-pointer"
+                    >
+                      <Receipt className="w-3.5 h-3.5" />
+                    </button>
+                  ) : checkout.totalReceiptsEverAttached > 0 ? (
+                    <div
+                      className="inline-flex items-center justify-center h-8 w-8 text-zinc-600"
+                      title={t.kitchen.ledger.receiptDeleted}
+                    >
+                      <Receipt className="w-3.5 h-3.5 line-through opacity-50" />
+                    </div>
+                  ) : (
+                    <div
+                      className="inline-flex items-center justify-center h-8 w-8 text-zinc-700"
+                      title={t.kitchen.ledger.noReceipt}
+                    >
+                      <Receipt className="w-3.5 h-3.5 opacity-40" />
+                    </div>
+                  )}
+
+                  {checkout.is_refunded ? (
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shrink-0" />
+                        {t.kitchen.ledger.settled}
+                      </span>
+                      {checkout.receipts.length > 0 && checkout.refunded_at && (
+                        <ReceiptExpiryBadge refundedAt={checkout.refunded_at} />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                        {t.kitchen.ledger.pending}
+                      </span>
+
+                      <Button
+                        type="button"
+                        variant="success"
+                        size="sm"
+                        onClick={() => handleMarkAsSettled(checkout.id)}
+                        disabled={isPending}
+                        className="h-8 px-3 text-xs font-medium rounded-lg gap-1.5"
+                      >
+                        {isSettling ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Check className="w-3.5 h-3.5" />
+                        )}
+                        <span>{isSettling ? t.kitchen.ledger.settlingAction : t.kitchen.ledger.settleAction}</span>
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
             );
           })}
         </div>
       )}
 
-      {/* Full Resolution Receipt Preview Modal Dialog */}
+      {/* Full resolution receipt preview */}
       <Dialog open={!!selectedCheckout} onOpenChange={(open) => !open && setSelectedCheckout(null)}>
-        <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[92vh] overflow-y-auto bg-card/95 backdrop-blur-2xl border border-white/[0.08] p-5 sm:p-6 text-card-foreground rounded-3xl shadow-2xl flex flex-col gap-4">
+        <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[92vh] overflow-y-auto bg-card border border-white/[0.08] p-5 sm:p-6 text-card-foreground rounded-2xl shadow-2xl flex flex-col gap-4">
           {selectedCheckout && (
             <>
-              {/* Header */}
               <DialogHeader className="space-y-2 text-left">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <Store className="w-5 h-5 text-accent-brand shrink-0" />
-                    <DialogTitle className="text-base sm:text-lg font-bold text-foreground">
+                    <Store className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <DialogTitle className="text-base font-semibold text-foreground">
                       {selectedCheckout.store_name || "Supermarket Receipt"}
                     </DialogTitle>
                   </div>
-                  {selectedCheckout.is_refunded ? (
-                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 w-fit shrink-0 rounded-full">
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      {t.kitchen.ledger.settled}
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="bg-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/20 w-fit shrink-0 rounded-full">
-                      <Clock className="w-3.5 h-3.5 mr-1" />
-                      {t.kitchen.ledger.pendingRefund}
-                    </Badge>
-                  )}
+                  <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 shrink-0">
+                    <span
+                      className={cn(
+                        "w-1.5 h-1.5 rounded-full",
+                        selectedCheckout.is_refunded ? "bg-emerald-500/80" : "bg-amber-500"
+                      )}
+                    />
+                    {selectedCheckout.is_refunded
+                      ? t.kitchen.ledger.settled
+                      : t.kitchen.ledger.pendingRefund}
+                  </span>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                  <span>
-                    {t.kitchen.ledger.submittedBy} <strong className="text-foreground">{getMemberInfo(selectedCheckout.user_id, selectedCheckout.username).displayName}</strong> ({getMemberInfo(selectedCheckout.user_id, selectedCheckout.username).username})
-                  </span>
-                  <span>&middot;</span>
-                  <span className="font-mono">
-                    {new Date(selectedCheckout.created_at).toLocaleDateString(dateLocale, {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </span>
-                  <span>&middot;</span>
-                  <span className="font-semibold text-foreground">
-                    {t.kitchen.ledger.claimed}: {formatCurrency(selectedCheckout.total_claimed_amount || 0, selectedCheckout.currency)}
-                    {selectedCheckout.total_receipt_amount != null && (
-                      <span className="text-muted-foreground font-normal">
-                        {" "} ({t.kitchen.ledger.total}: {formatCurrency(selectedCheckout.total_receipt_amount, selectedCheckout.currency)})
-                      </span>
-                    )}
-                  </span>
-                </div>
+                <DialogDescription asChild>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    <span>
+                      {t.kitchen.ledger.submittedBy}{" "}
+                      <strong className="text-foreground font-medium">
+                        {getMemberInfo(selectedCheckout.user_id, selectedCheckout.username).displayName}
+                      </strong>{" "}
+                      ({getMemberInfo(selectedCheckout.user_id, selectedCheckout.username).username})
+                    </span>
+                    <span>&middot;</span>
+                    <span className="tabular-nums">
+                      {new Date(selectedCheckout.created_at).toLocaleDateString(dateLocale, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </span>
+                    <span>&middot;</span>
+                    <span className="font-medium text-foreground tabular-nums">
+                      {t.kitchen.ledger.claimed}: {formatCurrency(selectedCheckout.total_claimed_amount || 0, selectedCheckout.currency)}
+                      {selectedCheckout.total_receipt_amount != null && (
+                        <span className="text-muted-foreground font-normal">
+                          {" "}({t.kitchen.ledger.total}: {formatCurrency(selectedCheckout.total_receipt_amount, selectedCheckout.currency)})
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                </DialogDescription>
               </DialogHeader>
 
-              {/* Body: High Resolution Receipt Preview / Note & Items */}
               <div className="space-y-4">
-                {/* Note from Buyer if present */}
                 {selectedCheckout.note && (
-                  <div className="p-3 rounded-2xl bg-muted/40 border border-border space-y-1">
-                    <span className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
-                      <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+                  <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] space-y-1">
+                    <span className="text-[11px] font-medium text-zinc-500 flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5" />
                       <span>{t.kitchen.ledger.noteToAdmin}</span>
                     </span>
-                    <p className="text-xs text-foreground italic">&ldquo;{selectedCheckout.note}&rdquo;</p>
+                    <p className="text-xs text-foreground">&ldquo;{selectedCheckout.note}&rdquo;</p>
                   </div>
                 )}
 
-                {/* Receipt Images or Receiptless placeholder */}
                 {selectedCheckout.receipts.length > 0 ? (
                   <div className="space-y-3">
                     {selectedCheckout.receipts.map((r) => (
-                      <div key={r.id} className="relative rounded-2xl overflow-hidden border border-border bg-muted/30 p-2 sm:p-3 flex items-center justify-center min-h-[220px]">
+                      <div key={r.id} className="relative rounded-xl overflow-hidden border border-white/[0.06] bg-zinc-900/40 p-2 sm:p-3 flex items-center justify-center min-h-[220px]">
                         <button
                           type="button"
                           onClick={() => handleDeleteReceipt(r.id)}
                           disabled={deletingReceiptId === r.id}
                           aria-label={t.kitchen.ledger.deleteReceipt}
-                          className="absolute top-2 right-2 z-10 p-1.5 rounded-lg bg-card/90 border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40 transition shadow-sm cursor-pointer disabled:opacity-50"
+                          className="absolute top-2 right-2 z-10 p-1.5 rounded-lg bg-card/90 border border-white/[0.08] text-zinc-500 hover:text-destructive hover:border-destructive/40 transition shadow-sm cursor-pointer disabled:opacity-50"
                         >
                           {deletingReceiptId === r.id ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -544,56 +450,51 @@ export function AdminRefundsSection({
                         <img
                           src={r.receipt_filename}
                           alt={`Receipt for ${selectedCheckout.store_name || "household purchase"}`}
-                          className="max-h-[75vh] w-auto max-w-full object-contain rounded-md border border-border shadow-xs"
+                          className="max-h-[75vh] w-auto max-w-full object-contain rounded-md border border-white/[0.06]"
                         />
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="p-6 rounded-2xl border border-dashed border-border bg-muted/20 text-center space-y-1.5">
-                    <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center mx-auto text-muted-foreground">
-                      <Receipt className="w-4 h-4" />
-                    </div>
+                  <div className="p-6 rounded-xl border border-dashed border-white/[0.08] bg-white/[0.01] text-center space-y-1.5">
+                    <Receipt className="w-4 h-4 mx-auto text-zinc-600" />
                     <p className="text-xs font-medium text-foreground">{t.kitchen.ledger.noReceiptAttached}</p>
                     <p className="text-[11px] text-muted-foreground">{t.kitchen.ledger.noReceiptAttachedDesc}</p>
                   </div>
                 )}
 
-                {/* Claimed Shopping List Items */}
                 {selectedCheckout.items.length > 0 && (
-                  <div className="space-y-2 p-3.5 rounded-2xl bg-muted/40 border border-border">
-                    <div className="flex items-center justify-between text-xs font-semibold text-foreground">
+                  <div className="space-y-2 p-3.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                    <div className="flex items-center justify-between text-xs font-medium text-foreground">
                       <span className="flex items-center gap-1.5">
-                        <Package className="w-3.5 h-3.5 text-muted-foreground" />
+                        <Package className="w-3.5 h-3.5 text-zinc-500" />
                         <span>{t.kitchen.ledger.claimedItems.replace("{count}", String(selectedCheckout.items.length))}</span>
                       </span>
-                      <span className="font-mono text-[11px] text-muted-foreground">
+                      <span className="tabular-nums text-zinc-500">
                         {formatCurrency(selectedCheckout.total_claimed_amount || 0, selectedCheckout.currency)}
                       </span>
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {selectedCheckout.items.map((item) => (
-                        <Badge
+                        <span
                           key={item.id}
-                          variant="secondary"
-                          className="text-xs font-normal bg-card border-border flex items-center gap-1"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md bg-zinc-900/60 border border-white/[0.06] text-zinc-300"
                         >
                           <span>{item.name}</span>
                           {item.item_price != null && (
-                            <span className="font-mono text-[10px] text-muted-foreground">
+                            <span className="tabular-nums text-[10px] text-zinc-500">
                               ({formatCurrency(item.item_price, item.currency || selectedCheckout.currency)})
                             </span>
                           )}
-                        </Badge>
+                        </span>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Refund timestamp if settled */}
                 {selectedCheckout.is_refunded && selectedCheckout.refunded_at && (
-                  <div className="p-3 rounded-2xl bg-accent-sage/10 border border-accent-sage/25 text-accent-success text-xs flex items-center justify-between gap-2 flex-wrap">
+                  <div className="p-3 rounded-lg bg-emerald-500/[0.04] border border-emerald-500/15 text-emerald-300/90 text-xs flex items-center justify-between gap-2 flex-wrap">
                     <span className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 shrink-0" />
                       <span>
@@ -611,21 +512,20 @@ export function AdminRefundsSection({
                 )}
               </div>
 
-              {/* Footer */}
-              <DialogFooter className="pt-3 border-t border-border flex flex-col sm:flex-row gap-2 justify-end">
+              <DialogFooter className="pt-3 border-t border-white/[0.06] flex flex-col sm:flex-row gap-2 justify-end">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setSelectedCheckout(null)}
-                  className="rounded-full text-xs h-9 px-4 border-border"
+                  className="rounded-lg text-xs h-8 px-3"
                 >
                   {t.common.close}
                 </Button>
                 {!selectedCheckout.is_refunded && (
                   <Button
                     type="button"
-                    variant="default"
+                    variant="success"
                     size="sm"
                     onClick={() => {
                       const id = selectedCheckout.id;
@@ -633,7 +533,7 @@ export function AdminRefundsSection({
                       handleMarkAsSettled(id);
                     }}
                     disabled={isPending}
-                    className="rounded-full text-xs font-semibold h-9 px-5 gap-1.5 bg-primary text-primary-foreground shadow-sm"
+                    className="rounded-lg text-xs font-medium h-8 px-3 gap-1.5"
                   >
                     <Check className="w-3.5 h-3.5" />
                     <span>{t.kitchen.ledger.markAsSettled}</span>

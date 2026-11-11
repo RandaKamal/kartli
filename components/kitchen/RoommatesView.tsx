@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import type { KitchenMemberWithUser, KitchenRole, KitchenSpaceType } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import {
@@ -22,6 +22,7 @@ import {
   Mail,
   UserCheck,
   Check,
+  MoreHorizontal,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";

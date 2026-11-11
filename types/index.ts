@@ -237,7 +237,7 @@ export interface ReceiptLine {
 }
 
 export interface ScanReceiptResult {
-  receiptPath: string;
+  receiptUrl: string | null;
   storeName: string;
   currency: string;
   totalReceiptAmount: number;

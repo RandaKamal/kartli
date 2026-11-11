@@ -39,7 +39,7 @@ interface ReceiptLine {
 }
 
 interface ScanResult {
-  receiptPath: string;
+  receiptUrl: string | null;
   storeName: string;
   currency: string;
   totalReceiptAmount: number;
@@ -98,7 +98,25 @@ export function ReceiptReviewModal({
 
     startTransition(async () => {
       try {
-        const result = await scanReceiptAction(formData);
+        const res = await scanReceiptAction(formData);
+
+        if (!res.ok) {
+          setPreviewUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return null;
+          });
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+          setScanResult(null);
+          setCurrency('EUR');
+          setLineStates([]);
+          toast.error(res.error);
+          setPhase('upload');
+          return;
+        }
+
+        const result = res.data;
         setScanResult(result);
         setStoreName(result.storeName);
         setCurrency(result.currency || 'EUR');
@@ -163,9 +181,10 @@ export function ReceiptReviewModal({
   }, []);
 
   const handleCancel = useCallback(async () => {
-    if (scanResult?.receiptPath) {
+    const receiptUrl = scanResult?.receiptUrl;
+    if (receiptUrl) {
       startTransition(async () => {
-        await deleteReceiptFileAction(scanResult.receiptPath);
+        await deleteReceiptFileAction(receiptUrl);
       });
     }
     setPhase('upload');
@@ -205,7 +224,9 @@ export function ReceiptReviewModal({
 
     const formData = new FormData();
     formData.append('kitchenId', kitchenId);
-    formData.append('receiptPath', scanResult.receiptPath);
+    if (scanResult.receiptUrl) {
+      formData.append('receiptPath', scanResult.receiptUrl);
+    }
     formData.append('storeName', storeName);
     formData.append('currency', currency);
     formData.append('note', note.trim());
