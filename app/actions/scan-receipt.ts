@@ -70,11 +70,11 @@ const receiptResponseSchema: ResponseSchema = {
         properties: {
           raw_name: {
             type: SchemaType.STRING,
-            description: "Item name text exactly as printed on the receipt",
+            description: "Concise item name text as printed on the receipt (omit filler and excess whitespace)",
           },
           normalized_name: {
             type: SchemaType.STRING,
-            description: "Short clean product name (e.g. Milk, Bananas)",
+            description: "Concise clean product name (e.g. Milk, Bananas)",
           },
           quantity: {
             type: SchemaType.NUMBER,
@@ -159,23 +159,15 @@ function buildExtractionPrompt(stagedItems: StagedCartItem[]): string {
 
 Inspect the receipt text for currency symbols or abbreviations (e.g. "CHF", "EUR", "USD", "GBP", "€", "$", "£", "Fr."). Return a standard 3-letter uppercase ISO code in the "currency" field. Default to "EUR" if ambiguous or not explicitly specified.
 
-Return a JSON object with exactly this structure:
-{
-  "store": "<store name as printed, e.g. Lidl, Rewe, or Supermarket if unclear>",
-  "date": "<purchase date as YYYY-MM-DD, or null if unreadable>",
-  "currency": "<ISO code: 'EUR', 'CHF', 'USD', 'GBP', etc. Default 'EUR'>",
-  "total": <number, the overall gross receipt total>,
-  "items": [
-    {
-      "raw_name": "<text exactly as printed on the receipt>",
-      "normalized_name": "<short clean product name, e.g. 'Milk'>",
-      "quantity": <number, default 1>,
-      "price": <number, line price for this item>
-    }
-  ]
-}
+IMPORTANT FORMATTING RULES:
+- Output compact, minified JSON with no extra whitespace, indentation, or newlines to conserve tokens.
+- Keep "raw_name" and "normalized_name" strings concise (omit redundant store codes, discounts, or excess whitespace).
+- Ensure all line items are extracted completely without truncating the items array.
 
-Return ONLY the JSON object. No markdown, no code fences, no extra text.
+Return a JSON object with this structure:
+{"store":"...","date":"YYYY-MM-DD or null","currency":"EUR","total":0.00,"items":[{"raw_name":"...","normalized_name":"...","quantity":1,"price":0.00}]}
+
+Return ONLY the compact JSON object. No markdown, no code fences, no extra text.
 
 Known staged cart item names (for context only): ${JSON.stringify(
     stagedItems.map((item) => String(item?.name ?? "")).filter(Boolean)
@@ -183,8 +175,8 @@ Known staged cart item names (for context only): ${JSON.stringify(
 }
 
 /** Strip reasoning blocks, code fences / prose and parse the provider's JSON answer. */
-function parseReceiptJson(raw: string): ExtractedReceipt {
-  // Reasoning models may emit  thinking...</think> before the actual JSON.
+function parseReceiptJson(raw: string, finishReason?: string): ExtractedReceipt {
+  // Reasoning models may emit thinking blocks before the actual JSON.
   // Drop those blocks first so they can never break JSON.parse().
   let clean = raw.replace(/<think\b[^>]*>[\s\S]*?<\/think>/gi, "").trim();
 
@@ -200,11 +192,21 @@ function parseReceiptJson(raw: string): ExtractedReceipt {
     clean = clean.slice(firstBrace, lastBrace + 1);
   }
 
-  const parsed = JSON.parse(clean);
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("AI returned a non-object receipt payload.");
+  try {
+    const parsed = JSON.parse(clean);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error("AI returned a non-object receipt payload.");
+    }
+    return parsed as ExtractedReceipt;
+  } catch (err: any) {
+    if (err instanceof SyntaxError || err?.name === "SyntaxError") {
+      const rawSnippet = raw.slice(Math.max(0, raw.length - 300));
+      console.error(
+        `[parseReceiptJson] SyntaxError parsing receipt JSON (finishReason: ${finishReason || "unknown"}). Truncated raw text tail:\n${rawSnippet}`
+      );
+    }
+    throw err;
   }
-  return parsed as ExtractedReceipt;
 }
 
 function readMessageContent(content: unknown): string {
@@ -237,7 +239,7 @@ async function extractWithGemini(
         responseMimeType: "application/json",
         responseSchema: receiptResponseSchema,
         temperature: 0.1,
-        maxOutputTokens: 1024,
+        maxOutputTokens: 4096,
       },
     },
     {
@@ -255,7 +257,47 @@ async function extractWithGemini(
     },
   ]);
 
-  return parseReceiptJson(result.response.text());
+  const candidate = result.response.candidates?.[0];
+  const finishReason = candidate?.finishReason;
+  let rawText = "";
+  try {
+    rawText = result.response.text?.() ?? "";
+  } catch (textErr: any) {
+    console.warn(
+      `[extractWithGemini] Failed to read candidate response text (finishReason: ${finishReason}):`,
+      textErr?.message
+    );
+  }
+
+  if (finishReason === "MAX_TOKENS") {
+    const rawSnippet = rawText.slice(Math.max(0, rawText.length - 300));
+    console.error(
+      `[extractWithGemini] Gemini hit MAX_TOKENS truncation (finishReason: ${finishReason}). Truncated text tail:\n${rawSnippet}`
+    );
+    const error = new Error(
+      `Gemini response truncated by MAX_TOKENS (${rawText.length} chars). Truncated snippet: ...${rawSnippet}`
+    );
+    (error as any).finishReason = finishReason;
+    (error as any).rawSnippet = rawSnippet;
+    (error as any).isTruncated = true;
+    throw error;
+  }
+
+  try {
+    return parseReceiptJson(rawText, finishReason);
+  } catch (err: any) {
+    if (err instanceof SyntaxError || err?.name === "SyntaxError") {
+      const rawSnippet = rawText.slice(Math.max(0, rawText.length - 300));
+      console.error(
+        `[extractWithGemini] SyntaxError parsing Gemini JSON (finishReason: ${finishReason || "unknown"}). Truncated text tail:\n${rawSnippet}`,
+        err
+      );
+      (err as any).finishReason = finishReason;
+      (err as any).rawSnippet = rawSnippet;
+      (err as any).isTruncated = true;
+    }
+    throw err;
+  }
 }
 
 async function extractWithDeepSeek(
@@ -273,13 +315,13 @@ async function extractWithDeepSeek(
     body: JSON.stringify({
       model: DEEPSEEK_MODEL_ID,
       temperature: 0.1,
-      max_tokens: 1024,
+      max_tokens: 4096,
       response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
           content:
-            "You extract structured data from receipt images. Reply with a single strict JSON object with: { store, date, currency, total, items: [{ raw_name, normalized_name, quantity, price }] }.",
+            "You extract structured data from receipt images. Reply with a single strict compact minified JSON object with concise item names and no extra whitespace or newlines: { store, date, currency, total, items: [{ raw_name, normalized_name, quantity, price }] }.",
         },
         {
           role: "user",
@@ -306,12 +348,42 @@ async function extractWithDeepSeek(
   }
 
   const payload: any = await response.json();
-  const content = readMessageContent(payload?.choices?.[0]?.message?.content);
+  const choice = payload?.choices?.[0];
+  const finishReason = choice?.finish_reason;
+  const content = readMessageContent(choice?.message?.content);
   if (!content.trim()) {
     throw new Error(`DeepSeek model "${DEEPSEEK_MODEL_ID}" returned an empty completion.`);
   }
 
-  return parseReceiptJson(content);
+  if (finishReason === "length") {
+    const rawSnippet = content.slice(Math.max(0, content.length - 300));
+    console.error(
+      `[extractWithDeepSeek] DeepSeek hit length/max_tokens truncation (finish_reason: ${finishReason}). Truncated text tail:\n${rawSnippet}`
+    );
+    const error = new Error(
+      `DeepSeek response truncated by max_tokens (${content.length} chars). Truncated snippet: ...${rawSnippet}`
+    );
+    (error as any).finishReason = finishReason;
+    (error as any).rawSnippet = rawSnippet;
+    (error as any).isTruncated = true;
+    throw error;
+  }
+
+  try {
+    return parseReceiptJson(content, finishReason);
+  } catch (err: any) {
+    if (err instanceof SyntaxError || err?.name === "SyntaxError") {
+      const rawSnippet = content.slice(Math.max(0, content.length - 300));
+      console.error(
+        `[extractWithDeepSeek] SyntaxError parsing DeepSeek JSON (finish_reason: ${finishReason || "unknown"}). Truncated text tail:\n${rawSnippet}`,
+        err
+      );
+      (err as any).finishReason = finishReason;
+      (err as any).rawSnippet = rawSnippet;
+      (err as any).isTruncated = true;
+    }
+    throw err;
+  }
 }
 
 export async function scanReceiptAction(formData: FormData): Promise<ScanReceiptResult> {
@@ -384,6 +456,13 @@ export async function scanReceiptAction(formData: FormData): Promise<ScanReceipt
             return { extracted, usedProvider: `gemini:${GEMINI_MODEL_ID}` };
           } catch (err: any) {
             lastError = err;
+            const isTruncatedOrInvalid =
+              err?.finishReason === "MAX_TOKENS" ||
+              err?.isTruncated === true ||
+              err instanceof SyntaxError ||
+              err?.name === "SyntaxError" ||
+              /JSON|Unexpected token|MAX_TOKENS/i.test(err?.message || "");
+
             const isTransient =
               err?.status === 503 ||
               err?.status === 502 ||
@@ -392,7 +471,7 @@ export async function scanReceiptAction(formData: FormData): Promise<ScanReceipt
               err?.name === "GoogleGenerativeAIAbortError" ||
               /UNAVAILABLE|overload|timed? ?out/i.test(err?.message || "");
 
-            if (attempt === 0 && isTransient) {
+            if (attempt === 0 && isTransient && !isTruncatedOrInvalid) {
               const backoff = 400 + Math.floor(Math.random() * 150);
               console.warn(
                 `[scanReceiptAction] Gemini transient error (${err?.status || err?.message}). Retrying in ${backoff}ms...`
@@ -402,8 +481,11 @@ export async function scanReceiptAction(formData: FormData): Promise<ScanReceipt
             }
             console.warn(
               `[scanReceiptAction] Gemini attempt ${attempt + 1} failed:`,
-              err?.status || err?.message
+              err?.finishReason
+                ? `finishReason=${err.finishReason} (truncated/fallback-eligible)`
+                : err?.status || err?.message
             );
+            // Truncation or invalid JSON is fallback-eligible: break from Gemini loop to try DeepSeek
             break;
           }
         }
@@ -484,8 +566,10 @@ export async function scanReceiptAction(formData: FormData): Promise<ScanReceipt
       status,
       statusText: error?.statusText,
       code: error?.code,
+      finishReason: error?.finishReason,
       message: rawMessage,
       errorDetails: error?.errorDetails,
+      rawSnippet: error?.rawSnippet,
     });
 
     let userMessage = "Failed to scan receipt. Please try again with a clear photo.";
@@ -535,7 +619,7 @@ export async function scanReceiptAction(formData: FormData): Promise<ScanReceipt
       /invalid model|not found|no longer available/i.test(rawMessage)
     ) {
       userMessage = "The AI model endpoint is unavailable. Please check configuration.";
-    } else if (/JSON|Unexpected token|non-object receipt payload/i.test(rawMessage)) {
+    } else if (/JSON|Unexpected token|non-object receipt payload|MAX_TOKENS/i.test(rawMessage)) {
       userMessage =
         "Could not parse the receipt data returned by AI. Please try again with a clearer picture.";
     }
