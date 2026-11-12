@@ -347,7 +347,7 @@ export function SpacePulseModal({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         onDismiss={() => onOpenChange(false)}
-        className="h-[88dvh] max-h-[88dvh] w-full bg-card text-card-foreground rounded-t-2xl border-t border-white/[0.08] shadow-2xl flex flex-col overflow-hidden sm:h-[750px] sm:max-h-[85vh] sm:w-full sm:max-w-xl sm:rounded-xl sm:border p-0 gap-0 [&>button:last-child]:hidden"
+        className="h-[88dvh] max-h-[88dvh] w-full bg-card text-card-foreground rounded-t-2xl border-t border-white/[0.08] shadow-2xl flex flex-col overflow-hidden sm:h-[750px] sm:max-h-[85dvh] sm:w-full sm:max-w-xl sm:rounded-xl sm:border p-0 gap-0 [&>button:last-child]:hidden"
       >
         {/* Zone 1: Header Zone (shrink-0) */}
         <div className="shrink-0 border-b border-white/[0.06]">
@@ -523,7 +523,7 @@ export function SpacePulseModal({
         </div>
 
         {/* Zone 2: Scrollable Content Zone (flex-1 min-h-0 overflow-y-auto) */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 pb-6 space-y-4 overscroll-contain">
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] space-y-4 overscroll-contain">
           {isLoading ? (
             <SpacePulseModalSkeleton />
           ) : !stats ? (

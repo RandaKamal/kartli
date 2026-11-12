@@ -129,9 +129,9 @@ const DialogContent = React.forwardRef<
           }}
           className={cn(
             // Mobile: bottom sheet (< sm)
-            "pointer-events-auto w-full max-h-[90vh] bg-card text-card-foreground rounded-t-2xl rounded-b-none border-t border-x-0 border-b-0 border-border/80 shadow-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-250 sm:!transform-none",
+            "pointer-events-auto w-full max-h-[90dvh] bg-card text-card-foreground rounded-t-2xl rounded-b-none border-t border-x-0 border-b-0 border-border/80 shadow-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-250 sm:!transform-none",
             // Desktop: centered modal (sm+)
-            "sm:max-w-lg sm:w-full sm:mx-auto sm:my-auto sm:rounded-xl sm:border sm:border-border/80 sm:max-h-[85vh] sm:animate-in sm:zoom-in-95 sm:fade-in-0 sm:slide-in-from-bottom-0",
+            "sm:max-w-lg sm:w-full sm:mx-auto sm:my-auto sm:rounded-xl sm:border sm:border-border/80 sm:max-h-[85dvh] sm:animate-in sm:zoom-in-95 sm:fade-in-0 sm:slide-in-from-bottom-0",
             className
           )}
           {...props}

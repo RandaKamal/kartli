@@ -61,7 +61,7 @@ export function ExpenseLedgerModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-5 sm:px-6 pb-10 pt-4 space-y-6 overscroll-contain max-h-[82vh]">
+        <div className="flex-1 overflow-y-auto px-5 sm:px-6 pt-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] space-y-6 overscroll-contain min-h-0 max-h-[82dvh]">
           {isAdmin && (
             <AdminRefundsSection
               kitchenId={kitchenId}
