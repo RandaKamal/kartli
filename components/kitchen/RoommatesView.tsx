@@ -199,8 +199,7 @@ export function RoommatesView({
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
-            <UserCheck className="w-4 h-4 text-emerald-500" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 font-sans">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-sans">
               {t.kitchen.roommates.activeMembers} ({activeMembers.length})
             </span>
           </div>
@@ -219,7 +218,7 @@ export function RoommatesView({
             return (
               <div
                 key={member.id}
-                className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-card border border-border/70 hover:border-border transition-all"
+                className="flex items-center justify-between gap-3 p-3 rounded-xl bg-card border border-border/70 hover:border-border transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar className="w-9 h-9 border border-border/80 shadow-2xs">
@@ -401,7 +400,7 @@ export function RoommatesView({
               return (
                 <div
                   key={invite.id}
-                  className="rounded-2xl border border-dashed border-border/80 bg-secondary/20 p-3.5 flex items-center justify-between gap-3"
+                  className="rounded-xl border border-dashed border-border/80 bg-secondary/20 p-3 flex items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="h-8 w-8 shrink-0 rounded-full border border-border bg-secondary/60 flex items-center justify-center text-xs text-muted-foreground">
@@ -458,12 +457,13 @@ export function RoommatesView({
               value={newMemberName}
               onChange={(e) => setNewMemberName(e.target.value)}
               disabled={isAdding}
-              className="rounded-xl h-10 bg-background border-border text-sm"
+              className="rounded-lg h-9 bg-background border-border text-sm"
             />
             <Button
               type="submit"
+              size="sm"
               disabled={isAdding || !newMemberName.trim()}
-              className="rounded-xl h-10 px-4 font-semibold shrink-0 cursor-pointer w-full sm:w-auto"
+              className="rounded-lg h-9 px-4 font-medium shrink-0 cursor-pointer w-full sm:w-auto"
             >
               {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4 mr-1.5" />}
               <span>{t.kitchen.roommates.generateLink}</span>
