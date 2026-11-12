@@ -411,11 +411,10 @@ export function AdminRefundsSection({
 
                         <Button
                           type="button"
-                          variant="success"
                           size="sm"
                           onClick={() => handleMarkAsSettled(checkout.id)}
                           disabled={isPending}
-                          className="h-8 px-3 text-xs font-medium rounded-lg gap-1.5 cursor-pointer"
+                          className="h-8 px-3 rounded-lg text-xs font-medium gap-1.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 hover:bg-emerald-500/25 transition-colors cursor-pointer"
                         >
                           {isSettling ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -427,7 +426,7 @@ export function AdminRefundsSection({
 
                         <Button
                           type="button"
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           onClick={() => {
                             if (activeDeclineCheckoutId === checkout.id) {
@@ -438,10 +437,9 @@ export function AdminRefundsSection({
                             }
                           }}
                           disabled={isPending}
-                          className="h-8 px-2.5 text-xs font-medium rounded-lg border-white/[0.08] text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 cursor-pointer"
+                          className="h-8 px-3 rounded-lg text-xs font-medium text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 border border-white/[0.08] hover:border-rose-500/25 transition-colors cursor-pointer"
                           title={t.kitchen.ledger.declineAction || "Ablehnen"}
                         >
-                          <XCircle className="w-3.5 h-3.5 mr-1" />
                           <span>{t.kitchen.ledger.declineAction || "Ablehnen"}</span>
                         </Button>
                       </div>
@@ -673,7 +671,6 @@ export function AdminRefundsSection({
                 {!selectedCheckout.is_refunded && !selectedCheckout.is_declined && (
                   <Button
                     type="button"
-                    variant="success"
                     size="sm"
                     onClick={() => {
                       const id = selectedCheckout.id;
@@ -681,7 +678,7 @@ export function AdminRefundsSection({
                       handleMarkAsSettled(id);
                     }}
                     disabled={isPending}
-                    className="rounded-lg text-xs font-medium h-8 px-3 gap-1.5"
+                    className="h-8 px-3 rounded-lg text-xs font-medium gap-1.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 hover:bg-emerald-500/25 transition-colors cursor-pointer"
                   >
                     <Check className="w-3.5 h-3.5" />
                     <span>{t.kitchen.ledger.markAsSettled}</span>

@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { pool } from "@/lib/db";
 import { getUserMembership } from "@/lib/kitchen";
+import { normalizeStoreName } from "@/lib/receipt-normalizer";
 
 export interface StoreSpendingItem {
   name: string;
@@ -621,18 +622,40 @@ export async function getKitchenStats(
     spendTrendDirection = "flat";
   }
 
-  // Calculate Category / Store Breakdown with percentages
+  // Calculate Category / Store Breakdown with percentages, merging case-insensitive & normalized store names
   const rawBreakdown = Array.isArray(row?.store_breakdown) ? row.store_breakdown : [];
-  const categoryBreakdown: StoreSpendingItem[] = rawBreakdown.map((item) => {
+  const storeMap = new Map<string, { amount: number; count: number }>();
+
+  for (const item of rawBreakdown) {
+    const raw = (item.name || "").trim();
+    if (!raw) continue;
+    let normalized = normalizeStoreName(raw);
+    if (!normalized || normalized.toLowerCase() === "supermarket") {
+      normalized = raw.toUpperCase();
+    }
     const amountNum = parseFloat(String(item.amount ?? "0"));
-    const pct = currentSpend > 0 ? Math.round((amountNum / currentSpend) * 100) : 0;
-    return {
-      name: item.name || "Sonstige",
-      amount: amountNum,
-      count: Number(item.count) || 0,
-      percentage: pct,
-    };
-  });
+    const countNum = Number(item.count) || 0;
+
+    const existing = storeMap.get(normalized);
+    if (existing) {
+      existing.amount += amountNum;
+      existing.count += countNum;
+    } else {
+      storeMap.set(normalized, { amount: amountNum, count: countNum });
+    }
+  }
+
+  const categoryBreakdown: StoreSpendingItem[] = Array.from(storeMap.entries())
+    .map(([name, data]) => {
+      const pct = currentSpend > 0 ? Math.round((data.amount / currentSpend) * 100) : 0;
+      return {
+        name,
+        amount: Math.round(data.amount * 100) / 100,
+        count: data.count,
+        percentage: pct,
+      };
+    })
+    .sort((a, b) => b.amount - a.amount);
 
   // Calculate Personal Impact & Basket Sizes
   const totalReceipts = Number(row?.total_receipts_count ?? 0);
@@ -677,45 +700,56 @@ export async function getKitchenStats(
 
   // Month Checkouts
   const rawMonthCheckouts = Array.isArray(row?.month_checkouts) ? row.month_checkouts : [];
-  const monthCheckouts: MonthCheckoutItem[] = rawMonthCheckouts.map((c) => ({
-    id: c.id,
-    kitchen_id: c.kitchen_id,
-    user_id: c.user_id,
-    store_name: c.store_name || "Sonstige",
-    note: c.note,
-    total_claimed_amount: parseFloat(String(c.total_claimed_amount ?? "0")),
-    total_receipt_amount: c.total_receipt_amount !== null ? parseFloat(String(c.total_receipt_amount)) : null,
-    receipt_filename: c.receipt_filename,
-    is_refunded: Boolean(c.is_refunded),
-    is_declined: Boolean(c.is_declined),
-    declined_at: c.declined_at || null,
-    decline_reason: c.decline_reason || null,
-    currency: c.currency || "EUR",
-    created_at: c.created_at,
-    refunded_at: c.refunded_at,
-    username: c.username,
-    paid_by_name: c.paid_by_name || c.username || "Mitglied",
-    items: Array.isArray(c.items)
-      ? c.items.map((it) => ({
-          id: it.id,
-          name: it.name,
-          item_price: it.item_price !== null ? parseFloat(String(it.item_price)) : null,
-        }))
-      : [],
-    receipts: Array.isArray(c.receipts) ? c.receipts : [],
-  }));
+  const monthCheckouts: MonthCheckoutItem[] = rawMonthCheckouts.map((c) => {
+    const rawStore = (c.store_name || "").trim();
+    const normalizedStore = rawStore
+      ? normalizeStoreName(rawStore) || rawStore.toUpperCase()
+      : "Sonstige";
+
+    return {
+      id: c.id,
+      kitchen_id: c.kitchen_id,
+      user_id: c.user_id,
+      store_name: normalizedStore,
+      note: c.note,
+      total_claimed_amount: parseFloat(String(c.total_claimed_amount ?? "0")),
+      total_receipt_amount: c.total_receipt_amount !== null ? parseFloat(String(c.total_receipt_amount)) : null,
+      receipt_filename: c.receipt_filename,
+      is_refunded: Boolean(c.is_refunded),
+      is_declined: Boolean(c.is_declined),
+      declined_at: c.declined_at || null,
+      decline_reason: c.decline_reason || null,
+      currency: c.currency || "EUR",
+      created_at: c.created_at,
+      refunded_at: c.refunded_at,
+      username: c.username,
+      paid_by_name: c.paid_by_name || c.username || "Mitglied",
+      items: Array.isArray(c.items)
+        ? c.items.map((it) => ({
+            id: it.id,
+            name: it.name,
+            item_price: it.item_price !== null ? parseFloat(String(it.item_price)) : null,
+          }))
+        : [],
+      receipts: Array.isArray(c.receipts) ? c.receipts : [],
+    };
+  });
 
   // User Primary Category Footprint
   let userCategoryFootprint: UserCategoryFootprint | null = null;
   const rawUserTop = Array.isArray(row?.user_top_category) && row.user_top_category.length > 0 ? row.user_top_category[0] : null;
   if (rawUserTop && userSpend > 0) {
+    const rawCategory = (rawUserTop.name || "").trim();
+    const normalizedCategory = rawCategory
+      ? normalizeStoreName(rawCategory) || rawCategory.toUpperCase()
+      : "Sonstige";
     const topAmount = parseFloat(String(rawUserTop.amount ?? "0"));
     const topPct = Math.min(100, Math.round((topAmount / userSpend) * 100));
     userCategoryFootprint = {
-      categoryName: rawUserTop.name,
+      categoryName: normalizedCategory,
       amount: topAmount,
       percentage: topPct,
-      displayText: `${rawUserTop.name} · ${topPct}% of personal spend`,
+      displayText: `${normalizedCategory} · ${topPct}% of personal spend`,
     };
   }
 

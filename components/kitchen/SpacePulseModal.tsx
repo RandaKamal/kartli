@@ -33,6 +33,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Crown,
+  X,
 } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import {
@@ -346,13 +347,13 @@ export function SpacePulseModal({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         onDismiss={() => onOpenChange(false)}
-        className="h-[88dvh] max-h-[88dvh] w-full bg-card text-card-foreground rounded-t-2xl border-t border-white/[0.08] shadow-2xl flex flex-col overflow-hidden sm:h-[750px] sm:max-h-[85vh] sm:w-full sm:max-w-xl sm:rounded-xl sm:border p-0 gap-0"
+        className="h-[88dvh] max-h-[88dvh] w-full bg-card text-card-foreground rounded-t-2xl border-t border-white/[0.08] shadow-2xl flex flex-col overflow-hidden sm:h-[750px] sm:max-h-[85vh] sm:w-full sm:max-w-xl sm:rounded-xl sm:border p-0 gap-0 [&>button:last-child]:hidden"
       >
         {/* Zone 1: Header Zone (shrink-0) */}
         <div className="shrink-0 border-b border-white/[0.06]">
           <DialogHeader className="px-5 pt-5 pb-3 space-y-3">
             {/* Title + actions */}
-            <div className="flex items-center justify-between gap-3 pr-8">
+            <div className="flex items-center justify-between gap-3">
               <DialogTitle className="text-base font-semibold tracking-tight text-foreground truncate">
                 {kitchenName} {t.pulse.title}
               </DialogTitle>
@@ -383,6 +384,17 @@ export function SpacePulseModal({
                   title={t.pulse.refresh}
                 >
                   <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => onOpenChange(false)}
+                  className="h-8 w-8 rounded-lg text-zinc-400 hover:text-foreground hover:bg-white/[0.06] shrink-0 cursor-pointer"
+                  title={t.pulse.close || t.common.close}
+                >
+                  <X className="w-4 h-4" />
                 </Button>
               </div>
             </div>
