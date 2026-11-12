@@ -6,15 +6,17 @@ import {
   type ReconciliationSummary,
 } from "./receipt-normalizer";
 
-export const GEMINI_MODEL_ID = "gemini-3.5-flash-lite";
-export const GEMINI_REQUEST_TIMEOUT_MS = 10_000;
+export const GEMINI_CASCADE_MODELS = [
+  "gemini-3.5-flash-lite",
+  "gemini-2.5-flash-lite",
+  "gemini-3-flash",
+  "gemini-2.5-flash",
+] as const;
 
-export const REQUESTY_API_URL = "https://router.requesty.ai/v1/chat/completions";
-export const REQUESTY_MODEL_ID = "gemma-4-31b-it";
-export const REQUESTY_REQUEST_TIMEOUT_MS = 10_000;
+export type GeminiCascadeModel = (typeof GEMINI_CASCADE_MODELS)[number];
 
-export const ALL_PROVIDERS_FAILED_MESSAGE =
-  "Receipt scanner is temporarily busy across all providers. Please try again in a moment.";
+export const GEMINI_MODEL_ID = GEMINI_CASCADE_MODELS[0];
+export const GEMINI_REQUEST_TIMEOUT_MS = 7_000;
 
 /** Strict JSON schema for native Gemini constrained decoding */
 export const receiptResponseSchema: ResponseSchema = {
@@ -219,53 +221,65 @@ export function parseReceiptJson(raw: string, finishReason?: string): ExtractedR
   }
 }
 
-function readMessageContent(content: unknown): string {
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content
-      .map((part) => {
-        if (typeof part === "string") return part;
-        if (part && typeof part === "object" && typeof (part as any).text === "string") {
-          return (part as any).text as string;
-        }
-        return "";
-      })
-      .join("");
+function getConciseErrorMessage(err: any): string {
+  if (typeof err?.status === "number") {
+    return `${err.status}`;
   }
-  return "";
+  const msg = typeof err?.message === "string" ? err.message : String(err ?? "");
+  const statusMatch = msg.match(/\[(\d{3})\b/);
+  if (statusMatch) {
+    return statusMatch[1];
+  }
+  if (err?.finishReason === "MAX_TOKENS" || err?.isTruncated) {
+    return "MAX_TOKENS";
+  }
+  if (
+    err?.name === "TimeoutError" ||
+    err?.name === "GoogleGenerativeAIAbortError" ||
+    err?.name === "AbortError" ||
+    /aborted|timed? ?out/i.test(msg)
+  ) {
+    return "timeout";
+  }
+  if (err instanceof SyntaxError || /JSON|Unexpected token|non-object receipt payload/i.test(msg)) {
+    return "JSON error";
+  }
+  return msg.length > 35 ? `${msg.slice(0, 32)}...` : msg || "failed";
 }
 
 export async function extractWithGemini(
   apiKey: string,
+  modelName: string,
   prompt: string,
   mimeType: string,
-  base64: string
+  base64: string,
+  signal?: AbortSignal
 ): Promise<ExtractedReceiptRaw> {
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel(
-    {
-      model: GEMINI_MODEL_ID,
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: receiptResponseSchema,
-        temperature: 0.1,
-        maxOutputTokens: 4096,
-      },
+  const model = genAI.getGenerativeModel({
+    model: modelName,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: receiptResponseSchema,
+      temperature: 0.1,
+      maxOutputTokens: 4096,
     },
+  });
+
+  const result = await model.generateContent(
+    [
+      prompt,
+      {
+        inlineData: {
+          mimeType,
+          data: base64,
+        },
+      },
+    ],
     {
-      timeout: GEMINI_REQUEST_TIMEOUT_MS,
+      signal: signal ?? AbortSignal.timeout(GEMINI_REQUEST_TIMEOUT_MS),
     }
   );
-
-  const result = await model.generateContent([
-    prompt,
-    {
-      inlineData: {
-        mimeType,
-        data: base64,
-      },
-    },
-  ]);
 
   const candidate = result.response.candidates?.[0];
   const finishReason = candidate?.finishReason;
@@ -274,7 +288,7 @@ export async function extractWithGemini(
     rawText = result.response.text?.() ?? "";
   } catch (textErr: any) {
     console.warn(
-      `[extractWithGemini] Failed to read candidate response text (finishReason: ${finishReason}):`,
+      `[extractWithGemini] Failed to read candidate response text (${modelName}, finishReason: ${finishReason}):`,
       textErr?.message
     );
   }
@@ -282,7 +296,7 @@ export async function extractWithGemini(
   if (finishReason === "MAX_TOKENS") {
     const rawSnippet = rawText.slice(Math.max(0, rawText.length - 300));
     const error = new Error(
-      `Gemini response truncated by MAX_TOKENS (${rawText.length} chars). Snippet: ...${rawSnippet}`
+      `Gemini (${modelName}) response truncated by MAX_TOKENS (${rawText.length} chars). Snippet: ...${rawSnippet}`
     );
     (error as any).finishReason = finishReason;
     (error as any).isTruncated = true;
@@ -292,79 +306,16 @@ export async function extractWithGemini(
   return parseReceiptJson(rawText, finishReason);
 }
 
-export async function extractWithRequesty(
-  apiKey: string,
-  prompt: string,
-  mimeType: string,
-  base64: string
-): Promise<ExtractedReceiptRaw> {
-  const response = await fetch(REQUESTY_API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: REQUESTY_MODEL_ID,
-      temperature: 0.1,
-      max_tokens: 4096,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            "You extract structured data from receipt images. Return compact JSON: { store, date, currency, total, items: [{ raw_name, normalized_name, quantity, unit_price, line_total, price }] }.",
-        },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            {
-              type: "image_url",
-              image_url: { url: `data:${mimeType};base64,${base64}` },
-            },
-          ],
-        },
-      ],
-    }),
-    signal: AbortSignal.timeout(REQUESTY_REQUEST_TIMEOUT_MS),
-  });
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    const error = new Error(
-      `Requesty model "${REQUESTY_MODEL_ID}" responded ${response.status} ${response.statusText}: ${body.slice(0, 500)}`
-    ) as Error & { status?: number };
-    error.status = response.status;
-    throw error;
-  }
-
-  const payload: any = await response.json();
-  const choice = payload?.choices?.[0];
-  const finishReason = choice?.finish_reason;
-  const content = readMessageContent(choice?.message?.content);
-  if (!content.trim()) {
-    throw new Error(`Requesty model "${REQUESTY_MODEL_ID}" returned an empty completion.`);
-  }
-
-  if (finishReason === "length") {
-    const rawSnippet = content.slice(Math.max(0, content.length - 300));
-    const error = new Error(
-      `Requesty response truncated by max_tokens (${content.length} chars). Snippet: ...${rawSnippet}`
-    );
-    (error as any).finishReason = finishReason;
-    (error as any).isTruncated = true;
-    throw error;
-  }
-
-  return parseReceiptJson(content, finishReason);
-}
-
 /**
  * Main OCR pipeline:
- * 1. Executes Gemini 3.5 Flash Lite with jittered retry on transient 502/503/504 errors.
- * 2. Falls back to Requesty (Gemma 4 31B IT) if Gemini fails.
- * 3. Applies deterministic DACH store normalization and mathematical line reconciliation.
+ * Pure Google AI Studio multi-model fallback cascade across:
+ * 1. gemini-3.5-flash-lite (Primary: 15 RPM / 500 RPD)
+ * 2. gemini-2.5-flash-lite (Fallback 1: 10 RPM / 20 RPD)
+ * 3. gemini-3-flash (Fallback 2: 5 RPM / 20 RPD)
+ * 4. gemini-2.5-flash (Fallback 3: 5 RPM / 20 RPD)
+ *
+ * Each attempt runs with a fast 7s timeout.
+ * Any failure immediately advances to the next model in the cascade without delays.
  */
 export async function extractReceiptData(
   buffer: Buffer,
@@ -372,13 +323,11 @@ export async function extractReceiptData(
   options: {
     stagedItems?: StagedCartItem[];
     geminiApiKey?: string;
-    requestyApiKey?: string;
   } = {}
 ): Promise<ExtractedReceiptResult> {
   const geminiApiKey = options.geminiApiKey || process.env.GEMINI_API_KEY;
-  const requestyApiKey = options.requestyApiKey || process.env.REQUESTY_API_KEY;
 
-  if (!geminiApiKey && !requestyApiKey) {
+  if (!geminiApiKey) {
     throw new Error("Receipt OCR is not configured. Please set GEMINI_API_KEY.");
   }
 
@@ -388,65 +337,38 @@ export async function extractReceiptData(
 
   let rawReceipt: ExtractedReceiptRaw | null = null;
   let usedProvider = "";
-  let lastError: any = null;
+  const errors: string[] = [];
 
-  // Primary: Gemini 3.5 Flash Lite
-  if (geminiApiKey) {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const startMs = Date.now();
-        rawReceipt = await extractWithGemini(geminiApiKey, prompt, mimeType, base64);
-        console.log(
-          `[extractReceiptData] Gemini attempt ${attempt + 1} succeeded in ${Date.now() - startMs}ms`
-        );
-        usedProvider = `gemini:${GEMINI_MODEL_ID}`;
-        break;
-      } catch (err: any) {
-        lastError = err;
-        const isTransient =
-          err?.status === 503 ||
-          err?.status === 502 ||
-          err?.status === 504 ||
-          err?.name === "TimeoutError" ||
-          err?.name === "GoogleGenerativeAIAbortError" ||
-          /UNAVAILABLE|overload|timed? ?out/i.test(err?.message || "");
-
-        const isTruncated = err?.finishReason === "MAX_TOKENS" || err?.isTruncated;
-
-        if (attempt === 0 && isTransient && !isTruncated) {
-          const backoff = 400 + Math.floor(Math.random() * 150);
-          console.warn(
-            `[extractReceiptData] Gemini transient error (${err?.status || err?.message}). Retrying in ${backoff}ms...`
-          );
-          await new Promise((resolve) => setTimeout(resolve, backoff));
-          continue;
-        }
-
-        console.warn(
-          `[extractReceiptData] Gemini attempt ${attempt + 1} failed:`,
-          err?.status || err?.message
-        );
-        break;
-      }
-    }
-  }
-
-  // Fallback: Requesty
-  if (!rawReceipt && requestyApiKey) {
+  for (const model of GEMINI_CASCADE_MODELS) {
     try {
-      console.log("[extractReceiptData] Attempting Requesty fallback...");
       const startMs = Date.now();
-      rawReceipt = await extractWithRequesty(requestyApiKey, prompt, mimeType, base64);
-      console.log(`[extractReceiptData] Requesty succeeded in ${Date.now() - startMs}ms`);
-      usedProvider = `requesty:${REQUESTY_MODEL_ID}`;
-    } catch (reqErr: any) {
-      console.error("[extractReceiptData] Requesty fallback failed:", reqErr);
-      lastError = reqErr;
+      rawReceipt = await extractWithGemini(
+        geminiApiKey,
+        model,
+        prompt,
+        mimeType,
+        base64,
+        AbortSignal.timeout(GEMINI_REQUEST_TIMEOUT_MS)
+      );
+      console.log(
+        `[extractReceiptData] Model ${model} succeeded in ${Date.now() - startMs}ms`
+      );
+      usedProvider = `gemini:${model}`;
+      break;
+    } catch (err: any) {
+      const reason = getConciseErrorMessage(err);
+      errors.push(`${model}: ${reason}`);
+      console.warn(
+        `[extractReceiptData] Model ${model} failed (${reason}), immediately advancing to next model:`,
+        err?.status || err?.message
+      );
     }
   }
 
   if (!rawReceipt) {
-    throw lastError || new Error(ALL_PROVIDERS_FAILED_MESSAGE);
+    throw new Error(
+      `Alle Gemini-Modelle sind gerade überlastet (${errors.join(", ")}). Bitte in einem Moment erneut versuchen.`
+    );
   }
 
   // Currency normalization

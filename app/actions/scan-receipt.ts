@@ -10,10 +10,9 @@ import { put, del } from "@vercel/blob";
 import crypto from "node:crypto";
 import {
   extractReceiptData,
+  GEMINI_CASCADE_MODELS,
   GEMINI_MODEL_ID,
   GEMINI_REQUEST_TIMEOUT_MS,
-  REQUESTY_MODEL_ID,
-  ALL_PROVIDERS_FAILED_MESSAGE,
 } from "@/lib/receipt-extractor";
 import type { ReceiptLine, ScanReceiptResult as GlobalScanReceiptResult } from "@/types";
 
@@ -56,9 +55,8 @@ export async function scanReceiptAction(formData: FormData): Promise<ScanReceipt
   }
 
   const geminiApiKey = process.env.GEMINI_API_KEY;
-  const requestyApiKey = process.env.REQUESTY_API_KEY;
 
-  if (!geminiApiKey && !requestyApiKey) {
+  if (!geminiApiKey) {
     return {
       ok: false,
       error: "Receipt OCR is not configured. Please set GEMINI_API_KEY.",
@@ -88,11 +86,10 @@ export async function scanReceiptAction(formData: FormData): Promise<ScanReceipt
             })
         : Promise.resolve(null);
 
-    // Parallel Task 2: Primary Gemini 3.5 Flash Lite + Optional Requesty fallback
+    // Parallel Task 2: Pure Google AI Studio multi-model fallback cascade
     const ocrPromise = extractReceiptData(buffer, mimeType, {
       stagedItems,
       geminiApiKey,
-      requestyApiKey,
     });
 
     // Concurrently await Blob upload and OCR
@@ -140,8 +137,8 @@ export async function scanReceiptAction(formData: FormData): Promise<ScanReceipt
 
     let userMessage = "Failed to scan receipt. Please try again with a clear photo.";
 
-    if (rawMessage === ALL_PROVIDERS_FAILED_MESSAGE) {
-      userMessage = ALL_PROVIDERS_FAILED_MESSAGE;
+    if (rawMessage.includes("Alle Gemini-Modelle sind gerade überlastet")) {
+      userMessage = rawMessage;
     } else if (rawMessage.includes("Could not parse the receipt data")) {
       userMessage = rawMessage;
     } else if (rawMessage.includes("GEMINI_API_KEY")) {
