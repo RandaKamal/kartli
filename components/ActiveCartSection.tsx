@@ -512,7 +512,7 @@ export function ActiveCartSection({
                   type="button"
                   onClick={handleProceedToCheckout}
                   disabled={myCartItems.length === 0}
-                  className="h-8 px-3 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-medium text-xs flex items-center gap-1.5 shadow-xs hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  className="h-8 px-3 rounded-lg bg-primary text-primary-foreground font-medium text-xs flex items-center gap-1.5 shadow-xs hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                   title="Proceed to checkout"
                 >
                   <span>{t.cart.checkout}</span>

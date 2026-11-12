@@ -580,7 +580,7 @@ export function KitchenSpaceView({
                 className={cn(
                   "text-[10px] font-mono font-medium px-1.5 py-0.5 rounded leading-none transition-colors tabular-nums",
                   mode === "supermarket"
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-semibold"
+                    ? "bg-primary text-primary-foreground font-semibold"
                     : "bg-secondary text-muted-foreground border border-border/70"
                 )}
               >

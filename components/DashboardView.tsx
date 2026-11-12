@@ -51,7 +51,7 @@ export function DashboardView({
           </Link>
           <Link
             href="/kitchen/new"
-            className="h-8 px-3 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-medium text-xs flex items-center gap-1.5 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors shadow-xs"
+            className="h-8 px-3 rounded-lg bg-primary text-primary-foreground font-medium text-xs flex items-center gap-1.5 hover:bg-primary/90 transition-colors shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>{t.dashboard.newSpace}</span>
@@ -86,7 +86,7 @@ export function DashboardView({
                 <div className="flex flex-col justify-between rounded-lg bg-muted/30 border border-border/70 p-4 space-y-4">
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 text-xs font-bold font-mono flex items-center justify-center">
+                      <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold font-mono flex items-center justify-center">
                         1
                       </span>
                       <h3 className="font-semibold text-foreground text-sm tracking-tight">

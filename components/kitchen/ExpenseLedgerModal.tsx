@@ -53,9 +53,9 @@ export function ExpenseLedgerModal({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         onDismiss={() => onOpenChange(false)}
-        className="sm:max-w-3xl w-full p-0 gap-0 overflow-hidden flex flex-col rounded-xl border border-white/[0.08] bg-card shadow-2xl"
+        className="sm:max-w-3xl w-full p-0 gap-0 overflow-hidden flex flex-col rounded-xl border border-border bg-card shadow-2xl"
       >
-        <DialogHeader className="px-5 py-4 sm:px-6 border-b border-white/[0.06] pr-12 text-left">
+        <DialogHeader className="px-5 py-4 sm:px-6 border-b border-border pr-12 text-left">
           <DialogTitle className="text-base font-semibold text-foreground tracking-tight">
             {t.kitchen.ledger.modalTitle}
           </DialogTitle>

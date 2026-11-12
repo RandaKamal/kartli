@@ -21,7 +21,7 @@ import { useTranslation } from "@/lib/i18n";
 
 export function MyPurchasesSkeleton() {
   return (
-    <div className="border-t border-white/[0.06] py-3.5 flex items-center justify-between">
+    <div className="border-t border-border py-3.5 flex items-center justify-between">
       <div className="flex items-center gap-2">
         <Skeleton className="w-4 h-4 rounded" />
         <Skeleton className="h-4 w-28 rounded-md" />
@@ -128,7 +128,7 @@ export function MyPurchasesSection({
   };
 
   return (
-    <div className="border-t border-white/[0.06]">
+    <div className="border-t border-border">
       <button
         type="button"
         onClick={handleToggleExpand}
@@ -137,21 +137,21 @@ export function MyPurchasesSection({
         aria-label={isExpanded ? t.kitchen.ledger.myPurchasesCollapse : t.kitchen.ledger.myPurchasesExpand}
       >
         <div className="flex items-center gap-2">
-          <Receipt className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
+          <Receipt className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
           <span className="text-sm font-medium text-foreground">
             {t.kitchen.ledger.myPurchases}
           </span>
           {hasFetched && (
-            <span className="text-xs tabular-nums text-zinc-500">
+            <span className="text-xs tabular-nums text-muted-foreground">
               {checkoutsList.length}
             </span>
           )}
         </div>
 
         {isExpanded ? (
-          <ChevronUp className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
+          <ChevronUp className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
         ) : (
-          <ChevronDown className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
+          <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
         )}
       </button>
 
@@ -163,9 +163,9 @@ export function MyPurchasesSection({
               <Skeleton className="h-12 w-full rounded-lg" />
             </div>
           ) : checkoutsList.length === 0 ? (
-            <p className="text-xs text-zinc-500 py-3 text-center">{t.kitchen.ledger.nothingCheckedOut}</p>
+            <p className="text-xs text-muted-foreground py-3 text-center">{t.kitchen.ledger.nothingCheckedOut}</p>
           ) : (
-            <div className="divide-y divide-white/[0.06]">
+            <div className="divide-y divide-border">
               {checkoutsList.map((checkout) => {
                 const itemNames = checkout.items.map((i) => i.name).join(", ");
                 const isDeclined = checkout.is_declined;
@@ -176,19 +176,19 @@ export function MyPurchasesSection({
                     key={checkout.id}
                     className={cn(
                       "py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 transition-opacity",
-                      isDeclined && "opacity-55 text-zinc-500"
+                      isDeclined && "opacity-55 text-muted-foreground"
                     )}
                   >
                     <div className="min-w-0 flex-1">
                       <p
                         className={cn(
                           "font-medium text-sm truncate",
-                          isDeclined ? "text-zinc-400 line-through" : "text-foreground"
+                          isDeclined ? "text-muted-foreground line-through" : "text-foreground"
                         )}
                       >
                         {itemNames || checkout.store_name || t.kitchen.ledger.myPurchases}
                       </p>
-                      <p className="text-xs text-zinc-500 truncate tabular-nums">
+                      <p className="text-xs text-muted-foreground truncate tabular-nums">
                         {new Date(checkout.created_at).toLocaleDateString(dateLocale, {
                           month: "short",
                           day: "numeric",
@@ -197,7 +197,7 @@ export function MyPurchasesSection({
                         {checkout.store_name && itemNames && <span> · {checkout.store_name}</span>}
                       </p>
                       {checkout.note && (
-                        <p className="text-xs text-zinc-400 truncate">&ldquo;{checkout.note}&rdquo;</p>
+                        <p className="text-xs text-muted-foreground truncate">&ldquo;{checkout.note}&rdquo;</p>
                       )}
                       {isDeclined && checkout.decline_reason && (
                         <p className="text-[11px] text-rose-300/80 truncate mt-0.5" title={checkout.decline_reason}>
@@ -213,7 +213,7 @@ export function MyPurchasesSection({
                       <span
                         className={cn(
                           "text-sm font-semibold tabular-nums whitespace-nowrap",
-                          isDeclined ? "text-zinc-500 line-through" : "text-foreground"
+                          isDeclined ? "text-muted-foreground line-through" : "text-foreground"
                         )}
                       >
                         {formatCurrency(checkout.total_claimed_amount, checkout.currency)}
@@ -225,20 +225,20 @@ export function MyPurchasesSection({
                           onClick={() => setSelectedCheckout(checkout)}
                           aria-label={t.kitchen.ledger.viewReceipt}
                           title={t.kitchen.ledger.viewReceipt}
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-zinc-500 hover:text-foreground hover:bg-white/[0.06] transition-colors cursor-pointer"
+                          className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
                         >
                           <Receipt className="w-3.5 h-3.5" />
                         </button>
                       ) : checkout.totalReceiptsEverAttached > 0 ? (
                         <div
-                          className="inline-flex items-center justify-center h-8 w-8 text-zinc-600"
+                          className="inline-flex items-center justify-center h-8 w-8 text-muted-foreground"
                           title={t.kitchen.ledger.receiptDeleted}
                         >
                           <Receipt className="w-3.5 h-3.5 line-through opacity-50" />
                         </div>
                       ) : (
                         <div
-                          className="inline-flex items-center justify-center h-8 w-8 text-zinc-700"
+                          className="inline-flex items-center justify-center h-8 w-8 text-muted-foreground"
                           title={t.kitchen.ledger.noReceipt}
                         >
                           <Receipt className="w-3.5 h-3.5 opacity-40" />
@@ -252,7 +252,7 @@ export function MyPurchasesSection({
                         </div>
                       ) : isRefunded ? (
                         <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shrink-0" />
                             {t.kitchen.ledger.settled || "Ausgeglichen"}
                           </span>
@@ -261,7 +261,7 @@ export function MyPurchasesSection({
                           )}
                         </div>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                           {t.kitchen.ledger.pending || "Offen"}
                         </span>
@@ -277,7 +277,7 @@ export function MyPurchasesSection({
 
       {/* Receipt viewer / delete modal */}
       <Dialog open={!!selectedCheckout} onOpenChange={(open) => !open && setSelectedCheckout(null)}>
-        <DialogContent className="sm:max-w-2xl max-h-[92vh] overflow-y-auto bg-card border border-white/[0.08] p-5 sm:p-6 text-card-foreground rounded-xl shadow-2xl flex flex-col gap-4">
+        <DialogContent className="sm:max-w-2xl max-h-[92vh] overflow-y-auto bg-card border border-border p-5 sm:p-6 text-card-foreground rounded-xl shadow-2xl flex flex-col gap-4">
           {selectedCheckout && (
             <>
               <DialogHeader className="space-y-1 text-left">
@@ -312,13 +312,13 @@ export function MyPurchasesSection({
 
               <div className="space-y-3">
                 {selectedCheckout.receipts.map((r) => (
-                  <div key={r.id} className="relative rounded-xl overflow-hidden border border-white/[0.06] bg-zinc-900/40 p-2 sm:p-3 flex items-center justify-center min-h-[220px]">
+                  <div key={r.id} className="relative rounded-xl overflow-hidden border border-border bg-muted/40 p-2 sm:p-3 flex items-center justify-center min-h-[220px]">
                     <button
                       type="button"
                       onClick={() => handleDeleteReceipt(r.id)}
                       disabled={deletingReceiptId === r.id}
                       aria-label={t.kitchen.ledger.deleteReceipt}
-                      className="absolute top-2 right-2 z-10 p-1.5 rounded-lg bg-card/90 border border-white/[0.08] text-zinc-500 hover:text-destructive hover:border-destructive/40 transition shadow-sm cursor-pointer disabled:opacity-50"
+                      className="absolute top-2 right-2 z-10 p-1.5 rounded-lg bg-card/90 border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40 transition shadow-sm cursor-pointer disabled:opacity-50"
                     >
                       {deletingReceiptId === r.id ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -329,13 +329,13 @@ export function MyPurchasesSection({
                     <img
                       src={r.receipt_filename}
                       alt={`Receipt for ${selectedCheckout.store_name || "your purchase"}`}
-                      className="max-h-[75vh] w-auto max-w-full object-contain rounded-md border border-white/[0.06]"
+                      className="max-h-[75vh] w-auto max-w-full object-contain rounded-md border border-border"
                     />
                   </div>
                 ))}
               </div>
 
-              <DialogFooter className="pt-3 border-t border-white/[0.06]">
+              <DialogFooter className="pt-3 border-t border-border">
                 <Button
                   type="button"
                   variant="outline"

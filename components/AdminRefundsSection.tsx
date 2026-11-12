@@ -43,7 +43,7 @@ export function AdminRefundsSkeleton() {
   return (
     <div className="space-y-3">
       <Skeleton className="h-9 w-64 rounded-lg" />
-      <div className="rounded-xl border border-white/[0.06] bg-zinc-900/40 divide-y divide-white/[0.06]">
+      <div className="rounded-xl border border-border bg-muted/40 divide-y divide-border">
         <Skeleton className="h-[68px] w-full rounded-none" />
         <Skeleton className="h-[68px] w-full rounded-none" />
         <Skeleton className="h-[68px] w-full rounded-none" />
@@ -268,7 +268,7 @@ export function AdminRefundsSection({
     <div className="space-y-4">
       {/* Segmented status filter */}
       <div className="flex items-center justify-between gap-3">
-        <div className="inline-flex items-center bg-zinc-900/80 p-1 rounded-lg border border-white/[0.06]">
+        <div className="inline-flex items-center bg-muted p-1 rounded-lg border border-border">
           {filters.map((filter) => {
             const isActive = filterStatus === filter.key;
             return (
@@ -279,12 +279,12 @@ export function AdminRefundsSection({
                 className={cn(
                   "inline-flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium transition-colors cursor-pointer",
                   isActive
-                    ? "bg-zinc-800 text-white shadow-xs"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    ? "bg-background text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <span>{filter.label}</span>
-                <span className={cn("text-[11px] tabular-nums", isActive ? "text-zinc-400" : "text-zinc-600")}>
+                <span className={cn("text-[11px] tabular-nums", isActive ? "text-muted-foreground" : "text-muted-foreground")}>
                   {filter.count}
                 </span>
               </button>
@@ -296,12 +296,12 @@ export function AdminRefundsSection({
       {/* Checkouts feed */}
       {displayedCheckouts.length === 0 ? (
         <div className="py-14 text-center space-y-2">
-          <Receipt className="w-5 h-5 mx-auto text-zinc-600" />
-          <p className="text-sm font-medium text-zinc-300">{emptyStateTitle}</p>
-          <p className="text-xs text-zinc-500 max-w-sm mx-auto">{emptyStateDescription}</p>
+          <Receipt className="w-5 h-5 mx-auto text-muted-foreground" />
+          <p className="text-sm font-medium text-foreground">{emptyStateTitle}</p>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">{emptyStateDescription}</p>
         </div>
       ) : (
-        <div className="rounded-xl border border-white/[0.06] bg-zinc-900/40 divide-y divide-white/[0.06]">
+        <div className="rounded-xl border border-border bg-muted/40 divide-y divide-border">
           {displayedCheckouts.map((checkout) => {
             const memberInfo = getMemberInfo(checkout.user_id, checkout.username);
             const isSettling = isPending && settlingId === checkout.id;
@@ -310,13 +310,13 @@ export function AdminRefundsSection({
             return (
               <div
                 key={checkout.id}
-                className="px-4 py-3.5 transition-colors hover:bg-white/[0.02]"
+                className="px-4 py-3.5 transition-colors hover:bg-muted/60"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                   {/* Left: identity + context */}
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <Avatar className="h-8 w-8 shrink-0">
-                      <AvatarFallback className="bg-zinc-800 text-[11px] font-semibold text-zinc-300">
+                      <AvatarFallback className="bg-secondary text-[11px] font-semibold text-foreground">
                         {memberInfo.initial}
                       </AvatarFallback>
                     </Avatar>
@@ -326,12 +326,12 @@ export function AdminRefundsSection({
                         <span className="font-medium text-sm text-foreground truncate">
                           {memberInfo.displayName}
                         </span>
-                        <span className="text-[11px] text-zinc-500 truncate">
+                        <span className="text-[11px] text-muted-foreground truncate">
                           {memberInfo.username}
                         </span>
                       </div>
 
-                      <p className="text-xs text-zinc-500 truncate tabular-nums">
+                      <p className="text-xs text-muted-foreground truncate tabular-nums">
                         {new Date(checkout.created_at).toLocaleDateString(dateLocale, {
                           month: "short",
                           day: "numeric",
@@ -341,7 +341,7 @@ export function AdminRefundsSection({
                       </p>
 
                       {checkout.note && (
-                        <p className="text-xs text-zinc-400 truncate">
+                        <p className="text-xs text-muted-foreground truncate">
                           &ldquo;{checkout.note}&rdquo;
                         </p>
                       )}
@@ -360,20 +360,20 @@ export function AdminRefundsSection({
                         onClick={() => setSelectedCheckout(checkout)}
                         aria-label={t.kitchen.ledger.viewReceipt}
                         title={t.kitchen.ledger.viewReceipt}
-                        className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-zinc-500 hover:text-foreground hover:bg-white/[0.06] transition-colors cursor-pointer"
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
                       >
                         <Receipt className="w-3.5 h-3.5" />
                       </button>
                     ) : checkout.totalReceiptsEverAttached > 0 ? (
                       <div
-                        className="inline-flex items-center justify-center h-8 w-8 text-zinc-600"
+                        className="inline-flex items-center justify-center h-8 w-8 text-muted-foreground"
                         title={t.kitchen.ledger.receiptDeleted}
                       >
                         <Receipt className="w-3.5 h-3.5 line-through opacity-50" />
                       </div>
                     ) : (
                       <div
-                        className="inline-flex items-center justify-center h-8 w-8 text-zinc-700"
+                        className="inline-flex items-center justify-center h-8 w-8 text-muted-foreground"
                         title={t.kitchen.ledger.noReceipt}
                       >
                         <Receipt className="w-3.5 h-3.5 opacity-40" />
@@ -394,7 +394,7 @@ export function AdminRefundsSection({
                       </div>
                     ) : checkout.is_refunded ? (
                       <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shrink-0" />
                           {t.kitchen.ledger.settled}
                         </span>
@@ -404,7 +404,7 @@ export function AdminRefundsSection({
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 flex-wrap justify-end">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                           {t.kitchen.ledger.pending}
                         </span>
@@ -437,7 +437,7 @@ export function AdminRefundsSection({
                             }
                           }}
                           disabled={isPending}
-                          className="h-8 px-3 rounded-lg text-xs font-medium text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 border border-white/[0.08] hover:border-rose-500/25 transition-colors cursor-pointer"
+                          className="h-8 px-3 rounded-lg text-xs font-medium text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 border border-border hover:border-rose-500/25 transition-colors cursor-pointer"
                           title={t.kitchen.ledger.declineAction || "Ablehnen"}
                         >
                           <span>{t.kitchen.ledger.declineAction || "Ablehnen"}</span>
@@ -449,12 +449,12 @@ export function AdminRefundsSection({
 
                 {/* Inline decline confirmation bar as a clean full-width sub-row */}
                 {activeDeclineCheckoutId === checkout.id && (
-                  <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center gap-2 animate-in fade-in-50 duration-150">
+                  <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 animate-in fade-in-50 duration-150">
                     <Input
                       value={decliningReason}
                       onChange={(e) => setDecliningReason(e.target.value)}
                       placeholder={t.kitchen.ledger.declineReasonPlaceholder || "Optionaler Grund (z. B. Ungültiger Beleg)"}
-                      className="h-8 text-xs bg-zinc-900/90 border-white/[0.1] text-foreground placeholder:text-zinc-500 flex-1 min-w-0"
+                      className="h-8 text-xs bg-muted border-border text-foreground placeholder:text-muted-foreground flex-1 min-w-0"
                       autoFocus
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
@@ -483,7 +483,7 @@ export function AdminRefundsSection({
                       size="sm"
                       onClick={() => setActiveDeclineCheckoutId(null)}
                       disabled={isPending && decliningId === checkout.id}
-                      className="h-8 px-2.5 text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer shrink-0"
+                      className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer shrink-0"
                     >
                       {t.kitchen.ledger.cancelDecline || "Abbrechen"}
                     </Button>
@@ -497,7 +497,7 @@ export function AdminRefundsSection({
 
       {/* Full resolution receipt preview */}
       <Dialog open={!!selectedCheckout} onOpenChange={(open) => !open && setSelectedCheckout(null)}>
-        <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[92vh] overflow-y-auto bg-card border border-white/[0.08] p-5 sm:p-6 text-card-foreground rounded-xl shadow-2xl flex flex-col gap-4">
+        <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[92vh] overflow-y-auto bg-card border border-border p-5 sm:p-6 text-card-foreground rounded-xl shadow-2xl flex flex-col gap-4">
           {selectedCheckout && (
             <>
               <DialogHeader className="space-y-2 text-left">
@@ -508,7 +508,7 @@ export function AdminRefundsSection({
                       {selectedCheckout.store_name || "Supermarket Receipt"}
                     </DialogTitle>
                   </div>
-                  <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 shrink-0">
+                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
                     <span
                       className={cn(
                         "w-1.5 h-1.5 rounded-full",
@@ -553,8 +553,8 @@ export function AdminRefundsSection({
 
               <div className="space-y-4">
                 {selectedCheckout.note && (
-                  <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] space-y-1">
-                    <span className="text-[11px] font-medium text-zinc-500 flex items-center gap-1.5">
+                  <div className="p-3 rounded-lg bg-muted border border-border space-y-1">
+                    <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
                       <MessageSquare className="w-3.5 h-3.5" />
                       <span>{t.kitchen.ledger.noteToAdmin}</span>
                     </span>
@@ -565,13 +565,13 @@ export function AdminRefundsSection({
                 {selectedCheckout.receipts.length > 0 ? (
                   <div className="space-y-3">
                     {selectedCheckout.receipts.map((r) => (
-                      <div key={r.id} className="relative rounded-xl overflow-hidden border border-white/[0.06] bg-zinc-900/40 p-2 sm:p-3 flex items-center justify-center min-h-[220px]">
+                      <div key={r.id} className="relative rounded-xl overflow-hidden border border-border bg-muted/40 p-2 sm:p-3 flex items-center justify-center min-h-[220px]">
                         <button
                           type="button"
                           onClick={() => handleDeleteReceipt(r.id)}
                           disabled={deletingReceiptId === r.id}
                           aria-label={t.kitchen.ledger.deleteReceipt}
-                          className="absolute top-2 right-2 z-10 p-1.5 rounded-lg bg-card/90 border border-white/[0.08] text-zinc-500 hover:text-destructive hover:border-destructive/40 transition shadow-sm cursor-pointer disabled:opacity-50"
+                          className="absolute top-2 right-2 z-10 p-1.5 rounded-lg bg-card/90 border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40 transition shadow-sm cursor-pointer disabled:opacity-50"
                         >
                           {deletingReceiptId === r.id ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -582,27 +582,27 @@ export function AdminRefundsSection({
                         <img
                           src={r.receipt_filename}
                           alt={`Receipt for ${selectedCheckout.store_name || "household purchase"}`}
-                          className="max-h-[75vh] w-auto max-w-full object-contain rounded-md border border-white/[0.06]"
+                          className="max-h-[75vh] w-auto max-w-full object-contain rounded-md border border-border"
                         />
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="p-6 rounded-xl border border-dashed border-white/[0.08] bg-white/[0.01] text-center space-y-1.5">
-                    <Receipt className="w-4 h-4 mx-auto text-zinc-600" />
+                  <div className="p-6 rounded-xl border border-dashed border-border bg-muted text-center space-y-1.5">
+                    <Receipt className="w-4 h-4 mx-auto text-muted-foreground" />
                     <p className="text-xs font-medium text-foreground">{t.kitchen.ledger.noReceiptAttached}</p>
                     <p className="text-[11px] text-muted-foreground">{t.kitchen.ledger.noReceiptAttachedDesc}</p>
                   </div>
                 )}
 
                 {selectedCheckout.items.length > 0 && (
-                  <div className="space-y-2 p-3.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+                  <div className="space-y-2 p-3.5 rounded-lg bg-muted border border-border">
                     <div className="flex items-center justify-between text-xs font-medium text-foreground">
                       <span className="flex items-center gap-1.5">
-                        <Package className="w-3.5 h-3.5 text-zinc-500" />
+                        <Package className="w-3.5 h-3.5 text-muted-foreground" />
                         <span>{t.kitchen.ledger.claimedItems.replace("{count}", String(selectedCheckout.items.length))}</span>
                       </span>
-                      <span className="tabular-nums text-zinc-500">
+                      <span className="tabular-nums text-muted-foreground">
                         {formatCurrency(selectedCheckout.total_claimed_amount || 0, selectedCheckout.currency)}
                       </span>
                     </div>
@@ -611,11 +611,11 @@ export function AdminRefundsSection({
                       {selectedCheckout.items.map((item) => (
                         <span
                           key={item.id}
-                          className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md bg-zinc-900/60 border border-white/[0.06] text-zinc-300"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md bg-muted/60 border border-border text-foreground"
                         >
                           <span>{item.name}</span>
                           {item.item_price != null && (
-                            <span className="tabular-nums text-[10px] text-zinc-500">
+                            <span className="tabular-nums text-[10px] text-muted-foreground">
                               ({formatCurrency(item.item_price, item.currency || selectedCheckout.currency)})
                             </span>
                           )}
@@ -658,7 +658,7 @@ export function AdminRefundsSection({
                 )}
               </div>
 
-              <DialogFooter className="pt-3 border-t border-white/[0.06] flex flex-col sm:flex-row gap-2 justify-end">
+              <DialogFooter className="pt-3 border-t border-border flex flex-col sm:flex-row gap-2 justify-end">
                 <Button
                   type="button"
                   variant="outline"

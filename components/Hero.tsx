@@ -84,11 +84,11 @@ export function Hero({ sessionUser }: HeroProps) {
       </div>
 
       {/* Understated inline metadata line */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500 pt-1">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground pt-1">
         <span>{t.landing.badges.emailFree}</span>
-        <span className="text-zinc-700">·</span>
+        <span className="text-muted-foreground">·</span>
         <span>{t.landing.badges.selfHostable}</span>
-        <span className="text-zinc-700">·</span>
+        <span className="text-muted-foreground">·</span>
         <span>{t.landing.badges.aiVision}</span>
       </div>
     </div>
