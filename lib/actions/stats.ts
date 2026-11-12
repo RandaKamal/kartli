@@ -561,7 +561,6 @@ export async function getKitchenStats(
       WHERE c.kitchen_id = $1
         AND c.created_at >= mb.cur_start
         AND c.created_at < mb.cur_end
-        AND c.is_declined = FALSE
     )
     SELECT 
       s.current_month_spend,

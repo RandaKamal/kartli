@@ -41,7 +41,7 @@ import {
   type KitchenPulseStats,
   type MonthCheckoutItem,
 } from "@/lib/actions/stats";
-import type { PantryItem, CheckoutWithDetails } from "@/types";
+import type { PantryItem } from "@/types";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
 
@@ -54,7 +54,6 @@ export interface SpacePulseModalProps {
   isAdmin?: boolean;
   initialStats?: KitchenPulseStats | any;
   pantryItems?: PantryItem[] | any[];
-  myCheckouts?: CheckoutWithDetails[] | any[];
   onStartShoppingRun?: () => void;
 }
 
@@ -188,7 +187,6 @@ export function SpacePulseModal({
   isAdmin = false,
   initialStats,
   pantryItems,
-  myCheckouts,
   onStartShoppingRun,
 }: SpacePulseModalProps) {
   const { t, locale } = useTranslation();
@@ -206,6 +204,7 @@ export function SpacePulseModal({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [activeTab, setActiveTab] = useState<"spending" | "pantry" | "activity">("spending");
+  const [feedScope, setFeedScope] = useState<"all" | "mine">("all");
   const [, startTransition] = useTransition();
 
   // Sync initialStats when prop updates
@@ -348,7 +347,17 @@ export function SpacePulseModal({
 
   // Depleted essentials count
   const depletedCount = stats?.pantryStockRatio?.outOfStock ?? 0;
-  const feedCheckoutsCount = stats?.monthCheckouts?.length ?? 0;
+
+  // Feed rows: members only ever receive their own checkouts from the server;
+  // admins can switch between the household feed and their own purchases.
+  const feedCheckouts = useMemo(() => {
+    const list = stats?.monthCheckouts || [];
+    if (!isAdmin || feedScope === "mine") {
+      return list.filter((c) => c.user_id === currentUserId);
+    }
+    return list;
+  }, [stats, isAdmin, feedScope, currentUserId]);
+  const feedCheckoutsCount = feedCheckouts.length;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -954,127 +963,176 @@ export function SpacePulseModal({
               {/* SUB-TAB 3: Einkaufs-Feed */}
               {activeTab === "activity" && (
                 <div className="space-y-3 animate-in fade-in-50 duration-200">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-xs font-medium text-muted-foreground">
                       {isAdmin ? t.pulse.recentRestocks : t.pulse.myPurchasesFeed}
                     </span>
-                    <span className="text-[11px] text-muted-foreground tabular-nums">
-                      {t.pulse.logsCount.replace(
-                        "{count}",
-                        String(stats.monthCheckouts?.length || 0)
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {isAdmin && (
+                        <div className="inline-flex items-center rounded-lg border border-border bg-muted p-0.5">
+                          <button
+                            type="button"
+                            onClick={() => setFeedScope("all")}
+                            aria-pressed={feedScope === "all"}
+                            className={cn(
+                              "h-6 px-2 rounded-md text-[11px] font-medium transition-colors cursor-pointer",
+                              feedScope === "all"
+                                ? "bg-background text-foreground shadow-xs"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            {t.pulse.feedFilterAll}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFeedScope("mine")}
+                            aria-pressed={feedScope === "mine"}
+                            className={cn(
+                              "h-6 px-2 rounded-md text-[11px] font-medium transition-colors cursor-pointer",
+                              feedScope === "mine"
+                                ? "bg-background text-foreground shadow-xs"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            {t.pulse.feedFilterMine}
+                          </button>
+                        </div>
                       )}
-                    </span>
+
+                      <span className="text-[11px] text-muted-foreground tabular-nums">
+                        {t.pulse.logsCount.replace("{count}", String(feedCheckoutsCount))}
+                      </span>
+                    </div>
                   </div>
 
                   {/* List / Feed */}
-                  {(() => {
-                    const validCheckouts = (stats?.monthCheckouts || []).filter((c) => !c.is_declined);
-                    if (validCheckouts.length === 0) {
-                      return (
-                        <div className="py-12 text-center space-y-2">
-                          <Receipt className="w-5 h-5 mx-auto text-muted-foreground" />
-                          <p className="text-sm font-medium text-foreground">
-                            {t.pulse.noRecentRestocks}
-                          </p>
-                          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                            {t.pulse.noRecentRestocksDesc}
-                          </p>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div className="rounded-xl border border-border bg-muted/40 divide-y divide-border">
-                        {validCheckouts.map((checkout) => {
-                          const itemsCount = checkout.items?.length || 0;
-                          const receiptFilename =
-                            checkout.receipt_filename ||
-                            (checkout.receipts && checkout.receipts.length > 0
-                              ? checkout.receipts[0].receipt_filename
-                              : null);
-                          const receiptUrl = receiptFilename
-                            ? receiptFilename.startsWith("/")
-                              ? receiptFilename
-                              : `/uploads/receipts/${receiptFilename}`
-                            : null;
-                          const storeName =
-                            checkout.store_name === "Sonstige"
-                              ? t.pulse.otherStore
-                              : checkout.store_name;
-                          const itemNames = checkout.items
-                            .slice(0, 6)
-                            .map((item) => item.name)
-                            .join(", ");
+                  {feedCheckouts.length === 0 ? (
+                    <div className="py-12 text-center space-y-2">
+                      <Receipt className="w-5 h-5 mx-auto text-muted-foreground" />
+                      <p className="text-sm font-medium text-foreground">
+                        {t.pulse.noRecentRestocks}
+                      </p>
+                      <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                        {t.pulse.noRecentRestocksDesc}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-border bg-muted/40 divide-y divide-border">
+                      {feedCheckouts.map((checkout) => {
+                        const itemsCount = checkout.items?.length || 0;
+                        const receiptFilename =
+                          checkout.receipt_filename ||
+                          (checkout.receipts && checkout.receipts.length > 0
+                            ? checkout.receipts[0].receipt_filename
+                            : null);
+                        const receiptUrl = receiptFilename
+                          ? receiptFilename.startsWith("/")
+                            ? receiptFilename
+                            : `/uploads/receipts/${receiptFilename}`
+                          : null;
+                        const storeName =
+                          checkout.store_name === "Sonstige"
+                            ? t.pulse.otherStore
+                            : checkout.store_name;
+                        const itemNames = checkout.items
+                          .slice(0, 6)
+                          .map((item) => item.name)
+                          .join(", ");
 
-                          return (
-                            <div key={checkout.id} className="px-4 py-3.5 space-y-1">
-                              <div className="flex items-center justify-between gap-3">
-                                <span className="text-sm font-medium text-foreground truncate">
-                                  {storeName || t.pulse.generalRestock}
-                                </span>
-                                <span className="text-sm font-semibold text-foreground tabular-nums shrink-0">
-                                  {formatCurrency(
-                                    checkout.total_claimed_amount,
-                                    checkout.currency || currency
-                                  )}
-                                </span>
-                              </div>
+                        const statusLabel = checkout.is_declined
+                          ? t.pulse.declined
+                          : checkout.is_refunded
+                            ? t.pulse.settled
+                            : t.pulse.pending;
+                        const statusClasses = checkout.is_declined
+                          ? "border-destructive/25 bg-destructive/10 text-destructive"
+                          : checkout.is_refunded
+                            ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                            : "border-amber-500/25 bg-amber-500/10 text-amber-600 dark:text-amber-400";
+                        const dotClasses = checkout.is_declined
+                          ? "bg-destructive"
+                          : checkout.is_refunded
+                            ? "bg-emerald-500"
+                            : "bg-amber-500";
 
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-1.5 min-w-0 text-xs text-muted-foreground">
-                                  <span className="truncate">{checkout.paid_by_name}</span>
-                                  <span className="text-muted-foreground">·</span>
-                                  <span className="tabular-nums shrink-0">
-                                    {formatShortDate(checkout.created_at, locale)}
-                                  </span>
-                                  <span className="text-muted-foreground">·</span>
-                                  <span className="inline-flex items-center gap-1.5 shrink-0">
-                                    <span
-                                      className={cn(
-                                        "w-1.5 h-1.5 rounded-full",
-                                        checkout.is_refunded ? "bg-emerald-500/80" : "bg-amber-500"
-                                      )}
-                                    />
-                                    {checkout.is_refunded ? t.pulse.settled : t.pulse.pending}
-                                  </span>
-                                </div>
-
-                                {receiptUrl && (
-                                  <a
-                                    href={receiptUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    aria-label={t.pulse.receiptAttached}
-                                    title={t.pulse.receiptAttached}
-                                    className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0"
-                                  >
-                                    <Receipt className="w-3.5 h-3.5" />
-                                  </a>
+                        return (
+                          <div key={checkout.id} className="px-4 py-3.5 space-y-1">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-sm font-medium text-foreground truncate">
+                                {storeName || t.pulse.generalRestock}
+                              </span>
+                              <span className="text-sm font-semibold text-foreground tabular-nums shrink-0">
+                                {formatCurrency(
+                                  checkout.total_claimed_amount,
+                                  checkout.currency || currency
                                 )}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-1.5 min-w-0 text-xs text-muted-foreground">
+                                <span className="truncate">{checkout.paid_by_name}</span>
+                                <span className="text-muted-foreground">·</span>
+                                <span className="tabular-nums shrink-0">
+                                  {formatShortDate(checkout.created_at, locale)}
+                                </span>
+                                <span
+                                  className={cn(
+                                    "inline-flex items-center gap-1.5 shrink-0 rounded-md border px-1.5 py-0.5 text-[10px] font-medium",
+                                    statusClasses
+                                  )}
+                                >
+                                  <span className={cn("w-1.5 h-1.5 rounded-full", dotClasses)} />
+                                  {statusLabel}
+                                </span>
                               </div>
 
-                              {itemsCount > 0 && (
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {itemNames}
-                                  {itemsCount > 6 && (
-                                    <span>
-                                      {" "}
-                                      {t.pulse.moreItems.replace("{count}", String(itemsCount - 6))}
-                                    </span>
-                                  )}
-                                </p>
-                              )}
-
-                              {checkout.note && (
-                                <p className="text-xs text-muted-foreground truncate">
-                                  &ldquo;{checkout.note}&rdquo;
-                                </p>
+                              {receiptUrl && (
+                                <a
+                                  href={receiptUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  aria-label={t.pulse.receiptAttached}
+                                  title={t.pulse.receiptAttached}
+                                  className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0"
+                                >
+                                  <Receipt className="w-3.5 h-3.5" />
+                                </a>
                               )}
                             </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
+
+                            {checkout.is_declined && checkout.decline_reason && (
+                              <p className="text-xs text-destructive/90 truncate">
+                                {t.pulse.declineReason.replace(
+                                  "{reason}",
+                                  checkout.decline_reason
+                                )}
+                              </p>
+                            )}
+
+                            {itemsCount > 0 && (
+                              <p className="text-xs text-muted-foreground truncate">
+                                {itemNames}
+                                {itemsCount > 6 && (
+                                  <span>
+                                    {" "}
+                                    {t.pulse.moreItems.replace("{count}", String(itemsCount - 6))}
+                                  </span>
+                                )}
+                              </p>
+                            )}
+
+                            {checkout.note && (
+                              <p className="text-xs text-muted-foreground truncate">
+                                &ldquo;{checkout.note}&rdquo;
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </>

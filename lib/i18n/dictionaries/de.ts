@@ -409,6 +409,8 @@ export const de: typeof en = {
     // Tab 3: Restock Feed
     recentRestocks: "Einkaufs-Feed",
     myPurchasesFeed: "Meine Einkäufe",
+    feedFilterAll: "Alle",
+    feedFilterMine: "Meine",
     logsCount: "{count} Einträge",
     noRecentRestocks: "Keine aktuellen Einkäufe erfasst",
     noRecentRestocksDesc:
@@ -419,6 +421,8 @@ export const de: typeof en = {
     receiptAttached: "Beleg angehängt",
     settled: "Ausgeglichen",
     pending: "Ausstehend",
+    declined: "Abgelehnt",
+    declineReason: "Grund: {reason}",
     paidBy: "Bezahlt von {name}",
 
     // CSV Export

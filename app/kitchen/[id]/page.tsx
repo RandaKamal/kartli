@@ -9,7 +9,6 @@ import {
 import {
   getPantryItems,
   getShoppingListItems,
-  getUserCheckouts,
   getKitchenCheckoutCounts,
 } from "@/lib/pantry";
 import { getUserHasCompletedTour } from "@/lib/auth-service";
@@ -45,7 +44,6 @@ export default async function KitchenPage({
     initialPulseStats,
     members,
     hasCompletedTour,
-    myCheckouts,
     checkoutCounts,
   ] = await Promise.all([
     getUserMembership(id, session.user.id),
@@ -57,7 +55,6 @@ export default async function KitchenPage({
       : Promise.resolve(undefined),
     getKitchenMembersWithUsers(id),
     getUserHasCompletedTour(session.user.id),
-    getUserCheckouts(id, session.user.id).catch(() => []),
     getKitchenCheckoutCounts(id).catch(() => ({ pending: 0, total: 0 })),
   ]);
 
@@ -89,7 +86,6 @@ export default async function KitchenPage({
       userPreferredCurrency={preferredCurrency}
       baseUrl={baseUrl}
       initialTab={initialTab}
-      myCheckouts={myCheckouts}
       pendingKitchenCheckoutsCount={checkoutCounts.pending}
       totalKitchenCheckoutsCount={checkoutCounts.total}
     />

@@ -9,7 +9,6 @@ import type {
   KitchenMemberWithUser,
   PantryItem,
   ShoppingListItem,
-  CheckoutWithDetails,
   KitchenSpaceType,
 } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
@@ -79,7 +78,6 @@ export interface KitchenSpaceViewProps {
   initialPulseStats?: any;
   preferredCurrency?: string;
   userPreferredCurrency?: string;
-  myCheckouts?: CheckoutWithDetails[];
   /** Kitchen-wide pending checkouts (not settled, not declined). */
   pendingKitchenCheckoutsCount?: number;
   /** Kitchen-wide checkout history size, excluding declined checkouts. */
@@ -126,7 +124,6 @@ export function KitchenSpaceView({
   defaultTab = "kitchen",
   initialTab,
   initialPulseStats,
-  myCheckouts = [],
   pendingKitchenCheckoutsCount = 0,
   totalKitchenCheckoutsCount = 0,
 }: KitchenSpaceViewProps) {
@@ -162,7 +159,6 @@ export function KitchenSpaceView({
   const [localPantryItems, setLocalPantryItems] = useState<PantryItem[]>(initialPantryItems);
   const [localShoppingListItems, setLocalShoppingListItems] = useState<ShoppingListItem[]>(initialShoppingListItems);
   const [localMembers, setLocalMembers] = useState<KitchenMemberWithUser[]>(initialMembers);
-  const [localMyCheckouts, setLocalMyCheckouts] = useState<CheckoutWithDetails[]>(myCheckouts);
   const [localPendingKitchenCount, setLocalPendingKitchenCount] = useState(
     pendingKitchenCheckoutsCount
   );
@@ -182,10 +178,6 @@ export function KitchenSpaceView({
   useEffect(() => {
     setLocalMembers(initialMembers);
   }, [initialMembers]);
-
-  useEffect(() => {
-    setLocalMyCheckouts(myCheckouts);
-  }, [myCheckouts]);
 
   useEffect(() => {
     setLocalPendingKitchenCount(pendingKitchenCheckoutsCount);
@@ -220,13 +212,6 @@ export function KitchenSpaceView({
   const activeCartCount = localShoppingListItems.filter(
     (i) => (i.is_in_cart || i.is_purchased || i.is_guest_staged) && !i.checkout_id
   ).length;
-
-  const myPendingPurchases = localMyCheckouts.filter(
-    (c) => !c.is_refunded && !c.is_declined
-  ).length;
-  const myPurchaseHistoryCount = localMyCheckouts.filter((c) => !c.is_declined).length;
-  const ledgerPendingCount = isAdmin ? localPendingKitchenCount : myPendingPurchases;
-  const ledgerHistoryCount = isAdmin ? localTotalKitchenCount : myPurchaseHistoryCount;
 
   const origin = typeof window !== "undefined" ? window.location.origin : baseUrl;
   const publicGuestUrl = origin
@@ -629,53 +614,49 @@ export function KitchenSpaceView({
               }
             />
 
-            {/* BALANCES & REFUNDS BANNER */}
-            <footer>
-              <div className="w-full rounded-xl border border-border/70 bg-card p-4 flex items-center justify-between gap-4 mt-6 shadow-xs">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className={cn(
-                      "h-8 w-8 rounded-lg border flex items-center justify-center shrink-0",
-                      ledgerPendingCount > 0
-                        ? "bg-amber-500/10 border-amber-500/20 text-amber-500"
-                        : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
-                    )}
-                  >
-                    {ledgerPendingCount > 0 ? (
-                      <Receipt className="w-4 h-4" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4" />
-                    )}
+            {/* ADMIN-ONLY SETTLEMENTS BANNER */}
+            {isAdmin && (
+              <footer>
+                <div className="w-full rounded-xl border border-border/70 bg-card p-4 flex items-center justify-between gap-4 mt-6 shadow-xs">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className={cn(
+                        "h-8 w-8 rounded-lg border flex items-center justify-center shrink-0",
+                        localPendingKitchenCount > 0
+                          ? "bg-amber-500/10 border-amber-500/20 text-amber-500"
+                          : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                      )}
+                    >
+                      {localPendingKitchenCount > 0 ? (
+                        <Receipt className="w-4 h-4" />
+                      ) : (
+                        <CheckCircle2 className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground leading-snug">
+                        {localPendingKitchenCount > 0
+                          ? `${localPendingKitchenCount} ${localPendingKitchenCount === 1 ? t.kitchen.ledger.pendingExpenseSingular : t.kitchen.ledger.pendingExpenses}`
+                          : t.kitchen.ledger.balancesUpToDate}
+                      </p>
+                      <p className="text-xs text-muted-foreground font-normal leading-snug">
+                        {localPendingKitchenCount > 0
+                          ? `${localTotalKitchenCount} ${t.kitchen.ledger.loggedReceipts}`
+                          : t.kitchen.ledger.balancesUpToDateDesc}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground leading-snug">
-                      {ledgerPendingCount > 0
-                        ? isAdmin
-                          ? `${ledgerPendingCount} ${ledgerPendingCount === 1 ? t.kitchen.ledger.pendingExpenseSingular : t.kitchen.ledger.pendingExpenses}`
-                          : `${ledgerPendingCount} ${ledgerPendingCount === 1 ? t.kitchen.ledger.myPendingPurchaseSingular : t.kitchen.ledger.myPendingPurchases}`
-                        : isAdmin
-                          ? t.kitchen.ledger.balancesUpToDate
-                          : t.kitchen.ledger.myAllSettled}
-                    </p>
-                    <p className="text-xs text-muted-foreground font-normal leading-snug">
-                      {ledgerPendingCount > 0
-                        ? `${ledgerHistoryCount} ${isAdmin ? t.kitchen.ledger.loggedReceipts : t.kitchen.ledger.myPurchasesHistory}`
-                        : isAdmin
-                          ? t.kitchen.ledger.balancesUpToDateDesc
-                          : t.kitchen.ledger.myAllSettledDesc}
-                    </p>
-                  </div>
-                </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIsLedgerOpen(true)}
-                  className="h-8 px-3 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground text-xs font-medium border border-border/60 flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap"
-                >
-                  <span>{isAdmin ? t.kitchen.ledger.settle : t.kitchen.ledger.openMyPurchases}</span>
-                </button>
-              </div>
-            </footer>
+                  <button
+                    type="button"
+                    onClick={() => setIsLedgerOpen(true)}
+                    className="h-8 px-3 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground text-xs font-medium border border-border/60 flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap"
+                  >
+                    <span>{t.kitchen.ledger.settle}</span>
+                  </button>
+                </div>
+              </footer>
+            )}
           </main>
         )}
 
@@ -723,32 +704,27 @@ export function KitchenSpaceView({
         }
       />
 
-      {/* OVERLAY 2: Expense & Refunds Ledger Modal */}
-      <ExpenseLedgerModal
-        isOpen={isLedgerOpen}
-        onOpenChange={setIsLedgerOpen}
-        kitchenId={initialKitchen.id}
-        isAdmin={isAdmin}
-        spaceType={initialKitchen.space_type}
-        members={localMembers}
-        checkouts={localMyCheckouts}
-        currentUserId={currentUserId}
-        onCheckoutUpdated={(updated) => {
-          setLocalMyCheckouts((prev) =>
-            prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c))
-          );
-
-          // Keep the kitchen-wide banner optimistic until the refreshed
-          // server counts arrive. Only pending checkouts can be settled or
-          // declined, so either action removes one pending item.
-          if (isAdmin && (updated.is_refunded || updated.is_declined)) {
-            setLocalPendingKitchenCount((prev) => Math.max(0, prev - 1));
-            if (updated.is_declined) {
-              setLocalTotalKitchenCount((prev) => Math.max(0, prev - 1));
+      {/* OVERLAY 2: Admin-only Settlements Modal */}
+      {isAdmin && (
+        <ExpenseLedgerModal
+          isOpen={isLedgerOpen}
+          onOpenChange={setIsLedgerOpen}
+          kitchenId={initialKitchen.id}
+          spaceType={initialKitchen.space_type}
+          members={localMembers}
+          onCheckoutUpdated={(updated) => {
+            // Keep the kitchen-wide banner optimistic until the refreshed
+            // server counts arrive. Only pending checkouts can be settled or
+            // declined, so either action removes one pending item.
+            if (updated.is_refunded || updated.is_declined) {
+              setLocalPendingKitchenCount((prev) => Math.max(0, prev - 1));
+              if (updated.is_declined) {
+                setLocalTotalKitchenCount((prev) => Math.max(0, prev - 1));
+              }
             }
-          }
-        }}
-      />
+          }}
+        />
+      )}
 
       {/* OVERLAY 3: Space Pulse & Analytics Modal */}
       <SpacePulseModal
@@ -760,7 +736,6 @@ export function KitchenSpaceView({
         isAdmin={isAdmin}
         initialStats={initialPulseStats}
         pantryItems={localPantryItems}
-        myCheckouts={localMyCheckouts}
         onStartShoppingRun={() => {
           setIsStatsFlyoutOpen(false);
           handleModeChange("supermarket");

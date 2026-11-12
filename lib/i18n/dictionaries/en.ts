@@ -407,6 +407,8 @@ export const en = {
     // Tab 3: Restock Feed
     recentRestocks: "Restock Feed",
     myPurchasesFeed: "My Purchases",
+    feedFilterAll: "All",
+    feedFilterMine: "Mine",
     logsCount: "{count} entries",
     noRecentRestocks: "No recent checkouts logged",
     noRecentRestocksDesc:
@@ -417,6 +419,8 @@ export const en = {
     receiptAttached: "Receipt attached",
     settled: "Settled",
     pending: "Pending",
+    declined: "Declined",
+    declineReason: "Reason: {reason}",
     paidBy: "Paid by {name}",
 
     // CSV Export
