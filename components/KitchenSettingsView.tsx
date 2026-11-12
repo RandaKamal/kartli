@@ -683,26 +683,23 @@ export function KitchenSettingsView({
 
         {/* Confirmation Dialog: Leave Kitchen */}
         <AlertDialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
-          <AlertDialogContent className="rounded-2xl max-w-md">
+          <AlertDialogContent className="rounded-xl max-w-md">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-base font-bold flex items-center gap-2">
-                <LogOut className="w-4 h-4 text-destructive" />
-                <span>
-                  {t.kitchenSettings.leaveConfirmTitle.replace("{name}", kitchenName)}
-                </span>
+              <AlertDialogTitle className="text-base font-semibold">
+                {t.kitchenSettings.leaveConfirmTitle.replace("{name}", kitchenName)}
               </AlertDialogTitle>
               <AlertDialogDescription className="text-xs text-muted-foreground">
                 {t.kitchenSettings.leaveConfirmDesc}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="rounded-xl text-xs">
+              <AlertDialogCancel className="rounded-lg text-xs">
                 {t.common.cancel}
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleLeaveKitchen}
                 disabled={isLeaving}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl text-xs font-semibold px-4"
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-lg text-xs font-semibold px-4"
               >
                 {isLeaving
                   ? t.kitchenSettings.leavingBtn
@@ -714,11 +711,10 @@ export function KitchenSettingsView({
 
         {/* Confirmation Dialog: Delete Kitchen */}
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <AlertDialogContent className="rounded-2xl max-w-md">
+          <AlertDialogContent className="rounded-xl max-w-md">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-base font-bold flex items-center gap-2 text-destructive">
-                <AlertTriangle className="w-4 h-4" />
-                <span>{t.kitchenSettings.deleteConfirmTitle}</span>
+              <AlertDialogTitle className="text-base font-semibold text-destructive">
+                {t.kitchenSettings.deleteConfirmTitle}
               </AlertDialogTitle>
               <AlertDialogDescription className="text-xs text-muted-foreground space-y-2">
                 <span>
@@ -730,13 +726,13 @@ export function KitchenSettingsView({
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="rounded-xl text-xs">
+              <AlertDialogCancel className="rounded-lg text-xs">
                 {t.common.cancel}
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteKitchen}
                 disabled={isDeleting}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl text-xs font-semibold px-4"
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-lg text-xs font-semibold px-4"
               >
                 {isDeleting
                   ? t.kitchenSettings.deletingBtn

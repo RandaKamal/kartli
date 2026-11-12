@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Loader2, Check, Store, DollarSign, MessageSquare } from "lucide-react";
+import { Loader2, Check, Store, DollarSign, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
@@ -102,14 +102,11 @@ export function ReceiptlessCheckoutDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md bg-card border border-border p-6 text-card-foreground rounded-3xl shadow-xl space-y-4">
-        <DialogHeader className="space-y-1.5 text-left">
-          <div className="flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-accent-brand" />
-            <DialogTitle className="text-base sm:text-lg font-bold text-foreground">
-              Checkout without Receipt
-            </DialogTitle>
-          </div>
+      <DialogContent className="sm:max-w-md bg-card border border-border p-5 sm:p-6 text-card-foreground rounded-xl shadow-xl space-y-4">
+        <DialogHeader className="space-y-1 text-left pr-8">
+          <DialogTitle className="text-base font-semibold text-foreground tracking-tight">
+            Checkout without Receipt
+          </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
             Mark your staged cart items as purchased without uploading a receipt photo.
           </DialogDescription>
@@ -117,7 +114,7 @@ export function ReceiptlessCheckoutDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Staged Items Summary */}
-          <div className="space-y-2 p-3.5 rounded-2xl bg-muted/40 border border-border">
+          <div className="space-y-2 p-3.5 rounded-xl bg-muted/40 border border-border">
             <div className="flex items-center justify-between text-xs font-semibold text-foreground">
               <span>Items to Checkout</span>
               <Badge variant="secondary" className="text-[10px] font-mono px-1.5 py-0">
@@ -200,7 +197,7 @@ export function ReceiptlessCheckoutDialog({
               placeholder={t.kitchen.ledger.noteToAdminPlaceholder}
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="flex min-h-[64px] w-full rounded-xl border border-border/80 bg-secondary/20 p-2.5 text-xs shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-transparent disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+              className="flex min-h-[64px] w-full rounded-lg border border-border/80 bg-secondary/20 p-2.5 text-xs shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-transparent disabled:cursor-not-allowed disabled:opacity-50 resize-none"
               disabled={isPending}
             />
             <p className="text-[11px] leading-snug text-muted-foreground">
@@ -211,11 +208,11 @@ export function ReceiptlessCheckoutDialog({
           <DialogFooter className="pt-2 border-t border-border flex flex-col sm:flex-row gap-2">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => onOpenChange(false)}
               disabled={isPending}
-              className="rounded-xl text-xs h-9 border-border"
+              className="rounded-lg text-xs h-9 text-muted-foreground hover:text-foreground"
             >
               Cancel
             </Button>
@@ -223,7 +220,7 @@ export function ReceiptlessCheckoutDialog({
               type="submit"
               size="sm"
               disabled={isPending || stagedCartItems.length === 0}
-              className="rounded-xl text-xs font-semibold h-9 px-4 gap-1.5 bg-primary text-primary-foreground shadow-sm"
+              className="rounded-lg text-xs font-medium h-9 px-4 gap-1.5 bg-foreground text-background hover:bg-foreground/90 transition-colors shadow-sm"
             >
               {isPending ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />

@@ -8,8 +8,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Users } from "lucide-react";
 import { RoommatesView } from "@/components/kitchen/RoommatesView";
 import type { KitchenMemberWithUser, KitchenRole, KitchenSpaceType } from "@/types";
 import { useTranslation } from "@/lib/i18n";
@@ -54,9 +52,8 @@ export function RoommatesModal({
         className="sm:max-w-md w-full p-0 gap-0 overflow-hidden flex flex-col"
       >
         <DialogHeader className="p-5 sm:p-6 pb-3 border-b border-border/60 pr-12 text-left">
-          <DialogTitle className="text-lg sm:text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
-            <Users className="w-5 h-5 text-primary" />
-            <span>{kitchenName} {t.kitchen.roommates.title}</span>
+          <DialogTitle className="text-base sm:text-lg font-semibold text-foreground tracking-tight">
+            {kitchenName} {t.kitchen.roommates.title}
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
             {t.kitchen.roommates.subtitle}
@@ -77,17 +74,6 @@ export function RoommatesModal({
             onMemberRemoved={onMemberRemoved}
             onRoleChanged={onRoleChanged}
           />
-        </div>
-
-        <div className="sm:hidden p-3 border-t border-border/60 bg-muted/20 shrink-0">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => onOpenChange(false)}
-            className="w-full h-10 rounded-xl text-xs font-semibold cursor-pointer"
-          >
-            {t.common.close}
-          </Button>
         </div>
       </DialogContent>
     </Dialog>

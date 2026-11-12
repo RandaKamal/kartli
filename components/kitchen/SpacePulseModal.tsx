@@ -28,7 +28,6 @@ import {
   Clock,
   ShoppingCart,
   Receipt,
-  Sparkles,
   Calendar,
   AlertCircle,
   ChevronLeft,
@@ -347,7 +346,7 @@ export function SpacePulseModal({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         onDismiss={() => onOpenChange(false)}
-        className="h-[88dvh] max-h-[88dvh] w-full bg-card text-card-foreground rounded-t-2xl border-t border-white/[0.08] shadow-2xl flex flex-col overflow-hidden sm:h-[750px] sm:max-h-[85vh] sm:w-full sm:max-w-xl sm:rounded-2xl sm:border p-0 gap-0"
+        className="h-[88dvh] max-h-[88dvh] w-full bg-card text-card-foreground rounded-t-2xl border-t border-white/[0.08] shadow-2xl flex flex-col overflow-hidden sm:h-[750px] sm:max-h-[85vh] sm:w-full sm:max-w-xl sm:rounded-xl sm:border p-0 gap-0"
       >
         {/* Zone 1: Header Zone (shrink-0) */}
         <div className="shrink-0 border-b border-white/[0.06]">
@@ -512,7 +511,7 @@ export function SpacePulseModal({
         </div>
 
         {/* Zone 2: Scrollable Content Zone (flex-1 min-h-0 overflow-y-auto) */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 pb-24 space-y-4 overscroll-contain">
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 pb-6 space-y-4 overscroll-contain">
           {isLoading ? (
             <SpacePulseModalSkeleton />
           ) : !stats ? (
@@ -601,8 +600,7 @@ export function SpacePulseModal({
                               </span>
                             )}
                             {stats.spendTrendDirection === "new" && (
-                              <span className="inline-flex items-center gap-1 text-xs text-zinc-500">
-                                <Sparkles className="w-3 h-3" />
+                              <span className="inline-flex items-center text-xs text-zinc-500">
                                 {t.pulse.firstMonth}
                               </span>
                             )}
@@ -621,11 +619,6 @@ export function SpacePulseModal({
                       <Card className="bg-zinc-900/40 border border-white/[0.06] rounded-xl p-5 shadow-none space-y-4">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs font-medium text-zinc-400">{t.pulse.myImpact}</span>
-                          {stats.userReceiptsCount > 0 && (
-                            <span className="text-[11px] text-zinc-500 truncate">
-                              {stats.userHabitRole.roleTitle}
-                            </span>
-                          )}
                         </div>
 
                         {stats.userReceiptsCount === 0 &&
@@ -1065,18 +1058,6 @@ export function SpacePulseModal({
               )}
             </>
           )}
-        </div>
-
-        {/* Zone 3: Sticky Footer Zone (shrink-0) */}
-        <div className="shrink-0 border-t border-border/40 bg-card/90 backdrop-blur-md px-4 sm:px-6 pt-3 pb-8">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => onOpenChange(false)}
-            className="h-11 w-full rounded-xl bg-secondary font-semibold text-sm hover:bg-secondary/80 text-foreground transition-colors cursor-pointer shadow-xs flex items-center justify-center"
-          >
-            {t.pulse.close}
-          </Button>
         </div>
       </DialogContent>
     </Dialog>

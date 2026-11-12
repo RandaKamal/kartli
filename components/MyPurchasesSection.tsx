@@ -277,7 +277,7 @@ export function MyPurchasesSection({
 
       {/* Receipt viewer / delete modal */}
       <Dialog open={!!selectedCheckout} onOpenChange={(open) => !open && setSelectedCheckout(null)}>
-        <DialogContent className="sm:max-w-2xl max-h-[92vh] overflow-y-auto bg-card border border-white/[0.08] p-5 sm:p-6 text-card-foreground rounded-2xl shadow-2xl flex flex-col gap-4">
+        <DialogContent className="sm:max-w-2xl max-h-[92vh] overflow-y-auto bg-card border border-white/[0.08] p-5 sm:p-6 text-card-foreground rounded-xl shadow-2xl flex flex-col gap-4">
           {selectedCheckout && (
             <>
               <DialogHeader className="space-y-1 text-left">

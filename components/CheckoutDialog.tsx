@@ -691,8 +691,8 @@ export function CheckoutDialog({
         className={cn(
           "transition-all duration-200 bg-card border border-white/[0.08] shadow-2xl",
           phase === "review"
-            ? "p-0 w-full sm:max-w-4xl h-[100dvh] sm:h-[88vh] max-h-[100dvh] sm:max-h-[90vh] flex flex-col overflow-hidden rounded-none sm:rounded-2xl border-0 sm:border [&>button:last-child]:hidden"
-            : "sm:max-w-md p-5 sm:p-6 rounded-2xl"
+            ? "p-0 w-full sm:max-w-4xl h-[100dvh] sm:h-[88vh] max-h-[100dvh] sm:max-h-[90vh] flex flex-col overflow-hidden rounded-none sm:rounded-xl border-0 sm:border [&>button:last-child]:hidden"
+            : "sm:max-w-md p-5 sm:p-6 rounded-xl"
         )}
       >
         {phase === "form" && (
