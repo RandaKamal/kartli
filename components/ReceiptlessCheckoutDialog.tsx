@@ -102,8 +102,8 @@ export function ReceiptlessCheckoutDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md bg-card border border-border p-5 sm:p-6 text-card-foreground rounded-xl shadow-xl space-y-4">
-        <DialogHeader className="space-y-1 text-left pr-8">
+      <DialogContent className="sm:max-w-md bg-card border border-border p-0 gap-0 text-card-foreground rounded-xl shadow-xl flex flex-col max-h-[90dvh] sm:max-h-[85dvh] overflow-hidden">
+        <DialogHeader className="shrink-0 px-5 pt-4 pb-3 border-b border-white/[0.06] space-y-1 text-left pr-12">
           <DialogTitle className="text-base font-semibold text-foreground tracking-tight">
             Checkout without Receipt
           </DialogTitle>
@@ -112,7 +112,8 @@ export function ReceiptlessCheckoutDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
           {/* Staged Items Summary */}
           <div className="space-y-2 p-3.5 rounded-xl bg-muted/40 border border-border">
             <div className="flex items-center justify-between text-xs font-semibold text-foreground">
@@ -205,7 +206,8 @@ export function ReceiptlessCheckoutDialog({
             </p>
           </div>
 
-          <DialogFooter className="pt-2 border-t border-border flex flex-col sm:flex-row gap-2">
+          </div>
+          <DialogFooter className="shrink-0 px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] border-t border-white/[0.06] bg-zinc-900/95 backdrop-blur-sm flex flex-col sm:flex-row gap-2">
             <Button
               type="button"
               variant="ghost"

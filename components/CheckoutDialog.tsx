@@ -692,12 +692,14 @@ export function CheckoutDialog({
           "transition-all duration-200 bg-card border border-white/[0.08] shadow-2xl",
           phase === "review"
             ? "p-0 w-full sm:max-w-4xl h-[100dvh] sm:h-[88vh] max-h-[100dvh] sm:max-h-[90vh] flex flex-col overflow-hidden rounded-none sm:rounded-xl border-0 sm:border [&>button:last-child]:hidden"
-            : "sm:max-w-md p-5 sm:p-6 rounded-xl"
+            : phase === "form"
+            ? "sm:max-w-md p-0 rounded-xl flex flex-col max-h-[90dvh] sm:max-h-[85dvh] overflow-hidden"
+            : "sm:max-w-md p-5 sm:p-6 rounded-xl max-h-[90dvh] overflow-y-auto"
         )}
       >
         {phase === "form" && (
-          <div className="flex flex-col">
-            <DialogHeader className="px-5 py-4 border-b border-white/[0.06] -mx-5 sm:-mx-6 -mt-5 sm:-mt-6 mb-4 pr-12 text-left">
+          <div className="flex flex-col flex-1 min-h-0">
+            <DialogHeader className="shrink-0 px-5 pt-4 pb-3 border-b border-white/[0.06] pr-12 text-left">
               <DialogTitle className="text-base font-semibold text-zinc-100 tracking-tight">
                 {locale === "de" ? "Auslage einreichen" : "Checkout"}
               </DialogTitle>
@@ -706,7 +708,8 @@ export function CheckoutDialog({
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={attemptSubmit} className="space-y-4">
+            <form onSubmit={attemptSubmit} className="flex flex-col flex-1 min-h-0">
+              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
               {/* Compact single-line header with subtle chips */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
@@ -1021,7 +1024,8 @@ export function CheckoutDialog({
               </div>
 
               {/* Footer Actions */}
-              <DialogFooter className="pt-3 border-t border-white/[0.06] flex items-center justify-between sm:justify-between gap-2">
+              </div>
+              <DialogFooter className="shrink-0 px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] border-t border-white/[0.06] bg-zinc-900/95 backdrop-blur-sm flex-row items-center justify-between sm:justify-between gap-2">
                 <Button
                   type="button"
                   variant="ghost"

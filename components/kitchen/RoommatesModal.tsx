@@ -60,7 +60,7 @@ export function RoommatesModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y px-5 pb-8 pt-3 overscroll-contain">
+        <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] overscroll-contain">
           <RoommatesView
             kitchenId={kitchenId}
             kitchenName={kitchenName}
