@@ -235,11 +235,10 @@ export function PantrySection({
         {/* Section Header */}
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
-            <Package className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {t.kitchen.staples.title}
             </span>
-            <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground border border-border/70">
+            <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-secondary text-muted-foreground border border-border/70 tabular-nums">
               {approvedItems.length}
             </span>
           </div>
@@ -382,12 +381,12 @@ export function PantrySection({
                     }
                   }}
                   className={cn(
-                    "group relative flex flex-col justify-between rounded-2xl min-h-[96px] h-full p-4 transition-colors duration-150 select-none touch-manipulation",
+                    "group relative flex flex-col justify-between rounded-xl min-h-[92px] h-full p-3.5 transition-colors duration-150 select-none touch-manipulation",
                     isPending && "bg-secondary/30 border border-dashed border-border/80 opacity-80 cursor-default",
-                    !isPending && "cursor-pointer active:scale-[0.98]",
+                    !isPending && "cursor-pointer active:scale-[0.99]",
                     isStocked && "bg-card hover:bg-muted/40 border border-border/70 hover:border-border shadow-xs",
-                    isNeeded && "bg-amber-500/[0.08] hover:bg-amber-500/[0.12] border border-amber-500/35 shadow-xs",
-                    isInCart && "bg-cyan-500/[0.06] hover:bg-cyan-500/[0.10] border border-cyan-500/35 shadow-xs"
+                    isNeeded && "bg-amber-500/[0.06] hover:bg-amber-500/[0.10] border border-amber-500/30 shadow-xs",
+                    isInCart && "bg-cyan-500/[0.05] hover:bg-cyan-500/[0.08] border border-cyan-500/30 shadow-xs"
                   )}
                   title={
                     isPending
@@ -401,7 +400,7 @@ export function PantrySection({
                   <div className="flex items-center justify-between gap-1 w-full h-5 overflow-hidden whitespace-nowrap">
                     {isPending && (
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500/70 shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                         <span className="text-[10px] font-medium text-muted-foreground truncate">
                           {t.kitchen.staples.waitingForApproval}
                         </span>
@@ -410,7 +409,7 @@ export function PantrySection({
 
                     {isStocked && (
                       <div className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)] shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                         <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
                           {t.kitchen.staples.stocked}
                         </span>
@@ -419,11 +418,8 @@ export function PantrySection({
 
                     {isNeeded && (
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="relative flex h-2 w-2 shrink-0">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
-                        </span>
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                        <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/25">
                           {t.kitchen.staples.emptyNeeded}
                         </span>
                       </div>
@@ -431,8 +427,8 @@ export function PantrySection({
 
                     {isInCart && (
                       <div className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_6px_rgba(6,182,212,0.5)] shrink-0" />
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded truncate bg-cyan-500/15 text-cyan-800 dark:text-cyan-200 border border-cyan-500/30">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 shrink-0" />
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded truncate bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/25">
                           {cartItem?.is_guest_staged ? t.kitchen.staples.inCart : `${t.kitchen.staples.inCart} · ${stagedByName}`}
                         </span>
                       </div>
@@ -522,7 +518,7 @@ export function PantrySection({
                 <button
                   type="button"
                   onClick={() => setIsAddTileOpen(true)}
-                  className="flex flex-col items-center justify-center gap-1.5 rounded-2xl min-h-[96px] h-full p-4 border border-dashed border-border/80 text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/30 transition-colors cursor-pointer select-none"
+                  className="flex flex-col items-center justify-center gap-1.5 rounded-xl min-h-[92px] h-full p-3.5 border border-dashed border-border/80 text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/30 transition-colors cursor-pointer select-none"
                 >
                   <Plus className="w-4 h-4" />
                   <span className="text-xs font-medium">{t.kitchen.staples.addEssential}</span>

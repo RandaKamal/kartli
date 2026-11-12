@@ -447,31 +447,31 @@ export function KitchenSpaceView({
       <GuestCartHandoverListener kitchenId={initialKitchen.id} />
 
       {/* Main Grounded Hub Container */}
-      <div className="w-full max-w-lg md:max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex flex-col gap-6 sm:gap-8 flex-1">
+      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6 flex-1">
         {/* 1. NATIVE HEADER & SPACE IDENTITY */}
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 select-none pb-2 border-b border-border/60">
           {/* Left: Space title + household badge */}
-          <div className="flex items-center gap-3 min-w-0 flex-wrap">
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground truncate">
+          <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground truncate">
               {initialKitchen.name}
             </h1>
-            <span className="text-[10px] sm:text-xs tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
+            <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 shrink-0">
               {getSpaceLabel(initialKitchen.space_type)}
             </span>
             {isAdmin && (
-              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground bg-secondary px-2 py-0.5 rounded-md border border-border/40 shrink-0">
                 {t.kitchen.header.admin}
               </span>
             )}
           </div>
 
           {/* Right: Roommate avatar cluster + Stats button + Share button + Settings icon button */}
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 self-start sm:self-auto">
+          <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
             {/* Roommate Avatar Cluster */}
             <button
               type="button"
               onClick={() => setIsRoommatesOpen(true)}
-              className="flex items-center py-1 px-2.5 rounded-full hover:bg-secondary/60 border border-border/70 bg-card/60 transition-all cursor-pointer group"
+              className="flex items-center h-8 px-2.5 rounded-lg hover:bg-secondary/80 border border-border/60 bg-secondary/40 transition-colors cursor-pointer group"
               title={t.kitchen.roommates.title}
               aria-label={t.kitchen.roommates.title}
             >
@@ -479,13 +479,13 @@ export function KitchenSpaceView({
                 {activeMembers.slice(0, 3).map((m) => (
                   <div
                     key={m.id}
-                    className="inline-flex items-center justify-center h-7 w-7 rounded-full text-[11px] font-bold ring-2 ring-card bg-secondary text-foreground -ml-2 first:ml-0 shadow-sm uppercase group-hover:scale-105 transition-transform select-none"
+                    className="inline-flex items-center justify-center h-5 w-5 rounded-full text-[9px] font-semibold ring-1 ring-border bg-secondary text-foreground -ml-1.5 first:ml-0 uppercase select-none"
                   >
                     {m.kitchen_display_name.slice(0, 2)}
                   </div>
                 ))}
               </div>
-              <span className="text-[11px] sm:text-xs text-muted-foreground group-hover:text-foreground pl-2">
+              <span className="text-xs text-muted-foreground group-hover:text-foreground pl-1.5 tabular-nums">
                 {roommatesCount} {roommatesCount === 1 ? t.kitchen.header.roommateSingular : t.kitchen.header.roommatesCount}
               </span>
             </button>
@@ -494,65 +494,65 @@ export function KitchenSpaceView({
             <button
               type="button"
               onClick={() => setIsTourOpen(true)}
-              className="h-8 w-8 rounded-xl border border-border/80 bg-secondary/40 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-all shadow-sm cursor-pointer"
+              className="h-8 w-8 rounded-lg border border-border/60 bg-secondary/30 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
               title={t.tour.triggerTooltip}
               aria-label={t.tour.triggerTooltip}
             >
-              <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <HelpCircle className="w-3.5 h-3.5" />
             </button>
 
             {/* Pulse / Stats Flyout Button */}
             <button
               type="button"
               onClick={() => setIsStatsFlyoutOpen(true)}
-              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border border-border bg-secondary/30 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+              className="h-8 w-8 rounded-lg border border-border/60 bg-secondary/30 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
               title={t.kitchen.pulse.title}
               aria-label={t.kitchen.pulse.title}
             >
-              <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <BarChart3 className="w-3.5 h-3.5" />
             </button>
 
             {/* Share icon button */}
             <button
               type="button"
               onClick={handleShare}
-              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border border-border bg-secondary/30 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+              className="h-8 w-8 rounded-lg border border-border/60 bg-secondary/30 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
               title={t.dashboard.guestLink}
               aria-label={t.dashboard.guestLink}
             >
-              <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <Share2 className="w-3.5 h-3.5" />
             </button>
 
             {/* Settings icon button */}
             <Link
               href={`/kitchen/${initialKitchen.id}/settings`}
-              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border border-border bg-secondary/30 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+              className="h-8 w-8 rounded-lg border border-border/60 bg-secondary/30 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
               title={t.dashboard.settings}
               aria-label={t.dashboard.settings}
             >
-              <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <Settings className="w-3.5 h-3.5" />
             </Link>
           </div>
         </header>
 
         {/* 2. SLEEK SEGMENTED SLIDER (KITCHEN BOARD VS SUPERMARKET RUN) */}
-        <div className="h-11 sm:h-12 w-full bg-secondary/40 p-1 rounded-2xl border border-border/70 backdrop-blur-xl flex items-center mb-1">
+        <div className="h-10 w-full bg-secondary/50 p-1 rounded-xl border border-border/60 flex items-center">
           <button
             type="button"
             onClick={() => handleModeChange("board")}
             className={cn(
-              "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm transition-all cursor-pointer select-none",
+              "flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs sm:text-sm transition-all cursor-pointer select-none",
               mode === "board"
-                ? "bg-card text-foreground shadow-sm border border-border/70 font-semibold duration-200"
+                ? "bg-card text-foreground shadow-xs border border-border/70 font-semibold"
                 : "text-muted-foreground hover:text-foreground font-medium transition-colors"
             )}
           >
-            <UtensilsCrossed className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <UtensilsCrossed className="w-3.5 h-3.5" />
             <span>{t.kitchen.modes.kitchenBoard}</span>
             {neededItemsCount > 0 && (
               <span
                 className={cn(
-                  "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full leading-none transition-colors",
+                  "text-[10px] font-mono font-medium px-1.5 py-0.5 rounded leading-none tabular-nums",
                   mode === "board"
                     ? "bg-secondary text-secondary-foreground border border-border"
                     : "bg-muted text-muted-foreground border border-border/70"
@@ -567,23 +567,21 @@ export function KitchenSpaceView({
             type="button"
             onClick={() => handleModeChange("supermarket")}
             className={cn(
-              "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm transition-all cursor-pointer select-none",
+              "flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs sm:text-sm transition-all cursor-pointer select-none",
               mode === "supermarket"
-                ? "bg-card text-foreground shadow-sm border border-border/70 font-semibold duration-200"
+                ? "bg-card text-foreground shadow-xs border border-border/70 font-semibold"
                 : "text-muted-foreground hover:text-foreground font-medium transition-colors"
             )}
           >
-            <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <ShoppingCart className="w-3.5 h-3.5" />
             <span>{t.kitchen.modes.supermarketRun}</span>
             {(activeCartCount > 0 || isCartBadgePulsing) && (
               <span
                 className={cn(
-                  "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full leading-none transition-all duration-300 transform",
-                  isCartBadgePulsing
-                    ? "scale-125 bg-primary text-primary-foreground shadow-md ring-2 ring-primary/40 animate-pulse duration-150"
-                    : mode === "supermarket"
-                      ? "bg-primary text-primary-foreground font-extrabold"
-                      : "bg-primary/15 text-primary border border-primary/20"
+                  "text-[10px] font-mono font-medium px-1.5 py-0.5 rounded leading-none transition-colors tabular-nums",
+                  mode === "supermarket"
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-semibold"
+                    : "bg-secondary text-muted-foreground border border-border/70"
                 )}
               >
                 {activeCartCount}
@@ -594,78 +592,7 @@ export function KitchenSpaceView({
 
         {/* MODE 1: KITCHEN BOARD */}
         {mode === "board" && (
-          <main className="space-y-6 sm:space-y-8 animate-in fade-in-50 duration-200">
-            {/* STATUS ZONE: fixed height, both states stacked in one grid cell and crossfaded */}
-            <div className="grid grid-cols-[minmax(0,1fr)] w-full min-w-0 min-h-[72px] sm:min-h-[80px] my-3">
-              <div
-                aria-hidden={neededItemsCount === 0}
-                className={cn(
-                  "col-start-1 row-start-1 w-full min-w-0 flex items-center justify-center transition-[opacity,transform] duration-200 ease-out",
-                  neededItemsCount > 0
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-1 pointer-events-none"
-                )}
-              >
-                <button
-                  type="button"
-                  tabIndex={neededItemsCount > 0 ? 0 : -1}
-                  onClick={() => handleModeChange("supermarket")}
-                  className="w-full min-w-0 h-full min-h-[72px] sm:min-h-[80px] text-left rounded-2xl border border-primary/20 bg-primary/[0.04] px-3.5 py-3 sm:px-4 sm:py-3.5 flex items-center justify-between gap-3 overflow-hidden hover:bg-primary/[0.07] transition-colors shadow-sm cursor-pointer"
-                >
-                  <span className="flex items-center gap-3 min-w-0 flex-1">
-                    <span className="h-9 w-9 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
-                      <ShoppingCart className="w-4 h-4" />
-                    </span>
-                    <span className="min-w-0 flex-1 block">
-                      <span className="block text-sm font-semibold text-foreground truncate">
-                        {t.kitchen.status.readyToShopTitle}
-                      </span>
-                      <span className="block text-xs text-muted-foreground truncate">
-                        {t.kitchen.status.readyToShopSubtitle}
-                      </span>
-                    </span>
-                  </span>
-                  <span className="shrink-0 h-9 px-3 sm:px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-xs flex items-center gap-1 shadow-sm whitespace-nowrap">
-                    <span className="hidden sm:inline">
-                      {locale === "de" ? "Einkaufsrunde" : "Start Shopping"}
-                    </span>
-                    <span className="sm:hidden">{locale === "de" ? "Starten" : "Start"}</span>
-                    <span aria-hidden>→</span>
-                  </span>
-                </button>
-              </div>
-
-              <div
-                aria-hidden={neededItemsCount > 0}
-                className={cn(
-                  "col-start-1 row-start-1 w-full min-w-0 flex items-center justify-center transition-[opacity,transform] duration-200 ease-out pointer-events-none",
-                  neededItemsCount === 0
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 -translate-y-1"
-                )}
-              >
-                <div className="w-full h-full min-h-[72px] sm:min-h-[80px] rounded-2xl bg-emerald-500/[0.04] border border-emerald-500/20 p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-sm">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-9 w-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-500 dark:text-emerald-400 shrink-0">
-                      <Check className="w-4 h-4 stroke-[2.5]" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-sm font-semibold text-foreground truncate">
-                        {t.kitchen.status.fullyStocked}
-                      </h3>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {t.kitchen.status.allStockedDesc}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold shrink-0">
-                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                    <span className="hidden sm:inline">100%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
+          <main className="space-y-6 animate-in fade-in-50 duration-150">
             {/* HOUSEHOLD STAPLES BENTO GRID */}
             <PantrySection
               kitchenId={initialKitchen.id}
@@ -692,16 +619,16 @@ export function KitchenSpaceView({
               }
             />
 
-            {/* BALANCES & REFUNDS GLASS BANNER */}
+            {/* BALANCES & REFUNDS BANNER */}
             <footer>
-              <div className="w-full rounded-2xl border border-border/70 bg-card/60 backdrop-blur-xl p-4 flex items-center justify-between gap-4 mt-6 hover:border-border transition-all shadow-sm">
+              <div className="w-full rounded-xl border border-border/70 bg-card p-4 flex items-center justify-between gap-4 mt-6 shadow-xs">
                 <div className="flex items-center gap-3 min-w-0">
                   <div
                     className={cn(
-                      "h-9 w-9 rounded-xl border flex items-center justify-center shrink-0",
+                      "h-8 w-8 rounded-lg border flex items-center justify-center shrink-0",
                       pendingRefundsCount > 0
                         ? "bg-amber-500/10 border-amber-500/20 text-amber-500"
-                        : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                        : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
                     )}
                   >
                     {pendingRefundsCount > 0 ? (
@@ -727,7 +654,7 @@ export function KitchenSpaceView({
                 <button
                   type="button"
                   onClick={() => setIsLedgerOpen(true)}
-                  className="h-8 px-3.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground text-xs font-medium border border-border/60 flex items-center gap-1.5 transition-all active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
+                  className="h-8 px-3 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground text-xs font-medium border border-border/60 flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap"
                 >
                   <span>{t.kitchen.ledger.settle}</span>
                 </button>
@@ -738,18 +665,7 @@ export function KitchenSpaceView({
 
         {/* MODE 2: SUPERMARKET RUN (Active Cart Section) */}
         {mode === "supermarket" && (
-          <main className="space-y-4 animate-in fade-in-50 duration-200">
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => handleModeChange("board")}
-                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer py-1"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>{t.kitchen.modes.backToBoard}</span>
-              </button>
-            </div>
-
+          <main className="space-y-4 animate-in fade-in-50 duration-150">
             <ActiveCartSection
               kitchenId={initialKitchen.id}
               items={localShoppingListItems}
