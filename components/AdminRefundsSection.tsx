@@ -303,151 +303,153 @@ export function AdminRefundsSection({
             return (
               <div
                 key={checkout.id}
-                className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-4 py-3.5 transition-colors hover:bg-white/[0.02]"
+                className="px-4 py-3.5 transition-colors hover:bg-white/[0.02]"
               >
-                {/* Left: identity + context */}
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <Avatar className="h-8 w-8 shrink-0">
-                    <AvatarFallback className="bg-zinc-800 text-[11px] font-semibold text-zinc-300">
-                      {memberInfo.initial}
-                    </AvatarFallback>
-                  </Avatar>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                  {/* Left: identity + context */}
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarFallback className="bg-zinc-800 text-[11px] font-semibold text-zinc-300">
+                        {memberInfo.initial}
+                      </AvatarFallback>
+                    </Avatar>
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline gap-2 min-w-0">
-                      <span className="font-medium text-sm text-foreground truncate">
-                        {memberInfo.displayName}
-                      </span>
-                      <span className="text-[11px] text-zinc-500 truncate">
-                        {memberInfo.username}
-                      </span>
-                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-2 min-w-0">
+                        <span className="font-medium text-sm text-foreground truncate">
+                          {memberInfo.displayName}
+                        </span>
+                        <span className="text-[11px] text-zinc-500 truncate">
+                          {memberInfo.username}
+                        </span>
+                      </div>
 
-                    <p className="text-xs text-zinc-500 truncate tabular-nums">
-                      {new Date(checkout.created_at).toLocaleDateString(dateLocale, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                      {itemNames && <span> · {itemNames}</span>}
-                    </p>
-
-                    {checkout.note && (
-                      <p className="text-xs text-zinc-400 truncate">
-                        &ldquo;{checkout.note}&rdquo;
+                      <p className="text-xs text-zinc-500 truncate tabular-nums">
+                        {new Date(checkout.created_at).toLocaleDateString(dateLocale, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                        {itemNames && <span> · {itemNames}</span>}
                       </p>
+
+                      {checkout.note && (
+                        <p className="text-xs text-zinc-400 truncate">
+                          &ldquo;{checkout.note}&rdquo;
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right: amount + receipt + status/action */}
+                  <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pl-11 sm:pl-0">
+                    <span className="text-sm font-semibold text-foreground tabular-nums whitespace-nowrap">
+                      {formatCurrency(checkout.total_claimed_amount, checkout.currency)}
+                    </span>
+
+                    {checkout.receipts.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCheckout(checkout)}
+                        aria-label={t.kitchen.ledger.viewReceipt}
+                        title={t.kitchen.ledger.viewReceipt}
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-zinc-500 hover:text-foreground hover:bg-white/[0.06] transition-colors cursor-pointer"
+                      >
+                        <Receipt className="w-3.5 h-3.5" />
+                      </button>
+                    ) : checkout.totalReceiptsEverAttached > 0 ? (
+                      <div
+                        className="inline-flex items-center justify-center h-8 w-8 text-zinc-600"
+                        title={t.kitchen.ledger.receiptDeleted}
+                      >
+                        <Receipt className="w-3.5 h-3.5 line-through opacity-50" />
+                      </div>
+                    ) : (
+                      <div
+                        className="inline-flex items-center justify-center h-8 w-8 text-zinc-700"
+                        title={t.kitchen.ledger.noReceipt}
+                      >
+                        <Receipt className="w-3.5 h-3.5 opacity-40" />
+                      </div>
+                    )}
+
+                    {checkout.is_declined ? (
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-rose-400 whitespace-nowrap">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                          {t.kitchen.ledger.declined || "Abgelehnt"}
+                        </span>
+                        {checkout.decline_reason && (
+                          <span className="text-[11px] text-rose-300/80 truncate max-w-[160px] sm:max-w-xs" title={checkout.decline_reason}>
+                            {checkout.decline_reason}
+                          </span>
+                        )}
+                      </div>
+                    ) : checkout.is_refunded ? (
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 whitespace-nowrap">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shrink-0" />
+                          {t.kitchen.ledger.settled}
+                        </span>
+                        {checkout.receipts.length > 0 && checkout.refunded_at && (
+                          <ReceiptExpiryBadge refundedAt={checkout.refunded_at} />
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 flex-wrap justify-end">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 whitespace-nowrap">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                          {t.kitchen.ledger.pending}
+                        </span>
+
+                        <Button
+                          type="button"
+                          variant="success"
+                          size="sm"
+                          onClick={() => handleMarkAsSettled(checkout.id)}
+                          disabled={isPending}
+                          className="h-8 px-3 text-xs font-medium rounded-lg gap-1.5 cursor-pointer"
+                        >
+                          {isSettling ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Check className="w-3.5 h-3.5" />
+                          )}
+                          <span>{isSettling ? t.kitchen.ledger.settlingAction : t.kitchen.ledger.settleAction}</span>
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (activeDeclineCheckoutId === checkout.id) {
+                              setActiveDeclineCheckoutId(null);
+                            } else {
+                              setActiveDeclineCheckoutId(checkout.id);
+                              setDecliningReason("");
+                            }
+                          }}
+                          disabled={isPending}
+                          className="h-8 px-2.5 text-xs font-medium rounded-lg border-white/[0.08] text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 cursor-pointer"
+                          title={t.kitchen.ledger.declineAction || "Ablehnen"}
+                        >
+                          <XCircle className="w-3.5 h-3.5 mr-1" />
+                          <span>{t.kitchen.ledger.declineAction || "Ablehnen"}</span>
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
 
-                {/* Right: amount + receipt + status/action */}
-                <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pl-11 sm:pl-0">
-                  <span className="text-sm font-semibold text-foreground tabular-nums whitespace-nowrap">
-                    {formatCurrency(checkout.total_claimed_amount, checkout.currency)}
-                  </span>
-
-                  {checkout.receipts.length > 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCheckout(checkout)}
-                      aria-label={t.kitchen.ledger.viewReceipt}
-                      title={t.kitchen.ledger.viewReceipt}
-                      className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-zinc-500 hover:text-foreground hover:bg-white/[0.06] transition-colors cursor-pointer"
-                    >
-                      <Receipt className="w-3.5 h-3.5" />
-                    </button>
-                  ) : checkout.totalReceiptsEverAttached > 0 ? (
-                    <div
-                      className="inline-flex items-center justify-center h-8 w-8 text-zinc-600"
-                      title={t.kitchen.ledger.receiptDeleted}
-                    >
-                      <Receipt className="w-3.5 h-3.5 line-through opacity-50" />
-                    </div>
-                  ) : (
-                    <div
-                      className="inline-flex items-center justify-center h-8 w-8 text-zinc-700"
-                      title={t.kitchen.ledger.noReceipt}
-                    >
-                      <Receipt className="w-3.5 h-3.5 opacity-40" />
-                    </div>
-                  )}
-
-                  {checkout.is_declined ? (
-                    <div className="flex flex-col items-end gap-0.5">
-                      <span className="inline-flex items-center gap-1.5 text-xs text-rose-400 whitespace-nowrap">
-                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                        {t.kitchen.ledger.declined || "Abgelehnt"}
-                      </span>
-                      {checkout.decline_reason && (
-                        <span className="text-[11px] text-rose-300/80 truncate max-w-[160px] sm:max-w-xs" title={checkout.decline_reason}>
-                          {checkout.decline_reason}
-                        </span>
-                      )}
-                    </div>
-                  ) : checkout.is_refunded ? (
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 whitespace-nowrap">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shrink-0" />
-                        {t.kitchen.ledger.settled}
-                      </span>
-                      {checkout.receipts.length > 0 && checkout.refunded_at && (
-                        <ReceiptExpiryBadge refundedAt={checkout.refunded_at} />
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 flex-wrap justify-end">
-                      <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 whitespace-nowrap">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                        {t.kitchen.ledger.pending}
-                      </span>
-
-                      <Button
-                        type="button"
-                        variant="success"
-                        size="sm"
-                        onClick={() => handleMarkAsSettled(checkout.id)}
-                        disabled={isPending}
-                        className="h-8 px-3 text-xs font-medium rounded-lg gap-1.5 cursor-pointer"
-                      >
-                        {isSettling ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Check className="w-3.5 h-3.5" />
-                        )}
-                        <span>{isSettling ? t.kitchen.ledger.settlingAction : t.kitchen.ledger.settleAction}</span>
-                      </Button>
-
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if (activeDeclineCheckoutId === checkout.id) {
-                            setActiveDeclineCheckoutId(null);
-                          } else {
-                            setActiveDeclineCheckoutId(checkout.id);
-                            setDecliningReason("");
-                          }
-                        }}
-                        disabled={isPending}
-                        className="h-8 px-2.5 text-xs font-medium rounded-lg border-white/[0.08] text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 cursor-pointer"
-                        title={t.kitchen.ledger.declineAction || "Ablehnen"}
-                      >
-                        <XCircle className="w-3.5 h-3.5 mr-1" />
-                        <span>{t.kitchen.ledger.declineAction || "Ablehnen"}</span>
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Inline decline reason input */}
+                {/* Inline decline confirmation bar as a clean full-width sub-row */}
                 {activeDeclineCheckoutId === checkout.id && (
-                  <div className="w-full mt-2 pt-2.5 border-t border-rose-500/20 bg-rose-500/[0.04] p-3 rounded-lg flex flex-col sm:flex-row items-stretch sm:items-center gap-2 animate-in fade-in-50 duration-150">
+                  <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center gap-2 animate-in fade-in-50 duration-150">
                     <Input
                       value={decliningReason}
                       onChange={(e) => setDecliningReason(e.target.value)}
                       placeholder={t.kitchen.ledger.declineReasonPlaceholder || "Optionaler Grund (z. B. Ungültiger Beleg)"}
-                      className="h-8 text-xs bg-zinc-900/90 border-rose-500/30 text-foreground placeholder:text-zinc-500 flex-1"
+                      className="h-8 text-xs bg-zinc-900/90 border-white/[0.1] text-foreground placeholder:text-zinc-500 flex-1 min-w-0"
                       autoFocus
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
@@ -458,30 +460,28 @@ export function AdminRefundsSection({
                         }
                       }}
                     />
-                    <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => handleDeclineCheckout(checkout.id, decliningReason)}
-                        disabled={isPending && decliningId === checkout.id}
-                        className="h-8 px-3 text-xs font-medium rounded-lg bg-rose-600 hover:bg-rose-500 text-white cursor-pointer"
-                      >
-                        {isPending && decliningId === checkout.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
-                        ) : null}
-                        <span>{t.kitchen.ledger.confirmDecline || "Ablehnen"}</span>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setActiveDeclineCheckoutId(null)}
-                        disabled={isPending && decliningId === checkout.id}
-                        className="h-8 px-2.5 text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer"
-                      >
-                        {t.kitchen.ledger.cancelDecline || "Abbrechen"}
-                      </Button>
-                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => handleDeclineCheckout(checkout.id, decliningReason)}
+                      disabled={isPending && decliningId === checkout.id}
+                      className="h-8 px-3 text-xs font-medium rounded-lg bg-rose-600 hover:bg-rose-500 text-white cursor-pointer shrink-0"
+                    >
+                      {isPending && decliningId === checkout.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
+                      ) : null}
+                      <span>{t.kitchen.ledger.confirmDecline || "Ablehnen"}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setActiveDeclineCheckoutId(null)}
+                      disabled={isPending && decliningId === checkout.id}
+                      className="h-8 px-2.5 text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer shrink-0"
+                    >
+                      {t.kitchen.ledger.cancelDecline || "Abbrechen"}
+                    </Button>
                   </div>
                 )}
               </div>

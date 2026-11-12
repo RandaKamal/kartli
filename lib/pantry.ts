@@ -996,11 +996,10 @@ export async function declineCheckout(
     }
   }
 
-  // 3. Mark checkout_receipts as deleted and clear filenames
+  // 3. Mark checkout_receipts as deleted
   await pool.query(
     `UPDATE checkout_receipts
-     SET receipt_filename = NULL,
-         deleted_by_admin_at = COALESCE(deleted_by_admin_at, NOW()),
+     SET deleted_by_admin_at = COALESCE(deleted_by_admin_at, NOW()),
          deleted_by_member_at = COALESCE(deleted_by_member_at, NOW())
      WHERE checkout_id = $1`,
     [checkoutId]
