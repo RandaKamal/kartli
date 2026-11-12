@@ -103,7 +103,7 @@ export function ReceiptlessCheckoutDialog({
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md bg-card border border-border p-0 gap-0 text-card-foreground rounded-xl shadow-xl flex flex-col max-h-[90dvh] sm:max-h-[85dvh] overflow-hidden">
-        <DialogHeader className="shrink-0 px-5 pt-4 pb-3 border-b border-white/[0.06] space-y-1 text-left pr-12">
+        <DialogHeader className="shrink-0 px-5 pt-4 pb-3 border-b border-border space-y-1 text-left pr-12">
           <DialogTitle className="text-base font-semibold text-foreground tracking-tight">
             Checkout without Receipt
           </DialogTitle>
@@ -207,7 +207,7 @@ export function ReceiptlessCheckoutDialog({
           </div>
 
           </div>
-          <DialogFooter className="shrink-0 px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] border-t border-white/[0.06] bg-zinc-900/95 backdrop-blur-sm flex flex-col sm:flex-row gap-2">
+          <DialogFooter className="shrink-0 px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] border-t border-border bg-card/95 backdrop-blur-sm flex flex-col sm:flex-row gap-2">
             <Button
               type="button"
               variant="ghost"

@@ -406,6 +406,9 @@ export const en = {
 
     // Tab 3: Restock Feed
     recentRestocks: "Restock Feed",
+    myPurchasesFeed: "My Purchases",
+    feedFilterAll: "All",
+    feedFilterMine: "Mine",
     logsCount: "{count} entries",
     noRecentRestocks: "No recent checkouts logged",
     noRecentRestocksDesc:
@@ -416,6 +419,8 @@ export const en = {
     receiptAttached: "Receipt attached",
     settled: "Settled",
     pending: "Pending",
+    declined: "Declined",
+    declineReason: "Reason: {reason}",
     paidBy: "Paid by {name}",
 
     // CSV Export
@@ -514,6 +519,12 @@ export const en = {
       pendingExpenses: "pending expenses to settle",
       pendingExpenseSingular: "pending expense to settle",
       loggedReceipts: "logged receipts in space history",
+      myPendingPurchaseSingular: "open purchase",
+      myPendingPurchases: "open purchases",
+      myAllSettled: "All your purchases are settled",
+      myAllSettledDesc: "No open reimbursements for you",
+      myPurchasesHistory: "purchases in your history",
+      openMyPurchases: "My purchases →",
       settle: "Settle →",
       modalTitle: "Settlements",
       modalSubtitle: "Shared household balances, receipt checkouts, and refund claims.",

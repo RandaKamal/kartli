@@ -241,7 +241,7 @@ export function SpaceCard({
           <div className="lg:col-span-3 flex flex-col sm:flex-row lg:flex-col items-stretch lg:items-end justify-center gap-2.5">
             <Link
               href={targetUrl}
-              className="h-8 px-4 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-medium text-xs flex items-center justify-center gap-1.5 shadow-xs hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors w-full lg:w-auto"
+              className="h-8 px-4 rounded-lg bg-primary text-primary-foreground font-medium text-xs flex items-center justify-center gap-1.5 shadow-xs hover:bg-primary/90 transition-colors w-full lg:w-auto"
             >
               <span>{t.dashboard.openSpace}</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -365,7 +365,7 @@ export function SpaceCard({
 
         {/* Card Action Footer */}
         <div className="pt-3 border-t border-border/60 flex items-center justify-between gap-2.5 relative z-0 pointer-events-none">
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-xs transition-colors">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-primary text-primary-foreground shadow-xs transition-colors">
             <span>{t.dashboard.openSpace}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </span>

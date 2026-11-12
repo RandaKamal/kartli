@@ -6,7 +6,11 @@ import {
   getUserMembership,
   getKitchenMembersWithUsers,
 } from "@/lib/kitchen";
-import { getPantryItems, getShoppingListItems, getUserCheckouts } from "@/lib/pantry";
+import {
+  getPantryItems,
+  getShoppingListItems,
+  getKitchenCheckoutCounts,
+} from "@/lib/pantry";
 import { getUserHasCompletedTour } from "@/lib/auth-service";
 import { getKitchenStats } from "@/lib/actions/stats";
 import { KitchenSpaceView } from "@/components/KitchenSpaceView";
@@ -40,7 +44,7 @@ export default async function KitchenPage({
     initialPulseStats,
     members,
     hasCompletedTour,
-    myCheckouts,
+    checkoutCounts,
   ] = await Promise.all([
     getUserMembership(id, session.user.id),
     getKitchenById(id),
@@ -51,7 +55,7 @@ export default async function KitchenPage({
       : Promise.resolve(undefined),
     getKitchenMembersWithUsers(id),
     getUserHasCompletedTour(session.user.id),
-    getUserCheckouts(id, session.user.id).catch(() => []),
+    getKitchenCheckoutCounts(id).catch(() => ({ pending: 0, total: 0 })),
   ]);
 
   if (!membership) {
@@ -82,7 +86,8 @@ export default async function KitchenPage({
       userPreferredCurrency={preferredCurrency}
       baseUrl={baseUrl}
       initialTab={initialTab}
-      myCheckouts={myCheckouts}
+      pendingKitchenCheckoutsCount={checkoutCounts.pending}
+      totalKitchenCheckoutsCount={checkoutCounts.total}
     />
   );
 }

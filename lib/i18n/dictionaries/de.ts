@@ -408,6 +408,9 @@ export const de: typeof en = {
 
     // Tab 3: Restock Feed
     recentRestocks: "Einkaufs-Feed",
+    myPurchasesFeed: "Meine Einkäufe",
+    feedFilterAll: "Alle",
+    feedFilterMine: "Meine",
     logsCount: "{count} Einträge",
     noRecentRestocks: "Keine aktuellen Einkäufe erfasst",
     noRecentRestocksDesc:
@@ -418,6 +421,8 @@ export const de: typeof en = {
     receiptAttached: "Beleg angehängt",
     settled: "Ausgeglichen",
     pending: "Ausstehend",
+    declined: "Abgelehnt",
+    declineReason: "Grund: {reason}",
     paidBy: "Bezahlt von {name}",
 
     // CSV Export
@@ -516,6 +521,12 @@ export const de: typeof en = {
       pendingExpenses: "offene Ausgaben abzurechnen",
       pendingExpenseSingular: "offene Ausgabe abzurechnen",
       loggedReceipts: "erfasste Bons in der Küchen-Historie",
+      myPendingPurchaseSingular: "offener Einkauf",
+      myPendingPurchases: "offene Einkäufe",
+      myAllSettled: "Alle deine Einkäufe ausgeglichen",
+      myAllSettledDesc: "Keine offenen Erstattungen für dich",
+      myPurchasesHistory: "Einkäufe in deiner Historie",
+      openMyPurchases: "Meine Einkäufe →",
       settle: "Abrechnen →",
       modalTitle: "Abrechnungen",
       modalSubtitle: "Gemeinsame WG-Ausgaben, Belege und Abrechnungen.",

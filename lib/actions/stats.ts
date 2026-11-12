@@ -236,20 +236,33 @@ export async function getKitchenStats(
   userId?: string,
   targetMonthKey?: string
 ): Promise<KitchenPulseStats> {
-  // Resolve effective user ID
-  let targetUserId = userId;
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) {
-      throw new Error("You must be logged in to view kitchen analytics.");
-    }
-    targetUserId = session.user.id;
+  // Resolve the caller from the session. The optional `userId` argument can
+  // never be trusted for authorization: it is a plain server-action input.
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in to view kitchen analytics.");
+  }
+  const callerUserId = session.user.id;
+  const targetUserId = userId || callerUserId;
+
+  // Security barrier: verify the caller is an active member of this kitchen.
+  const callerMembership = await getUserMembership(kitchenId, callerUserId);
+  if (!callerMembership) {
+    throw new Error("Unauthorized: You are not a member of this kitchen.");
   }
 
-  // Security barrier: verify active kitchen membership
-  const membership = await getUserMembership(kitchenId, targetUserId);
-  if (!membership) {
-    throw new Error("Unauthorized: You are not a member of this kitchen.");
+  // Only kitchen admins may see household-wide checkout details (notes,
+  // receipts, and other members' purchases). Members get their own rows only,
+  // and may not request another member's stats by passing a different userId.
+  const isKitchenAdmin = callerMembership.role === "ADMIN";
+  if (targetUserId !== callerUserId) {
+    if (!isKitchenAdmin) {
+      throw new Error("Unauthorized: Only kitchen admins can view other members' analytics.");
+    }
+    const targetMembership = await getUserMembership(kitchenId, targetUserId);
+    if (!targetMembership) {
+      throw new Error("Unauthorized: You are not a member of this kitchen.");
+    }
   }
 
   // Parse targetMonthKey (format "YYYY-MM") if provided, else null defaults to CURRENT_TIMESTAMP
@@ -548,7 +561,6 @@ export async function getKitchenStats(
       WHERE c.kitchen_id = $1
         AND c.created_at >= mb.cur_start
         AND c.created_at < mb.cur_end
-        AND c.is_declined = FALSE
     )
     SELECT 
       s.current_month_spend,
@@ -700,7 +712,10 @@ export async function getKitchenStats(
 
   // Month Checkouts
   const rawMonthCheckouts = Array.isArray(row?.month_checkouts) ? row.month_checkouts : [];
-  const monthCheckouts: MonthCheckoutItem[] = rawMonthCheckouts.map((c) => {
+  const visibleMonthCheckouts = isKitchenAdmin
+    ? rawMonthCheckouts
+    : rawMonthCheckouts.filter((c) => c.user_id === targetUserId);
+  const monthCheckouts: MonthCheckoutItem[] = visibleMonthCheckouts.map((c) => {
     const rawStore = (c.store_name || "").trim();
     const normalizedStore = rawStore
       ? normalizeStoreName(rawStore) || rawStore.toUpperCase()

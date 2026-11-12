@@ -41,7 +41,7 @@ import {
   type KitchenPulseStats,
   type MonthCheckoutItem,
 } from "@/lib/actions/stats";
-import type { PantryItem, CheckoutWithDetails } from "@/types";
+import type { PantryItem } from "@/types";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
 
@@ -51,18 +51,18 @@ export interface SpacePulseModalProps {
   kitchenId: string;
   kitchenName: string;
   currentUserId: string;
+  isAdmin?: boolean;
   initialStats?: KitchenPulseStats | any;
   pantryItems?: PantryItem[] | any[];
-  myCheckouts?: CheckoutWithDetails[] | any[];
   onStartShoppingRun?: () => void;
 }
 
 const MERCHANT_BARS = [
-  "bg-zinc-300/80",
-  "bg-zinc-400/70",
-  "bg-zinc-500/60",
-  "bg-zinc-600/60",
-  "bg-zinc-700/60",
+  "bg-muted-foreground/20",
+  "bg-muted-foreground/35",
+  "bg-muted-foreground/50",
+  "bg-muted-foreground/65",
+  "bg-muted-foreground/80",
 ];
 
 function escapeCsvCell(cell: string | number | null | undefined): string {
@@ -143,7 +143,7 @@ function formatShortDate(
 export function SpacePulseModalSkeleton() {
   return (
     <div className="space-y-6 py-2 animate-pulse">
-      <Card className="bg-zinc-900/40 border border-white/[0.06] rounded-xl p-5 space-y-4 shadow-none">
+      <Card className="bg-muted/40 border border-border rounded-xl p-5 space-y-4 shadow-none">
         <div className="flex items-center justify-between">
           <Skeleton className="h-3 w-28 rounded-md" />
           <Skeleton className="h-3 w-20 rounded-md" />
@@ -157,12 +157,12 @@ export function SpacePulseModalSkeleton() {
       </Card>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card className="bg-zinc-900/40 border border-white/[0.06] rounded-xl p-5 space-y-3 shadow-none">
+        <Card className="bg-muted/40 border border-border rounded-xl p-5 space-y-3 shadow-none">
           <Skeleton className="h-3 w-32 rounded-md" />
           <Skeleton className="h-8 w-20 rounded-lg" />
           <Skeleton className="h-1.5 w-full rounded-full" />
         </Card>
-        <Card className="bg-zinc-900/40 border border-white/[0.06] rounded-xl p-5 space-y-3 shadow-none">
+        <Card className="bg-muted/40 border border-border rounded-xl p-5 space-y-3 shadow-none">
           <Skeleton className="h-3 w-32 rounded-md" />
           <Skeleton className="h-8 w-20 rounded-lg" />
           <Skeleton className="h-1.5 w-full rounded-full" />
@@ -184,9 +184,9 @@ export function SpacePulseModal({
   kitchenId,
   kitchenName,
   currentUserId,
+  isAdmin = false,
   initialStats,
   pantryItems,
-  myCheckouts,
   onStartShoppingRun,
 }: SpacePulseModalProps) {
   const { t, locale } = useTranslation();
@@ -204,6 +204,7 @@ export function SpacePulseModal({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [activeTab, setActiveTab] = useState<"spending" | "pantry" | "activity">("spending");
+  const [feedScope, setFeedScope] = useState<"all" | "mine">("all");
   const [, startTransition] = useTransition();
 
   // Sync initialStats when prop updates
@@ -263,6 +264,11 @@ export function SpacePulseModal({
 
   // CSV Export handler (Task 3)
   const handleExportCsv = () => {
+    // Household-wide exports contain other members' private notes and receipts.
+    if (!isAdmin) {
+      return;
+    }
+
     const checkouts = (stats?.monthCheckouts || []).filter((c) => !c.is_declined);
     if (checkouts.length === 0) {
       toast.info(t.pulse.csvExportNoData);
@@ -341,16 +347,26 @@ export function SpacePulseModal({
 
   // Depleted essentials count
   const depletedCount = stats?.pantryStockRatio?.outOfStock ?? 0;
-  const feedCheckoutsCount = stats?.monthCheckouts?.length ?? 0;
+
+  // Feed rows: members only ever receive their own checkouts from the server;
+  // admins can switch between the household feed and their own purchases.
+  const feedCheckouts = useMemo(() => {
+    const list = stats?.monthCheckouts || [];
+    if (!isAdmin || feedScope === "mine") {
+      return list.filter((c) => c.user_id === currentUserId);
+    }
+    return list;
+  }, [stats, isAdmin, feedScope, currentUserId]);
+  const feedCheckoutsCount = feedCheckouts.length;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         onDismiss={() => onOpenChange(false)}
-        className="h-[88dvh] max-h-[88dvh] w-full bg-card text-card-foreground rounded-t-2xl border-t border-white/[0.08] shadow-2xl flex flex-col overflow-hidden sm:h-[750px] sm:max-h-[85dvh] sm:w-full sm:max-w-xl sm:rounded-xl sm:border p-0 gap-0 [&>button:last-child]:hidden"
+        className="h-[88dvh] max-h-[88dvh] w-full bg-card text-card-foreground rounded-t-2xl border-t border-border shadow-2xl flex flex-col overflow-hidden sm:h-[750px] sm:max-h-[85dvh] sm:w-full sm:max-w-xl sm:rounded-xl sm:border p-0 gap-0 [&>button:last-child]:hidden"
       >
         {/* Zone 1: Header Zone (shrink-0) */}
-        <div className="shrink-0 border-b border-white/[0.06]">
+        <div className="shrink-0 border-b border-border">
           <DialogHeader className="px-5 pt-5 pb-3 space-y-3">
             {/* Title + actions */}
             <div className="flex items-center justify-between gap-3">
@@ -359,20 +375,22 @@ export function SpacePulseModal({
               </DialogTitle>
 
               <div className="flex items-center gap-1 shrink-0">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleExportCsv}
-                  disabled={isExporting || isLoading}
-                  className="h-8 px-2.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-foreground hover:bg-white/[0.06] gap-1.5"
-                  title={t.pulse.csvExportBtn}
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">
-                    {isExporting ? t.pulse.csvExporting : t.pulse.csvExportBtn}
-                  </span>
-                </Button>
+                {isAdmin && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleExportCsv}
+                    disabled={isExporting || isLoading}
+                    className="h-8 px-2.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 gap-1.5"
+                    title={t.pulse.csvExportBtn}
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">
+                      {isExporting ? t.pulse.csvExporting : t.pulse.csvExportBtn}
+                    </span>
+                  </Button>
+                )}
 
                 <Button
                   type="button"
@@ -380,7 +398,7 @@ export function SpacePulseModal({
                   size="icon-sm"
                   onClick={() => loadData(true, selectedMonthKey)}
                   disabled={isRefreshing || isLoading}
-                  className="h-8 w-8 rounded-lg text-zinc-400 hover:text-foreground hover:bg-white/[0.06] shrink-0 cursor-pointer"
+                  className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 shrink-0 cursor-pointer"
                   title={t.pulse.refresh}
                 >
                   <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
@@ -391,7 +409,7 @@ export function SpacePulseModal({
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => onOpenChange(false)}
-                  className="h-8 w-8 rounded-lg text-zinc-400 hover:text-foreground hover:bg-white/[0.06] shrink-0 cursor-pointer"
+                  className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 shrink-0 cursor-pointer"
                   title={t.pulse.close || t.common.close}
                 >
                   <X className="w-4 h-4" />
@@ -401,13 +419,13 @@ export function SpacePulseModal({
 
             {/* Month navigation */}
             <div className="flex items-center">
-              <div className="inline-flex items-center bg-zinc-900/80 border border-white/[0.06] rounded-lg p-0.5">
+              <div className="inline-flex items-center bg-muted border border-border rounded-lg p-0.5">
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon-sm"
                   onClick={handlePrevMonth}
-                  className="h-7 w-7 rounded-md text-zinc-400 hover:text-foreground hover:bg-white/[0.06] cursor-pointer"
+                  className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
                   title={t.pulse.previousMonth}
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
@@ -417,9 +435,9 @@ export function SpacePulseModal({
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      className="px-2.5 py-1 text-xs font-medium text-zinc-300 hover:text-foreground hover:bg-white/[0.04] rounded-md flex items-center gap-1.5 cursor-pointer transition select-none"
+                      className="px-2.5 py-1 text-xs font-medium text-foreground hover:text-foreground hover:bg-muted/60 rounded-md flex items-center gap-1.5 cursor-pointer transition select-none"
                     >
-                      <Calendar className="w-3 h-3 text-zinc-500 shrink-0" />
+                      <Calendar className="w-3 h-3 text-muted-foreground shrink-0" />
                       <span className="capitalize tabular-nums">{monthDisplayLabel}</span>
                     </button>
                   </DropdownMenuTrigger>
@@ -430,7 +448,7 @@ export function SpacePulseModal({
                         onClick={() => setSelectedMonthKey(m.key)}
                         className={cn(
                           "text-xs capitalize cursor-pointer",
-                          m.key === selectedMonthKey && "font-medium text-foreground bg-white/[0.06]"
+                          m.key === selectedMonthKey && "font-medium text-foreground bg-muted"
                         )}
                       >
                         {m.label}
@@ -445,7 +463,7 @@ export function SpacePulseModal({
                   size="icon-sm"
                   onClick={handleNextMonth}
                   disabled={selectedMonthKey >= currentMonthKey}
-                  className="h-7 w-7 rounded-md text-zinc-400 hover:text-foreground hover:bg-white/[0.06] cursor-pointer disabled:opacity-30"
+                  className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer disabled:opacity-30"
                   title={t.pulse.nextMonth}
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -459,7 +477,7 @@ export function SpacePulseModal({
             <div
               role="tablist"
               aria-label="Pulse navigation"
-              className="w-full grid grid-cols-3 p-1 bg-zinc-900/80 rounded-lg border border-white/[0.06] mb-4 gap-1 shrink-0"
+              className="w-full grid grid-cols-3 p-1 bg-muted rounded-lg border border-border mb-4 gap-1 shrink-0"
             >
               <button
                 type="button"
@@ -469,8 +487,8 @@ export function SpacePulseModal({
                 className={cn(
                   "flex items-center justify-center gap-1.5 h-8 px-1 text-xs font-medium rounded-md transition-colors text-center truncate cursor-pointer",
                   activeTab === "spending"
-                    ? "bg-zinc-800 text-white"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    ? "bg-background text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <CreditCard className="w-3.5 h-3.5 shrink-0 opacity-70" />
@@ -485,14 +503,14 @@ export function SpacePulseModal({
                 className={cn(
                   "flex items-center justify-center gap-1.5 h-8 px-1 text-xs font-medium rounded-md transition-colors text-center truncate cursor-pointer",
                   activeTab === "pantry"
-                    ? "bg-zinc-800 text-white"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    ? "bg-background text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <Package className="w-3.5 h-3.5 shrink-0 opacity-70" />
                 <span className="truncate">{t.pulse.tabBasicsHealth}</span>
                 {depletedCount > 0 && (
-                  <span className="text-[11px] tabular-nums text-zinc-500 shrink-0">
+                  <span className="text-[11px] tabular-nums text-muted-foreground shrink-0">
                     {depletedCount}
                   </span>
                 )}
@@ -506,14 +524,14 @@ export function SpacePulseModal({
                 className={cn(
                   "flex items-center justify-center gap-1.5 h-8 px-1 text-xs font-medium rounded-md transition-colors text-center truncate cursor-pointer",
                   activeTab === "activity"
-                    ? "bg-zinc-800 text-white"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    ? "bg-background text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <Clock className="w-3.5 h-3.5 shrink-0 opacity-70" />
                 <span className="truncate">{t.pulse.tabRestockFeed}</span>
                 {feedCheckoutsCount > 0 && (
-                  <span className="text-[11px] tabular-nums text-zinc-500 shrink-0">
+                  <span className="text-[11px] tabular-nums text-muted-foreground shrink-0">
                     {feedCheckoutsCount}
                   </span>
                 )}
@@ -530,7 +548,7 @@ export function SpacePulseModal({
             <div className="py-14 text-center space-y-2">
               <AlertCircle className="w-5 h-5 mx-auto text-amber-400/80" />
               <p className="text-sm font-medium text-foreground">{t.pulse.couldNotLoad}</p>
-              <p className="text-xs text-zinc-500">{t.pulse.networkError}</p>
+              <p className="text-xs text-muted-foreground">{t.pulse.networkError}</p>
               <div className="pt-2">
                 <Button
                   variant="outline"
@@ -550,12 +568,12 @@ export function SpacePulseModal({
                   {/* Honest Empty State if zero checkouts exist for the period */}
                   {stats.totalReceiptsCount === 0 && stats.totalSpendCurrentMonth === 0 ? (
                     <div className="py-14 text-center space-y-3">
-                      <CreditCard className="w-5 h-5 mx-auto text-zinc-600" />
+                      <CreditCard className="w-5 h-5 mx-auto text-muted-foreground" />
                       <div className="space-y-1 max-w-sm mx-auto">
                         <p className="text-sm font-medium text-foreground">
                           {t.pulse.emptyMonthTitle}
                         </p>
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-xs text-muted-foreground">
                           {t.pulse.emptyMonthSub}
                         </p>
                       </div>
@@ -579,10 +597,10 @@ export function SpacePulseModal({
                   ) : (
                     <>
                       {/* Monthly spend */}
-                      <Card className="bg-zinc-900/40 border border-white/[0.06] rounded-xl p-5 shadow-none space-y-4">
+                      <Card className="bg-muted/40 border border-border rounded-xl p-5 shadow-none space-y-4">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs text-zinc-500">{t.pulse.monthlySpend}</span>
-                          <span className="text-xs text-zinc-500 capitalize tabular-nums">
+                          <span className="text-xs text-muted-foreground">{t.pulse.monthlySpend}</span>
+                          <span className="text-xs text-muted-foreground capitalize tabular-nums">
                             {monthDisplayLabel}
                           </span>
                         </div>
@@ -606,19 +624,19 @@ export function SpacePulseModal({
                               </span>
                             )}
                             {stats.spendTrendDirection === "flat" && (
-                              <span className="inline-flex items-center gap-1 text-xs text-zinc-500 tabular-nums">
+                              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
                                 <Minus className="w-3 h-3" />
                                 0% {t.pulse.vsLastMonth}
                               </span>
                             )}
                             {stats.spendTrendDirection === "new" && (
-                              <span className="inline-flex items-center text-xs text-zinc-500">
+                              <span className="inline-flex items-center text-xs text-muted-foreground">
                                 {t.pulse.firstMonth}
                               </span>
                             )}
                           </div>
 
-                          <div className="flex items-center justify-between text-xs text-zinc-500 pt-1 border-t border-white/[0.06]">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-border">
                             <span>{t.pulse.prevMonthSpend}</span>
                             <span className="tabular-nums">
                               {formatCurrency(stats.totalSpendPreviousMonth, currency)}
@@ -628,44 +646,44 @@ export function SpacePulseModal({
                       </Card>
 
                       {/* Personal impact & settlement */}
-                      <Card className="bg-zinc-900/40 border border-white/[0.06] rounded-xl p-5 shadow-none space-y-4">
+                      <Card className="bg-muted/40 border border-border rounded-xl p-5 shadow-none space-y-4">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-medium text-zinc-400">{t.pulse.myImpact}</span>
+                          <span className="text-xs font-medium text-muted-foreground">{t.pulse.myImpact}</span>
                         </div>
 
                         {stats.userReceiptsCount === 0 &&
                         stats.userSpend === 0 &&
                         (!stats.userSettlement || stats.userSettlement.pendingRefundAmount === 0) ? (
-                          <p className="text-xs text-zinc-500 py-2">
+                          <p className="text-xs text-muted-foreground py-2">
                             {t.pulse.noCheckoutsLogged}
                           </p>
                         ) : (
                           <div className="grid grid-cols-3 gap-3">
                             <div className="space-y-1">
-                              <span className="text-[11px] text-zinc-500">{t.pulse.personalSpend}</span>
+                              <span className="text-[11px] text-muted-foreground">{t.pulse.personalSpend}</span>
                               <div className="text-base font-semibold text-foreground tabular-nums">
                                 {formatCurrency(stats.userSpend, currency)}
                               </div>
-                              <span className="block text-[11px] text-zinc-500 tabular-nums">
+                              <span className="block text-[11px] text-muted-foreground tabular-nums">
                                 {t.pulse.totalSpendShare.replace("{percentage}", String(stats.userSpendSharePercentage))}
                               </span>
                             </div>
 
                             <div className="space-y-1">
-                              <span className="text-[11px] text-zinc-500">{t.pulse.personalRuns}</span>
+                              <span className="text-[11px] text-muted-foreground">{t.pulse.personalRuns}</span>
                               <div className="text-base font-semibold text-foreground tabular-nums">
                                 {stats.userReceiptsCount}
-                                <span className="text-xs font-normal text-zinc-500">
+                                <span className="text-xs font-normal text-muted-foreground">
                                   {" "}/ {stats.totalReceiptsCount}
                                 </span>
                               </div>
-                              <span className="block text-[11px] text-zinc-500 tabular-nums">
+                              <span className="block text-[11px] text-muted-foreground tabular-nums">
                                 {t.pulse.householdRunsShare.replace("{percentage}", String(stats.userHabitRole.runPercentage))}
                               </span>
                             </div>
 
                             <div className="space-y-1">
-                              <span className="text-[11px] text-zinc-500">{t.pulse.settlementStatus}</span>
+                              <span className="text-[11px] text-muted-foreground">{t.pulse.settlementStatus}</span>
                               <div className="text-base font-semibold tabular-nums">
                                 {stats.userSettlement.pendingRefundAmount > 0 ? (
                                   <span className="text-amber-400">
@@ -675,7 +693,7 @@ export function SpacePulseModal({
                                   <span className="text-emerald-400">{t.pulse.balanced}</span>
                                 )}
                               </div>
-                              <span className="block text-[11px] text-zinc-500">
+                              <span className="block text-[11px] text-muted-foreground">
                                 {stats.userSettlement.pendingRefundAmount > 0
                                   ? t.pulse.owedToYou.replace("{count}", String(stats.userSettlement.pendingRefundsCount))
                                   : t.pulse.allRefundsSettled}
@@ -686,15 +704,15 @@ export function SpacePulseModal({
                       </Card>
 
                       {/* Member spending */}
-                      <Card className="bg-zinc-900/40 border border-white/[0.06] rounded-xl p-5 shadow-none space-y-1">
+                      <Card className="bg-muted/40 border border-border rounded-xl p-5 shadow-none space-y-1">
                         <div className="flex items-center justify-between pb-2">
-                          <span className="text-xs font-medium text-zinc-400">
+                          <span className="text-xs font-medium text-muted-foreground">
                             {t.pulse.memberRosterTitle.replace("{count}", String(stats.memberRoster?.length || 0))}
                           </span>
                         </div>
 
                         {stats.memberRoster && stats.memberRoster.length > 0 ? (
-                          <div className="divide-y divide-white/[0.06]">
+                          <div className="divide-y divide-border">
                             {stats.memberRoster.map((member, idx) => {
                               const sharePct =
                                 stats.totalSpendCurrentMonth > 0
@@ -706,10 +724,10 @@ export function SpacePulseModal({
                                   key={member.userId}
                                   className="py-3 flex items-center gap-3"
                                 >
-                                  <span className="w-4 text-[11px] tabular-nums text-zinc-600 shrink-0">
+                                  <span className="w-4 text-[11px] tabular-nums text-muted-foreground shrink-0">
                                     {idx + 1}
                                   </span>
-                                  <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center text-[11px] font-medium text-zinc-300 shrink-0 uppercase">
+                                  <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-[11px] font-medium text-foreground shrink-0 uppercase">
                                     {member.name.charAt(0)}
                                   </div>
 
@@ -722,19 +740,19 @@ export function SpacePulseModal({
                                         <Crown className="w-3 h-3 text-amber-400/80 shrink-0" />
                                       )}
                                     </div>
-                                    <div className="h-1 w-full rounded-full bg-white/[0.06] overflow-hidden">
+                                    <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
                                       <div
-                                        className="h-full rounded-full bg-zinc-500"
+                                        className="h-full rounded-full bg-muted-foreground/70"
                                         style={{ width: `${Math.max(sharePct, 2)}%` }}
                                       />
                                     </div>
                                   </div>
 
-                                  <div className="shrink-0 text-right text-xs tabular-nums text-zinc-500">
+                                  <div className="shrink-0 text-right text-xs tabular-nums text-muted-foreground">
                                     <span className="text-sm font-medium text-foreground">
                                       {formatCurrency(member.spend, currency)}
                                     </span>
-                                    <span className="mx-1 text-zinc-600">·</span>
+                                    <span className="mx-1 text-muted-foreground">·</span>
                                     {sharePct}%
                                   </div>
                                 </div>
@@ -742,17 +760,17 @@ export function SpacePulseModal({
                             })}
                           </div>
                         ) : (
-                          <p className="text-xs text-zinc-500 py-2">{t.pulse.noRuns}</p>
+                          <p className="text-xs text-muted-foreground py-2">{t.pulse.noRuns}</p>
                         )}
                       </Card>
 
                       {/* Merchant breakdown */}
-                      <Card className="bg-zinc-900/40 border border-white/[0.06] rounded-xl p-5 shadow-none space-y-4">
+                      <Card className="bg-muted/40 border border-border rounded-xl p-5 shadow-none space-y-4">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-zinc-400">
+                          <span className="text-xs font-medium text-muted-foreground">
                             {t.pulse.merchantBreakdown}
                           </span>
-                          <span className="text-[11px] text-zinc-500 tabular-nums">
+                          <span className="text-[11px] text-muted-foreground tabular-nums">
                             {stats.categoryBreakdown.length}{" "}
                             {stats.categoryBreakdown.length === 1
                               ? t.pulse.storeSingular
@@ -761,12 +779,12 @@ export function SpacePulseModal({
                         </div>
 
                         {stats.categoryBreakdown.length === 0 ? (
-                          <p className="text-xs text-zinc-500 py-3 text-center">
+                          <p className="text-xs text-muted-foreground py-3 text-center">
                             {t.pulse.noMerchantData}
                           </p>
                         ) : (
                           <div className="space-y-3">
-                            <div className="w-full h-1.5 bg-white/[0.06] rounded-full overflow-hidden flex">
+                            <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden flex">
                               {stats.categoryBreakdown.map((store, idx) => (
                                 <div
                                   key={store.name}
@@ -780,7 +798,7 @@ export function SpacePulseModal({
                               ))}
                             </div>
 
-                            <div className="divide-y divide-white/[0.06]">
+                            <div className="divide-y divide-border">
                               {stats.categoryBreakdown.map((store) => {
                                 const displayName =
                                   store.name === "Sonstige" ? t.pulse.otherStore : store.name;
@@ -791,11 +809,11 @@ export function SpacePulseModal({
                                     className="flex items-center justify-between gap-3 py-2.5"
                                   >
                                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 shrink-0" />
+                                      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 shrink-0" />
                                       <span className="text-sm text-foreground truncate">
                                         {displayName}
                                       </span>
-                                      <span className="text-[11px] text-zinc-500 tabular-nums shrink-0">
+                                      <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
                                         {store.count}{" "}
                                         {store.count === 1
                                           ? t.pulse.runSingular
@@ -807,7 +825,7 @@ export function SpacePulseModal({
                                       <span className="text-foreground font-medium">
                                         {formatCurrency(store.amount, currency)}
                                       </span>
-                                      <span className="text-zinc-500 w-8 text-right">
+                                      <span className="text-muted-foreground w-8 text-right">
                                         {store.percentage}%
                                       </span>
                                     </div>
@@ -827,12 +845,12 @@ export function SpacePulseModal({
               {activeTab === "pantry" && (
                 <div className="space-y-5 animate-in fade-in-50 duration-200">
                   {/* Stock health */}
-                  <Card className="bg-zinc-900/40 border border-white/[0.06] rounded-xl p-5 shadow-none space-y-4">
+                  <Card className="bg-muted/40 border border-border rounded-xl p-5 shadow-none space-y-4">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-medium text-zinc-400">
+                      <span className="text-xs font-medium text-muted-foreground">
                         {t.pulse.inventoryHealth}
                       </span>
-                      <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-500">
+                      <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
                         <span
                           className={cn(
                             "w-1.5 h-1.5 rounded-full",
@@ -854,7 +872,7 @@ export function SpacePulseModal({
                           {stats.pantryStockRatio.inStockPercentage}%
                         </span>
                         <span
-                          className="text-[11px] text-zinc-500 tabular-nums text-right"
+                          className="text-[11px] text-muted-foreground tabular-nums text-right"
                           title={t.pulse.restockResponseTime}
                         >
                           {t.pulse.stockSummary
@@ -866,7 +884,7 @@ export function SpacePulseModal({
                             t.pulse.instant}
                         </span>
                       </div>
-                      <div className="w-full h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                      <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-emerald-500/70 rounded-full transition-all duration-300"
                           style={{ width: `${stats.pantryStockRatio.inStockPercentage}%` }}
@@ -876,22 +894,22 @@ export function SpacePulseModal({
                   </Card>
 
                   {/* Depleted essentials */}
-                  <Card className="bg-zinc-900/40 border border-white/[0.06] rounded-xl p-5 shadow-none space-y-1">
+                  <Card className="bg-muted/40 border border-border rounded-xl p-5 shadow-none space-y-1">
                     <div className="flex items-center justify-between pb-2">
-                      <span className="text-xs font-medium text-zinc-400">
+                      <span className="text-xs font-medium text-muted-foreground">
                         {t.pulse.depletedNeedingRestock}
                       </span>
-                      <span className="text-[11px] text-zinc-500 tabular-nums">
+                      <span className="text-[11px] text-muted-foreground tabular-nums">
                         {stats.depletedEssentials?.length || 0}
                       </span>
                     </div>
 
                     {!stats.depletedEssentials || stats.depletedEssentials.length === 0 ? (
-                      <p className="text-xs text-zinc-500 py-3 text-center">
+                      <p className="text-xs text-muted-foreground py-3 text-center">
                         {t.pulse.allStaplesInStock}
                       </p>
                     ) : (
-                      <div className="divide-y divide-white/[0.06]">
+                      <div className="divide-y divide-border">
                         {stats.depletedEssentials.map((item) => (
                           <div
                             key={item.id}
@@ -904,7 +922,7 @@ export function SpacePulseModal({
                               </span>
                             </div>
 
-                            <span className="text-[11px] text-zinc-500 tabular-nums shrink-0">
+                            <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
                               {formatTimeSinceEmpty(item.updated_at || item.created_at, locale)}
                             </span>
                           </div>
@@ -915,14 +933,14 @@ export function SpacePulseModal({
 
                   {/* Untouched / idle staples */}
                   {stats.idleStaples && stats.idleStaples.length > 0 && (
-                    <Card className="bg-zinc-900/40 border border-white/[0.06] rounded-xl p-5 shadow-none space-y-1">
+                    <Card className="bg-muted/40 border border-border rounded-xl p-5 shadow-none space-y-1">
                       <div className="flex items-center justify-between pb-1">
-                        <span className="text-xs font-medium text-zinc-400">
+                        <span className="text-xs font-medium text-muted-foreground">
                           {t.pulse.untouchedStaplesSub}
                         </span>
                       </div>
 
-                      <div className="divide-y divide-white/[0.06]">
+                      <div className="divide-y divide-border">
                         {stats.idleStaples.map((item) => (
                           <div
                             key={item.id}
@@ -931,7 +949,7 @@ export function SpacePulseModal({
                             <span className="font-medium text-foreground truncate">
                               {item.name}
                             </span>
-                            <span className="text-[11px] text-zinc-500 tabular-nums shrink-0">
+                            <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
                               {t.pulse.idleDays.replace("{days}", String(item.idle_days))}
                             </span>
                           </div>
@@ -945,127 +963,176 @@ export function SpacePulseModal({
               {/* SUB-TAB 3: Einkaufs-Feed */}
               {activeTab === "activity" && (
                 <div className="space-y-3 animate-in fade-in-50 duration-200">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-zinc-400">
-                      {t.pulse.recentRestocks}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {isAdmin ? t.pulse.recentRestocks : t.pulse.myPurchasesFeed}
                     </span>
-                    <span className="text-[11px] text-zinc-500 tabular-nums">
-                      {t.pulse.logsCount.replace(
-                        "{count}",
-                        String(stats.monthCheckouts?.length || 0)
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {isAdmin && (
+                        <div className="inline-flex items-center rounded-lg border border-border bg-muted p-0.5">
+                          <button
+                            type="button"
+                            onClick={() => setFeedScope("all")}
+                            aria-pressed={feedScope === "all"}
+                            className={cn(
+                              "h-6 px-2 rounded-md text-[11px] font-medium transition-colors cursor-pointer",
+                              feedScope === "all"
+                                ? "bg-background text-foreground shadow-xs"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            {t.pulse.feedFilterAll}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFeedScope("mine")}
+                            aria-pressed={feedScope === "mine"}
+                            className={cn(
+                              "h-6 px-2 rounded-md text-[11px] font-medium transition-colors cursor-pointer",
+                              feedScope === "mine"
+                                ? "bg-background text-foreground shadow-xs"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            {t.pulse.feedFilterMine}
+                          </button>
+                        </div>
                       )}
-                    </span>
+
+                      <span className="text-[11px] text-muted-foreground tabular-nums">
+                        {t.pulse.logsCount.replace("{count}", String(feedCheckoutsCount))}
+                      </span>
+                    </div>
                   </div>
 
                   {/* List / Feed */}
-                  {(() => {
-                    const validCheckouts = (stats?.monthCheckouts || []).filter((c) => !c.is_declined);
-                    if (validCheckouts.length === 0) {
-                      return (
-                        <div className="py-12 text-center space-y-2">
-                          <Receipt className="w-5 h-5 mx-auto text-zinc-600" />
-                          <p className="text-sm font-medium text-zinc-300">
-                            {t.pulse.noRecentRestocks}
-                          </p>
-                          <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-                            {t.pulse.noRecentRestocksDesc}
-                          </p>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div className="rounded-xl border border-white/[0.06] bg-zinc-900/40 divide-y divide-white/[0.06]">
-                        {validCheckouts.map((checkout) => {
-                          const itemsCount = checkout.items?.length || 0;
-                          const receiptFilename =
-                            checkout.receipt_filename ||
-                            (checkout.receipts && checkout.receipts.length > 0
-                              ? checkout.receipts[0].receipt_filename
-                              : null);
-                          const receiptUrl = receiptFilename
-                            ? receiptFilename.startsWith("/")
-                              ? receiptFilename
-                              : `/uploads/receipts/${receiptFilename}`
-                            : null;
-                          const storeName =
-                            checkout.store_name === "Sonstige"
-                              ? t.pulse.otherStore
-                              : checkout.store_name;
-                          const itemNames = checkout.items
-                            .slice(0, 6)
-                            .map((item) => item.name)
-                            .join(", ");
+                  {feedCheckouts.length === 0 ? (
+                    <div className="py-12 text-center space-y-2">
+                      <Receipt className="w-5 h-5 mx-auto text-muted-foreground" />
+                      <p className="text-sm font-medium text-foreground">
+                        {t.pulse.noRecentRestocks}
+                      </p>
+                      <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                        {t.pulse.noRecentRestocksDesc}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-border bg-muted/40 divide-y divide-border">
+                      {feedCheckouts.map((checkout) => {
+                        const itemsCount = checkout.items?.length || 0;
+                        const receiptFilename =
+                          checkout.receipt_filename ||
+                          (checkout.receipts && checkout.receipts.length > 0
+                            ? checkout.receipts[0].receipt_filename
+                            : null);
+                        const receiptUrl = receiptFilename
+                          ? receiptFilename.startsWith("/")
+                            ? receiptFilename
+                            : `/uploads/receipts/${receiptFilename}`
+                          : null;
+                        const storeName =
+                          checkout.store_name === "Sonstige"
+                            ? t.pulse.otherStore
+                            : checkout.store_name;
+                        const itemNames = checkout.items
+                          .slice(0, 6)
+                          .map((item) => item.name)
+                          .join(", ");
 
-                          return (
-                            <div key={checkout.id} className="px-4 py-3.5 space-y-1">
-                              <div className="flex items-center justify-between gap-3">
-                                <span className="text-sm font-medium text-foreground truncate">
-                                  {storeName || t.pulse.generalRestock}
-                                </span>
-                                <span className="text-sm font-semibold text-foreground tabular-nums shrink-0">
-                                  {formatCurrency(
-                                    checkout.total_claimed_amount,
-                                    checkout.currency || currency
-                                  )}
-                                </span>
-                              </div>
+                        const statusLabel = checkout.is_declined
+                          ? t.pulse.declined
+                          : checkout.is_refunded
+                            ? t.pulse.settled
+                            : t.pulse.pending;
+                        const statusClasses = checkout.is_declined
+                          ? "border-destructive/25 bg-destructive/10 text-destructive"
+                          : checkout.is_refunded
+                            ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                            : "border-amber-500/25 bg-amber-500/10 text-amber-600 dark:text-amber-400";
+                        const dotClasses = checkout.is_declined
+                          ? "bg-destructive"
+                          : checkout.is_refunded
+                            ? "bg-emerald-500"
+                            : "bg-amber-500";
 
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-1.5 min-w-0 text-xs text-zinc-400">
-                                  <span className="truncate">{checkout.paid_by_name}</span>
-                                  <span className="text-zinc-600">·</span>
-                                  <span className="tabular-nums shrink-0">
-                                    {formatShortDate(checkout.created_at, locale)}
-                                  </span>
-                                  <span className="text-zinc-600">·</span>
-                                  <span className="inline-flex items-center gap-1.5 shrink-0">
-                                    <span
-                                      className={cn(
-                                        "w-1.5 h-1.5 rounded-full",
-                                        checkout.is_refunded ? "bg-emerald-500/80" : "bg-amber-500"
-                                      )}
-                                    />
-                                    {checkout.is_refunded ? t.pulse.settled : t.pulse.pending}
-                                  </span>
-                                </div>
-
-                                {receiptUrl && (
-                                  <a
-                                    href={receiptUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    aria-label={t.pulse.receiptAttached}
-                                    title={t.pulse.receiptAttached}
-                                    className="inline-flex items-center justify-center h-7 w-7 rounded-md text-zinc-500 hover:text-foreground hover:bg-white/[0.06] transition-colors shrink-0"
-                                  >
-                                    <Receipt className="w-3.5 h-3.5" />
-                                  </a>
+                        return (
+                          <div key={checkout.id} className="px-4 py-3.5 space-y-1">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-sm font-medium text-foreground truncate">
+                                {storeName || t.pulse.generalRestock}
+                              </span>
+                              <span className="text-sm font-semibold text-foreground tabular-nums shrink-0">
+                                {formatCurrency(
+                                  checkout.total_claimed_amount,
+                                  checkout.currency || currency
                                 )}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-1.5 min-w-0 text-xs text-muted-foreground">
+                                <span className="truncate">{checkout.paid_by_name}</span>
+                                <span className="text-muted-foreground">·</span>
+                                <span className="tabular-nums shrink-0">
+                                  {formatShortDate(checkout.created_at, locale)}
+                                </span>
+                                <span
+                                  className={cn(
+                                    "inline-flex items-center gap-1.5 shrink-0 rounded-md border px-1.5 py-0.5 text-[10px] font-medium",
+                                    statusClasses
+                                  )}
+                                >
+                                  <span className={cn("w-1.5 h-1.5 rounded-full", dotClasses)} />
+                                  {statusLabel}
+                                </span>
                               </div>
 
-                              {itemsCount > 0 && (
-                                <p className="text-xs text-zinc-500 truncate">
-                                  {itemNames}
-                                  {itemsCount > 6 && (
-                                    <span>
-                                      {" "}
-                                      {t.pulse.moreItems.replace("{count}", String(itemsCount - 6))}
-                                    </span>
-                                  )}
-                                </p>
-                              )}
-
-                              {checkout.note && (
-                                <p className="text-xs text-zinc-500 truncate">
-                                  &ldquo;{checkout.note}&rdquo;
-                                </p>
+                              {receiptUrl && (
+                                <a
+                                  href={receiptUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  aria-label={t.pulse.receiptAttached}
+                                  title={t.pulse.receiptAttached}
+                                  className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0"
+                                >
+                                  <Receipt className="w-3.5 h-3.5" />
+                                </a>
                               )}
                             </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
+
+                            {checkout.is_declined && checkout.decline_reason && (
+                              <p className="text-xs text-destructive/90 truncate">
+                                {t.pulse.declineReason.replace(
+                                  "{reason}",
+                                  checkout.decline_reason
+                                )}
+                              </p>
+                            )}
+
+                            {itemsCount > 0 && (
+                              <p className="text-xs text-muted-foreground truncate">
+                                {itemNames}
+                                {itemsCount > 6 && (
+                                  <span>
+                                    {" "}
+                                    {t.pulse.moreItems.replace("{count}", String(itemsCount - 6))}
+                                  </span>
+                                )}
+                              </p>
+                            )}
+
+                            {checkout.note && (
+                              <p className="text-xs text-muted-foreground truncate">
+                                &ldquo;{checkout.note}&rdquo;
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </>

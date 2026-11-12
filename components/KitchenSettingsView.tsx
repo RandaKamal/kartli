@@ -646,7 +646,7 @@ export function KitchenSettingsView({
            ======================================================== */}
         {isAdmin && isDirty && (
           <div className="sm:hidden fixed bottom-6 inset-x-0 z-50 flex justify-center px-4 animate-in fade-in slide-in-from-bottom-4 duration-200 pointer-events-none">
-            <div className="pointer-events-auto flex items-center justify-between gap-3 p-3 rounded-2xl bg-card/90 border border-white/[0.1] backdrop-blur-2xl shadow-xl w-full max-w-sm">
+            <div className="pointer-events-auto flex items-center justify-between gap-3 p-3 rounded-2xl bg-card/90 border border-border backdrop-blur-2xl shadow-xl w-full max-w-sm">
               <span className="text-xs font-medium text-foreground truncate flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
                 <span>{t.kitchenSettings.unsavedChanges}</span>

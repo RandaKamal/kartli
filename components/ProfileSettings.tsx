@@ -208,7 +208,7 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
                   onClick={() => setTheme("light")}
                   className={`w-full h-9 px-2 sm:px-3 rounded-lg flex items-center justify-center gap-1.5 font-medium text-xs border transition-colors cursor-pointer select-none ${
                     theme === "light"
-                      ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border-transparent shadow-xs"
+                      ? "bg-primary text-primary-foreground border-transparent shadow-xs"
                       : "bg-secondary/40 text-muted-foreground border-border/60 hover:text-foreground hover:bg-secondary"
                   }`}
                 >
@@ -220,7 +220,7 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
                   onClick={() => setTheme("dark")}
                   className={`w-full h-9 px-2 sm:px-3 rounded-lg flex items-center justify-center gap-1.5 font-medium text-xs border transition-colors cursor-pointer select-none ${
                     theme === "dark"
-                      ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border-transparent shadow-xs"
+                      ? "bg-primary text-primary-foreground border-transparent shadow-xs"
                       : "bg-secondary/40 text-muted-foreground border-border/60 hover:text-foreground hover:bg-secondary"
                   }`}
                 >
@@ -232,7 +232,7 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
                   onClick={() => setTheme("system")}
                   className={`w-full h-9 px-2 sm:px-3 rounded-lg flex items-center justify-center gap-1.5 font-medium text-xs border transition-colors cursor-pointer select-none ${
                     theme === "system"
-                      ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border-transparent shadow-xs"
+                      ? "bg-primary text-primary-foreground border-transparent shadow-xs"
                       : "bg-secondary/40 text-muted-foreground border-border/60 hover:text-foreground hover:bg-secondary"
                   }`}
                 >
@@ -282,7 +282,7 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
                         </div>
 
                         {isSelected ? (
-                          <div className="mt-0.5 w-4 h-4 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 flex items-center justify-center shrink-0">
+                          <div className="mt-0.5 w-4 h-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
                             <Check className="w-2.5 h-2.5 stroke-[3]" />
                           </div>
                         ) : (
@@ -299,7 +299,7 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
                           {theme.colors.map((hex, idx) => (
                             <span
                               key={idx}
-                              className="block w-3 h-3 rounded-full border border-black/10 dark:border-white/10 shrink-0"
+                              className="block w-3 h-3 rounded-full border border-black/10 dark:border-border shrink-0"
                               style={{ backgroundColor: hex }}
                             />
                           ))}

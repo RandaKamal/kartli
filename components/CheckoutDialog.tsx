@@ -159,8 +159,22 @@ export function CheckoutDialog({
   const [isMobileReceiptExpanded, setIsMobileReceiptExpanded] = useState(false);
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Receipts removed by the user are tracked here so late async responses
+  // (compression, upload, OCR scan) never mutate state after cancellation.
+  const cancelledReceiptIdsRef = useRef<Set<string>>(new Set());
+  const abortControllersRef = useRef<Map<string, AbortController>>(new Map());
+
+  const cancelReceiptWork = useCallback((receiptId: string) => {
+    cancelledReceiptIdsRef.current.add(receiptId);
+    const controller = abortControllersRef.current.get(receiptId);
+    controller?.abort();
+    abortControllersRef.current.delete(receiptId);
+  }, []);
 
   const resetAll = useCallback(() => {
+    abortControllersRef.current.forEach((controller) => controller.abort());
+    abortControllersRef.current.clear();
+    cancelledReceiptIdsRef.current.clear();
     setPhase("form");
     setStoreName("");
     setTotalAmount("");
@@ -182,6 +196,8 @@ export function CheckoutDialog({
 
   useEffect(() => {
     return () => {
+      abortControllersRef.current.forEach((controller) => controller.abort());
+      abortControllersRef.current.clear();
       receipts.forEach((r) => {
         if (r.previewUrl) URL.revokeObjectURL(r.previewUrl);
       });
@@ -213,6 +229,10 @@ export function CheckoutDialog({
 
   const executeScan = useCallback(
     async (receiptId: string, uploadFile: File) => {
+      const isCancelled = () =>
+        cancelledReceiptIdsRef.current.has(receiptId) ||
+        abortControllersRef.current.get(receiptId)?.signal.aborted === true;
+
       try {
         const formData = new FormData();
         formData.append("file", uploadFile);
@@ -220,6 +240,9 @@ export function CheckoutDialog({
         formData.append("stagedCartItems", JSON.stringify(stagedCartItems));
 
         const res = await scanReceiptAction(formData);
+
+        // The user removed this receipt while the scan was in flight.
+        if (isCancelled()) return;
 
         if (!res.ok) {
           toast.error(res.error);
@@ -238,11 +261,14 @@ export function CheckoutDialog({
           return;
         }
 
+        if (isCancelled()) return;
+
         const result = res.data;
         // Auto-fill store if currently empty
         setStoreName((prev) => (prev.trim() ? prev : result.storeName || ""));
 
         setReceipts((prev) => {
+          if (isCancelled()) return prev;
           const next = prev.map((r) => {
             if (r.id !== receiptId) return r;
             return {
@@ -275,6 +301,8 @@ export function CheckoutDialog({
           return next;
         });
       } catch (error: any) {
+        // Abort/removal must never surface an error or touch state.
+        if (isCancelled()) return;
         toast.error(error.message || "Failed to scan receipt");
         setReceipts((prev) =>
           prev.map((r) =>
@@ -318,19 +346,35 @@ export function CheckoutDialog({
 
       setReceipts((prev) => [...prev, newReceipt]);
 
+      cancelledReceiptIdsRef.current.delete(tempId);
+      const controller = new AbortController();
+      abortControllersRef.current.set(tempId, controller);
+
       startTransition(async () => {
-        let uploadFile: File = file;
         try {
-          uploadFile = await compressReceiptImage(file);
-        } catch {
-          uploadFile = file;
+          let uploadFile: File = file;
+          try {
+            uploadFile = await compressReceiptImage(file);
+          } catch {
+            uploadFile = file;
+          }
+
+          // Cancelled during compression: never touch state or upload.
+          if (
+            cancelledReceiptIdsRef.current.has(tempId) ||
+            controller.signal.aborted
+          ) {
+            return;
+          }
+
+          setReceipts((prev) =>
+            prev.map((r) => (r.id === tempId ? { ...r, compressedFile: uploadFile } : r))
+          );
+
+          await executeScan(tempId, uploadFile);
+        } finally {
+          abortControllersRef.current.delete(tempId);
         }
-
-        setReceipts((prev) =>
-          prev.map((r) => (r.id === tempId ? { ...r, compressedFile: uploadFile } : r))
-        );
-
-        await executeScan(tempId, uploadFile);
       });
     },
     [executeScan, locale]
@@ -352,8 +396,16 @@ export function CheckoutDialog({
         )
       );
 
+      cancelledReceiptIdsRef.current.delete(receiptId);
+      const controller = new AbortController();
+      abortControllersRef.current.set(receiptId, controller);
+
       startTransition(async () => {
-        await executeScan(receiptId, fileToRetry);
+        try {
+          await executeScan(receiptId, fileToRetry);
+        } finally {
+          abortControllersRef.current.delete(receiptId);
+        }
       });
     },
     [receipts, executeScan]
@@ -474,7 +526,11 @@ export function CheckoutDialog({
       const receipt = receipts[index];
       if (!receipt) return;
 
-      const receiptUrl = receipt.receiptUrl;
+      // Abort any in-flight compression/upload/scan and mark it cancelled
+      // before touching state so late responses are ignored.
+      cancelReceiptWork(receipt.id);
+
+      const receiptUrl = receipt.status === "ready" ? receipt.receiptUrl : null;
       startTransition(async () => {
         if (receiptUrl) {
           await deleteReceiptFileAction(receiptUrl);
@@ -508,7 +564,7 @@ export function CheckoutDialog({
           : "Receipt removed. Any matched items are unmatched again."
       );
     },
-    [receipts, isTotalManuallyOverridden, locale]
+    [receipts, isTotalManuallyOverridden, locale, cancelReceiptWork]
   );
 
   const handleClose = useCallback(() => {
@@ -689,7 +745,7 @@ export function CheckoutDialog({
       <DialogContent
         onDismiss={() => handleOpenChange(false)}
         className={cn(
-          "transition-all duration-200 bg-card border border-white/[0.08] shadow-2xl",
+          "transition-all duration-200 bg-card border border-border shadow-2xl",
           phase === "review"
             ? "p-0 w-full sm:max-w-4xl h-[100dvh] sm:h-[88vh] max-h-[100dvh] sm:max-h-[90vh] flex flex-col overflow-hidden rounded-none sm:rounded-xl border-0 sm:border [&>button:last-child]:hidden"
             : phase === "form"
@@ -699,8 +755,8 @@ export function CheckoutDialog({
       >
         {phase === "form" && (
           <div className="flex flex-col flex-1 min-h-0">
-            <DialogHeader className="shrink-0 px-5 pt-4 pb-3 border-b border-white/[0.06] pr-12 text-left">
-              <DialogTitle className="text-base font-semibold text-zinc-100 tracking-tight">
+            <DialogHeader className="shrink-0 px-5 pt-4 pb-3 border-b border-border pr-12 text-left">
+              <DialogTitle className="text-base font-semibold text-foreground tracking-tight">
                 {locale === "de" ? "Auslage einreichen" : "Checkout"}
               </DialogTitle>
               <DialogDescription className="sr-only">
@@ -713,11 +769,11 @@ export function CheckoutDialog({
               {/* Compact single-line header with subtle chips */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-zinc-300">
+                  <span className="font-medium text-foreground">
                     {locale === "de" ? `Artikel (${stagedCartItems.length})` : `Items (${stagedCartItems.length})`}
                   </span>
                   {readyReceiptCount > 0 && itemsNeedingDecision.length > 0 && (
-                    <span className="text-[11px] text-zinc-500 font-normal">
+                    <span className="text-[11px] text-muted-foreground font-normal">
                       {itemsNeedingDecision.length} {locale === "de" ? "ohne Beleg" : "unmatched"}
                     </span>
                   )}
@@ -731,10 +787,10 @@ export function CheckoutDialog({
                         className={cn(
                           "inline-flex items-center text-xs px-2.5 py-1 rounded-md border font-normal transition-colors",
                           isMatched
-                            ? "bg-zinc-800/80 border-white/[0.08] text-zinc-200"
+                            ? "bg-secondary border-border text-foreground"
                             : readyReceiptCount > 0
-                            ? "bg-zinc-900/40 border-white/[0.05] text-zinc-400"
-                            : "bg-zinc-900/60 border-white/[0.07] text-zinc-300"
+                            ? "bg-muted/40 border-border text-muted-foreground"
+                            : "bg-muted/60 border-border text-foreground"
                         )}
                       >
                         {item.name}
@@ -763,11 +819,11 @@ export function CheckoutDialog({
                       return (
                         <div
                           key={r.id}
-                          className="w-full flex items-center justify-between gap-3 p-3 rounded-xl border border-white/[0.08] bg-zinc-900/40"
+                          className="w-full flex items-center justify-between gap-3 p-3 rounded-xl border border-border bg-muted/40"
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             {r.previewUrl ? (
-                              <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/[0.08] bg-zinc-950 shrink-0">
+                              <div className="w-10 h-10 rounded-lg overflow-hidden border border-border bg-background shrink-0">
                                 <img
                                   src={r.previewUrl}
                                   alt="Receipt"
@@ -775,18 +831,18 @@ export function CheckoutDialog({
                                 />
                               </div>
                             ) : (
-                              <div className="w-10 h-10 rounded-lg bg-zinc-800/60 border border-white/[0.08] flex items-center justify-center text-zinc-400 shrink-0">
+                              <div className="w-10 h-10 rounded-lg bg-secondary/60 border border-border flex items-center justify-center text-muted-foreground shrink-0">
                                 <Loader2 className="w-4 h-4 animate-spin" />
                               </div>
                             )}
                             <div className="min-w-0 space-y-0.5">
                               <div className="flex items-center gap-1.5">
-                                <Loader2 className="w-3 h-3 animate-spin text-zinc-400 shrink-0" />
-                                <p className="text-xs font-medium text-zinc-200 truncate">
+                                <Loader2 className="w-3 h-3 animate-spin text-muted-foreground shrink-0" />
+                                <p className="text-xs font-medium text-foreground truncate">
                                   {locale === "de" ? "Beleg wird gescannt..." : "Scanning receipt..."}
                                 </p>
                               </div>
-                              <p className="text-[11px] text-zinc-500 truncate">
+                              <p className="text-[11px] text-muted-foreground truncate">
                                 {locale === "de"
                                   ? "Geschäft, Positionen & Preise werden erkannt"
                                   : "Extracting store, items & prices"}
@@ -798,8 +854,7 @@ export function CheckoutDialog({
                             variant="ghost"
                             size="icon-sm"
                             onClick={() => handleRemoveReceipt(i)}
-                            disabled={isPending}
-                            className="text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg h-8 w-8 shrink-0"
+                            className="text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg h-8 w-8 shrink-0"
                             title={locale === "de" ? "Scan abbrechen" : "Cancel scan"}
                             aria-label={locale === "de" ? "Scan abbrechen" : "Cancel scan"}
                           >
@@ -817,7 +872,7 @@ export function CheckoutDialog({
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             {r.previewUrl ? (
-                              <div className="w-10 h-10 rounded-lg overflow-hidden border border-red-500/20 bg-zinc-950 shrink-0">
+                              <div className="w-10 h-10 rounded-lg overflow-hidden border border-red-500/20 bg-background shrink-0">
                                 <img
                                   src={r.previewUrl}
                                   alt="Receipt"
@@ -833,7 +888,7 @@ export function CheckoutDialog({
                               <p className="text-xs font-medium text-red-400 truncate">
                                 {locale === "de" ? "Scan fehlgeschlagen" : "Scan Failed"}
                               </p>
-                              <p className="text-[11px] text-zinc-400 truncate" title={r.errorMessage}>
+                              <p className="text-[11px] text-muted-foreground truncate" title={r.errorMessage}>
                                 {r.errorMessage ||
                                   (locale === "de" ? "Tippe auf Wiederholen" : "Tap retry to scan again")}
                               </p>
@@ -847,7 +902,7 @@ export function CheckoutDialog({
                                 size="sm"
                                 onClick={() => handleRetryScan(i)}
                                 disabled={isPending}
-                                className="text-xs h-7 px-2.5 rounded-lg text-zinc-300 hover:text-white hover:bg-white/[0.08]"
+                                className="text-xs h-7 px-2.5 rounded-lg text-foreground hover:text-foreground hover:bg-muted/60"
                               >
                                 {locale === "de" ? "Wiederholen" : "Retry"}
                               </Button>
@@ -857,8 +912,7 @@ export function CheckoutDialog({
                               variant="ghost"
                               size="icon-sm"
                               onClick={() => handleRemoveReceipt(i)}
-                              disabled={isPending}
-                              className="text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg h-8 w-8"
+                              className="text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg h-8 w-8"
                               title={locale === "de" ? "Verwerfen" : "Discard"}
                               aria-label={locale === "de" ? "Verwerfen" : "Discard"}
                             >
@@ -873,11 +927,11 @@ export function CheckoutDialog({
                     return (
                       <div
                         key={r.id || r.receiptUrl || `receipt-${i}`}
-                        className="w-full flex items-center justify-between gap-3 p-3 rounded-xl border border-white/[0.07] bg-zinc-900/50"
+                        className="w-full flex items-center justify-between gap-3 p-3 rounded-xl border border-border bg-muted/50"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           {r.previewUrl ? (
-                            <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/[0.08] bg-zinc-950 shrink-0">
+                            <div className="w-10 h-10 rounded-lg overflow-hidden border border-border bg-background shrink-0">
                               <img
                                 src={r.previewUrl}
                                 alt="Receipt"
@@ -885,15 +939,15 @@ export function CheckoutDialog({
                               />
                             </div>
                           ) : (
-                            <div className="w-10 h-10 rounded-lg bg-zinc-800/60 border border-white/[0.08] flex items-center justify-center text-zinc-400 shrink-0">
+                            <div className="w-10 h-10 rounded-lg bg-secondary/60 border border-border flex items-center justify-center text-muted-foreground shrink-0">
                               <Receipt className="w-4 h-4" />
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="text-xs font-semibold text-zinc-100 truncate">
+                            <p className="text-xs font-semibold text-foreground truncate">
                               {r.storeName || (locale === "de" ? "Beleg" : "Receipt")}
                             </p>
-                            <p className="text-[11px] text-zinc-400 tabular-nums">
+                            <p className="text-[11px] text-muted-foreground tabular-nums">
                               {locale === "de"
                                 ? r.totalReceiptAmount.toFixed(2).replace(".", ",")
                                 : r.totalReceiptAmount.toFixed(2)}{" "}
@@ -917,7 +971,7 @@ export function CheckoutDialog({
                               setReviewingIndex(i);
                               setPhase("review");
                             }}
-                            className="text-xs h-7 px-2.5 rounded-lg text-zinc-300 hover:text-white hover:bg-white/[0.06] font-medium"
+                            className="text-xs h-7 px-2.5 rounded-lg text-foreground hover:text-foreground hover:bg-muted/60 font-medium"
                           >
                             {locale === "de" ? "Prüfen" : "Edit"}
                           </Button>
@@ -926,8 +980,7 @@ export function CheckoutDialog({
                             variant="ghost"
                             size="icon-sm"
                             onClick={() => handleRemoveReceipt(i)}
-                            disabled={isPending}
-                            className="text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg h-7 w-7"
+                            className="text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg h-7 w-7"
                             title={locale === "de" ? "Beleg entfernen" : "Remove receipt"}
                             aria-label={locale === "de" ? "Beleg entfernen" : "Remove receipt"}
                           >
@@ -945,9 +998,9 @@ export function CheckoutDialog({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isPending || isAnyReceiptScanning}
-                className="w-full h-10 flex items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 hover:border-white/30 bg-zinc-900/30 hover:bg-zinc-800/40 transition-colors text-xs font-medium text-zinc-300 hover:text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-10 flex items-center justify-center gap-2 rounded-xl border border-dashed border-border hover:border-foreground/30 bg-muted/30 hover:bg-secondary/40 transition-colors text-xs font-medium text-foreground hover:text-foreground cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Plus className="w-3.5 h-3.5 text-zinc-400" />
+                <Plus className="w-3.5 h-3.5 text-muted-foreground" />
                 <span>
                   {receipts.length > 0
                     ? locale === "de"
@@ -962,7 +1015,7 @@ export function CheckoutDialog({
               {/* Compact 2-column grid for Store and Amount */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="checkout-store" className="text-xs font-medium text-zinc-300">
+                  <Label htmlFor="checkout-store" className="text-xs font-medium text-foreground">
                     {locale === "de" ? "Store" : "Store"}
                   </Label>
                   <Input
@@ -971,13 +1024,13 @@ export function CheckoutDialog({
                     placeholder={locale === "de" ? "z.B. Edeka, Rewe, Lidl" : "e.g. Edeka, Rewe, Lidl"}
                     value={storeName}
                     onChange={(e) => setStoreName(e.target.value)}
-                    className="h-9 text-xs rounded-lg border-white/[0.08] bg-zinc-900/50 focus-visible:bg-zinc-900 focus-visible:border-white/20 transition-colors text-zinc-100 placeholder:text-zinc-500"
+                    className="h-9 text-xs rounded-lg border-border bg-muted/50 focus-visible:bg-background focus-visible:border-border transition-colors text-foreground placeholder:text-muted-foreground"
                     disabled={isPending}
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="checkout-amount" className="text-xs font-medium text-zinc-300">
+                  <Label htmlFor="checkout-amount" className="text-xs font-medium text-foreground">
                     {locale === "de" ? "Betrag (€)" : "Total (€)"}
                   </Label>
                   <Input
@@ -991,7 +1044,7 @@ export function CheckoutDialog({
                       setIsTotalManuallyOverridden(true);
                       setTotalAmount(e.target.value);
                     }}
-                    className="h-9 text-xs font-mono tabular-nums rounded-lg border-white/[0.08] bg-zinc-900/50 focus-visible:bg-zinc-900 focus-visible:border-white/20 transition-colors text-zinc-100 placeholder:text-zinc-500"
+                    className="h-9 text-xs font-mono tabular-nums rounded-lg border-border bg-muted/50 focus-visible:bg-background focus-visible:border-border transition-colors text-foreground placeholder:text-muted-foreground"
                     disabled={isPending}
                   />
                   {isTotalInvalid && totalAmount !== "" && (
@@ -1004,7 +1057,7 @@ export function CheckoutDialog({
 
               {/* Note input */}
               <div className="space-y-1.5">
-                <Label htmlFor="checkout-note" className="text-xs font-medium text-zinc-300">
+                <Label htmlFor="checkout-note" className="text-xs font-medium text-foreground">
                   {locale === "de" ? "Notiz (optional)" : "Note (optional)"}
                 </Label>
                 <textarea
@@ -1013,10 +1066,10 @@ export function CheckoutDialog({
                   placeholder={t.kitchen.ledger.noteToAdminPlaceholder}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  className="flex min-h-[56px] w-full rounded-lg border border-white/[0.08] bg-zinc-900/50 p-2.5 text-xs text-zinc-100 placeholder:text-zinc-500 shadow-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20 disabled:cursor-not-allowed disabled:opacity-50 resize-none transition-colors"
+                  className="flex min-h-[56px] w-full rounded-lg border border-border bg-muted/50 p-2.5 text-xs text-foreground placeholder:text-muted-foreground shadow-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/40 focus-visible:border-border disabled:cursor-not-allowed disabled:opacity-50 resize-none transition-colors"
                   disabled={isPending}
                 />
-                <p className="text-[11px] text-zinc-500">
+                <p className="text-[11px] text-muted-foreground">
                   {locale === "de"
                     ? "Nur für Admins sichtbar · wird nach Ausgleich gelöscht"
                     : "Visible only to admins · cleared once settled"}
@@ -1025,14 +1078,14 @@ export function CheckoutDialog({
 
               {/* Footer Actions */}
               </div>
-              <DialogFooter className="shrink-0 px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] border-t border-white/[0.06] bg-zinc-900/95 backdrop-blur-sm flex-row items-center justify-between sm:justify-between gap-2">
+              <DialogFooter className="shrink-0 px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] border-t border-border bg-card/95 backdrop-blur-sm flex-row items-center justify-between sm:justify-between gap-2">
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={handleClose}
                   disabled={isPending}
-                  className="text-xs h-9 px-3 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05]"
+                  className="text-xs h-9 px-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60"
                 >
                   {locale === "de" ? "Abbrechen" : "Cancel"}
                 </Button>
@@ -1043,7 +1096,7 @@ export function CheckoutDialog({
                     size="sm"
                     onClick={handleSaveDraft}
                     disabled={isPending}
-                    className="text-xs h-9 px-3 rounded-lg bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300 border border-white/[0.06]"
+                    className="text-xs h-9 px-3 rounded-lg bg-secondary hover:bg-secondary text-foreground border border-border"
                   >
                     {locale === "de" ? "Entwurf" : "Save draft"}
                   </Button>
@@ -1051,7 +1104,7 @@ export function CheckoutDialog({
                     type="submit"
                     size="sm"
                     disabled={isPending || isAnyReceiptScanning || stagedCartItems.length === 0 || isTotalInvalid}
-                    className="text-xs font-medium h-9 px-4 rounded-lg gap-1.5 bg-white text-zinc-950 hover:bg-zinc-200 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="text-xs font-medium h-9 px-4 rounded-lg gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {isPending || isAnyReceiptScanning ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1080,8 +1133,8 @@ export function CheckoutDialog({
 
         {phase === "confirm-unmatched" && (
           <div className="flex flex-col space-y-4">
-            <DialogHeader className="px-5 py-4 border-b border-white/[0.06] -mx-5 sm:-mx-6 -mt-5 sm:-mt-6 mb-2 pr-12 text-left">
-              <DialogTitle className="text-base font-semibold text-zinc-100 tracking-tight">
+            <DialogHeader className="px-5 py-4 border-b border-border -mx-5 sm:-mx-6 -mt-5 sm:-mt-6 mb-2 pr-12 text-left">
+              <DialogTitle className="text-base font-semibold text-foreground tracking-tight">
                 {receipts.length > 0
                   ? locale === "de"
                     ? "Nicht zugeordnete Artikel"
@@ -1097,7 +1150,7 @@ export function CheckoutDialog({
               </DialogDescription>
             </DialogHeader>
 
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-muted-foreground">
               {receipts.length > 0
                 ? locale === "de"
                   ? "Diese Artikel wurden auf keinem Beleg gefunden. Wähle für jeden Artikel, ob er gekauft wurde oder zurück in die Liste soll."
@@ -1111,16 +1164,16 @@ export function CheckoutDialog({
               {itemsNeedingDecision.map((item) => {
                 const decision = noReceiptDecisions[item.id];
                 return (
-                  <div key={item.id} className="p-3 rounded-xl border border-white/[0.07] bg-zinc-900/50 space-y-2.5">
+                  <div key={item.id} className="p-3 rounded-xl border border-border bg-muted/50 space-y-2.5">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-medium text-zinc-200 truncate">{item.name}</span>
+                      <span className="text-xs font-medium text-foreground truncate">{item.name}</span>
                       {decision && (
                         <span
                           className={cn(
                             "text-[10px] px-2 py-0.5 rounded-md border font-normal",
                             decision === "forgot"
-                              ? "bg-zinc-800 border-white/[0.1] text-zinc-200"
-                              : "bg-zinc-900/50 border-white/[0.06] text-zinc-400"
+                              ? "bg-secondary border-border text-foreground"
+                              : "bg-muted/50 border-border text-muted-foreground"
                           )}
                         >
                           {decision === "forgot"
@@ -1142,9 +1195,9 @@ export function CheckoutDialog({
                           placeholder="0.00"
                           value={noReceiptPrices[item.id] ?? ""}
                           onChange={(e) => handleNoReceiptPriceChange(item.id, e.target.value)}
-                          className="h-8 text-xs font-mono tabular-nums rounded-lg border-white/[0.08] bg-zinc-900/50 text-zinc-100 placeholder:text-zinc-500 flex-1"
+                          className="h-8 text-xs font-mono tabular-nums rounded-lg border-border bg-muted/50 text-foreground placeholder:text-muted-foreground flex-1"
                         />
-                        <span className="text-xs text-zinc-400 font-mono">€</span>
+                        <span className="text-xs text-muted-foreground font-mono">€</span>
                       </div>
                     )}
 
@@ -1157,8 +1210,8 @@ export function CheckoutDialog({
                         className={cn(
                           "flex-1 h-8 text-xs rounded-lg transition-colors",
                           decision === "return"
-                            ? "bg-zinc-800 text-white border-white/[0.1]"
-                            : "border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
+                            ? "bg-primary text-primary-foreground border-border"
+                            : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/60"
                         )}
                       >
                         {locale === "de" ? "Zurück in Liste" : "Return to Cart"}
@@ -1171,8 +1224,8 @@ export function CheckoutDialog({
                         className={cn(
                           "flex-1 h-8 text-xs rounded-lg transition-colors",
                           decision === "forgot"
-                            ? "bg-zinc-800 text-white border-white/[0.1]"
-                            : "border-white/[0.08] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
+                            ? "bg-primary text-primary-foreground border-border"
+                            : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/60"
                         )}
                       >
                         {locale === "de" ? "Ohne Beleg gekauft" : "Forgot Receipt"}
@@ -1183,14 +1236,14 @@ export function CheckoutDialog({
               })}
             </div>
 
-            <DialogFooter className="pt-3 border-t border-white/[0.06] flex items-center justify-between sm:justify-between gap-2">
+            <DialogFooter className="pt-3 border-t border-border flex items-center justify-between sm:justify-between gap-2">
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => setPhase("form")}
                 disabled={isPending}
-                className="text-xs h-9 px-3 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.05]"
+                className="text-xs h-9 px-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60"
               >
                 {locale === "de" ? "Zurück" : "Back"}
               </Button>
@@ -1199,7 +1252,7 @@ export function CheckoutDialog({
                 size="sm"
                 onClick={finalizeCheckout}
                 disabled={isPending || itemsNeedingDecision.some((item) => !noReceiptDecisions[item.id])}
-                className="text-xs font-medium h-9 px-4 rounded-lg gap-1.5 bg-white text-zinc-950 hover:bg-zinc-200 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                className="text-xs font-medium h-9 px-4 rounded-lg gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                 <span>{locale === "de" ? "Bestätigen & Einreichen" : "Confirm & Checkout"}</span>
@@ -1211,16 +1264,16 @@ export function CheckoutDialog({
         {phase === "review" && current && reviewingIndex !== null && (
           <div className="flex flex-col h-full w-full overflow-hidden">
             {/* Review Header */}
-            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06] bg-card shrink-0 z-10">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-border bg-card shrink-0 z-10">
               <div className="flex items-center gap-2.5 min-w-0">
-                <Receipt className="w-4 h-4 text-zinc-400 shrink-0" />
-                <span className="text-sm font-semibold text-zinc-100 truncate">
+                <Receipt className="w-4 h-4 text-muted-foreground shrink-0" />
+                <span className="text-sm font-semibold text-foreground truncate">
                   {locale === "de" ? "Beleg prüfen & zuordnen" : "Review & Match Receipt"}
                   {receipts.length > 1 ? ` (${reviewingIndex + 1}/${receipts.length})` : ""}
                 </span>
               </div>
               <div className="flex items-center gap-2.5 shrink-0">
-                <span className="text-xs font-mono tabular-nums px-2 py-0.5 rounded-md bg-zinc-800/80 border border-white/[0.08] text-zinc-200">
+                <span className="text-xs font-mono tabular-nums px-2 py-0.5 rounded-md bg-secondary border border-border text-foreground">
                   {current.totalReceiptAmount.toFixed(2).replace(".", ",")} €
                 </span>
                 <button
@@ -1228,7 +1281,7 @@ export function CheckoutDialog({
                   onClick={handleContinueToDetails}
                   disabled={isPending}
                   aria-label="Close dialog"
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06] transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1237,8 +1290,8 @@ export function CheckoutDialog({
 
             <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
               {/* Desktop image viewer */}
-              <div className="hidden md:flex md:w-2/5 shrink-0 border-r border-white/[0.06] bg-zinc-950/40 p-4 flex-col items-center justify-center relative overflow-hidden">
-                <div className="relative rounded-xl overflow-hidden border border-white/[0.08] bg-zinc-950/80 h-full w-full flex items-center justify-center">
+              <div className="hidden md:flex md:w-2/5 shrink-0 border-r border-border bg-background/40 p-4 flex-col items-center justify-center relative overflow-hidden">
+                <div className="relative rounded-xl overflow-hidden border border-border bg-background/80 h-full w-full flex items-center justify-center">
                   {current.previewUrl && (
                     <img
                       src={current.previewUrl}
@@ -1253,7 +1306,7 @@ export function CheckoutDialog({
                   <button
                     type="button"
                     onClick={() => setIsZoomed(!isZoomed)}
-                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-zinc-900/80 backdrop-blur-sm border border-white/[0.1] text-zinc-400 hover:text-zinc-100 transition-colors cursor-pointer"
+                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-muted backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     title={isZoomed ? "Zoom out" : "Zoom in"}
                   >
                     {isZoomed ? <ZoomOut className="w-4 h-4" /> : <ZoomIn className="w-4 h-4" />}
@@ -1262,16 +1315,16 @@ export function CheckoutDialog({
               </div>
 
               {/* Mobile image toggle */}
-              <div className="md:hidden border-b border-white/[0.06] bg-zinc-900/30 shrink-0">
+              <div className="md:hidden border-b border-border bg-muted/30 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsMobileReceiptExpanded(!isMobileReceiptExpanded)}
-                  className="w-full flex items-center justify-between p-3 text-xs font-medium text-zinc-300 hover:bg-white/[0.03] transition-colors cursor-pointer"
+                  className="w-full flex items-center justify-between p-3 text-xs font-medium text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-zinc-500 shrink-0" />
+                    <ImageIcon className="w-4 h-4 text-muted-foreground shrink-0" />
                     <span>{locale === "de" ? "Belegfoto" : "Receipt Photo"}</span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-white/[0.08] text-zinc-500">
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-border text-muted-foreground">
                       {isMobileReceiptExpanded
                         ? locale === "de"
                           ? "Einklappen"
@@ -1282,15 +1335,15 @@ export function CheckoutDialog({
                     </span>
                   </div>
                   {isMobileReceiptExpanded ? (
-                    <ChevronUp className="w-4 h-4 text-zinc-500 shrink-0" />
+                    <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-zinc-500 shrink-0" />
+                    <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
                   )}
                 </button>
 
                 {isMobileReceiptExpanded && current.previewUrl && (
                   <div className="p-3 pt-0 flex flex-col items-center justify-center animate-in fade-in-50 duration-200">
-                    <div className="relative rounded-xl overflow-hidden border border-white/[0.08] bg-zinc-950 max-h-[35vh] w-full flex items-center justify-center">
+                    <div className="relative rounded-xl overflow-hidden border border-border bg-background max-h-[35vh] w-full flex items-center justify-center">
                       <img
                         src={current.previewUrl}
                         alt="Receipt Preview"
@@ -1303,7 +1356,7 @@ export function CheckoutDialog({
                       <button
                         type="button"
                         onClick={() => setIsZoomed(!isZoomed)}
-                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-zinc-900/80 backdrop-blur-sm border border-white/[0.1] text-zinc-400 hover:text-zinc-100 cursor-pointer"
+                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-muted backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground cursor-pointer"
                       >
                         {isZoomed ? <ZoomOut className="w-3.5 h-3.5" /> : <ZoomIn className="w-3.5 h-3.5" />}
                       </button>
@@ -1315,29 +1368,29 @@ export function CheckoutDialog({
               {/* Line items assignment panel */}
               <div className="flex-1 flex flex-col min-h-0 min-w-0 md:w-3/5 overflow-hidden">
                 <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 touch-pan-y overscroll-contain">
-                  <div className="flex items-center justify-between gap-2.5 flex-wrap p-2.5 rounded-xl bg-zinc-900/50 border border-white/[0.07]">
-                    <div className="flex items-center gap-2 text-xs text-zinc-200 font-medium">
+                  <div className="flex items-center justify-between gap-2.5 flex-wrap p-2.5 rounded-xl bg-muted/50 border border-border">
+                    <div className="flex items-center gap-2 text-xs text-foreground font-medium">
                       <span>{current.storeName || (locale === "de" ? "Geschäft" : "Store")}</span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[11px] text-zinc-500">
+                      <span className="text-[11px] text-muted-foreground">
                         {locale === "de" ? "Gesamtbetrag Beleg: " : "Receipt Total: "}
                       </span>
-                      <span className="text-xs font-bold font-mono tabular-nums text-zinc-100">
+                      <span className="text-xs font-bold font-mono tabular-nums text-foreground">
                         {current.totalReceiptAmount.toFixed(2).replace(".", ",")} €
                       </span>
                     </div>
                   </div>
 
                   {unresolvedItems.length > 0 && (
-                    <p className="text-[11px] text-zinc-500">
+                    <p className="text-[11px] text-muted-foreground">
                       {locale === "de"
                         ? `${unresolvedItems.length} Artikel noch keinem Beleg zugeordnet (${unresolvedItems.map((c) => c.name).join(", ")})`
                         : `${unresolvedItems.length} items not matched to any receipt (${unresolvedItems.map((c) => c.name).join(", ")})`}
                     </p>
                   )}
 
-                  <p className="text-[11px] text-zinc-400 font-medium">
+                  <p className="text-[11px] text-muted-foreground font-medium">
                     {locale === "de"
                       ? "Wähle die Positionen aus, die für die Küche erstattet werden sollen:"
                       : "Select the line items to claim for the household:"}
@@ -1354,8 +1407,8 @@ export function CheckoutDialog({
                           className={cn(
                             "flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl border transition-all text-xs",
                             state.checked
-                              ? "border-white/[0.12] bg-zinc-900/80 text-zinc-100"
-                              : "border-white/[0.04] bg-zinc-950/30 opacity-60 text-zinc-400"
+                              ? "border-border bg-muted text-foreground"
+                              : "border-border bg-background/30 opacity-60 text-muted-foreground"
                           )}
                         >
                           <button
@@ -1364,8 +1417,8 @@ export function CheckoutDialog({
                             className={cn(
                               "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer",
                               state.checked
-                                ? "bg-white border-white text-zinc-950"
-                                : "border-white/[0.2] hover:border-white/[0.4]"
+                                ? "bg-primary border-primary text-primary-foreground"
+                                : "border-border hover:border-border"
                             )}
                           >
                             {state.checked && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
@@ -1375,13 +1428,13 @@ export function CheckoutDialog({
                             <p className="text-xs font-medium truncate" title={line.raw_name}>
                               {line.quantity > 1 ? (
                                 <>
-                                  <span className="font-semibold text-zinc-100">{line.quantity}×</span>{" "}
+                                  <span className="font-semibold text-foreground">{line.quantity}×</span>{" "}
                                   <span>{line.raw_name}</span>{" "}
-                                  <span className="text-zinc-400 font-mono">
+                                  <span className="text-muted-foreground font-mono">
                                     · {(state.price || 0).toFixed(2).replace(".", ",")} €
                                   </span>
                                   {(line.unit_price ?? line.unitPrice) !== null && (
-                                    <span className="text-[11px] text-zinc-500 font-mono ml-1">
+                                    <span className="text-[11px] text-muted-foreground font-mono ml-1">
                                       ({(line.unit_price ?? line.unitPrice)!.toFixed(2).replace(".", ",")} €/{locale === "de" ? "Stk" : "ea"})
                                     </span>
                                   )}
@@ -1389,7 +1442,7 @@ export function CheckoutDialog({
                               ) : (
                                 <>
                                   <span>{line.raw_name}</span>{" "}
-                                  <span className="text-zinc-400 font-mono">
+                                  <span className="text-muted-foreground font-mono">
                                     · {(state.price || 0).toFixed(2).replace(".", ",")} €
                                   </span>
                                 </>
@@ -1398,7 +1451,7 @@ export function CheckoutDialog({
                             <select
                               value={current.lineMatches[i] ?? ""}
                               onChange={(e) => handleMatchChange(reviewingIndex, i, e.target.value || null)}
-                              className="text-[11px] bg-zinc-900/90 border border-white/[0.08] rounded-md px-1.5 py-0.5 text-zinc-200 max-w-full focus:outline-none focus:border-white/20"
+                              className="text-[11px] bg-muted border border-border rounded-md px-1.5 py-0.5 text-foreground max-w-full focus:outline-none focus:border-border"
                             >
                               <option value="">{locale === "de" ? "— Nicht zugeordnet —" : "— Not matched —"}</option>
                               {stagedCartItems.map((item) => (
@@ -1415,9 +1468,9 @@ export function CheckoutDialog({
                               step="0.01"
                               value={state.price === 0 ? "" : state.price}
                               onChange={(e) => handlePriceChange(reviewingIndex, i, e.target.value)}
-                              className="w-18 sm:w-20 h-7 text-xs text-right font-mono tabular-nums bg-zinc-900/80 border-white/[0.08] text-zinc-100 rounded-md"
+                              className="w-18 sm:w-20 h-7 text-xs text-right font-mono tabular-nums bg-muted border-border text-foreground rounded-md"
                             />
-                            <span className="text-xs text-zinc-500 font-mono">€</span>
+                            <span className="text-xs text-muted-foreground font-mono">€</span>
                           </div>
                         </div>
                       );
@@ -1426,13 +1479,13 @@ export function CheckoutDialog({
                 </div>
 
                 {/* Sticky bottom summary bar */}
-                <div className="sticky bottom-0 left-0 right-0 p-3 sm:p-4 bg-card/95 backdrop-blur-md border-t border-white/[0.06] flex items-center justify-between gap-3 z-10 shrink-0">
+                <div className="sticky bottom-0 left-0 right-0 p-3 sm:p-4 bg-card/95 backdrop-blur-md border-t border-border flex items-center justify-between gap-3 z-10 shrink-0">
                   <div className="space-y-0.5 min-w-0">
-                    <p className="text-xs font-semibold text-zinc-100 tabular-nums truncate">
+                    <p className="text-xs font-semibold text-foreground tabular-nums truncate">
                       {locale === "de" ? "Auslage für Küche: " : "Claimed: "}
                       {claimedAmount.toFixed(2).replace(".", ",")} €
                     </p>
-                    <p className="text-[10px] text-zinc-500 tabular-nums">
+                    <p className="text-[10px] text-muted-foreground tabular-nums">
                       {locale === "de" ? "Belegsumme: " : "Total: "}
                       {totalReceiptAmount.toFixed(2).replace(".", ",")} €
                     </p>
@@ -1445,7 +1498,7 @@ export function CheckoutDialog({
                       size="sm"
                       onClick={() => handleRemoveReceipt(reviewingIndex)}
                       disabled={isPending}
-                      className="text-xs h-8 px-2.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-red-500/10"
+                      className="text-xs h-8 px-2.5 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
                     >
                       <Trash2 className="w-3.5 h-3.5 mr-1" />
                       {locale === "de" ? "Löschen" : "Discard"}
@@ -1455,7 +1508,7 @@ export function CheckoutDialog({
                       size="sm"
                       onClick={handleContinueToDetails}
                       disabled={isPending}
-                      className="text-xs font-medium h-8 px-3 rounded-lg gap-1.5 bg-white text-zinc-950 hover:bg-zinc-200 transition-colors shadow-sm"
+                      className="text-xs font-medium h-8 px-3 rounded-lg gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
                     >
                       <span>{locale === "de" ? "Übernehmen" : "Apply"}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
