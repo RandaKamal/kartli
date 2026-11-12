@@ -286,7 +286,7 @@ export function KitchenSettingsView({
         {/* ========================================================
             GROUP 1: KÜCHEN-PROFIL & RAUM-TYP (Linear/Apple List)
            ======================================================== */}
-        <div className="rounded-2xl border border-white/[0.08] bg-card/60 backdrop-blur-xl overflow-hidden shadow-sm">
+        <div className="rounded-xl border border-border/70 bg-card overflow-hidden shadow-xs">
           {/* Row 1: Name der Küche */}
           <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-0.5">
@@ -308,40 +308,37 @@ export function KitchenSettingsView({
               required
               maxLength={255}
               placeholder="e.g. Baker Street WG"
-              className="bg-black/30 border border-white/[0.08] rounded-xl px-3 py-1.5 text-sm w-full sm:w-64 focus:outline-none focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/30 text-foreground transition-all h-9"
+              className="bg-background border border-border/70 rounded-lg px-3 py-1.5 text-sm w-full sm:w-64 text-foreground h-9"
             />
           </div>
 
           {/* Row 2: Divider */}
-          <div className="border-t border-white/[0.06]" />
+          <div className="border-t border-border/60" />
 
           {/* Row 3: Art der Gemeinschaft */}
-          <div className="p-4 sm:p-5 space-y-3">
+          <div className="p-4 sm:p-5 space-y-2.5">
             <div className="space-y-0.5">
               <Label className="text-sm font-semibold text-foreground">
                 {t.kitchenSettings.typeRowLabel}
               </Label>
-              <p className="text-xs text-muted-foreground">
-                {t.kitchenSettings.typeRowSubtext}
-              </p>
             </div>
 
             {/* 4-Segment Card Selector */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-0.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-0.5">
               {/* Flatshare WG */}
               <button
                 type="button"
                 disabled={!isAdmin}
                 onClick={() => setSpaceType("FLATSHARE")}
                 className={cn(
-                  "rounded-xl py-2.5 px-2 flex flex-col items-center justify-center gap-1.5 text-center transition-all select-none border min-h-[68px]",
-                  isAdmin ? "cursor-pointer active:scale-95" : "cursor-default opacity-85",
+                  "rounded-lg py-2 px-2 flex flex-col items-center justify-center gap-1.5 text-center transition-colors select-none border min-h-[58px]",
+                  isAdmin ? "cursor-pointer" : "cursor-default opacity-85",
                   spaceType === "FLATSHARE"
-                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 font-semibold shadow-xs"
-                    : "border-white/[0.06] bg-zinc-900/40 text-muted-foreground hover:bg-zinc-900/70 hover:border-white/10 hover:text-foreground"
+                    ? "border-foreground/50 bg-secondary text-foreground font-semibold shadow-2xs"
+                    : "border-border/60 bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                 )}
               >
-                <Home className="w-4 h-4 shrink-0" />
+                <Home className="w-3.5 h-3.5 shrink-0" />
                 <span className="text-xs font-medium leading-tight text-center">
                   {t.kitchenSettings.types.flatshare}
                 </span>
@@ -353,14 +350,14 @@ export function KitchenSettingsView({
                 disabled={!isAdmin}
                 onClick={() => setSpaceType("FAMILY")}
                 className={cn(
-                  "rounded-xl py-2.5 px-2 flex flex-col items-center justify-center gap-1.5 text-center transition-all select-none border min-h-[68px]",
-                  isAdmin ? "cursor-pointer active:scale-95" : "cursor-default opacity-85",
+                  "rounded-lg py-2 px-2 flex flex-col items-center justify-center gap-1.5 text-center transition-colors select-none border min-h-[58px]",
+                  isAdmin ? "cursor-pointer" : "cursor-default opacity-85",
                   spaceType === "FAMILY"
-                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 font-semibold shadow-xs"
-                    : "border-white/[0.06] bg-zinc-900/40 text-muted-foreground hover:bg-zinc-900/70 hover:border-white/10 hover:text-foreground"
+                    ? "border-foreground/50 bg-secondary text-foreground font-semibold shadow-2xs"
+                    : "border-border/60 bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                 )}
               >
-                <Heart className="w-4 h-4 shrink-0" />
+                <Heart className="w-3.5 h-3.5 shrink-0" />
                 <span className="text-xs font-medium leading-tight text-center">
                   {t.kitchenSettings.types.family}
                 </span>
@@ -372,14 +369,14 @@ export function KitchenSettingsView({
                 disabled={!isAdmin}
                 onClick={() => setSpaceType("OFFICE")}
                 className={cn(
-                  "rounded-xl py-2.5 px-2 flex flex-col items-center justify-center gap-1.5 text-center transition-all select-none border min-h-[68px]",
-                  isAdmin ? "cursor-pointer active:scale-95" : "cursor-default opacity-85",
+                  "rounded-lg py-2 px-2 flex flex-col items-center justify-center gap-1.5 text-center transition-colors select-none border min-h-[58px]",
+                  isAdmin ? "cursor-pointer" : "cursor-default opacity-85",
                   spaceType === "OFFICE"
-                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 font-semibold shadow-xs"
-                    : "border-white/[0.06] bg-zinc-900/40 text-muted-foreground hover:bg-zinc-900/70 hover:border-white/10 hover:text-foreground"
+                    ? "border-foreground/50 bg-secondary text-foreground font-semibold shadow-2xs"
+                    : "border-border/60 bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                 )}
               >
-                <Briefcase className="w-4 h-4 shrink-0" />
+                <Briefcase className="w-3.5 h-3.5 shrink-0" />
                 <span className="text-xs font-medium leading-tight text-center">
                   {t.kitchenSettings.types.office}
                 </span>
@@ -391,14 +388,14 @@ export function KitchenSettingsView({
                 disabled={!isAdmin}
                 onClick={() => setSpaceType("NEUTRAL")}
                 className={cn(
-                  "rounded-xl py-2.5 px-2 flex flex-col items-center justify-center gap-1.5 text-center transition-all select-none border min-h-[68px]",
-                  isAdmin ? "cursor-pointer active:scale-95" : "cursor-default opacity-85",
+                  "rounded-lg py-2 px-2 flex flex-col items-center justify-center gap-1.5 text-center transition-colors select-none border min-h-[58px]",
+                  isAdmin ? "cursor-pointer" : "cursor-default opacity-85",
                   spaceType === "NEUTRAL"
-                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 font-semibold shadow-xs"
-                    : "border-white/[0.06] bg-zinc-900/40 text-muted-foreground hover:bg-zinc-900/70 hover:border-white/10 hover:text-foreground"
+                    ? "border-foreground/50 bg-secondary text-foreground font-semibold shadow-2xs"
+                    : "border-border/60 bg-secondary/30 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                 )}
               >
-                <Layers className="w-4 h-4 shrink-0" />
+                <Layers className="w-3.5 h-3.5 shrink-0" />
                 <span className="text-xs font-medium leading-tight text-center">
                   {t.kitchenSettings.types.neutral}
                 </span>
@@ -407,45 +404,42 @@ export function KitchenSettingsView({
           </div>
 
           {/* Row 4: Divider */}
-          <div className="border-t border-white/[0.06]" />
+          <div className="border-t border-border/60" />
 
           {/* Row 5: Berechtigungen für WG-Basics */}
-          <div className="p-4 sm:p-5 space-y-3">
+          <div className="p-4 sm:p-5 space-y-2.5">
             <div className="space-y-0.5">
               <Label className="text-sm font-semibold text-foreground">
                 {t.kitchenSettings.staplePermissions.title}
               </Label>
-              <p className="text-xs text-muted-foreground">
-                {t.kitchenSettings.staplePermissions.subtitle}
-              </p>
             </div>
 
             {/* 3-Way Segmented Policy Selector */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-1">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-0.5">
               {/* Option 1: open */}
               <button
                 type="button"
                 disabled={!isAdmin}
                 onClick={() => setStaplePermission("open")}
                 className={cn(
-                  "rounded-xl p-3.5 text-left flex flex-col justify-between transition-all select-none border min-h-[88px]",
-                  isAdmin ? "cursor-pointer active:scale-[0.98]" : "cursor-default opacity-85",
+                  "rounded-lg p-3 text-left flex flex-col justify-between transition-colors select-none border min-h-[72px]",
+                  isAdmin ? "cursor-pointer" : "cursor-default opacity-85",
                   staplePermission === "open"
-                    ? "border-emerald-500/40 bg-emerald-500/5 shadow-xs"
-                    : "border-white/[0.06] bg-zinc-900/40 hover:bg-zinc-900/70 hover:border-white/10"
+                    ? "border-foreground/50 bg-secondary shadow-2xs"
+                    : "border-border/60 bg-secondary/30 hover:bg-secondary/60"
                 )}
               >
-                <div className="flex items-center justify-between gap-2 mb-1.5 w-full">
-                  <span className={cn("text-xs font-semibold", staplePermission === "open" ? "text-emerald-300" : "text-foreground")}>
+                <div className="flex items-center justify-between gap-2 mb-1 w-full">
+                  <span className="text-xs font-semibold text-foreground">
                     {t.kitchenSettings.staplePermissions.openTitle}
                   </span>
                   {staplePermission === "open" ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                   ) : (
-                    <div className="w-4 h-4 rounded-full border border-white/10 shrink-0" />
+                    <div className="w-4 h-4 rounded-full border border-border shrink-0" />
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <p className="text-[11px] text-muted-foreground leading-snug">
                   {t.kitchenSettings.staplePermissions.openDesc}
                 </p>
               </button>
@@ -456,24 +450,24 @@ export function KitchenSettingsView({
                 disabled={!isAdmin}
                 onClick={() => setStaplePermission("approval")}
                 className={cn(
-                  "rounded-xl p-3.5 text-left flex flex-col justify-between transition-all select-none border min-h-[88px]",
-                  isAdmin ? "cursor-pointer active:scale-[0.98]" : "cursor-default opacity-85",
+                  "rounded-lg p-3 text-left flex flex-col justify-between transition-colors select-none border min-h-[72px]",
+                  isAdmin ? "cursor-pointer" : "cursor-default opacity-85",
                   staplePermission === "approval"
-                    ? "border-emerald-500/40 bg-emerald-500/5 shadow-xs"
-                    : "border-white/[0.06] bg-zinc-900/40 hover:bg-zinc-900/70 hover:border-white/10"
+                    ? "border-foreground/50 bg-secondary shadow-2xs"
+                    : "border-border/60 bg-secondary/30 hover:bg-secondary/60"
                 )}
               >
-                <div className="flex items-center justify-between gap-2 mb-1.5 w-full">
-                  <span className={cn("text-xs font-semibold", staplePermission === "approval" ? "text-emerald-300" : "text-foreground")}>
+                <div className="flex items-center justify-between gap-2 mb-1 w-full">
+                  <span className="text-xs font-semibold text-foreground">
                     {t.kitchenSettings.staplePermissions.approvalTitle}
                   </span>
                   {staplePermission === "approval" ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                   ) : (
-                    <div className="w-4 h-4 rounded-full border border-white/10 shrink-0" />
+                    <div className="w-4 h-4 rounded-full border border-border shrink-0" />
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <p className="text-[11px] text-muted-foreground leading-snug">
                   {t.kitchenSettings.staplePermissions.approvalDesc}
                 </p>
               </button>
@@ -484,24 +478,24 @@ export function KitchenSettingsView({
                 disabled={!isAdmin}
                 onClick={() => setStaplePermission("admin_only")}
                 className={cn(
-                  "rounded-xl p-3.5 text-left flex flex-col justify-between transition-all select-none border min-h-[88px]",
-                  isAdmin ? "cursor-pointer active:scale-[0.98]" : "cursor-default opacity-85",
+                  "rounded-lg p-3 text-left flex flex-col justify-between transition-colors select-none border min-h-[72px]",
+                  isAdmin ? "cursor-pointer" : "cursor-default opacity-85",
                   staplePermission === "admin_only"
-                    ? "border-emerald-500/40 bg-emerald-500/5 shadow-xs"
-                    : "border-white/[0.06] bg-zinc-900/40 hover:bg-zinc-900/70 hover:border-white/10"
+                    ? "border-foreground/50 bg-secondary shadow-2xs"
+                    : "border-border/60 bg-secondary/30 hover:bg-secondary/60"
                 )}
               >
-                <div className="flex items-center justify-between gap-2 mb-1.5 w-full">
-                  <span className={cn("text-xs font-semibold", staplePermission === "admin_only" ? "text-emerald-300" : "text-foreground")}>
+                <div className="flex items-center justify-between gap-2 mb-1 w-full">
+                  <span className="text-xs font-semibold text-foreground">
                     {t.kitchenSettings.staplePermissions.adminOnlyTitle}
                   </span>
                   {staplePermission === "admin_only" ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                   ) : (
-                    <div className="w-4 h-4 rounded-full border border-white/10 shrink-0" />
+                    <div className="w-4 h-4 rounded-full border border-border shrink-0" />
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <p className="text-[11px] text-muted-foreground leading-snug">
                   {t.kitchenSettings.staplePermissions.adminOnlyDesc}
                 </p>
               </button>
@@ -512,11 +506,11 @@ export function KitchenSettingsView({
         {/* ========================================================
             GROUP 2: GASTZUGANG & SUPERMARKT-LINK
            ======================================================== */}
-        <div className="rounded-2xl border border-white/[0.08] bg-card/60 backdrop-blur-xl overflow-hidden shadow-sm p-4 sm:p-5">
+        <div className="rounded-xl border border-border/70 bg-card overflow-hidden shadow-xs p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             {/* Left Info */}
             <div className="flex items-start sm:items-center gap-3 min-w-0">
-              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0 mt-0.5 sm:mt-0">
+              <div className="p-2 rounded-lg bg-secondary text-foreground border border-border/70 shrink-0 mt-0.5 sm:mt-0">
                 <Globe className="w-4 h-4" />
               </div>
               <div className="space-y-0.5 min-w-0">
@@ -524,8 +518,8 @@ export function KitchenSettingsView({
                   <span className="text-sm font-semibold text-foreground">
                     {t.kitchenSettings.publicSupermarketLink}
                   </span>
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-secondary text-muted-foreground border border-border/60 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     <span>{t.kitchenSettings.activeStatus}</span>
                   </span>
                 </div>
@@ -540,7 +534,7 @@ export function KitchenSettingsView({
               {/* Truncated URL pill */}
               <div
                 title={publicGuestUrl}
-                className="font-mono text-xs text-muted-foreground/90 bg-black/30 px-3 py-1.5 rounded-lg border border-white/[0.08] max-w-[180px] sm:max-w-[200px] truncate select-all"
+                className="font-mono text-xs text-muted-foreground bg-secondary/50 px-2.5 py-1.5 rounded-lg border border-border/60 max-w-[180px] sm:max-w-[200px] truncate select-all"
               >
                 {displayGuestUrl}
               </div>
@@ -549,7 +543,7 @@ export function KitchenSettingsView({
               <button
                 type="button"
                 onClick={handleCopyGuestLink}
-                className="h-8 px-3 rounded-lg bg-white/10 hover:bg-white/15 text-white border border-white/10 font-medium text-xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shrink-0"
+                className="h-8 px-2.5 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground border border-border/70 font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
               >
                 {guestCopied ? (
                   <>
@@ -571,7 +565,7 @@ export function KitchenSettingsView({
                   onClick={handleRegenerateGuestToken}
                   disabled={isRegeneratingToken}
                   title={t.kitchenSettings.regenerateBtn}
-                  className="h-8 w-8 rounded-lg border border-white/[0.08] bg-zinc-900/40 text-muted-foreground hover:text-white hover:bg-zinc-900/80 hover:border-white/15 transition-all flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-50"
+                  className="h-8 w-8 rounded-lg border border-border/70 bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-50"
                 >
                   <RefreshCw
                     className={cn("w-3.5 h-3.5", isRegeneratingToken && "animate-spin")}
@@ -584,7 +578,7 @@ export function KitchenSettingsView({
                 href={publicGuestUrl}
                 target="_blank"
                 title={t.kitchenSettings.openLink}
-                className="h-8 w-8 rounded-lg border border-white/[0.08] bg-zinc-900/40 text-muted-foreground hover:text-white hover:bg-zinc-900/80 hover:border-white/15 transition-all flex items-center justify-center shrink-0"
+                className="h-8 w-8 rounded-lg border border-border/70 bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors flex items-center justify-center shrink-0"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
               </Link>
@@ -593,12 +587,12 @@ export function KitchenSettingsView({
         </div>
 
         {/* ========================================================
-            GROUP 4: GEFAHRENBEREICH (Danger Zone - Apple Minimalist)
+            GROUP 4: GEFAHRENBEREICH (Danger Zone)
            ======================================================== */}
-        <div className="rounded-2xl border border-rose-500/20 bg-rose-500/[0.02] backdrop-blur-xl p-4 sm:p-5">
+        <div className="rounded-xl border border-rose-500/20 bg-rose-500/[0.03] p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-0.5">
-              <span className="text-sm font-semibold text-rose-400">
+              <span className="text-sm font-semibold text-rose-500 dark:text-rose-400">
                 {t.kitchenSettings.dangerZoneTitle}
               </span>
               <p className="text-xs text-muted-foreground">
@@ -611,10 +605,10 @@ export function KitchenSettingsView({
             {isAdmin ? (
               <Button
                 type="button"
-                variant="outline"
+                variant="destructive"
                 size="sm"
                 onClick={() => setIsDeleteDialogOpen(true)}
-                className="border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all shrink-0 min-h-[36px] active:scale-95 cursor-pointer"
+                className="rounded-lg h-8 px-3 text-xs font-medium shrink-0 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5 mr-1.5" />
                 <span>{t.kitchenSettings.deleteKitchenBtn}</span>
@@ -622,10 +616,10 @@ export function KitchenSettingsView({
             ) : (
               <Button
                 type="button"
-                variant="outline"
+                variant="destructive"
                 size="sm"
                 onClick={() => setIsLeaveDialogOpen(true)}
-                className="border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all shrink-0 min-h-[36px] active:scale-95 cursor-pointer"
+                className="rounded-lg h-8 px-3 text-xs font-medium shrink-0 cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5 mr-1.5" />
                 <span>{t.kitchenSettings.leaveKitchenBtn}</span>
@@ -689,26 +683,23 @@ export function KitchenSettingsView({
 
         {/* Confirmation Dialog: Leave Kitchen */}
         <AlertDialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
-          <AlertDialogContent className="rounded-2xl max-w-md">
+          <AlertDialogContent className="rounded-xl max-w-md">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-base font-bold flex items-center gap-2">
-                <LogOut className="w-4 h-4 text-destructive" />
-                <span>
-                  {t.kitchenSettings.leaveConfirmTitle.replace("{name}", kitchenName)}
-                </span>
+              <AlertDialogTitle className="text-base font-semibold">
+                {t.kitchenSettings.leaveConfirmTitle.replace("{name}", kitchenName)}
               </AlertDialogTitle>
               <AlertDialogDescription className="text-xs text-muted-foreground">
                 {t.kitchenSettings.leaveConfirmDesc}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="rounded-xl text-xs">
+              <AlertDialogCancel className="rounded-lg text-xs">
                 {t.common.cancel}
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleLeaveKitchen}
                 disabled={isLeaving}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl text-xs font-semibold px-4"
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-lg text-xs font-semibold px-4"
               >
                 {isLeaving
                   ? t.kitchenSettings.leavingBtn
@@ -720,11 +711,10 @@ export function KitchenSettingsView({
 
         {/* Confirmation Dialog: Delete Kitchen */}
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <AlertDialogContent className="rounded-2xl max-w-md">
+          <AlertDialogContent className="rounded-xl max-w-md">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-base font-bold flex items-center gap-2 text-destructive">
-                <AlertTriangle className="w-4 h-4" />
-                <span>{t.kitchenSettings.deleteConfirmTitle}</span>
+              <AlertDialogTitle className="text-base font-semibold text-destructive">
+                {t.kitchenSettings.deleteConfirmTitle}
               </AlertDialogTitle>
               <AlertDialogDescription className="text-xs text-muted-foreground space-y-2">
                 <span>
@@ -736,13 +726,13 @@ export function KitchenSettingsView({
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="rounded-xl text-xs">
+              <AlertDialogCancel className="rounded-lg text-xs">
                 {t.common.cancel}
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteKitchen}
                 disabled={isDeleting}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl text-xs font-semibold px-4"
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-lg text-xs font-semibold px-4"
               >
                 {isDeleting
                   ? t.kitchenSettings.deletingBtn

@@ -175,21 +175,18 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
       </div>
 
       {/* Page Header */}
-      <div className="space-y-1 pb-2">
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+      <div className="pb-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
           {t.profile.title}
         </h1>
-        <p className="text-sm text-muted-foreground">
-          {t.profile.subtitle}
-        </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto mb-6 h-11 bg-muted/70 border border-border/80 p-1 rounded-2xl items-center">
-          <TabsTrigger value="preferences" className="w-full h-full rounded-xl text-xs font-semibold flex items-center justify-center text-center leading-none">
+        <TabsList className="grid grid-cols-2 w-full max-w-xs mx-auto mb-6 h-9 bg-secondary/60 border border-border/70 p-0.5 rounded-lg items-center">
+          <TabsTrigger value="preferences" className="w-full h-full rounded-md text-xs font-medium flex items-center justify-center text-center leading-none">
             {t.profile.preferencesTab}
           </TabsTrigger>
-          <TabsTrigger value="security" className="w-full h-full rounded-xl text-xs font-semibold flex items-center justify-center text-center leading-none">
+          <TabsTrigger value="security" className="w-full h-full rounded-md text-xs font-medium flex items-center justify-center text-center leading-none">
             {t.profile.securityTab}
           </TabsTrigger>
         </TabsList>
@@ -197,53 +194,49 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
         {/* Tab 1: Preferences */}
         <TabsContent value="preferences" className="space-y-6 animate-in fade-in-50">
           {/* Card 1: Appearance & Culinary Themes */}
-          <Card className="p-4 sm:p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-6">
+          <Card className="p-4 sm:p-5 rounded-xl border border-border/70 bg-card shadow-xs space-y-5">
             <div className="space-y-3">
               <div className="space-y-0.5">
-                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                  <Palette className="w-5 h-5 text-accent-primary" />
-                  <span>{t.profile.themeLabel}</span>
+                <h3 className="text-sm sm:text-base font-semibold text-foreground">
+                  {t.profile.themeLabel}
                 </h3>
-                <p className="text-xs text-muted-foreground">
-                  {t.profile.contrastModeSub}
-                </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-1">
+              <div className="grid grid-cols-3 gap-2 pt-0.5">
                 <button
                   type="button"
                   onClick={() => setTheme("light")}
-                  className={`w-full h-11 sm:h-12 px-2 sm:px-3 rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 font-semibold text-xs leading-none border transition-all cursor-pointer shadow-xs ${
+                  className={`w-full h-9 px-2 sm:px-3 rounded-lg flex items-center justify-center gap-1.5 font-medium text-xs border transition-colors cursor-pointer select-none ${
                     theme === "light"
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
+                      ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border-transparent shadow-xs"
+                      : "bg-secondary/40 text-muted-foreground border-border/60 hover:text-foreground hover:bg-secondary"
                   }`}
                 >
-                  <Sun className="w-4 h-4 shrink-0" />
+                  <Sun className="w-3.5 h-3.5 shrink-0" />
                   <span>{t.profile.lightMode}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setTheme("dark")}
-                  className={`w-full h-11 sm:h-12 px-2 sm:px-3 rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 font-semibold text-xs leading-none border transition-all cursor-pointer shadow-xs ${
+                  className={`w-full h-9 px-2 sm:px-3 rounded-lg flex items-center justify-center gap-1.5 font-medium text-xs border transition-colors cursor-pointer select-none ${
                     theme === "dark"
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
+                      ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border-transparent shadow-xs"
+                      : "bg-secondary/40 text-muted-foreground border-border/60 hover:text-foreground hover:bg-secondary"
                   }`}
                 >
-                  <Moon className="w-4 h-4 shrink-0" />
+                  <Moon className="w-3.5 h-3.5 shrink-0" />
                   <span>{t.profile.darkMode}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setTheme("system")}
-                  className={`w-full h-11 sm:h-12 px-2 sm:px-3 rounded-2xl flex items-center justify-center gap-1.5 sm:gap-2 font-semibold text-xs leading-none border transition-all cursor-pointer shadow-xs ${
+                  className={`w-full h-9 px-2 sm:px-3 rounded-lg flex items-center justify-center gap-1.5 font-medium text-xs border transition-colors cursor-pointer select-none ${
                     theme === "system"
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
+                      ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border-transparent shadow-xs"
+                      : "bg-secondary/40 text-muted-foreground border-border/60 hover:text-foreground hover:bg-secondary"
                   }`}
                 >
-                  <Laptop className="w-4 h-4 shrink-0" />
+                  <Laptop className="w-3.5 h-3.5 shrink-0" />
                   <span>{t.profile.systemMode}</span>
                 </button>
               </div>
@@ -254,16 +247,12 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
             {/* Culinary Color Themes Card Grid */}
             <div className="space-y-3">
               <div className="space-y-0.5">
-                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                  <UtensilsCrossed className="w-5 h-5 text-accent-primary" />
-                  <span>{t.profile.culinaryThemesTitle}</span>
+                <h3 className="text-sm sm:text-base font-semibold text-foreground">
+                  {t.profile.culinaryThemesTitle}
                 </h3>
-                <p className="text-xs text-muted-foreground">
-                  {t.profile.culinaryThemesSub}
-                </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
                 {culinaryThemes.map((theme) => {
                   const isSelected =
                     theme.id ===
@@ -275,10 +264,10 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
                       key={theme.id}
                       type="button"
                       onClick={() => handleCulinaryThemeChange(theme.id)}
-                      className={`flex flex-col justify-between p-4 rounded-xl border transition-all min-h-[110px] gap-3 w-full text-left cursor-pointer ${
+                      className={`flex flex-col justify-between p-3.5 rounded-lg border transition-all min-h-[96px] gap-2.5 w-full text-left cursor-pointer ${
                         isSelected
-                          ? "border-accent-primary bg-accent-primary/5 ring-2 ring-accent-primary/20 shadow-xs"
-                          : "bg-card border-border hover:border-primary/60 hover:bg-muted/30"
+                          ? "border-foreground/40 bg-secondary/60 shadow-xs"
+                          : "bg-card border-border/70 hover:border-border hover:bg-secondary/30"
                       }`}
                     >
                       {/* Top Row */}
@@ -293,24 +282,24 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
                         </div>
 
                         {isSelected ? (
-                          <div className="mt-0.5 w-5 h-5 rounded-full bg-accent-primary text-primary-foreground flex items-center justify-center shrink-0">
-                            <Check className="w-3 h-3 stroke-[3]" />
+                          <div className="mt-0.5 w-4 h-4 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 flex items-center justify-center shrink-0">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
                           </div>
                         ) : (
-                          <div className="mt-0.5 w-5 h-5 rounded-full border border-border shrink-0" />
+                          <div className="mt-0.5 w-4 h-4 rounded-full border border-border shrink-0" />
                         )}
                       </div>
 
                       {/* Bottom Row */}
-                      <div className="flex items-center justify-between pt-2.5 border-t border-border/40 mt-auto w-full">
-                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium leading-none">
+                      <div className="flex items-center justify-between pt-2 border-t border-border/40 mt-auto w-full">
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono leading-none">
                           {t.profile.paletteLabel}
                         </span>
                         <div className="inline-flex items-center justify-end gap-1.5 shrink-0">
                           {theme.colors.map((hex, idx) => (
                             <span
                               key={idx}
-                              className="block w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/10 shrink-0 shadow-xs"
+                              className="block w-3 h-3 rounded-full border border-black/10 dark:border-white/10 shrink-0"
                               style={{ backgroundColor: hex }}
                             />
                           ))}
@@ -326,22 +315,18 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
           {/* Card 2: Notification Preferences & Alerts */}
           <Card
             id="notifications"
-            className="p-4 sm:p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-4 scroll-mt-24"
+            className="p-4 sm:p-5 rounded-xl border border-border/70 bg-card shadow-xs space-y-4 scroll-mt-24"
           >
             <CardHeader className="p-0 space-y-1">
-              <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-                <Bell className="w-5 h-5 text-muted-foreground" />
-                <span>{t.profile.notifTitle}</span>
+              <CardTitle className="text-sm sm:text-base font-semibold text-foreground">
+                {t.profile.notifTitle}
               </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
-                {t.profile.notifSub}
-              </CardDescription>
             </CardHeader>
 
             {/* Device push switch: gates the per-type preferences below */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-border/70">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border border-border/70 bg-muted/20">
               <div className="space-y-0.5">
-                <p className="text-sm font-semibold text-foreground">{t.profile.notificationsLabel}</p>
+                <p className="text-sm font-medium text-foreground">{t.profile.notificationsLabel}</p>
                 <p className="text-xs text-muted-foreground">
                   {push.status === "unsupported"
                     ? t.profile.notificationsUnsupported
@@ -353,16 +338,16 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               {prefsLocked && push.status !== "checking" && (
                 <p className="text-xs text-muted-foreground">{t.profile.notificationsLockedHint}</p>
               )}
 
               <div
-                className={`flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70 transition-opacity ${prefsLocked ? "opacity-50" : ""}`}
+                className={`flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/70 transition-opacity ${prefsLocked ? "opacity-50" : ""}`}
               >
                 <div className="space-y-0.5">
-                  <Label htmlFor="notify-pantry" className="text-sm font-medium text-foreground cursor-pointer">
+                  <Label htmlFor="notify-pantry" className="text-xs sm:text-sm font-medium text-foreground cursor-pointer">
                     {t.profile.notifRestockTitle}
                   </Label>
                   <p className="text-xs text-muted-foreground">
@@ -378,10 +363,10 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
               </div>
 
               <div
-                className={`flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70 transition-opacity ${prefsLocked ? "opacity-50" : ""}`}
+                className={`flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/70 transition-opacity ${prefsLocked ? "opacity-50" : ""}`}
               >
                 <div className="space-y-0.5">
-                  <Label htmlFor="notify-shopping" className="text-sm font-medium text-foreground cursor-pointer">
+                  <Label htmlFor="notify-shopping" className="text-xs sm:text-sm font-medium text-foreground cursor-pointer">
                     {t.profile.notifCheckoutTitle}
                   </Label>
                   <p className="text-xs text-muted-foreground">
@@ -397,10 +382,10 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
               </div>
 
               <div
-                className={`flex items-center justify-between p-3.5 rounded-2xl bg-muted/40 border border-border/70 transition-opacity ${prefsLocked ? "opacity-50" : ""}`}
+                className={`flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/70 transition-opacity ${prefsLocked ? "opacity-50" : ""}`}
               >
                 <div className="space-y-0.5">
-                  <Label htmlFor="notify-members" className="text-sm font-medium text-foreground cursor-pointer">
+                  <Label htmlFor="notify-members" className="text-xs sm:text-sm font-medium text-foreground cursor-pointer">
                     {t.profile.notifMemberTitle}
                   </Label>
                   <p className="text-xs text-muted-foreground">
@@ -418,23 +403,22 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
           </Card>
 
           {/* Card 3: Preferred Currency */}
-          <Card className="p-4 sm:p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-4">
+          <Card className="p-4 sm:p-5 rounded-xl border border-border/70 bg-card shadow-xs space-y-3">
             <div className="space-y-0.5">
-              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-accent-primary" />
-                <span>{t.profile.currencyLabel}</span>
+              <h3 className="text-sm sm:text-base font-semibold text-foreground">
+                {t.profile.currencyLabel}
               </h3>
               <p className="text-xs text-muted-foreground">
                 {t.profile.currencyHelper}
               </p>
             </div>
 
-            <div className="pt-1 max-w-sm">
+            <div className="pt-0.5 max-w-xs">
               <select
                 id="preferred-currency-select"
                 value={preferredCurrency}
                 onChange={(e) => setPreferredCurrency(e.target.value)}
-                className="w-full h-10 rounded-xl bg-card border border-border px-3 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-xs"
+                className="w-full h-9 rounded-lg bg-card border border-border/70 px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-foreground cursor-pointer shadow-xs"
                 aria-label={t.profile.currencyLabel}
               >
                 {SUPPORTED_CURRENCIES.map((c) => (
@@ -445,8 +429,8 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
               </select>
             </div>
 
-            <div className="pt-3 flex justify-end">
-              <Button onClick={handleSavePreferences} disabled={isSaving} className="rounded-xl font-semibold">
+            <div className="pt-2 flex justify-end">
+              <Button onClick={handleSavePreferences} disabled={isSaving} size="sm" className="rounded-lg font-medium text-xs h-8 px-3">
                 {isSaving ? "Saving..." : t.profile.savePreferences}
               </Button>
             </div>

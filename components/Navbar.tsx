@@ -60,7 +60,7 @@ export function Navbar({ user }: NavbarProps) {
                   void setUserLanguageAction(next).catch(() => {});
                 }
               }}
-              className="h-8 min-w-8 px-2.5 text-[11px] leading-none font-mono rounded-lg border border-border/60 bg-secondary/30 md:h-9 md:px-3 md:text-xs md:rounded-xl md:border-border hover:bg-secondary font-semibold transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer select-none text-foreground"
+              className="h-8 min-w-8 px-2 text-[11px] leading-none font-mono rounded-lg border border-border/60 bg-secondary/30 hover:bg-secondary font-medium transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer select-none text-foreground"
               title={locale === "en" ? "Auf Deutsch umschalten" : "Switch to English"}
               aria-label={`Current language: ${locale.toUpperCase()}. Toggle language.`}
             >
@@ -74,29 +74,31 @@ export function Navbar({ user }: NavbarProps) {
 
           {user ? (
             <>
-              {/* Secondary + New Kitchen trigger */}
-              <Button
-                asChild
-                variant="outline"
-                className="h-9 rounded-xl px-3.5 text-xs font-semibold hidden md:inline-flex items-center gap-1.5 border-border/70 hover:border-border hover:bg-secondary/60 hover:-translate-y-px hover:shadow-xs transition-all"
-              >
-                <Link href="/kitchen/new">
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{t.nav.newKitchen}</span>
-                </Link>
-              </Button>
+              {/* Secondary + New Kitchen trigger (hidden on dashboard to avoid duplicate CTA with dashboard hero) */}
+              {!isDashboard && (
+                <Button
+                  asChild
+                  variant="secondary"
+                  size="sm"
+                  className="h-8 rounded-lg px-2.5 text-xs font-medium hidden md:inline-flex items-center gap-1.5"
+                >
+                  <Link href="/kitchen/new">
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{t.nav.newKitchen}</span>
+                  </Link>
+                </Button>
+              )}
 
               {/* Redundancy-free Dashboard trigger (hidden when already on dashboard, hidden on mobile) */}
               {!isDashboard && (
                 <Button
                   asChild
                   size="sm"
-                  variant="default"
-                  className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-xs hover:-translate-y-px transition-all hidden md:inline-flex"
+                  variant="secondary"
+                  className="h-8 rounded-lg px-2.5 text-xs font-medium hidden md:inline-flex items-center gap-1"
                 >
-                  <Link href="/dashboard" className="flex items-center gap-1">
+                  <Link href="/dashboard">
                     <span>{t.nav.dashboard}</span>
-                    <span className="text-[11px] opacity-80">→</span>
                   </Link>
                 </Button>
               )}
@@ -109,14 +111,16 @@ export function Navbar({ user }: NavbarProps) {
               <Button
                 asChild
                 variant="secondary"
-                className="h-9 rounded-xl px-3.5 text-xs font-medium border border-border/70 hover:bg-secondary transition-all"
+                size="sm"
+                className="h-8 rounded-lg px-3 text-xs font-medium"
               >
                 <Link href="/login">{t.nav.login}</Link>
               </Button>
               <Button
                 asChild
                 variant="default"
-                className="h-9 rounded-xl px-3.5 text-xs font-semibold shadow-xs hover:-translate-y-px transition-all"
+                size="sm"
+                className="h-8 rounded-lg px-3 text-xs font-medium"
               >
                 <Link href="/register">{t.nav.signup}</Link>
               </Button>

@@ -300,26 +300,16 @@ export function ActiveCartSection({
 
   return (
     <div className="space-y-6">
-      {/* 1. SHOPPING LIST: one-time items, needed items, and essentials to grab (formerly Quick-Add + Needed) */}
-      <Card className="border border-border/80 bg-card rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
+      {/* 1. SHOPPING LIST: one-time items, needed items, and essentials to grab */}
+      <Card className="border border-border/70 bg-card rounded-xl p-4 sm:p-5 shadow-xs space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/60">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
-              <ShoppingBag className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm sm:text-base font-bold text-foreground tracking-tight">
-                  {t.supermarket.neededForThisRun}
-                </h3>
-                <Badge variant="secondary" className="text-xs font-mono font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/25">
-                  {neededItems.length}
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {t.supermarket.listSubtitle}
-              </p>
-            </div>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm sm:text-base font-semibold text-foreground tracking-tight">
+              {t.supermarket.neededForThisRun}
+            </h3>
+            <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-secondary text-muted-foreground border border-border/60 tabular-nums">
+              {neededItems.length}
+            </span>
           </div>
 
           {neededItems.length > 1 && (
@@ -329,7 +319,7 @@ export function ActiveCartSection({
               variant="outline"
               onClick={handleAllNeededToCart}
               disabled={isPending}
-              className="h-8.5 rounded-xl text-xs font-semibold px-3 border-border hover:bg-secondary shrink-0 gap-1.5 cursor-pointer"
+              className="h-8 rounded-lg text-xs font-medium px-2.5 border-border/70 hover:bg-secondary shrink-0 gap-1.5 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>{t.supermarket.putAllInBasket || (locale === "de" ? "Alle in den Korb" : "Put All in Basket")}</span>
@@ -348,7 +338,7 @@ export function ActiveCartSection({
                 placeholder={t.supermarket.addOneOffPlaceholder}
                 disabled={isAddingOneOff}
                 maxLength={255}
-                className="h-10 pl-8 pr-3 text-sm rounded-xl bg-secondary/30 border-border/70"
+                className="h-9 pl-8 pr-3 text-sm rounded-lg bg-secondary/30 border-border/70"
               />
             </div>
             <Button
@@ -356,7 +346,7 @@ export function ActiveCartSection({
               size="sm"
               variant="secondary"
               disabled={isAddingOneOff || !oneOffName.trim()}
-              className="h-10 rounded-xl px-4 text-xs font-semibold shrink-0 cursor-pointer"
+              className="h-9 rounded-lg px-3 text-xs font-medium shrink-0 cursor-pointer"
             >
               {isAddingOneOff ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -431,9 +421,8 @@ export function ActiveCartSection({
         {pantryItems.length > 0 && (
           <div className="pt-3 border-t border-border/60 space-y-2.5">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>{t.supermarket.alsoGrab}</span>
+              <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground font-semibold">
+                {t.supermarket.alsoGrab}
               </span>
               {pantryItems.length > 8 && (
                 <div className="relative w-full max-w-[200px]">
@@ -459,7 +448,7 @@ export function ActiveCartSection({
                         key={staple.id}
                         type="button"
                         onClick={() => cartItem && handleReturnToList(cartItem)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shadow-2xs select-none cursor-pointer transition-all group"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-500/10 hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shadow-2xs select-none cursor-pointer transition-all group"
                         title={locale === "de" ? "Antippen, um aus dem Korb zu entfernen" : "Tap to remove from basket and return to queue"}
                       >
                         <Check className="w-3.5 h-3.5 stroke-[2.5] group-hover:hidden" />
@@ -476,7 +465,7 @@ export function ActiveCartSection({
                       key={staple.id}
                       type="button"
                       onClick={() => onQuickAddStaple?.(staple)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-secondary/60 hover:bg-secondary border border-border/70 hover:border-border text-foreground transition-all cursor-pointer shadow-2xs active:scale-95 select-none"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-secondary/60 hover:bg-secondary border border-border/70 hover:border-border text-foreground transition-colors cursor-pointer shadow-2xs active:scale-95 select-none"
                       title={locale === "de" ? "Basic in den Korb legen" : "Grab staple into basket"}
                     >
                       <Plus className="w-3.5 h-3.5 text-muted-foreground" />
@@ -490,17 +479,16 @@ export function ActiveCartSection({
       </Card>
 
       {/* 2. ACTIVE SHOPPING CHECKLIST WORKSPACE */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Left Column: Your Basket */}
-        <Card className="border border-border/80 bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+        <Card className="border border-border/70 bg-card rounded-xl p-4 sm:p-5 shadow-xs space-y-4">
           <div className="pb-3 border-b border-border/60">
             {/* Header Row */}
             <div className="flex items-center justify-between gap-3">
-              {/* Left: Cart icon + "Dein Korb" + compact count pill (2) */}
-              <div className="text-base sm:text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
-                <CartIcon className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              {/* Left: "Dein Korb" + compact count pill */}
+              <div className="text-base sm:text-lg font-semibold tracking-tight text-foreground flex items-center gap-2">
                 <span>{t.cart.title}</span>
-                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 shrink-0">
+                <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-secondary text-muted-foreground border border-border/60 tabular-nums">
                   {myCartItems.length}
                 </span>
               </div>
@@ -516,7 +504,7 @@ export function ActiveCartSection({
                     title="Empty basket"
                     aria-label="Empty basket"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 )}
 
@@ -524,18 +512,13 @@ export function ActiveCartSection({
                   type="button"
                   onClick={handleProceedToCheckout}
                   disabled={myCartItems.length === 0}
-                  className="h-9 px-4 rounded-xl bg-foreground text-background font-semibold text-xs flex items-center gap-1.5 shadow-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  className="h-8 px-3 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-medium text-xs flex items-center gap-1.5 shadow-xs hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                   title="Proceed to checkout"
                 >
                   <span>{t.cart.checkout}</span>
                 </button>
               </div>
             </div>
-
-            {/* Subtitle: Keep concise and non-intrusive */}
-            <span className="text-xs text-muted-foreground mt-1 block">
-              {t.cart.subtitle}
-            </span>
           </div>
 
           {myCartItems.length === 0 ? (
@@ -634,18 +617,16 @@ export function ActiveCartSection({
         </Card>
 
         {/* Right Column: Roommate Carts (Read-Only) */}
-        <Card className="border border-border/80 bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+        <Card className="border border-border/70 bg-card rounded-xl p-4 sm:p-5 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-border/60">
             <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-muted-foreground" />
-              <h3 className="text-base font-semibold text-foreground">
+              <h3 className="text-base font-semibold text-foreground tracking-tight">
                 {t.supermarket.stagedByRoommates}
               </h3>
-              <Badge variant="secondary" className="text-xs font-mono">
+              <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-secondary text-muted-foreground border border-border/60 tabular-nums">
                 {otherCartItems.length}
-              </Badge>
+              </span>
             </div>
-            <span className="text-[11px] text-muted-foreground">{t.cart.readOnlyView}</span>
           </div>
 
           {otherCartItems.length === 0 ? (

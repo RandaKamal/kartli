@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Plus, CheckCircle2, Shield, Sparkles } from "lucide-react";
+import { ArrowRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
 
@@ -83,20 +83,13 @@ export function Hero({ sessionUser }: HeroProps) {
         )}
       </div>
 
-      {/* Subtle Trust Indicators */}
-      <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs text-muted-foreground pt-2">
-        <span className="flex items-center gap-1.5">
-          <CheckCircle2 className="w-3.5 h-3.5 text-accent-brand" />
-          <span>{t.landing.badges.emailFree}</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <Shield className="w-3.5 h-3.5 text-accent-secondary" />
-          <span>{t.landing.badges.selfHostable}</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-accent-primary" />
-          <span>{t.landing.badges.aiVision}</span>
-        </span>
+      {/* Understated inline metadata line */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500 pt-1">
+        <span>{t.landing.badges.emailFree}</span>
+        <span className="text-zinc-700">·</span>
+        <span>{t.landing.badges.selfHostable}</span>
+        <span className="text-zinc-700">·</span>
+        <span>{t.landing.badges.aiVision}</span>
       </div>
     </div>
   );

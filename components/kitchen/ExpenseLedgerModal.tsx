@@ -7,8 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Receipt } from "lucide-react";
 import { AdminRefundsSection } from "@/components/AdminRefundsSection";
 import { MyPurchasesSection } from "@/components/MyPurchasesSection";
 import type { KitchenMemberWithUser, KitchenSpaceType, CheckoutWithDetails } from "@/types";
@@ -55,12 +53,11 @@ export function ExpenseLedgerModal({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         onDismiss={() => onOpenChange(false)}
-        className="sm:max-w-3xl w-full p-0 gap-0 overflow-hidden flex flex-col rounded-2xl border border-white/[0.08] bg-card shadow-2xl"
+        className="sm:max-w-3xl w-full p-0 gap-0 overflow-hidden flex flex-col rounded-xl border border-white/[0.08] bg-card shadow-2xl"
       >
         <DialogHeader className="px-5 py-4 sm:px-6 border-b border-white/[0.06] pr-12 text-left">
-          <DialogTitle className="text-base font-semibold text-foreground tracking-tight flex items-center gap-2">
-            <Receipt className="w-4 h-4 text-muted-foreground" />
-            <span>{t.kitchen.ledger.modalTitle}</span>
+          <DialogTitle className="text-base font-semibold text-foreground tracking-tight">
+            {t.kitchen.ledger.modalTitle}
           </DialogTitle>
         </DialogHeader>
 
@@ -87,17 +84,6 @@ export function ExpenseLedgerModal({
               );
             }}
           />
-        </div>
-
-        <div className="sm:hidden p-3 border-t border-white/[0.06] bg-card shrink-0">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => onOpenChange(false)}
-            className="w-full h-10 rounded-lg text-xs font-semibold cursor-pointer"
-          >
-            {t.common.close}
-          </Button>
         </div>
       </DialogContent>
     </Dialog>

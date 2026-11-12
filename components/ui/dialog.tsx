@@ -128,10 +128,10 @@ const DialogContent = React.forwardRef<
             ...style,
           }}
           className={cn(
-            // Mobile: authentic iOS Bottom Sheet (< sm)
-            "pointer-events-auto w-full max-h-[90vh] bg-card text-card-foreground rounded-t-[32px] rounded-b-none border-t border-x-0 border-b-0 border-border shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300 sm:!transform-none",
-            // Desktop: centered floating modal (sm+)
-            "sm:max-w-lg sm:w-full sm:mx-auto sm:my-auto sm:rounded-3xl sm:border sm:border-border sm:max-h-[85vh] sm:animate-in sm:zoom-in-95 sm:fade-in-0 sm:slide-in-from-bottom-0",
+            // Mobile: bottom sheet (< sm)
+            "pointer-events-auto w-full max-h-[90vh] bg-card text-card-foreground rounded-t-2xl rounded-b-none border-t border-x-0 border-b-0 border-border/80 shadow-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-250 sm:!transform-none",
+            // Desktop: centered modal (sm+)
+            "sm:max-w-lg sm:w-full sm:mx-auto sm:my-auto sm:rounded-xl sm:border sm:border-border/80 sm:max-h-[85vh] sm:animate-in sm:zoom-in-95 sm:fade-in-0 sm:slide-in-from-bottom-0",
             className
           )}
           {...props}
@@ -142,11 +142,11 @@ const DialogContent = React.forwardRef<
                 className="sm:hidden w-full flex items-center justify-center pt-2 pb-0 cursor-grab active:cursor-grabbing touch-none select-none"
                 {...dragHandlers}
               >
-                <div className="h-1.5 w-12 rounded-full bg-muted-foreground/30 mx-auto my-3 cursor-grab active:cursor-grabbing" />
+                <div className="h-1.5 w-10 rounded-full bg-muted-foreground/25 mx-auto my-2.5 cursor-grab active:cursor-grabbing" />
               </div>
             )}
             {children}
-            <DialogPrimitive.Close className="absolute right-4 top-4 sm:right-5 sm:top-5 rounded-xl text-muted-foreground opacity-70 transition-opacity hover:opacity-100 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:pointer-events-none p-2 sm:p-1.5 hover:bg-muted/50 cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center z-30">
+            <DialogPrimitive.Close className="absolute right-3.5 top-3.5 sm:right-4 sm:top-4 rounded-lg text-muted-foreground opacity-70 transition-opacity hover:opacity-100 hover:text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:pointer-events-none p-1.5 hover:bg-muted/50 cursor-pointer min-h-[32px] min-w-[32px] flex items-center justify-center z-30">
               <X className="h-4 w-4" />
               <span className="sr-only">Close</span>
             </DialogPrimitive.Close>
