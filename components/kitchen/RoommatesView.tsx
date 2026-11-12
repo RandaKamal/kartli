@@ -75,10 +75,11 @@ export function RoommatesView({
   onMemberRemoved,
   onRoleChanged,
 }: RoommatesViewProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [newMemberName, setNewMemberName] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<KitchenMemberWithUser | null>(null);
+  const [memberToPromote, setMemberToPromote] = useState<KitchenMemberWithUser | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [, startTransition] = useTransition();
@@ -271,7 +272,7 @@ export function RoommatesView({
                         <button
                           type="button"
                           disabled={isThisMemberUpdating}
-                          className="h-8 px-2 rounded-xl bg-secondary/50 hover:bg-secondary text-xs font-medium border border-border/60 flex items-center gap-1 transition-all cursor-pointer text-muted-foreground hover:text-foreground disabled:opacity-50"
+                          className="h-8 px-2 rounded-xl bg-secondary/50 hover:bg-secondary text-xs font-medium border border-border/60 flex items-center gap-1 transition-all cursor-pointer text-muted-foreground hover:text-foreground disabled:opacity-50 touch-manipulation"
                           title="Rolle ändern"
                           aria-label="Rolle ändern"
                         >
@@ -287,16 +288,16 @@ export function RoommatesView({
                           <DropdownMenuItem
                             onClick={() => handleRoleChange(member, "MEMBER")}
                             disabled={isThisMemberUpdating}
-                            className="cursor-pointer text-xs flex items-center gap-2 py-2"
+                            className="cursor-pointer text-xs flex items-center gap-2 py-2 touch-manipulation"
                           >
                             <Shield className="w-3.5 h-3.5 text-muted-foreground" />
                             <span>{t.kitchen.roommates.setAsMember}</span>
                           </DropdownMenuItem>
                         ) : (
                           <DropdownMenuItem
-                            onClick={() => handleRoleChange(member, "ADMIN")}
+                            onClick={() => setMemberToPromote(member)}
                             disabled={isThisMemberUpdating}
-                            className="cursor-pointer text-xs flex items-center gap-2 py-2"
+                            className="cursor-pointer text-xs flex items-center gap-2 py-2 touch-manipulation"
                           >
                             <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
                             <span>{t.kitchen.roommates.makeAdmin}</span>
@@ -493,15 +494,64 @@ export function RoommatesView({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isRemoving}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isRemoving} className="touch-manipulation cursor-pointer">Cancel</AlertDialogCancel>
             <AlertDialogAction
               disabled={isRemoving}
+              className="touch-manipulation cursor-pointer"
               onClick={(e) => {
                 e.preventDefault();
                 handleConfirmRemove();
               }}
             >
               {isRemoving ? "Processing..." : "Confirm Removal"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Promotion Confirmation Dialog */}
+      <AlertDialog open={!!memberToPromote} onOpenChange={(open) => !open && setMemberToPromote(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t.kitchen.roommates.confirmMakeAdminTitle || (locale === "de" ? "Zum Admin ernennen?" : "Promote to Admin?")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {locale === "de" ? (
+                <>
+                  Möchtest du{" "}
+                  <strong className="text-foreground font-semibold">
+                    {memberToPromote?.kitchen_display_name}
+                  </strong>{" "}
+                  wirklich zum Admin ernennen?
+                </>
+              ) : (
+                <>
+                  Are you sure you want to promote{" "}
+                  <strong className="text-foreground font-semibold">
+                    {memberToPromote?.kitchen_display_name}
+                  </strong>{" "}
+                  to Admin in {kitchenName}?
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="touch-manipulation cursor-pointer">
+              {t.common?.cancel || (locale === "de" ? "Abbrechen" : "Cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="touch-manipulation cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault();
+                if (memberToPromote) {
+                  const target = memberToPromote;
+                  setMemberToPromote(null);
+                  handleRoleChange(target, "ADMIN");
+                }
+              }}
+            >
+              {t.kitchen.roommates.confirmPromoteBtn || (locale === "de" ? "Ernennung bestätigen" : "Confirm Promote")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
