@@ -236,25 +236,34 @@ export async function getKitchenStats(
   userId?: string,
   targetMonthKey?: string
 ): Promise<KitchenPulseStats> {
-  // Resolve effective user ID
-  let targetUserId = userId;
-  if (!targetUserId) {
-    const session = await auth();
-    if (!session?.user?.id) {
-      throw new Error("You must be logged in to view kitchen analytics.");
-    }
-    targetUserId = session.user.id;
+  // Resolve the caller from the session. The optional `userId` argument can
+  // never be trusted for authorization: it is a plain server-action input.
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be logged in to view kitchen analytics.");
   }
+  const callerUserId = session.user.id;
+  const targetUserId = userId || callerUserId;
 
-  // Security barrier: verify active kitchen membership
-  const membership = await getUserMembership(kitchenId, targetUserId);
-  if (!membership) {
+  // Security barrier: verify the caller is an active member of this kitchen.
+  const callerMembership = await getUserMembership(kitchenId, callerUserId);
+  if (!callerMembership) {
     throw new Error("Unauthorized: You are not a member of this kitchen.");
   }
 
   // Only kitchen admins may see household-wide checkout details (notes,
-  // receipts, and other members' purchases). Members get their own rows only.
-  const isKitchenAdmin = membership.role === "ADMIN";
+  // receipts, and other members' purchases). Members get their own rows only,
+  // and may not request another member's stats by passing a different userId.
+  const isKitchenAdmin = callerMembership.role === "ADMIN";
+  if (targetUserId !== callerUserId) {
+    if (!isKitchenAdmin) {
+      throw new Error("Unauthorized: Only kitchen admins can view other members' analytics.");
+    }
+    const targetMembership = await getUserMembership(kitchenId, targetUserId);
+    if (!targetMembership) {
+      throw new Error("Unauthorized: You are not a member of this kitchen.");
+    }
+  }
 
   // Parse targetMonthKey (format "YYYY-MM") if provided, else null defaults to CURRENT_TIMESTAMP
   let targetDateIso: string | null = null;
