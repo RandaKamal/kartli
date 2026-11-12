@@ -159,6 +159,7 @@ export function KitchenSpaceView({
   const [localPantryItems, setLocalPantryItems] = useState<PantryItem[]>(initialPantryItems);
   const [localShoppingListItems, setLocalShoppingListItems] = useState<ShoppingListItem[]>(initialShoppingListItems);
   const [localMembers, setLocalMembers] = useState<KitchenMemberWithUser[]>(initialMembers);
+  const [localMyCheckouts, setLocalMyCheckouts] = useState<CheckoutWithDetails[]>(myCheckouts);
 
   // Keep local state in sync when server props refresh
   useEffect(() => {
@@ -172,6 +173,10 @@ export function KitchenSpaceView({
   useEffect(() => {
     setLocalMembers(initialMembers);
   }, [initialMembers]);
+
+  useEffect(() => {
+    setLocalMyCheckouts(myCheckouts);
+  }, [myCheckouts]);
 
   // Universal Command Bar State
 
@@ -713,7 +718,7 @@ export function KitchenSpaceView({
                     </p>
                     <p className="text-xs text-muted-foreground font-normal leading-snug">
                       {pendingRefundsCount > 0
-                        ? `${myCheckouts.length} ${t.kitchen.ledger.loggedReceipts}`
+                        ? `${localMyCheckouts.length} ${t.kitchen.ledger.loggedReceipts}`
                         : t.kitchen.ledger.balancesUpToDateDesc}
                     </p>
                   </div>
@@ -794,7 +799,13 @@ export function KitchenSpaceView({
         isAdmin={isAdmin}
         spaceType={initialKitchen.space_type}
         members={localMembers}
-        checkouts={myCheckouts}
+        checkouts={localMyCheckouts}
+        currentUserId={currentUserId}
+        onCheckoutUpdated={(updated) => {
+          setLocalMyCheckouts((prev) =>
+            prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c))
+          );
+        }}
       />
 
       {/* OVERLAY 3: Space Pulse & Analytics Modal */}
@@ -806,7 +817,7 @@ export function KitchenSpaceView({
         currentUserId={currentUserId}
         initialStats={initialPulseStats}
         pantryItems={localPantryItems}
-        myCheckouts={myCheckouts}
+        myCheckouts={localMyCheckouts}
         onStartShoppingRun={() => {
           setIsStatsFlyoutOpen(false);
           handleModeChange("supermarket");

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { CheckoutWithDetails } from "@/types";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import { deleteReceiptForMemberAction, getMyCheckoutsAction } from "@/app/actions/checkout";
 import { Receipt, ChevronDown, ChevronUp, Trash2, Loader2, XCircle } from "lucide-react";
 import { ReceiptExpiryBadge } from "@/components/ReceiptExpiryBadge";
@@ -31,15 +32,22 @@ export function MyPurchasesSkeleton() {
   );
 }
 
+export interface MyPurchasesSectionProps {
+  kitchenId: string;
+  checkouts?: CheckoutWithDetails[];
+  defaultExpanded?: boolean;
+  onReceiptDeleted?: (receiptId: string) => void;
+}
+
 export function MyPurchasesSection({
   kitchenId,
   checkouts: initialCheckouts,
-}: {
-  kitchenId: string;
-  checkouts?: CheckoutWithDetails[];
-}) {
+  defaultExpanded = false,
+  onReceiptDeleted,
+}: MyPurchasesSectionProps) {
+  const router = useRouter();
   const { t, locale } = useTranslation();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [hasFetched, setHasFetched] = useState(initialCheckouts !== undefined);
   const [isLoading, setIsLoading] = useState(false);
   const [checkoutsList, setCheckoutsList] = useState<CheckoutWithDetails[]>(initialCheckouts || []);
@@ -54,8 +62,28 @@ export function MyPurchasesSection({
       setCheckoutsList(initialCheckouts);
       setHasFetched(true);
       setIsLoading(false);
+      return;
     }
-  }, [initialCheckouts]);
+
+    let isMounted = true;
+    setIsLoading(true);
+    getMyCheckoutsAction(kitchenId)
+      .then((data) => {
+        if (isMounted) {
+          setCheckoutsList(data);
+          setHasFetched(true);
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load user purchases:", err);
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [kitchenId, initialCheckouts]);
 
   const handleToggleExpand = () => {
     const nextExpanded = !isExpanded;
@@ -88,7 +116,9 @@ export function MyPurchasesSection({
         setSelectedCheckout((prev) =>
           prev ? { ...prev, receipts: prev.receipts.filter((r) => r.id !== receiptId) } : prev
         );
+        onReceiptDeleted?.(receiptId);
         toast.success(t.kitchen.ledger.receiptRemoved);
+        router.refresh();
       } catch (err: any) {
         toast.error(err.message || "Failed to delete receipt.");
       } finally {
@@ -138,25 +168,57 @@ export function MyPurchasesSection({
             <div className="divide-y divide-white/[0.06]">
               {checkoutsList.map((checkout) => {
                 const itemNames = checkout.items.map((i) => i.name).join(", ");
+                const isDeclined = checkout.is_declined;
+                const isRefunded = checkout.is_refunded;
 
                 return (
-                  <div key={checkout.id} className="py-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                  <div
+                    key={checkout.id}
+                    className={cn(
+                      "py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 transition-opacity",
+                      isDeclined && "opacity-55 text-zinc-500"
+                    )}
+                  >
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-sm text-foreground truncate">{itemNames}</p>
+                      <p
+                        className={cn(
+                          "font-medium text-sm truncate",
+                          isDeclined ? "text-zinc-400 line-through" : "text-foreground"
+                        )}
+                      >
+                        {itemNames || checkout.store_name || t.kitchen.ledger.myPurchases}
+                      </p>
                       <p className="text-xs text-zinc-500 truncate tabular-nums">
                         {new Date(checkout.created_at).toLocaleDateString(dateLocale, {
                           month: "short",
                           day: "numeric",
                           year: "numeric",
                         })}
-                        <span> · {formatCurrency(checkout.total_claimed_amount, checkout.currency)}</span>
+                        {checkout.store_name && itemNames && <span> · {checkout.store_name}</span>}
                       </p>
                       {checkout.note && (
                         <p className="text-xs text-zinc-400 truncate">&ldquo;{checkout.note}&rdquo;</p>
                       )}
+                      {isDeclined && checkout.decline_reason && (
+                        <p className="text-[11px] text-rose-300/80 truncate mt-0.5" title={checkout.decline_reason}>
+                          <span className="font-medium text-rose-400/90">
+                            {t.kitchen.ledger.declineReasonLabel || "Grund"}:
+                          </span>{" "}
+                          {checkout.decline_reason}
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                      <span
+                        className={cn(
+                          "text-sm font-semibold tabular-nums whitespace-nowrap",
+                          isDeclined ? "text-zinc-500 line-through" : "text-foreground"
+                        )}
+                      >
+                        {formatCurrency(checkout.total_claimed_amount, checkout.currency)}
+                      </span>
+
                       {checkout.receipts.length > 0 ? (
                         <button
                           type="button"
@@ -167,31 +229,32 @@ export function MyPurchasesSection({
                         >
                           <Receipt className="w-3.5 h-3.5" />
                         </button>
+                      ) : checkout.totalReceiptsEverAttached > 0 ? (
+                        <div
+                          className="inline-flex items-center justify-center h-8 w-8 text-zinc-600"
+                          title={t.kitchen.ledger.receiptDeleted}
+                        >
+                          <Receipt className="w-3.5 h-3.5 line-through opacity-50" />
+                        </div>
                       ) : (
-                        <span className="text-[11px] text-zinc-600">
-                          {checkout.totalReceiptsEverAttached > 0
-                            ? t.kitchen.ledger.receiptDeleted
-                            : t.kitchen.ledger.noReceipt}
-                        </span>
+                        <div
+                          className="inline-flex items-center justify-center h-8 w-8 text-zinc-700"
+                          title={t.kitchen.ledger.noReceipt}
+                        >
+                          <Receipt className="w-3.5 h-3.5 opacity-40" />
+                        </div>
                       )}
 
-                      {checkout.is_declined ? (
-                        <div className="flex flex-col items-end gap-0.5">
-                          <span className="inline-flex items-center gap-1.5 text-xs text-rose-400 whitespace-nowrap">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                            {t.kitchen.ledger.declined || "Abgelehnt"}
-                          </span>
-                          {checkout.decline_reason && (
-                            <span className="text-[11px] text-rose-300/80 truncate max-w-[160px] sm:max-w-xs" title={checkout.decline_reason}>
-                              {checkout.decline_reason}
-                            </span>
-                          )}
+                      {isDeclined ? (
+                        <div className="flex items-center gap-1.5 text-xs text-rose-400/80 whitespace-nowrap">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500/70 shrink-0" />
+                          <span>{t.kitchen.ledger.declined || "Abgelehnt"}</span>
                         </div>
-                      ) : checkout.is_refunded ? (
+                      ) : isRefunded ? (
                         <div className="flex items-center gap-2">
                           <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 whitespace-nowrap">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shrink-0" />
-                            {t.kitchen.ledger.refunded}
+                            {t.kitchen.ledger.settled || "Ausgeglichen"}
                           </span>
                           {checkout.receipts.length > 0 && checkout.refunded_at && (
                             <ReceiptExpiryBadge refundedAt={checkout.refunded_at} />
@@ -200,7 +263,7 @@ export function MyPurchasesSection({
                       ) : (
                         <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 whitespace-nowrap">
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                          {t.kitchen.ledger.pendingRefund}
+                          {t.kitchen.ledger.pending || "Offen"}
                         </span>
                       )}
                     </div>

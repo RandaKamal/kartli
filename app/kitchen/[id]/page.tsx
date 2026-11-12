@@ -6,7 +6,7 @@ import {
   getUserMembership,
   getKitchenMembersWithUsers,
 } from "@/lib/kitchen";
-import { getPantryItems, getShoppingListItems } from "@/lib/pantry";
+import { getPantryItems, getShoppingListItems, getUserCheckouts } from "@/lib/pantry";
 import { getUserHasCompletedTour } from "@/lib/auth-service";
 import { getKitchenStats } from "@/lib/actions/stats";
 import { KitchenSpaceView } from "@/components/KitchenSpaceView";
@@ -32,7 +32,16 @@ export default async function KitchenPage({
   const initialTab = resolvedSearchParams?.tab || "kitchen";
 
   // Concurrent execution of all primary data queries via Promise.all
-  const [membership, kitchen, pantryItems, shoppingListItems, initialPulseStats, members, hasCompletedTour] = await Promise.all([
+  const [
+    membership,
+    kitchen,
+    pantryItems,
+    shoppingListItems,
+    initialPulseStats,
+    members,
+    hasCompletedTour,
+    myCheckouts,
+  ] = await Promise.all([
     getUserMembership(id, session.user.id),
     getKitchenById(id),
     getPantryItems(id),
@@ -42,6 +51,7 @@ export default async function KitchenPage({
       : Promise.resolve(undefined),
     getKitchenMembersWithUsers(id),
     getUserHasCompletedTour(session.user.id),
+    getUserCheckouts(id, session.user.id).catch(() => []),
   ]);
 
   if (!membership) {
@@ -72,6 +82,7 @@ export default async function KitchenPage({
       userPreferredCurrency={preferredCurrency}
       baseUrl={baseUrl}
       initialTab={initialTab}
+      myCheckouts={myCheckouts}
     />
   );
 }

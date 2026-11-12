@@ -58,6 +58,7 @@ interface AdminRefundsSectionProps {
   members?: KitchenMemberWithUser[];
   spaceType?: KitchenSpaceType;
   onCheckoutsLoaded?: (checkouts: CheckoutWithDetails[]) => void;
+  onCheckoutUpdated?: (checkout: Partial<CheckoutWithDetails> & { id: string }) => void;
 }
 
 export function AdminRefundsSection({
@@ -65,6 +66,7 @@ export function AdminRefundsSection({
   checkouts: initialCheckouts,
   members,
   onCheckoutsLoaded,
+  onCheckoutUpdated,
 }: AdminRefundsSectionProps) {
   const router = useRouter();
   const { t, locale } = useTranslation();
@@ -162,13 +164,18 @@ export function AdminRefundsSection({
     startTransition(async () => {
       try {
         await refundCheckoutAction(kitchenId, checkoutId);
+        const updated = {
+          id: checkoutId,
+          is_refunded: true,
+          is_declined: false,
+          refunded_at: new Date(),
+        };
         setCheckoutsList((prev) =>
           prev.map((c) =>
-            c.id === checkoutId
-              ? { ...c, is_refunded: true, is_declined: false, refunded_at: new Date() }
-              : c
+            c.id === checkoutId ? { ...c, ...updated } : c
           )
         );
+        onCheckoutUpdated?.(updated);
         toast.success(t.kitchen.ledger.settledSuccess);
         router.refresh();
       } catch (err: any) {
@@ -185,21 +192,21 @@ export function AdminRefundsSection({
       try {
         await declineCheckoutAction(checkoutId, reason);
         const now = new Date().toISOString();
+        const updated = {
+          id: checkoutId,
+          is_declined: true,
+          is_refunded: false,
+          declined_at: now,
+          decline_reason: reason?.trim() || null,
+          receipts: [],
+          receipt_filename: null,
+        };
         setCheckoutsList((prev) =>
           prev.map((c) =>
-            c.id === checkoutId
-              ? {
-                  ...c,
-                  is_declined: true,
-                  is_refunded: false,
-                  declined_at: now,
-                  decline_reason: reason?.trim() || null,
-                  receipts: [],
-                  receipt_filename: null,
-                }
-              : c
+            c.id === checkoutId ? { ...c, ...updated } : c
           )
         );
+        onCheckoutUpdated?.(updated);
         setActiveDeclineCheckoutId(null);
         toast.success(t.kitchen.ledger.declinedSuccess || "Einkauf abgelehnt und Beleg entfernt");
         router.refresh();
