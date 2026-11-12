@@ -503,6 +503,12 @@ export const de: typeof en = {
       approvedSuccess: "Vorrat freigegeben",
       rejectedSuccess: "Vorschlag abgelehnt",
       proposalSubmitted: "Vorschlag eingereicht — wartet auf Admin-Freigabe",
+      emptyState: "Noch keine Basics vorhanden",
+      deleteConfirmTitle: "WG-Basic löschen",
+      deleteConfirmDesc: "Möchtest du {name} wirklich aus den dauerhaften Basics löschen?",
+      deleteConfirmWarning: "Dadurch wird auch der Eintrag aus der Einkaufsliste entfernt.",
+      deleteConfirmBtn: "Löschen",
+      deletingBtn: "Wird gelöscht...",
     },
     ledger: {
       balancesUpToDate: "Alle Ausgaben ausgeglichen",

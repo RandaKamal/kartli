@@ -275,9 +275,13 @@ export async function moveAllNeededToCartAction(kitchenId: string) {
   return items;
 }
 
-export async function removeShoppingListItemAction(kitchenId: string, itemId: string) {
+export async function removeShoppingListItemAction(
+  kitchenId: string,
+  itemId: string,
+  itemName?: string
+) {
   const userId = await requireMembership(kitchenId);
-  const result = await removeShoppingListItem(kitchenId, itemId, userId);
+  const result = await removeShoppingListItem(kitchenId, itemId, userId, itemName);
   revalidateKitchen(kitchenId);
   return result;
 }

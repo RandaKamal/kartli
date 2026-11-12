@@ -501,6 +501,12 @@ export const en = {
       approvedSuccess: "Staple approved",
       rejectedSuccess: "Suggestion rejected",
       proposalSubmitted: "Suggestion submitted — waiting for admin approval",
+      emptyState: "No staples tracked yet",
+      deleteConfirmTitle: "Delete Household Staple",
+      deleteConfirmDesc: "Are you sure you want to delete {name} from permanent staples?",
+      deleteConfirmWarning: "This will also remove its pending entry from the shopping queue.",
+      deleteConfirmBtn: "Delete Staple",
+      deletingBtn: "Deleting...",
     },
     ledger: {
       balancesUpToDate: "Balances up to date",

@@ -758,6 +758,7 @@ export function KitchenSpaceView({
               onItemMovedToCart={handleItemMovedToCart}
               onQuickAddStaple={handleQuickAddStapleToCart}
               onAllItemsMovedToCart={handleAllItemsMovedToCart}
+              onItemRemoved={handleItemRemoved}
               onAddOneOff={handleAddOneOff}
             />
           </main>

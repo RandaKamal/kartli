@@ -68,7 +68,7 @@ export function PantrySection({
   hideInput = false,
   canAdd = false,
 }: PantrySectionProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const router = useRouter();
   const [optimisticItems, setOptimisticItems] = useOptimistic(
     items,
@@ -335,7 +335,9 @@ export function PantrySection({
         {displayItems.length === 0 && (
           <div className="py-10 px-4 text-center rounded-2xl border border-dashed border-border/70 bg-card/40 space-y-1.5">
             <Package className="w-6 h-6 text-muted-foreground mx-auto opacity-60" />
-            <p className="text-xs font-semibold text-foreground">No staples tracked yet</p>
+            <p className="text-xs font-semibold text-foreground">
+              {t.kitchen.staples.emptyState || (locale === "de" ? "Noch keine Basics vorhanden" : "No staples tracked yet")}
+            </p>
             <p className="text-[11px] text-muted-foreground max-w-xs mx-auto leading-relaxed">
               Add permanent household essentials like Olive Oil, Salt, or Coffee that your kitchen should always have in stock.
             </p>
@@ -538,19 +540,27 @@ export function PantrySection({
               <div className="p-2.5 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive">
                 <Trash2 className="w-5 h-5" />
               </div>
-              <AlertDialogTitle>Delete Household Staple</AlertDialogTitle>
+              <AlertDialogTitle>
+                {t.kitchen.staples.deleteConfirmTitle || (locale === "de" ? "WG-Basic löschen" : "Delete Household Staple")}
+              </AlertDialogTitle>
             </div>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong className="text-foreground font-semibold">&ldquo;{itemToDelete?.name}&rdquo;</strong> from permanent staples?
+              {locale === "de" ? (
+                <>Möchtest du <strong className="text-foreground font-semibold">&ldquo;{itemToDelete?.name}&rdquo;</strong> wirklich aus den dauerhaften Basics löschen?</>
+              ) : (
+                <>Are you sure you want to delete <strong className="text-foreground font-semibold">&ldquo;{itemToDelete?.name}&rdquo;</strong> from permanent staples?</>
+              )}
               {itemToDelete?.is_out_of_stock && (
                 <span className="block mt-1 text-accent-warning font-medium">
-                  This will also remove its pending entry from the shopping queue.
+                  {t.kitchen.staples.deleteConfirmWarning || (locale === "de" ? "Dadurch wird auch der Eintrag aus der Einkaufsliste entfernt." : "This will also remove its pending entry from the shopping queue.")}
                 </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>
+              {t.common?.cancel || (locale === "de" ? "Abbrechen" : "Cancel")}
+            </AlertDialogCancel>
             <AlertDialogAction
               disabled={isDeleting}
               onClick={(e) => {
@@ -559,7 +569,11 @@ export function PantrySection({
               }}
             >
               {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>{isDeleting ? "Deleting..." : "Delete Staple"}</span>
+              <span>
+                {isDeleting
+                  ? (t.kitchen.staples.deletingBtn || (locale === "de" ? "Wird gelöscht..." : "Deleting..."))
+                  : (t.kitchen.staples.deleteConfirmBtn || (locale === "de" ? "Löschen" : "Delete Staple"))}
+              </span>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

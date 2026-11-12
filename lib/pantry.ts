@@ -707,20 +707,31 @@ export async function duplicateShoppingListItem(
 export async function removeShoppingListItem(
   kitchenId: string,
   itemId: string,
-  userId?: string
+  userId?: string,
+  itemName?: string
 ): Promise<boolean> {
+  let targetId = itemId;
+  if (!UUID_REGEX.test(targetId)) {
+    try {
+      targetId = await resolveShoppingItemId(kitchenId, itemId, itemName);
+    } catch {
+      return false;
+    }
+  }
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
     const { rows: existingRows } = await client.query<{
+      is_in_cart: boolean;
       is_purchased: boolean;
       purchased_by: string | null;
       checkout_id: string | null;
       pantry_item_id: string | null;
     }>(
-      `SELECT is_purchased, purchased_by, checkout_id, pantry_item_id FROM shopping_list_items WHERE id = $1 AND kitchen_id = $2`,
-      [itemId, kitchenId]
+      `SELECT COALESCE(is_in_cart, FALSE) AS is_in_cart, is_purchased, purchased_by, checkout_id, pantry_item_id FROM shopping_list_items WHERE id = $1 AND kitchen_id = $2`,
+      [targetId, kitchenId]
     );
     if (existingRows.length === 0) {
       await client.query("ROLLBACK");
@@ -728,7 +739,12 @@ export async function removeShoppingListItem(
     }
     const existing = existingRows[0];
 
-    if (existing.is_purchased && existing.purchased_by && userId && existing.purchased_by !== userId) {
+    if (
+      (existing.is_in_cart || existing.is_purchased) &&
+      existing.purchased_by &&
+      userId &&
+      existing.purchased_by !== userId
+    ) {
       const adminRes = await client.query(
         `SELECT 1 FROM kitchen_members WHERE kitchen_id = $1 AND user_id = $2 AND role = 'ADMIN'`,
         [kitchenId, userId]
@@ -740,7 +756,7 @@ export async function removeShoppingListItem(
 
     await client.query(
       `DELETE FROM shopping_list_items WHERE id = $1 AND kitchen_id = $2`,
-      [itemId, kitchenId]
+      [targetId, kitchenId]
     );
 
     const pantryItemId = existing.pantry_item_id;
