@@ -231,8 +231,15 @@ export interface CheckoutReceipt {
 
 export interface ReceiptLine {
   raw_name: string;
-  price: number;
+  normalized_name?: string;
   quantity: number;
+  unit_price: number | null;
+  line_total: number;
+  unitPrice: number | null;
+  lineTotal: number;
+  price: number;
+  is_deposit?: boolean;
+  is_discount?: boolean;
   matched_cart_item_id: string | null;
 }
 
