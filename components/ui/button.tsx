@@ -4,33 +4,33 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer select-none",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer select-none",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground hover:bg-primary/90",
+          "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200 shadow-xs",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+          "text-rose-600 hover:bg-rose-500/10 border border-rose-500/20 dark:text-rose-400 bg-transparent",
         outline:
-          "border border-input bg-background text-foreground hover:bg-muted hover:text-foreground",
+          "border border-border/80 bg-background text-foreground hover:bg-muted/70 hover:text-foreground",
         secondary:
-          "bg-secondary border border-border/70 text-secondary-foreground hover:bg-secondary/80",
+          "bg-zinc-100 text-zinc-900 border border-zinc-200/80 hover:bg-zinc-200/80 dark:bg-zinc-800/80 dark:text-zinc-200 dark:border-white/[0.08] dark:hover:bg-zinc-800",
         ghost:
-          "text-muted-foreground hover:text-foreground hover:bg-muted",
+          "text-zinc-600 hover:text-zinc-900 hover:bg-black/[0.05] dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-white/[0.05]",
         link:
-          "text-accent-primary underline-offset-4 hover:underline",
+          "text-foreground underline-offset-4 hover:underline",
         accent:
           "bg-accent-primary text-white hover:bg-accent-primary/90",
         success:
           "bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600",
       },
       size: {
-        default: "h-10 px-4 py-2 text-sm",
-        sm: "h-8 rounded-lg px-3 text-xs",
-        lg: "h-11 rounded-xl px-6 text-sm sm:text-base font-semibold",
-        icon: "h-8 w-8 rounded-lg p-0",
-        "icon-sm": "h-7 w-7 rounded-md p-0",
+        default: "h-9 px-3.5 py-1.5 text-sm",
+        sm: "h-8 px-2.5 text-xs",
+        lg: "h-10 px-5 text-sm font-medium",
+        icon: "h-8 w-8 p-0",
+        "icon-sm": "h-7 w-7 p-0",
       },
     },
     defaultVariants: {

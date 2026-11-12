@@ -46,14 +46,14 @@ export function UserDropdown({ user, className }: UserDropdownProps) {
         <Button
           variant="secondary"
           className={cn(
-            "h-8 w-8 rounded-full border border-border bg-secondary inline-flex items-center justify-center leading-none font-bold text-xs p-0 text-foreground md:h-9 md:w-auto md:px-3 md:rounded-xl md:border-border/70 md:font-medium md:gap-2 shadow-xs hover:border-border hover:bg-secondary/80 transition-all cursor-pointer",
+            "h-8 w-8 rounded-full border border-border/70 bg-secondary/40 inline-flex items-center justify-center leading-none font-bold text-xs p-0 text-foreground md:h-8 md:w-auto md:px-2.5 md:rounded-lg md:border-border/60 md:font-medium md:gap-2 hover:bg-secondary transition-colors cursor-pointer",
             className
           )}
           aria-label={`User menu for @${username}`}
         >
           <span className="md:hidden select-none leading-none flex items-center justify-center">{initial}</span>
-          <Avatar className="hidden md:flex h-5 w-5 border border-border/60 shadow-2xs">
-            <AvatarFallback className="bg-secondary-foreground/10 text-[10px] text-foreground font-bold flex items-center justify-center">
+          <Avatar className="hidden md:flex h-4.5 w-4.5 border border-border/60 shadow-2xs">
+            <AvatarFallback className="bg-secondary-foreground/10 text-[9px] text-foreground font-bold flex items-center justify-center">
               {initial}
             </AvatarFallback>
           </Avatar>
@@ -62,7 +62,7 @@ export function UserDropdown({ user, className }: UserDropdownProps) {
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-md">
         <DropdownMenuLabel className="font-normal text-xs text-muted-foreground">
           {t.userDropdown.signedInAs} <strong className="text-foreground">@{username}</strong>
         </DropdownMenuLabel>

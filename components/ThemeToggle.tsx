@@ -30,12 +30,12 @@ export function ThemeToggle({
         variant="ghost"
         size="icon"
         className={cn(
-          "relative h-8 w-8 rounded-lg border-0 md:h-9 md:w-9 md:rounded-xl md:border md:border-border/70 inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors",
+          "relative h-8 w-8 rounded-lg border border-border/60 bg-secondary/30 hover:bg-secondary inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors",
           className
         )}
         aria-label="Toggle theme"
       >
-        <Sun className="h-3.5 w-3.5 md:h-4 md:w-4" />
+        <Sun className="h-3.5 w-3.5" />
       </Button>
     );
   }
@@ -47,36 +47,36 @@ export function ThemeToggle({
           variant="ghost"
           size="icon"
           className={cn(
-            "relative h-8 w-8 rounded-lg border-0 md:h-9 md:w-9 md:rounded-xl md:border md:border-border/70 inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors",
+            "relative h-8 w-8 rounded-lg border border-border/60 bg-secondary/30 hover:bg-secondary inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors",
             className
           )}
           aria-label="Toggle theme"
         >
-          <Sun className="h-3.5 w-3.5 md:h-4 md:w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-3.5 w-3.5 md:h-4 md:w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <Sun className="h-3.5 w-3.5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-3.5 w-3.5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-36 rounded-2xl shadow-xl">
+      <DropdownMenuContent align="end" className="w-36 rounded-xl shadow-md">
         <DropdownMenuItem
           onClick={() => setTheme("light")}
-          className={`cursor-pointer rounded-xl font-medium ${theme === "light" ? "text-accent-primary font-semibold" : ""}`}
+          className={`cursor-pointer rounded-lg text-xs font-medium ${theme === "light" ? "text-foreground font-semibold bg-muted/60" : ""}`}
         >
-          <Sun className="mr-2 h-4 w-4" />
+          <Sun className="mr-2 h-3.5 w-3.5" />
           <span>Light</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => setTheme("dark")}
-          className={`cursor-pointer rounded-xl font-medium ${theme === "dark" ? "text-accent-primary font-semibold" : ""}`}
+          className={`cursor-pointer rounded-lg text-xs font-medium ${theme === "dark" ? "text-foreground font-semibold bg-muted/60" : ""}`}
         >
-          <Moon className="mr-2 h-4 w-4" />
+          <Moon className="mr-2 h-3.5 w-3.5" />
           <span>Dark</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => setTheme("system")}
-          className={`cursor-pointer rounded-xl font-medium ${theme === "system" ? "text-accent-primary font-semibold" : ""}`}
+          className={`cursor-pointer rounded-lg text-xs font-medium ${theme === "system" ? "text-foreground font-semibold bg-muted/60" : ""}`}
         >
-          <Laptop className="mr-2 h-4 w-4" />
+          <Laptop className="mr-2 h-3.5 w-3.5" />
           <span>System</span>
         </DropdownMenuItem>
       </DropdownMenuContent>

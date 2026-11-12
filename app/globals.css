@@ -112,7 +112,7 @@
     --input: #e4e4e7;
     --ring: #10b981;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
     color-scheme: light;
   }
@@ -165,7 +165,7 @@
     --input: hsl(240 5% 19%);
     --ring: #34d399;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
     color-scheme: dark;
   }
@@ -220,7 +220,7 @@
     --input: #e4e4e7;
     --ring: hsl(285 45% 45%);
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
     color-scheme: light;
   }
@@ -272,7 +272,7 @@
     --input: hsl(280 8% 18%);
     --ring: hsl(285 45% 58%);
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
     color-scheme: dark;
   }
