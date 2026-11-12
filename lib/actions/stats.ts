@@ -92,6 +92,9 @@ export interface MonthCheckoutItem {
   total_receipt_amount: number | null;
   receipt_filename: string | null;
   is_refunded: boolean;
+  is_declined: boolean;
+  declined_at: string | Date | null;
+  decline_reason: string | null;
   currency?: string;
   created_at: string | Date;
   refunded_at: string | Date | null;
@@ -172,6 +175,9 @@ interface RawSqlStatsRow {
     total_receipt_amount: string | number | null;
     receipt_filename: string | null;
     is_refunded: boolean;
+    is_declined: boolean;
+    declined_at: string | null;
+    decline_reason: string | null;
     currency?: string;
     created_at: string;
     refunded_at: string | null;
@@ -270,11 +276,13 @@ export async function getKitchenStats(
         COALESCE(NULLIF(TRIM(c.store_name), ''), 'Sonstige') AS store_name,
         c.currency,
         c.created_at,
-        c.is_refunded
+        c.is_refunded,
+        c.is_declined
       FROM checkouts c, month_bounds mb
       WHERE c.kitchen_id = $1
         AND c.created_at >= mb.prev_start
         AND c.created_at < mb.cur_end
+        AND c.is_declined = FALSE
     ),
     spend_stats AS (
       SELECT
@@ -333,6 +341,7 @@ export async function getKitchenStats(
         WHERE c.kitchen_id = $1
           AND c.created_at >= mb.cur_start
           AND c.created_at < mb.cur_end
+          AND c.is_declined = FALSE
         GROUP BY c.user_id, member_name
         ORDER BY run_count DESC, total_spend DESC
       ) mr
@@ -354,7 +363,7 @@ export async function getKitchenStats(
         CROSS JOIN month_bounds mb
         WHERE sli.kitchen_id = $1
           AND (
-            (c.id IS NOT NULL AND c.created_at >= mb.cur_start AND c.created_at < mb.cur_end)
+            (c.id IS NOT NULL AND c.is_declined = FALSE AND c.created_at >= mb.cur_start AND c.created_at < mb.cur_end)
             OR (c.id IS NULL AND sli.is_purchased = TRUE AND sli.created_at >= mb.cur_start AND sli.created_at < mb.cur_end)
           )
           AND TRIM(sli.name) != ''
@@ -416,6 +425,7 @@ export async function getKitchenStats(
       JOIN checkouts c ON sli.checkout_id = c.id
       WHERE sli.kitchen_id = $1
         AND c.created_at >= sli.created_at
+        AND c.is_declined = FALSE
     ),
     restock_velocity AS (
       WITH item_intervals AS (
@@ -427,6 +437,7 @@ export async function getKitchenStats(
         JOIN checkouts c ON sli.checkout_id = c.id
         WHERE sli.kitchen_id = $1
           AND sli.pantry_item_id IS NOT NULL
+          AND c.is_declined = FALSE
       )
       SELECT
         COALESCE(ROUND(AVG(EXTRACT(EPOCH FROM (needed_at - prev_restocked_at)) / 86400)::numeric, 2), 0) AS avg_in_stock_days,
@@ -456,12 +467,12 @@ export async function getKitchenStats(
     ),
     user_settlement AS (
       SELECT
-        COALESCE(SUM(total_claimed_amount) FILTER (WHERE is_refunded = FALSE), 0)::numeric AS pending_amount,
+        COALESCE(SUM(total_claimed_amount) FILTER (WHERE is_refunded = FALSE AND is_declined = FALSE), 0)::numeric AS pending_amount,
         COALESCE(SUM(total_claimed_amount) FILTER (WHERE is_refunded = TRUE), 0)::numeric AS settled_amount,
-        COUNT(*) FILTER (WHERE is_refunded = FALSE)::int AS pending_count,
+        COUNT(*) FILTER (WHERE is_refunded = FALSE AND is_declined = FALSE)::int AS pending_count,
         COUNT(*) FILTER (WHERE is_refunded = TRUE)::int AS settled_count
       FROM checkouts
-      WHERE kitchen_id = $1 AND user_id = $2
+      WHERE kitchen_id = $1 AND user_id = $2 AND is_declined = FALSE
     ),
     user_top_items AS (
       SELECT 
@@ -481,7 +492,7 @@ export async function getKitchenStats(
         WHERE sli.kitchen_id = $1
           AND (sli.purchased_by = $2 OR c.user_id = $2)
           AND (
-            (c.id IS NOT NULL AND c.created_at >= mb.cur_start AND c.created_at < mb.cur_end)
+            (c.id IS NOT NULL AND c.is_declined = FALSE AND c.created_at >= mb.cur_start AND c.created_at < mb.cur_end)
             OR (c.id IS NULL AND sli.is_purchased = TRUE AND sli.created_at >= mb.cur_start AND sli.created_at < mb.cur_end)
           )
           AND TRIM(sli.name) != ''
@@ -503,6 +514,9 @@ export async function getKitchenStats(
             'total_receipt_amount', c.total_receipt_amount,
             'receipt_filename', c.receipt_filename,
             'is_refunded', c.is_refunded,
+            'is_declined', c.is_declined,
+            'declined_at', c.declined_at,
+            'decline_reason', c.decline_reason,
             'currency', c.currency,
             'created_at', c.created_at,
             'refunded_at', c.refunded_at,
@@ -533,6 +547,7 @@ export async function getKitchenStats(
       WHERE c.kitchen_id = $1
         AND c.created_at >= mb.cur_start
         AND c.created_at < mb.cur_end
+        AND c.is_declined = FALSE
     )
     SELECT 
       s.current_month_spend,
@@ -672,6 +687,9 @@ export async function getKitchenStats(
     total_receipt_amount: c.total_receipt_amount !== null ? parseFloat(String(c.total_receipt_amount)) : null,
     receipt_filename: c.receipt_filename,
     is_refunded: Boolean(c.is_refunded),
+    is_declined: Boolean(c.is_declined),
+    declined_at: c.declined_at || null,
+    decline_reason: c.decline_reason || null,
     currency: c.currency || "EUR",
     created_at: c.created_at,
     refunded_at: c.refunded_at,

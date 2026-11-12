@@ -206,6 +206,9 @@ export interface Checkout {
   total_receipt_amount: number | null;
   receipt_filename: string | null;
   is_refunded: boolean;
+  is_declined: boolean;
+  declined_at: string | null;
+  decline_reason: string | null;
   currency?: string;
   created_at: Date;
   refunded_at: Date | null;

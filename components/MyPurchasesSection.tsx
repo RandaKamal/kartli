@@ -4,7 +4,7 @@ import { useState, useEffect, useTransition } from "react";
 import type { CheckoutWithDetails } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 import { deleteReceiptForMemberAction, getMyCheckoutsAction } from "@/app/actions/checkout";
-import { Receipt, ChevronDown, ChevronUp, Trash2, Loader2 } from "lucide-react";
+import { Receipt, ChevronDown, ChevronUp, Trash2, Loader2, XCircle } from "lucide-react";
 import { ReceiptExpiryBadge } from "@/components/ReceiptExpiryBadge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -175,7 +175,19 @@ export function MyPurchasesSection({
                         </span>
                       )}
 
-                      {checkout.is_refunded ? (
+                      {checkout.is_declined ? (
+                        <div className="flex flex-col items-end gap-0.5">
+                          <span className="inline-flex items-center gap-1.5 text-xs text-rose-400 whitespace-nowrap">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                            {t.kitchen.ledger.declined || "Abgelehnt"}
+                          </span>
+                          {checkout.decline_reason && (
+                            <span className="text-[11px] text-rose-300/80 truncate max-w-[160px] sm:max-w-xs" title={checkout.decline_reason}>
+                              {checkout.decline_reason}
+                            </span>
+                          )}
+                        </div>
+                      ) : checkout.is_refunded ? (
                         <div className="flex items-center gap-2">
                           <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 whitespace-nowrap">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shrink-0" />
@@ -217,6 +229,19 @@ export function MyPurchasesSection({
                   })}
                   <span> · {formatCurrency(selectedCheckout.total_claimed_amount, selectedCheckout.currency)}</span>
                 </p>
+                {selectedCheckout.is_declined && (
+                  <div className="p-3 rounded-lg bg-rose-500/[0.05] border border-rose-500/20 text-rose-300 text-xs flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5 font-medium">
+                      <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span>{t.kitchen.ledger.declined || "Abgelehnt"}</span>
+                    </div>
+                    {selectedCheckout.decline_reason && (
+                      <p className="text-[11px] text-rose-300/80 pl-5.5">
+                        <span className="font-semibold text-rose-200">{t.kitchen.ledger.declineReasonLabel || "Grund"}:</span> {selectedCheckout.decline_reason}
+                      </p>
+                    )}
+                  </div>
+                )}
                 {selectedCheckout.is_refunded && selectedCheckout.refunded_at && selectedCheckout.receipts.length > 0 && (
                   <ReceiptExpiryBadge refundedAt={selectedCheckout.refunded_at} className="mt-0.5" />
                 )}

@@ -59,7 +59,11 @@ export function AdminCheckoutsList({
                   </p>
                 </div>
 
-                {checkout.is_refunded ? (
+                {checkout.is_declined ? (
+                  <Badge variant="destructive" className="gap-1 font-semibold text-xs py-1 px-3">
+                    Declined
+                  </Badge>
+                ) : checkout.is_refunded ? (
                   <Badge variant="success" className="gap-1 font-semibold text-xs py-1 px-3">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     Refunded

@@ -9,6 +9,7 @@ import {
   getKitchenCheckouts,
   getUserCheckouts,
   refundCheckout,
+  declineCheckout,
   deleteReceiptForSide,
 } from "@/lib/pantry";
 import { notifyKitchen, pushMessages } from "@/lib/push";
@@ -32,7 +33,7 @@ export async function getPendingRefundsCountAction(kitchenId: string): Promise<n
   const isAdmin = await isUserKitchenAdmin(kitchenId, session.user.id);
   if (!isAdmin) return 0;
   const { rows } = await pool.query<{ count: string }>(
-    `SELECT COUNT(*) AS count FROM checkouts WHERE kitchen_id = $1 AND is_refunded = FALSE`,
+    `SELECT COUNT(*) AS count FROM checkouts WHERE kitchen_id = $1 AND is_refunded = FALSE AND is_declined = FALSE`,
     [kitchenId]
   );
   return parseInt(rows[0]?.count || "0", 10);
@@ -83,6 +84,46 @@ export async function refundCheckoutAction(kitchenId: string, checkoutId: string
     ).catch((err) => console.error("Push notification failed:", err));
   }
 
+  return result;
+}
+
+export async function declineCheckoutAction(
+  checkoutIdOrKitchenId: string,
+  reasonOrCheckoutId?: string,
+  maybeReason?: string
+): Promise<Checkout> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("You must be logged in.");
+
+  let kitchenId: string;
+  let checkoutId: string;
+  let reason: string | undefined;
+
+  if (
+    maybeReason !== undefined ||
+    (reasonOrCheckoutId &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(reasonOrCheckoutId) &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(checkoutIdOrKitchenId))
+  ) {
+    kitchenId = checkoutIdOrKitchenId;
+    checkoutId = reasonOrCheckoutId!;
+    reason = maybeReason;
+  } else {
+    checkoutId = checkoutIdOrKitchenId;
+    reason = reasonOrCheckoutId;
+    const { rows } = await pool.query<{ kitchen_id: string }>(
+      `SELECT kitchen_id FROM checkouts WHERE id = $1`,
+      [checkoutId]
+    );
+    if (rows.length === 0) throw new Error("Checkout not found.");
+    kitchenId = rows[0].kitchen_id;
+  }
+
+  const isAdmin = await isUserKitchenAdmin(kitchenId, session.user.id);
+  if (!isAdmin) throw new Error("Unauthorized: Only kitchen admins can decline checkouts.");
+
+  const result = await declineCheckout(kitchenId, checkoutId, session.user.id, reason);
+  revalidateKitchen(kitchenId);
   return result;
 }
 
