@@ -266,9 +266,9 @@ export function AdminRefundsSection({
 
   return (
     <div className="space-y-4">
-      {/* Segmented status filter */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="inline-flex items-center bg-muted p-1 rounded-lg border border-border">
+      {/* Segmented status filter — scrolls horizontally on narrow phones */}
+      <div className="overflow-x-auto no-scrollbar -mx-1 px-1">
+        <div className="inline-flex items-center bg-muted p-1 rounded-lg border border-border min-w-max">
           {filters.map((filter) => {
             const isActive = filterStatus === filter.key;
             return (
@@ -277,14 +277,14 @@ export function AdminRefundsSection({
                 type="button"
                 onClick={() => setFilterStatus(filter.key)}
                 className={cn(
-                  "inline-flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium transition-colors cursor-pointer",
+                  "inline-flex shrink-0 items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium whitespace-nowrap transition-colors cursor-pointer touch-manipulation",
                   isActive
                     ? "bg-background text-foreground shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <span>{filter.label}</span>
-                <span className={cn("text-[11px] tabular-nums", isActive ? "text-muted-foreground" : "text-muted-foreground")}>
+                <span className="text-[11px] tabular-nums text-muted-foreground">
                   {filter.count}
                 </span>
               </button>
@@ -310,13 +310,13 @@ export function AdminRefundsSection({
             return (
               <div
                 key={checkout.id}
-                className="px-4 py-3.5 transition-colors hover:bg-muted/60"
+                className="px-3 sm:px-4 py-3 transition-colors hover:bg-muted/60"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-                  {/* Left: identity + context */}
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <Avatar className="h-8 w-8 shrink-0">
-                      <AvatarFallback className="bg-secondary text-[11px] font-semibold text-foreground">
+                {/* Top: identity + amount/receipt */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                    <Avatar className="h-7 w-7 shrink-0">
+                      <AvatarFallback className="bg-secondary text-[10px] font-semibold text-foreground">
                         {memberInfo.initial}
                       </AvatarFallback>
                     </Avatar>
@@ -331,7 +331,7 @@ export function AdminRefundsSection({
                         </span>
                       </div>
 
-                      <p className="text-xs text-muted-foreground truncate tabular-nums">
+                      <p className="text-[11px] sm:text-xs text-muted-foreground truncate tabular-nums mt-0.5">
                         {new Date(checkout.created_at).toLocaleDateString(dateLocale, {
                           month: "short",
                           day: "numeric",
@@ -339,17 +339,10 @@ export function AdminRefundsSection({
                         })}
                         {itemNames && <span> · {itemNames}</span>}
                       </p>
-
-                      {checkout.note && (
-                        <p className="text-xs text-muted-foreground truncate">
-                          &ldquo;{checkout.note}&rdquo;
-                        </p>
-                      )}
                     </div>
                   </div>
 
-                  {/* Right: amount + receipt + status/action */}
-                  <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pl-11 sm:pl-0">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <span className="text-sm font-semibold text-foreground tabular-nums whitespace-nowrap">
                       {formatCurrency(checkout.total_claimed_amount, checkout.currency)}
                     </span>
@@ -360,92 +353,91 @@ export function AdminRefundsSection({
                         onClick={() => setSelectedCheckout(checkout)}
                         aria-label={t.kitchen.ledger.viewReceipt}
                         title={t.kitchen.ledger.viewReceipt}
-                        className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+                        className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer touch-manipulation"
                       >
                         <Receipt className="w-3.5 h-3.5" />
                       </button>
                     ) : checkout.totalReceiptsEverAttached > 0 ? (
                       <div
-                        className="inline-flex items-center justify-center h-8 w-8 text-muted-foreground"
+                        className="inline-flex items-center justify-center h-7 w-7 text-muted-foreground"
                         title={t.kitchen.ledger.receiptDeleted}
                       >
                         <Receipt className="w-3.5 h-3.5 line-through opacity-50" />
                       </div>
-                    ) : (
-                      <div
-                        className="inline-flex items-center justify-center h-8 w-8 text-muted-foreground"
-                        title={t.kitchen.ledger.noReceipt}
-                      >
-                        <Receipt className="w-3.5 h-3.5 opacity-40" />
-                      </div>
-                    )}
-
-                    {checkout.is_declined ? (
-                      <div className="flex flex-col items-end gap-0.5">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-rose-400 whitespace-nowrap">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                          {t.kitchen.ledger.declined || "Abgelehnt"}
-                        </span>
-                        {checkout.decline_reason && (
-                          <span className="text-[11px] text-rose-300/80 truncate max-w-[160px] sm:max-w-xs" title={checkout.decline_reason}>
-                            {checkout.decline_reason}
-                          </span>
-                        )}
-                      </div>
-                    ) : checkout.is_refunded ? (
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shrink-0" />
-                          {t.kitchen.ledger.settled}
-                        </span>
-                        {checkout.receipts.length > 0 && checkout.refunded_at && (
-                          <ReceiptExpiryBadge refundedAt={checkout.refunded_at} />
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 flex-wrap justify-end">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                          {t.kitchen.ledger.pending}
-                        </span>
-
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={() => handleMarkAsSettled(checkout.id)}
-                          disabled={isPending}
-                          className="h-8 px-3 rounded-lg text-xs font-medium gap-1.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 hover:bg-emerald-500/25 transition-colors cursor-pointer"
-                        >
-                          {isSettling ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Check className="w-3.5 h-3.5" />
-                          )}
-                          <span>{isSettling ? t.kitchen.ledger.settlingAction : t.kitchen.ledger.settleAction}</span>
-                        </Button>
-
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            if (activeDeclineCheckoutId === checkout.id) {
-                              setActiveDeclineCheckoutId(null);
-                            } else {
-                              setActiveDeclineCheckoutId(checkout.id);
-                              setDecliningReason("");
-                            }
-                          }}
-                          disabled={isPending}
-                          className="h-8 px-3 rounded-lg text-xs font-medium text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 border border-border hover:border-rose-500/25 transition-colors cursor-pointer"
-                          title={t.kitchen.ledger.declineAction || "Ablehnen"}
-                        >
-                          <span>{t.kitchen.ledger.declineAction || "Ablehnen"}</span>
-                        </Button>
-                      </div>
-                    )}
+                    ) : null}
                   </div>
                 </div>
+
+                {/* Optional note / decline reason */}
+                {(checkout.note || checkout.decline_reason) && (
+                  <p
+                    className="text-xs text-muted-foreground truncate mt-1.5 pl-[38px]"
+                    title={checkout.note || checkout.decline_reason || undefined}
+                  >
+                    &ldquo;{checkout.note || checkout.decline_reason}&rdquo;
+                  </p>
+                )}
+
+                {/* Status + actions */}
+                {checkout.is_declined ? (
+                  <div className="flex items-center gap-1.5 text-xs text-rose-400 whitespace-nowrap mt-1.5 pl-[38px]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                    {t.kitchen.ledger.declined || "Abgelehnt"}
+                  </div>
+                ) : checkout.is_refunded ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1.5 pl-[38px]">
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shrink-0" />
+                      {t.kitchen.ledger.settled}
+                    </span>
+                    {checkout.receipts.length > 0 && checkout.refunded_at && (
+                      <ReceiptExpiryBadge refundedAt={checkout.refunded_at} />
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-2 pt-2 mt-2 border-t border-border/50">
+                    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                      {t.kitchen.ledger.pending}
+                    </span>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (activeDeclineCheckoutId === checkout.id) {
+                            setActiveDeclineCheckoutId(null);
+                          } else {
+                            setActiveDeclineCheckoutId(checkout.id);
+                            setDecliningReason("");
+                          }
+                        }}
+                        disabled={isPending}
+                        className="h-8 px-3 rounded-lg text-xs font-medium text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer touch-manipulation"
+                        title={t.kitchen.ledger.declineAction || "Ablehnen"}
+                      >
+                        <span>{t.kitchen.ledger.declineAction || "Ablehnen"}</span>
+                      </Button>
+
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => handleMarkAsSettled(checkout.id)}
+                        disabled={isPending}
+                        className="h-8 px-3 rounded-lg text-xs font-medium gap-1.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 hover:bg-emerald-500/25 transition-colors cursor-pointer touch-manipulation"
+                      >
+                        {isSettling ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Check className="w-3.5 h-3.5" />
+                        )}
+                        <span>{isSettling ? t.kitchen.ledger.settlingAction : t.kitchen.ledger.settleAction}</span>
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Inline decline confirmation bar as a clean full-width sub-row */}
                 {activeDeclineCheckoutId === checkout.id && (

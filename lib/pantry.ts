@@ -926,6 +926,28 @@ export async function getKitchenCheckouts(kitchenId: string): Promise<CheckoutWi
   return attachItems(rows, "admin");
 }
 
+/**
+ * Kitchen-wide checkout counters for summaries.
+ * Declined checkouts are excluded entirely; pending means not yet settled
+ * and not declined.
+ */
+export async function getKitchenCheckoutCounts(
+  kitchenId: string
+): Promise<{ pending: number; total: number }> {
+  const { rows } = await pool.query<{ pending: string; total: string }>(
+    `SELECT
+       COUNT(*) FILTER (WHERE is_refunded = FALSE AND is_declined = FALSE) AS pending,
+       COUNT(*) FILTER (WHERE is_declined = FALSE) AS total
+     FROM checkouts
+     WHERE kitchen_id = $1`,
+    [kitchenId]
+  );
+  return {
+    pending: parseInt(rows[0]?.pending || "0", 10),
+    total: parseInt(rows[0]?.total || "0", 10),
+  };
+}
+
 /** A single user's own checkout history within a kitchen. */
 export async function getUserCheckouts(kitchenId: string, userId: string): Promise<CheckoutWithDetails[]> {
   const { rows } = await pool.query<Checkout & { username: string | null }>(

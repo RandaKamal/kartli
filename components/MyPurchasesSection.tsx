@@ -36,6 +36,8 @@ export interface MyPurchasesSectionProps {
   kitchenId: string;
   checkouts?: CheckoutWithDetails[];
   defaultExpanded?: boolean;
+  /** Render the purchase list directly, without the accordion header. */
+  standalone?: boolean;
   onReceiptDeleted?: (receiptId: string) => void;
 }
 
@@ -43,6 +45,7 @@ export function MyPurchasesSection({
   kitchenId,
   checkouts: initialCheckouts,
   defaultExpanded = false,
+  standalone = false,
   onReceiptDeleted,
 }: MyPurchasesSectionProps) {
   const router = useRouter();
@@ -128,35 +131,37 @@ export function MyPurchasesSection({
   };
 
   return (
-    <div className="border-t border-border">
-      <button
-        type="button"
-        onClick={handleToggleExpand}
-        className="w-full flex items-center justify-between gap-2 py-3.5 text-left cursor-pointer group focus:outline-none"
-        aria-expanded={isExpanded}
-        aria-label={isExpanded ? t.kitchen.ledger.myPurchasesCollapse : t.kitchen.ledger.myPurchasesExpand}
-      >
-        <div className="flex items-center gap-2">
-          <Receipt className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-          <span className="text-sm font-medium text-foreground">
-            {t.kitchen.ledger.myPurchases}
-          </span>
-          {hasFetched && (
-            <span className="text-xs tabular-nums text-muted-foreground">
-              {checkoutsList.length}
+    <div className={standalone ? "" : "border-t border-border"}>
+      {!standalone && (
+        <button
+          type="button"
+          onClick={handleToggleExpand}
+          className="w-full flex items-center justify-between gap-2 py-3.5 text-left cursor-pointer group focus:outline-none"
+          aria-expanded={isExpanded}
+          aria-label={isExpanded ? t.kitchen.ledger.myPurchasesCollapse : t.kitchen.ledger.myPurchasesExpand}
+        >
+          <div className="flex items-center gap-2">
+            <Receipt className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+            <span className="text-sm font-medium text-foreground">
+              {t.kitchen.ledger.myPurchases}
             </span>
+            {hasFetched && (
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {checkoutsList.length}
+              </span>
+            )}
+          </div>
+
+          {isExpanded ? (
+            <ChevronUp className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
           )}
-        </div>
+        </button>
+      )}
 
-        {isExpanded ? (
-          <ChevronUp className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-        )}
-      </button>
-
-      {isExpanded && (
-        <div className="pb-2 animate-in fade-in-50 duration-200">
+      {(standalone || isExpanded) && (
+        <div className={standalone ? "" : "pb-2 animate-in fade-in-50 duration-200"}>
           {isLoading ? (
             <div className="space-y-2 py-2">
               <Skeleton className="h-12 w-full rounded-lg" />

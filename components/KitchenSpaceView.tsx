@@ -18,7 +18,6 @@ import {
   quickAddStapleToCartAction,
   moveAllNeededToCartAction,
 } from "@/app/actions/pantry";
-import { getPendingRefundsCountAction } from "@/app/actions/checkout";
 import { useTranslation } from "@/lib/i18n";
 import { PantrySection } from "@/components/PantrySection";
 import { ActiveCartSection } from "@/components/ActiveCartSection";
@@ -28,8 +27,6 @@ import { ExpenseLedgerModal } from "@/components/kitchen/ExpenseLedgerModal";
 import { SpacePulseModal } from "@/components/kitchen/SpacePulseModal";
 import { markTourCompletedAction } from "@/app/actions/user";
 import { KitchenTourModal } from "@/components/kitchen/KitchenTourModal";
-import { AdminRefundsSection } from "@/components/AdminRefundsSection";
-import { MyPurchasesSection } from "@/components/MyPurchasesSection";
 import { CopyButton } from "@/components/CopyButton";
 import { GuestCartHandoverListener } from "@/components/GuestCartHandoverListener";
 import { Badge } from "@/components/ui/badge";
@@ -83,6 +80,10 @@ export interface KitchenSpaceViewProps {
   preferredCurrency?: string;
   userPreferredCurrency?: string;
   myCheckouts?: CheckoutWithDetails[];
+  /** Kitchen-wide pending checkouts (not settled, not declined). */
+  pendingKitchenCheckoutsCount?: number;
+  /** Kitchen-wide checkout history size, excluding declined checkouts. */
+  totalKitchenCheckoutsCount?: number;
 }
 
 function getSpaceIcon(spaceType?: string) {
@@ -126,6 +127,8 @@ export function KitchenSpaceView({
   initialTab,
   initialPulseStats,
   myCheckouts = [],
+  pendingKitchenCheckoutsCount = 0,
+  totalKitchenCheckoutsCount = 0,
 }: KitchenSpaceViewProps) {
   const { t, locale } = useTranslation();
   const router = useRouter();
@@ -160,6 +163,12 @@ export function KitchenSpaceView({
   const [localShoppingListItems, setLocalShoppingListItems] = useState<ShoppingListItem[]>(initialShoppingListItems);
   const [localMembers, setLocalMembers] = useState<KitchenMemberWithUser[]>(initialMembers);
   const [localMyCheckouts, setLocalMyCheckouts] = useState<CheckoutWithDetails[]>(myCheckouts);
+  const [localPendingKitchenCount, setLocalPendingKitchenCount] = useState(
+    pendingKitchenCheckoutsCount
+  );
+  const [localTotalKitchenCount, setLocalTotalKitchenCount] = useState(
+    totalKitchenCheckoutsCount
+  );
 
   // Keep local state in sync when server props refresh
   useEffect(() => {
@@ -178,6 +187,14 @@ export function KitchenSpaceView({
     setLocalMyCheckouts(myCheckouts);
   }, [myCheckouts]);
 
+  useEffect(() => {
+    setLocalPendingKitchenCount(pendingKitchenCheckoutsCount);
+  }, [pendingKitchenCheckoutsCount]);
+
+  useEffect(() => {
+    setLocalTotalKitchenCount(totalKitchenCheckoutsCount);
+  }, [totalKitchenCheckoutsCount]);
+
   // Universal Command Bar State
 
   // Overlays State
@@ -188,7 +205,6 @@ export function KitchenSpaceView({
   // Missing user prop => assume completed so we never nag by accident
   const [hasCompletedTour, setHasCompletedTour] = useState(user?.has_completed_tour ?? true);
   const [isCartBadgePulsing, setIsCartBadgePulsing] = useState(false);
-  const [pendingRefundsCount, setPendingRefundsCount] = useState(0);
   const [, startTransition] = useTransition();
 
   const terminology = getSpaceTerminology(initialKitchen.space_type);
@@ -205,23 +221,17 @@ export function KitchenSpaceView({
     (i) => (i.is_in_cart || i.is_purchased || i.is_guest_staged) && !i.checkout_id
   ).length;
 
+  const myPendingPurchases = localMyCheckouts.filter(
+    (c) => !c.is_refunded && !c.is_declined
+  ).length;
+  const myPurchaseHistoryCount = localMyCheckouts.filter((c) => !c.is_declined).length;
+  const ledgerPendingCount = isAdmin ? localPendingKitchenCount : myPendingPurchases;
+  const ledgerHistoryCount = isAdmin ? localTotalKitchenCount : myPurchaseHistoryCount;
+
   const origin = typeof window !== "undefined" ? window.location.origin : baseUrl;
   const publicGuestUrl = origin
     ? `${origin}/kitchen/view/${initialKitchen.public_view_token}`
     : `/kitchen/view/${initialKitchen.public_view_token}`;
-
-  // Fetch pending refunds count on mount
-  useEffect(() => {
-    let isMounted = true;
-    getPendingRefundsCountAction(initialKitchen.id)
-      .then((count) => {
-        if (isMounted) setPendingRefundsCount(count);
-      })
-      .catch(() => {});
-    return () => {
-      isMounted = false;
-    };
-  }, [initialKitchen.id]);
 
   // First-time visit (per account, stored in DB): subtly open the onboarding tour once
   useEffect(() => {
@@ -626,12 +636,12 @@ export function KitchenSpaceView({
                   <div
                     className={cn(
                       "h-8 w-8 rounded-lg border flex items-center justify-center shrink-0",
-                      pendingRefundsCount > 0
+                      ledgerPendingCount > 0
                         ? "bg-amber-500/10 border-amber-500/20 text-amber-500"
                         : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
                     )}
                   >
-                    {pendingRefundsCount > 0 ? (
+                    {ledgerPendingCount > 0 ? (
                       <Receipt className="w-4 h-4" />
                     ) : (
                       <CheckCircle2 className="w-4 h-4" />
@@ -639,14 +649,20 @@ export function KitchenSpaceView({
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-foreground leading-snug">
-                      {pendingRefundsCount > 0
-                        ? `${pendingRefundsCount} ${pendingRefundsCount === 1 ? t.kitchen.ledger.pendingExpenseSingular : t.kitchen.ledger.pendingExpenses}`
-                        : t.kitchen.ledger.balancesUpToDate}
+                      {ledgerPendingCount > 0
+                        ? isAdmin
+                          ? `${ledgerPendingCount} ${ledgerPendingCount === 1 ? t.kitchen.ledger.pendingExpenseSingular : t.kitchen.ledger.pendingExpenses}`
+                          : `${ledgerPendingCount} ${ledgerPendingCount === 1 ? t.kitchen.ledger.myPendingPurchaseSingular : t.kitchen.ledger.myPendingPurchases}`
+                        : isAdmin
+                          ? t.kitchen.ledger.balancesUpToDate
+                          : t.kitchen.ledger.myAllSettled}
                     </p>
                     <p className="text-xs text-muted-foreground font-normal leading-snug">
-                      {pendingRefundsCount > 0
-                        ? `${localMyCheckouts.length} ${t.kitchen.ledger.loggedReceipts}`
-                        : t.kitchen.ledger.balancesUpToDateDesc}
+                      {ledgerPendingCount > 0
+                        ? `${ledgerHistoryCount} ${isAdmin ? t.kitchen.ledger.loggedReceipts : t.kitchen.ledger.myPurchasesHistory}`
+                        : isAdmin
+                          ? t.kitchen.ledger.balancesUpToDateDesc
+                          : t.kitchen.ledger.myAllSettledDesc}
                     </p>
                   </div>
                 </div>
@@ -656,7 +672,7 @@ export function KitchenSpaceView({
                   onClick={() => setIsLedgerOpen(true)}
                   className="h-8 px-3 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground text-xs font-medium border border-border/60 flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap"
                 >
-                  <span>{t.kitchen.ledger.settle}</span>
+                  <span>{isAdmin ? t.kitchen.ledger.settle : t.kitchen.ledger.openMyPurchases}</span>
                 </button>
               </div>
             </footer>
@@ -721,6 +737,16 @@ export function KitchenSpaceView({
           setLocalMyCheckouts((prev) =>
             prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c))
           );
+
+          // Keep the kitchen-wide banner optimistic until the refreshed
+          // server counts arrive. Only pending checkouts can be settled or
+          // declined, so either action removes one pending item.
+          if (isAdmin && (updated.is_refunded || updated.is_declined)) {
+            setLocalPendingKitchenCount((prev) => Math.max(0, prev - 1));
+            if (updated.is_declined) {
+              setLocalTotalKitchenCount((prev) => Math.max(0, prev - 1));
+            }
+          }
         }}
       />
 
