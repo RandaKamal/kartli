@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   returnToShoppingListAction,
+  removeShoppingListItemAction,
   clearCartAction,
   moveToCartAction,
   moveAllNeededToCartAction,
@@ -44,6 +45,7 @@ export interface ActiveCartSectionProps {
   onSwitchTab?: (tab: string) => void;
   onItemReturnedToList?: (item: ShoppingListItem) => void;
   onItemMovedToCart?: (item: ShoppingListItem) => void;
+  onItemRemoved?: (item: ShoppingListItem) => void;
   onQuickAddStaple?: (pantryItem: PantryItem) => void;
   onAllItemsMovedToCart?: () => void;
   /** Adds a one-time item to the shopping list; resolves true on success. */
@@ -59,12 +61,13 @@ export function ActiveCartSection({
   onSwitchTab,
   onItemReturnedToList,
   onItemMovedToCart,
+  onItemRemoved,
   onQuickAddStaple,
   onAllItemsMovedToCart,
   onAddOneOff,
 }: ActiveCartSectionProps) {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [allItems, setAllItems] = useState<ShoppingListItem[]>(items);
   const [isPending, startTransition] = useTransition();
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
@@ -203,6 +206,23 @@ export function ActiveCartSection({
     });
   };
 
+  // Permanently delete or remove an unbought custom or needed item
+  const handleRemoveItem = (item: ShoppingListItem) => {
+    setAllItems((prev) => prev.filter((i) => i.id !== item.id));
+    onItemRemoved?.(item);
+
+    startTransition(async () => {
+      try {
+        await removeShoppingListItemAction(kitchenId, item.id, item.name);
+        router.refresh();
+        toast.success(locale === "de" ? `"${item.name}" gelöscht` : `Removed "${item.name}"`);
+      } catch (err: any) {
+        setAllItems(items);
+        toast.error(err.message || "Failed to remove item.");
+      }
+    });
+  };
+
   // Duplicate an item staged by another roommate into current user's basket
   const handleDuplicateItem = (item: ShoppingListItem) => {
     const tempId = `temp-${Date.now()}`;
@@ -312,7 +332,7 @@ export function ActiveCartSection({
               className="h-8.5 rounded-xl text-xs font-semibold px-3 border-border hover:bg-secondary shrink-0 gap-1.5 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Put All in Basket</span>
+              <span>{t.supermarket.putAllInBasket || (locale === "de" ? "Alle in den Korb" : "Put All in Basket")}</span>
             </Button>
           )}
         </div>
@@ -364,7 +384,7 @@ export function ActiveCartSection({
                   }
                 }}
                 className="group flex items-center justify-between p-3 rounded-xl border border-border/70 bg-secondary/30 hover:bg-secondary/60 hover:border-border transition-all cursor-pointer select-none active:scale-[0.99] min-h-[50px]"
-                title="Tap to put in basket"
+                title={t.supermarket.tapToPutInBasket || (locale === "de" ? "Tippen zum Einpacken" : "Tap to put in basket")}
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div className="w-6 h-6 rounded-lg bg-background border border-border/80 flex items-center justify-center text-muted-foreground group-hover:text-foreground group-hover:border-primary shrink-0 transition-colors">
@@ -375,18 +395,33 @@ export function ActiveCartSection({
                   </span>
                   {item.pantry_item_id ? (
                     <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0 border border-border/40">
-                      Staple
+                      {t.supermarket.stapleBadge || (locale === "de" ? "Basic" : "Staple")}
                     </span>
                   ) : (
                     <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0 border border-border/40">
-                      Custom
+                      {t.supermarket.customBadge || (locale === "de" ? "Individuell" : "Custom")}
                     </span>
                   )}
                 </div>
 
-                <span className="text-xs font-semibold text-primary group-hover:translate-x-0.5 transition-transform flex items-center gap-1 shrink-0 ml-2">
-                  <span>+ Basket</span>
-                </span>
+                <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                  <span className="text-xs font-semibold text-primary group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
+                    <span>+ {locale === "de" ? "Korb" : "Basket"}</span>
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveItem(item);
+                    }}
+                    className="h-7 w-7 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 flex items-center justify-center transition-colors cursor-pointer"
+                    title={locale === "de" ? "Eintrag löschen" : "Delete item"}
+                    aria-label={`Delete ${item.name}`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -425,13 +460,13 @@ export function ActiveCartSection({
                         type="button"
                         onClick={() => cartItem && handleReturnToList(cartItem)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shadow-2xs select-none cursor-pointer transition-all group"
-                        title="Tap to remove from basket and return to queue"
+                        title={locale === "de" ? "Antippen, um aus dem Korb zu entfernen" : "Tap to remove from basket and return to queue"}
                       >
                         <Check className="w-3.5 h-3.5 stroke-[2.5] group-hover:hidden" />
                         <RotateCcw className="w-3.5 h-3.5 hidden group-hover:inline stroke-[2.5]" />
                         <span className="line-through group-hover:no-underline">{staple.name}</span>
                         <span className="text-[10px] font-mono opacity-70 ml-0.5 group-hover:hidden">{t.cart.inBasket}</span>
-                        <span className="text-[10px] font-mono opacity-70 ml-0.5 hidden group-hover:inline">Remove</span>
+                        <span className="text-[10px] font-mono opacity-70 ml-0.5 hidden group-hover:inline">{locale === "de" ? "Entfernen" : "Remove"}</span>
                       </button>
                     );
                   }
@@ -442,7 +477,7 @@ export function ActiveCartSection({
                       type="button"
                       onClick={() => onQuickAddStaple?.(staple)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-secondary/60 hover:bg-secondary border border-border/70 hover:border-border text-foreground transition-all cursor-pointer shadow-2xs active:scale-95 select-none"
-                      title="Grab staple into basket"
+                      title={locale === "de" ? "Basic in den Korb legen" : "Grab staple into basket"}
                     >
                       <Plus className="w-3.5 h-3.5 text-muted-foreground" />
                       <span>{staple.name}</span>
@@ -571,11 +606,26 @@ export function ActiveCartSection({
                       onClick={() => handleReturnToList(item)}
                       disabled={isPending}
                       className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer"
-                      title="Remove from cart (back to the shopping list)"
+                      title={locale === "de" ? "Aus dem Korb entfernen (zurück auf die Liste)" : "Remove from cart (back to the shopping list)"}
                       aria-label={`Remove ${item.name} from cart`}
                     >
-                      <X className="w-4 h-4" />
+                      <RotateCcw className="w-3.5 h-3.5" />
                     </Button>
+
+                    {!item.pantry_item_id && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleRemoveItem(item)}
+                        disabled={isPending}
+                        className="h-8 w-8 p-0 rounded-lg text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                        title={locale === "de" ? "Eintrag endgültig löschen" : "Delete item permanently"}
+                        aria-label={`Delete ${item.name}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}

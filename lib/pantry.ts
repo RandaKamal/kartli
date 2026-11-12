@@ -707,20 +707,31 @@ export async function duplicateShoppingListItem(
 export async function removeShoppingListItem(
   kitchenId: string,
   itemId: string,
-  userId?: string
+  userId?: string,
+  itemName?: string
 ): Promise<boolean> {
+  let targetId = itemId;
+  if (!UUID_REGEX.test(targetId)) {
+    try {
+      targetId = await resolveShoppingItemId(kitchenId, itemId, itemName);
+    } catch {
+      return false;
+    }
+  }
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
     const { rows: existingRows } = await client.query<{
+      is_in_cart: boolean;
       is_purchased: boolean;
       purchased_by: string | null;
       checkout_id: string | null;
       pantry_item_id: string | null;
     }>(
-      `SELECT is_purchased, purchased_by, checkout_id, pantry_item_id FROM shopping_list_items WHERE id = $1 AND kitchen_id = $2`,
-      [itemId, kitchenId]
+      `SELECT COALESCE(is_in_cart, FALSE) AS is_in_cart, is_purchased, purchased_by, checkout_id, pantry_item_id FROM shopping_list_items WHERE id = $1 AND kitchen_id = $2`,
+      [targetId, kitchenId]
     );
     if (existingRows.length === 0) {
       await client.query("ROLLBACK");
@@ -728,7 +739,12 @@ export async function removeShoppingListItem(
     }
     const existing = existingRows[0];
 
-    if (existing.is_purchased && existing.purchased_by && userId && existing.purchased_by !== userId) {
+    if (
+      (existing.is_in_cart || existing.is_purchased) &&
+      existing.purchased_by &&
+      userId &&
+      existing.purchased_by !== userId
+    ) {
       const adminRes = await client.query(
         `SELECT 1 FROM kitchen_members WHERE kitchen_id = $1 AND user_id = $2 AND role = 'ADMIN'`,
         [kitchenId, userId]
@@ -740,7 +756,7 @@ export async function removeShoppingListItem(
 
     await client.query(
       `DELETE FROM shopping_list_items WHERE id = $1 AND kitchen_id = $2`,
-      [itemId, kitchenId]
+      [targetId, kitchenId]
     );
 
     const pantryItemId = existing.pantry_item_id;
@@ -803,7 +819,7 @@ export async function createCheckout(
     const { rows: checkoutRows } = await client.query<Checkout>(
       `INSERT INTO checkouts (kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, currency, created_at)
        VALUES ($1, $2, $3, $4, $5, NULL, $6, FALSE, $7, NOW())
-       RETURNING id, kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, currency, created_at, refunded_at, receipt_deleted_at`,
+       RETURNING id, kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, is_declined, declined_at, decline_reason, currency, created_at, refunded_at, receipt_deleted_at`,
       [kitchenId, userId, storeName, note, totalAmount, cleanFilename, currency]
     );
     const checkout = checkoutRows[0];
@@ -902,7 +918,7 @@ async function attachItems(
 /** Admin view: all checkouts in a kitchen, newest first, with buyer + items. */
 export async function getKitchenCheckouts(kitchenId: string): Promise<CheckoutWithDetails[]> {
   const { rows } = await pool.query<Checkout & { username: string | null }>(
-    `SELECT c.id, c.kitchen_id, c.user_id, c.store_name, c.note, c.total_claimed_amount, c.total_receipt_amount, c.receipt_filename, c.is_refunded, c.currency, c.created_at, c.refunded_at, c.receipt_deleted_at, u.username
+    `SELECT c.id, c.kitchen_id, c.user_id, c.store_name, c.note, c.total_claimed_amount, c.total_receipt_amount, c.receipt_filename, c.is_refunded, c.is_declined, c.declined_at, c.decline_reason, c.currency, c.created_at, c.refunded_at, c.receipt_deleted_at, u.username
      FROM checkouts c LEFT JOIN users u ON c.user_id = u.id
      WHERE c.kitchen_id = $1 ORDER BY c.created_at DESC`,
     [kitchenId]
@@ -913,7 +929,7 @@ export async function getKitchenCheckouts(kitchenId: string): Promise<CheckoutWi
 /** A single user's own checkout history within a kitchen. */
 export async function getUserCheckouts(kitchenId: string, userId: string): Promise<CheckoutWithDetails[]> {
   const { rows } = await pool.query<Checkout & { username: string | null }>(
-    `SELECT c.id, c.kitchen_id, c.user_id, c.store_name, c.note, c.total_claimed_amount, c.total_receipt_amount, c.receipt_filename, c.is_refunded, c.currency, c.created_at, c.refunded_at, c.receipt_deleted_at, u.username
+    `SELECT c.id, c.kitchen_id, c.user_id, c.store_name, c.note, c.total_claimed_amount, c.total_receipt_amount, c.receipt_filename, c.is_refunded, c.is_declined, c.declined_at, c.decline_reason, c.currency, c.created_at, c.refunded_at, c.receipt_deleted_at, u.username
      FROM checkouts c LEFT JOIN users u ON c.user_id = u.id
      WHERE c.kitchen_id = $1 AND c.user_id = $2 ORDER BY c.created_at DESC`,
     [kitchenId, userId]
@@ -933,14 +949,82 @@ export async function refundCheckout(
   }
 
   const { rows } = await pool.query<Checkout>(
-    `UPDATE checkouts SET is_refunded = TRUE, refunded_at = NOW(), note = NULL
+    `UPDATE checkouts SET is_refunded = TRUE, is_declined = FALSE, refunded_at = NOW(), note = NULL
      WHERE id = $1 AND kitchen_id = $2
-     RETURNING id, kitchen_id, user_id, receipt_filename, note, is_refunded, created_at, refunded_at`,
+     RETURNING id, kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, is_declined, declined_at, decline_reason, currency, created_at, refunded_at, receipt_deleted_at`,
     [checkoutId, kitchenId]
   );
   if (rows.length === 0) {
     throw new Error("Checkout not found in this kitchen.");
   }
+  return rows[0];
+}
+
+/**
+ * Admin action: declines a checkout.
+ * Sets is_declined = TRUE, is_refunded = FALSE, declined_at = NOW(),
+ * decline_reason = reason, receipt_deleted_at = NOW(),
+ * and triggers immediate deletion of receipts from Vercel Blob and DB cleanup.
+ */
+export async function declineCheckout(
+  kitchenId: string,
+  checkoutId: string,
+  adminUserId: string,
+  reason?: string
+): Promise<Checkout> {
+  const isAdmin = await isUserKitchenAdmin(kitchenId, adminUserId);
+  if (!isAdmin) {
+    throw new Error("Unauthorized: Only kitchen admins can decline checkouts.");
+  }
+
+  // 1. Gather all attached receipt filenames
+  const { rows: receiptRows } = await pool.query<{ receipt_filename: string }>(
+    `SELECT receipt_filename FROM checkout_receipts WHERE checkout_id = $1 AND receipt_filename IS NOT NULL
+     UNION
+     SELECT receipt_filename FROM checkouts WHERE id = $1 AND receipt_filename IS NOT NULL`,
+    [checkoutId]
+  );
+
+  // 2. Delete blobs via @vercel/blob del(...)
+  for (const r of receiptRows) {
+    if (r.receipt_filename) {
+      try {
+        await del(r.receipt_filename);
+      } catch {
+        // Ignored if already removed
+      }
+    }
+  }
+
+  // 3. Mark checkout_receipts as deleted
+  await pool.query(
+    `UPDATE checkout_receipts
+     SET deleted_by_admin_at = COALESCE(deleted_by_admin_at, NOW()),
+         deleted_by_member_at = COALESCE(deleted_by_member_at, NOW())
+     WHERE checkout_id = $1`,
+    [checkoutId]
+  );
+
+  // 4. Update checkouts record
+  const cleanReason = reason?.trim() || null;
+  const now = new Date().toISOString();
+  const { rows } = await pool.query<Checkout>(
+    `UPDATE checkouts
+     SET is_declined = TRUE,
+         is_refunded = FALSE,
+         declined_at = $1,
+         decline_reason = $2,
+         receipt_deleted_at = $1,
+         receipt_filename = NULL
+     WHERE id = $3 AND kitchen_id = $4
+     RETURNING id, kitchen_id, user_id, store_name, note, total_claimed_amount, total_receipt_amount, receipt_filename, is_refunded, is_declined, declined_at, decline_reason, currency, created_at, refunded_at, receipt_deleted_at`,
+    [now, cleanReason, checkoutId, kitchenId]
+  );
+
+  if (rows.length === 0) {
+    throw new Error("Checkout not found in this kitchen.");
+  }
+
   return rows[0];
 }
 

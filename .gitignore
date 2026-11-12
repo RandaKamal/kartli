@@ -36,3 +36,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# receipts (local test receipts, privacy & GDPR)
+receipts/
+/receipts

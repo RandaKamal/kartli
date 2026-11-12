@@ -263,7 +263,7 @@ export function SpacePulseModal({
 
   // CSV Export handler (Task 3)
   const handleExportCsv = () => {
-    const checkouts = stats?.monthCheckouts || [];
+    const checkouts = (stats?.monthCheckouts || []).filter((c) => !c.is_declined);
     if (checkouts.length === 0) {
       toast.info(t.pulse.csvExportNoData);
       return;
@@ -952,108 +952,115 @@ export function SpacePulseModal({
                     </span>
                   </div>
 
-                  {!stats.monthCheckouts || stats.monthCheckouts.length === 0 ? (
-                    <div className="py-12 text-center space-y-2">
-                      <Receipt className="w-5 h-5 mx-auto text-zinc-600" />
-                      <p className="text-sm font-medium text-zinc-300">
-                        {t.pulse.noRecentRestocks}
-                      </p>
-                      <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-                        {t.pulse.noRecentRestocksDesc}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="rounded-xl border border-white/[0.06] bg-zinc-900/40 divide-y divide-white/[0.06]">
-                      {stats.monthCheckouts.map((checkout) => {
-                        const itemsCount = checkout.items?.length || 0;
-                        const receiptFilename =
-                          checkout.receipt_filename ||
-                          (checkout.receipts && checkout.receipts.length > 0
-                            ? checkout.receipts[0].receipt_filename
-                            : null);
-                        const receiptUrl = receiptFilename
-                          ? receiptFilename.startsWith("/")
-                            ? receiptFilename
-                            : `/uploads/receipts/${receiptFilename}`
-                          : null;
-                        const storeName =
-                          checkout.store_name === "Sonstige"
-                            ? t.pulse.otherStore
-                            : checkout.store_name;
-                        const itemNames = checkout.items
-                          .slice(0, 6)
-                          .map((item) => item.name)
-                          .join(", ");
+                  {/* List / Feed */}
+                  {(() => {
+                    const validCheckouts = (stats?.monthCheckouts || []).filter((c) => !c.is_declined);
+                    if (validCheckouts.length === 0) {
+                      return (
+                        <div className="py-12 text-center space-y-2">
+                          <Receipt className="w-5 h-5 mx-auto text-zinc-600" />
+                          <p className="text-sm font-medium text-zinc-300">
+                            {t.pulse.noRecentRestocks}
+                          </p>
+                          <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+                            {t.pulse.noRecentRestocksDesc}
+                          </p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="rounded-xl border border-white/[0.06] bg-zinc-900/40 divide-y divide-white/[0.06]">
+                        {validCheckouts.map((checkout) => {
+                          const itemsCount = checkout.items?.length || 0;
+                          const receiptFilename =
+                            checkout.receipt_filename ||
+                            (checkout.receipts && checkout.receipts.length > 0
+                              ? checkout.receipts[0].receipt_filename
+                              : null);
+                          const receiptUrl = receiptFilename
+                            ? receiptFilename.startsWith("/")
+                              ? receiptFilename
+                              : `/uploads/receipts/${receiptFilename}`
+                            : null;
+                          const storeName =
+                            checkout.store_name === "Sonstige"
+                              ? t.pulse.otherStore
+                              : checkout.store_name;
+                          const itemNames = checkout.items
+                            .slice(0, 6)
+                            .map((item) => item.name)
+                            .join(", ");
 
-                        return (
-                          <div key={checkout.id} className="px-4 py-3.5 space-y-1">
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-sm font-medium text-foreground truncate">
-                                {storeName || t.pulse.generalRestock}
-                              </span>
-                              <span className="text-sm font-semibold text-foreground tabular-nums shrink-0">
-                                {formatCurrency(
-                                  checkout.total_claimed_amount,
-                                  checkout.currency || currency
-                                )}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-1.5 min-w-0 text-xs text-zinc-400">
-                                <span className="truncate">{checkout.paid_by_name}</span>
-                                <span className="text-zinc-600">·</span>
-                                <span className="tabular-nums shrink-0">
-                                  {formatShortDate(checkout.created_at, locale)}
+                          return (
+                            <div key={checkout.id} className="px-4 py-3.5 space-y-1">
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="text-sm font-medium text-foreground truncate">
+                                  {storeName || t.pulse.generalRestock}
                                 </span>
-                                <span className="text-zinc-600">·</span>
-                                <span className="inline-flex items-center gap-1.5 shrink-0">
-                                  <span
-                                    className={cn(
-                                      "w-1.5 h-1.5 rounded-full",
-                                      checkout.is_refunded ? "bg-emerald-500/80" : "bg-amber-500"
-                                    )}
-                                  />
-                                  {checkout.is_refunded ? t.pulse.settled : t.pulse.pending}
+                                <span className="text-sm font-semibold text-foreground tabular-nums shrink-0">
+                                  {formatCurrency(
+                                    checkout.total_claimed_amount,
+                                    checkout.currency || currency
+                                  )}
                                 </span>
                               </div>
 
-                              {receiptUrl && (
-                                <a
-                                  href={receiptUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  aria-label={t.pulse.receiptAttached}
-                                  title={t.pulse.receiptAttached}
-                                  className="inline-flex items-center justify-center h-7 w-7 rounded-md text-zinc-500 hover:text-foreground hover:bg-white/[0.06] transition-colors shrink-0"
-                                >
-                                  <Receipt className="w-3.5 h-3.5" />
-                                </a>
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-1.5 min-w-0 text-xs text-zinc-400">
+                                  <span className="truncate">{checkout.paid_by_name}</span>
+                                  <span className="text-zinc-600">·</span>
+                                  <span className="tabular-nums shrink-0">
+                                    {formatShortDate(checkout.created_at, locale)}
+                                  </span>
+                                  <span className="text-zinc-600">·</span>
+                                  <span className="inline-flex items-center gap-1.5 shrink-0">
+                                    <span
+                                      className={cn(
+                                        "w-1.5 h-1.5 rounded-full",
+                                        checkout.is_refunded ? "bg-emerald-500/80" : "bg-amber-500"
+                                      )}
+                                    />
+                                    {checkout.is_refunded ? t.pulse.settled : t.pulse.pending}
+                                  </span>
+                                </div>
+
+                                {receiptUrl && (
+                                  <a
+                                    href={receiptUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    aria-label={t.pulse.receiptAttached}
+                                    title={t.pulse.receiptAttached}
+                                    className="inline-flex items-center justify-center h-7 w-7 rounded-md text-zinc-500 hover:text-foreground hover:bg-white/[0.06] transition-colors shrink-0"
+                                  >
+                                    <Receipt className="w-3.5 h-3.5" />
+                                  </a>
+                                )}
+                              </div>
+
+                              {itemsCount > 0 && (
+                                <p className="text-xs text-zinc-500 truncate">
+                                  {itemNames}
+                                  {itemsCount > 6 && (
+                                    <span>
+                                      {" "}
+                                      {t.pulse.moreItems.replace("{count}", String(itemsCount - 6))}
+                                    </span>
+                                  )}
+                                </p>
+                              )}
+
+                              {checkout.note && (
+                                <p className="text-xs text-zinc-500 truncate">
+                                  &ldquo;{checkout.note}&rdquo;
+                                </p>
                               )}
                             </div>
-
-                            {itemsCount > 0 && (
-                              <p className="text-xs text-zinc-500 truncate">
-                                {itemNames}
-                                {itemsCount > 6 && (
-                                  <span>
-                                    {" "}
-                                    {t.pulse.moreItems.replace("{count}", String(itemsCount - 6))}
-                                  </span>
-                                )}
-                              </p>
-                            )}
-
-                            {checkout.note && (
-                              <p className="text-xs text-zinc-500 truncate">
-                                &ldquo;{checkout.note}&rdquo;
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </>

@@ -206,6 +206,9 @@ export interface Checkout {
   total_receipt_amount: number | null;
   receipt_filename: string | null;
   is_refunded: boolean;
+  is_declined: boolean;
+  declined_at: string | null;
+  decline_reason: string | null;
   currency?: string;
   created_at: Date;
   refunded_at: Date | null;
@@ -231,8 +234,15 @@ export interface CheckoutReceipt {
 
 export interface ReceiptLine {
   raw_name: string;
-  price: number;
+  normalized_name?: string;
   quantity: number;
+  unit_price: number | null;
+  line_total: number;
+  unitPrice: number | null;
+  lineTotal: number;
+  price: number;
+  is_deposit?: boolean;
+  is_discount?: boolean;
   matched_cart_item_id: string | null;
 }
 

@@ -37,13 +37,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
-
-interface ReceiptLine {
-  raw_name: string;
-  price: number;
-  quantity: number;
-  matched_cart_item_id: string | null;
-}
+import type { ReceiptLine } from "@/types";
 
 interface ScannedReceipt {
   id: string;
@@ -128,8 +122,8 @@ function computeReceiptsTotals(receiptsList: ScannedReceipt[]) {
     for (let i = 0; i < receipt.lines.length; i++) {
       const state = receipt.lineStates[i];
       if (state?.checked) {
-        const qty = receipt.lines[i]?.quantity || 1;
-        matchedTotal += (state.price || 0) * qty;
+        // state.price represents the authoritative line total for this item
+        matchedTotal += state.price || 0;
       }
     }
   }
@@ -261,7 +255,7 @@ export function CheckoutDialog({
               lines: result.lines,
               lineStates: result.lines.map((line: ReceiptLine) => ({
                 checked: line.matched_cart_item_id !== null,
-                price: line.price,
+                price: line.line_total ?? line.lineTotal ?? line.price,
               })),
               lineMatches: result.lines.map((line: ReceiptLine) => line.matched_cart_item_id),
               errorMessage: undefined,
@@ -370,8 +364,8 @@ export function CheckoutDialog({
       if (receipt.status !== "ready") return total;
       return (
         total +
-        receipt.lineStates.reduce((sum, line, i) => {
-          if (line.checked) return sum + (line.price || 0) * (receipt.lines[i]?.quantity || 1);
+        receipt.lineStates.reduce((sum, line) => {
+          if (line.checked) return sum + (line.price || 0);
           return sum;
         }, 0)
       );
@@ -1374,8 +1368,28 @@ export function CheckoutDialog({
                           </button>
 
                           <div className="flex-1 min-w-0 space-y-1">
-                            <p className="text-xs font-medium truncate">
-                              {line.quantity > 1 ? `${line.quantity}x ` : ""}{line.raw_name}
+                            <p className="text-xs font-medium truncate" title={line.raw_name}>
+                              {line.quantity > 1 ? (
+                                <>
+                                  <span className="font-semibold text-zinc-100">{line.quantity}×</span>{" "}
+                                  <span>{line.raw_name}</span>{" "}
+                                  <span className="text-zinc-400 font-mono">
+                                    · {(state.price || 0).toFixed(2).replace(".", ",")} €
+                                  </span>
+                                  {(line.unit_price ?? line.unitPrice) !== null && (
+                                    <span className="text-[11px] text-zinc-500 font-mono ml-1">
+                                      ({(line.unit_price ?? line.unitPrice)!.toFixed(2).replace(".", ",")} €/{locale === "de" ? "Stk" : "ea"})
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  <span>{line.raw_name}</span>{" "}
+                                  <span className="text-zinc-400 font-mono">
+                                    · {(state.price || 0).toFixed(2).replace(".", ",")} €
+                                  </span>
+                                </>
+                              )}
                             </p>
                             <select
                               value={current.lineMatches[i] ?? ""}

@@ -155,6 +155,9 @@ Receipt upload batches and manual checkouts for reimbursement.
 | `receipt_filename` | `TEXT` | Nullable | Primary receipt filename (`NULL` for receiptless checkouts). |
 | `is_refunded` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Admin settlement status. |
 | `refunded_at` | `TIMESTAMPTZ` | Nullable | Timestamp when admin settled the refund. |
+| `is_declined` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Admin decline status. |
+| `declined_at` | `TIMESTAMPTZ` | Nullable | Timestamp when admin declined the refund. |
+| `decline_reason` | `TEXT` | Nullable | Optional note or reason provided when declining the refund. |
 | `total_claimed_amount` | `NUMERIC(10, 2)` | `NOT NULL`, `DEFAULT '0.00'` | Total amount claimed for household reimbursement. |
 | `total_receipt_amount` | `NUMERIC(10, 2)` | Nullable | Gross sum on receipt (`NULL` for receiptless checkouts). |
 | `store_name` | `VARCHAR(255)` | Nullable | Detected supermarket name or manually entered merchant. |
@@ -170,6 +173,7 @@ Receipt upload batches and manual checkouts for reimbursement.
   * `checkouts_pkey` UNIQUE (`id`)
   * `idx_checkouts_kitchen` (`kitchen_id`)
   * `idx_checkouts_kitchen_refunded` (`kitchen_id`, `is_refunded`)
+  * `idx_checkouts_kitchen_declined` (`kitchen_id`, `is_declined`)
   * `idx_checkouts_kitchen_user` (`kitchen_id`, `user_id`)
 
 ---

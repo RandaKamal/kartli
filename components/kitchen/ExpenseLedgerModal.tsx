@@ -22,6 +22,8 @@ export interface ExpenseLedgerModalProps {
   spaceType?: KitchenSpaceType;
   members: KitchenMemberWithUser[];
   checkouts: CheckoutWithDetails[];
+  currentUserId?: string;
+  onCheckoutUpdated?: (checkout: Partial<CheckoutWithDetails> & { id: string }) => void;
 }
 
 export function ExpenseLedgerModal({
@@ -32,8 +34,23 @@ export function ExpenseLedgerModal({
   spaceType,
   members,
   checkouts,
+  currentUserId,
+  onCheckoutUpdated,
 }: ExpenseLedgerModalProps) {
   const { t } = useTranslation();
+  const [userPurchases, setUserPurchases] = React.useState<CheckoutWithDetails[]>(checkouts || []);
+
+  React.useEffect(() => {
+    setUserPurchases(checkouts || []);
+  }, [checkouts]);
+
+  const handleCheckoutUpdated = (updated: Partial<CheckoutWithDetails> & { id: string }) => {
+    setUserPurchases((prev) =>
+      prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c))
+    );
+    onCheckoutUpdated?.(updated);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
@@ -53,12 +70,22 @@ export function ExpenseLedgerModal({
               kitchenId={kitchenId}
               spaceType={spaceType}
               members={members}
+              onCheckoutUpdated={handleCheckoutUpdated}
             />
           )}
 
           <MyPurchasesSection
             kitchenId={kitchenId}
-            checkouts={checkouts}
+            checkouts={userPurchases}
+            defaultExpanded={!isAdmin}
+            onReceiptDeleted={(receiptId) => {
+              setUserPurchases((prev) =>
+                prev.map((c) => ({
+                  ...c,
+                  receipts: c.receipts.filter((r) => r.id !== receiptId),
+                }))
+              );
+            }}
           />
         </div>
 
