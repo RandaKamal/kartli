@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import type { KitchenMemberWithUser, KitchenRole, KitchenSpaceType } from "@/types";
 import { getSpaceTerminology } from "@/lib/spaceTerminology";
 import {
@@ -83,6 +83,52 @@ export function RoommatesView({
   const [isRemoving, setIsRemoving] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [, startTransition] = useTransition();
+
+  const [openMenuMemberId, setOpenMenuMemberId] = useState<string | null>(null);
+  const pointerTypeRef = useRef<string | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+  const touchStartXRef = useRef<number | null>(null);
+  const isScrollingRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches[0]) {
+        touchStartYRef.current = e.touches[0].clientY;
+        touchStartXRef.current = e.touches[0].clientX;
+        isScrollingRef.current = false;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches[0] && touchStartYRef.current !== null && touchStartXRef.current !== null) {
+        const deltaY = Math.abs(e.touches[0].clientY - touchStartYRef.current);
+        const deltaX = Math.abs(e.touches[0].clientX - touchStartXRef.current);
+        if (deltaY > 8 || deltaX > 8) {
+          isScrollingRef.current = true;
+        }
+      } else {
+        isScrollingRef.current = true;
+      }
+    };
+
+    const handleTouchEnd = () => {
+      setTimeout(() => {
+        isScrollingRef.current = false;
+        touchStartYRef.current = null;
+        touchStartXRef.current = null;
+      }, 150);
+    };
+
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, []);
 
   const terminology = getSpaceTerminology(spaceType);
   const isFormerMember = (member: KitchenMemberWithUser) =>
@@ -266,14 +312,35 @@ export function RoommatesView({
 
                   {/* Admin Role Promotion/Demotion Affordance */}
                   {isAdmin && !isMe && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                    <DropdownMenu
+                      open={openMenuMemberId === member.id}
+                      onOpenChange={(open) => {
+                        setOpenMenuMemberId(open ? member.id : null);
+                      }}
+                    >
+                      <DropdownMenuTrigger
+                        asChild
+                        onPointerDown={(e) => {
+                          pointerTypeRef.current = e.pointerType;
+                          if (e.pointerType === "touch") {
+                            e.preventDefault();
+                          }
+                        }}
+                      >
                         <button
                           type="button"
                           disabled={isThisMemberUpdating}
+                          data-member-trigger={member.id}
                           className="h-8 px-2 rounded-xl bg-secondary/50 hover:bg-secondary text-xs font-medium border border-border/60 flex items-center gap-1 transition-all cursor-pointer text-muted-foreground hover:text-foreground disabled:opacity-50 touch-manipulation"
                           title="Rolle ändern"
                           aria-label="Rolle ändern"
+                          onClick={() => {
+                            if (isScrollingRef.current) return;
+                            if (pointerTypeRef.current === "touch") {
+                              setOpenMenuMemberId((prev) => (prev === member.id ? null : member.id));
+                              pointerTypeRef.current = null;
+                            }
+                          }}
                         >
                           {isThisMemberUpdating ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -282,10 +349,34 @@ export function RoommatesView({
                           )}
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48 rounded-xl bg-card border border-border shadow-md">
+                      <DropdownMenuContent
+                        align="end"
+                        className="w-48 rounded-xl bg-card border border-border shadow-md"
+                        onPointerDownOutside={(e) => {
+                          const target = (e.detail?.originalEvent?.target || e.target) as HTMLElement | null;
+                          if (target?.closest?.(`[data-member-trigger="${member.id}"]`)) {
+                            e.preventDefault();
+                          }
+                        }}
+                      >
                         {isMemberAdmin ? (
                           <DropdownMenuItem
-                            onClick={() => handleRoleChange(member, "MEMBER")}
+                            onSelect={(e) => {
+                              if (isScrollingRef.current) {
+                                e.preventDefault();
+                                return;
+                              }
+                              setOpenMenuMemberId(null);
+                              handleRoleChange(member, "MEMBER");
+                            }}
+                            onClick={(e) => {
+                              if (isScrollingRef.current) {
+                                e.preventDefault();
+                                return;
+                              }
+                              setOpenMenuMemberId(null);
+                              handleRoleChange(member, "MEMBER");
+                            }}
                             disabled={isThisMemberUpdating}
                             className="cursor-pointer text-xs flex items-center gap-2 py-2 touch-manipulation"
                           >
@@ -294,7 +385,22 @@ export function RoommatesView({
                           </DropdownMenuItem>
                         ) : (
                           <DropdownMenuItem
-                            onClick={() => setMemberToPromote(member)}
+                            onSelect={(e) => {
+                              if (isScrollingRef.current) {
+                                e.preventDefault();
+                                return;
+                              }
+                              setOpenMenuMemberId(null);
+                              setMemberToPromote(member);
+                            }}
+                            onClick={(e) => {
+                              if (isScrollingRef.current) {
+                                e.preventDefault();
+                                return;
+                              }
+                              setOpenMenuMemberId(null);
+                              setMemberToPromote(member);
+                            }}
                             disabled={isThisMemberUpdating}
                             className="cursor-pointer text-xs flex items-center gap-2 py-2 touch-manipulation"
                           >
@@ -311,7 +417,10 @@ export function RoommatesView({
                       type="button"
                       variant="ghost"
                       size="icon-sm"
-                      onClick={() => setMemberToRemove(member)}
+                      onClick={() => {
+                        if (isScrollingRef.current) return;
+                        setMemberToRemove(member);
+                      }}
                       className="text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 rounded-lg cursor-pointer h-8 w-8"
                       title={t.kitchen.roommates.removeMember}
                     >
