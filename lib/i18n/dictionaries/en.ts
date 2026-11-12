@@ -406,6 +406,7 @@ export const en = {
 
     // Tab 3: Restock Feed
     recentRestocks: "Restock Feed",
+    myPurchasesFeed: "My Purchases",
     logsCount: "{count} entries",
     noRecentRestocks: "No recent checkouts logged",
     noRecentRestocksDesc:

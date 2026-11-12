@@ -51,6 +51,7 @@ export interface SpacePulseModalProps {
   kitchenId: string;
   kitchenName: string;
   currentUserId: string;
+  isAdmin?: boolean;
   initialStats?: KitchenPulseStats | any;
   pantryItems?: PantryItem[] | any[];
   myCheckouts?: CheckoutWithDetails[] | any[];
@@ -184,6 +185,7 @@ export function SpacePulseModal({
   kitchenId,
   kitchenName,
   currentUserId,
+  isAdmin = false,
   initialStats,
   pantryItems,
   myCheckouts,
@@ -263,6 +265,11 @@ export function SpacePulseModal({
 
   // CSV Export handler (Task 3)
   const handleExportCsv = () => {
+    // Household-wide exports contain other members' private notes and receipts.
+    if (!isAdmin) {
+      return;
+    }
+
     const checkouts = (stats?.monthCheckouts || []).filter((c) => !c.is_declined);
     if (checkouts.length === 0) {
       toast.info(t.pulse.csvExportNoData);
@@ -359,20 +366,22 @@ export function SpacePulseModal({
               </DialogTitle>
 
               <div className="flex items-center gap-1 shrink-0">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleExportCsv}
-                  disabled={isExporting || isLoading}
-                  className="h-8 px-2.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 gap-1.5"
-                  title={t.pulse.csvExportBtn}
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">
-                    {isExporting ? t.pulse.csvExporting : t.pulse.csvExportBtn}
-                  </span>
-                </Button>
+                {isAdmin && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleExportCsv}
+                    disabled={isExporting || isLoading}
+                    className="h-8 px-2.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 gap-1.5"
+                    title={t.pulse.csvExportBtn}
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">
+                      {isExporting ? t.pulse.csvExporting : t.pulse.csvExportBtn}
+                    </span>
+                  </Button>
+                )}
 
                 <Button
                   type="button"
@@ -947,7 +956,7 @@ export function SpacePulseModal({
                 <div className="space-y-3 animate-in fade-in-50 duration-200">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-muted-foreground">
-                      {t.pulse.recentRestocks}
+                      {isAdmin ? t.pulse.recentRestocks : t.pulse.myPurchasesFeed}
                     </span>
                     <span className="text-[11px] text-muted-foreground tabular-nums">
                       {t.pulse.logsCount.replace(

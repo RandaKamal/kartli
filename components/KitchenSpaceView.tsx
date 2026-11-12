@@ -757,6 +757,7 @@ export function KitchenSpaceView({
         kitchenId={initialKitchen.id}
         kitchenName={initialKitchen.name}
         currentUserId={currentUserId}
+        isAdmin={isAdmin}
         initialStats={initialPulseStats}
         pantryItems={localPantryItems}
         myCheckouts={localMyCheckouts}

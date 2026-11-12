@@ -252,6 +252,10 @@ export async function getKitchenStats(
     throw new Error("Unauthorized: You are not a member of this kitchen.");
   }
 
+  // Only kitchen admins may see household-wide checkout details (notes,
+  // receipts, and other members' purchases). Members get their own rows only.
+  const isKitchenAdmin = membership.role === "ADMIN";
+
   // Parse targetMonthKey (format "YYYY-MM") if provided, else null defaults to CURRENT_TIMESTAMP
   let targetDateIso: string | null = null;
   if (targetMonthKey && /^\d{4}-\d{2}$/.test(targetMonthKey)) {
@@ -700,7 +704,10 @@ export async function getKitchenStats(
 
   // Month Checkouts
   const rawMonthCheckouts = Array.isArray(row?.month_checkouts) ? row.month_checkouts : [];
-  const monthCheckouts: MonthCheckoutItem[] = rawMonthCheckouts.map((c) => {
+  const visibleMonthCheckouts = isKitchenAdmin
+    ? rawMonthCheckouts
+    : rawMonthCheckouts.filter((c) => c.user_id === targetUserId);
+  const monthCheckouts: MonthCheckoutItem[] = visibleMonthCheckouts.map((c) => {
     const rawStore = (c.store_name || "").trim();
     const normalizedStore = rawStore
       ? normalizeStoreName(rawStore) || rawStore.toUpperCase()

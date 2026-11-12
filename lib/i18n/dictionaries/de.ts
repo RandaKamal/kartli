@@ -408,6 +408,7 @@ export const de: typeof en = {
 
     // Tab 3: Restock Feed
     recentRestocks: "Einkaufs-Feed",
+    myPurchasesFeed: "Meine Einkäufe",
     logsCount: "{count} Einträge",
     noRecentRestocks: "Keine aktuellen Einkäufe erfasst",
     noRecentRestocksDesc:
