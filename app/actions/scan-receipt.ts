@@ -269,9 +269,7 @@ export async function submitReceiptCheckoutAction(
     const userId = session.user.id;
 
     const rawReceiptPaths: string[] = JSON.parse(rawReceiptPathsStr || "[]");
-    const receiptPaths = rawReceiptPaths.filter(
-      (p) => typeof p === "string" && p.startsWith("https://") && p.includes(".blob.vercel-storage.com/")
-    );
+    const receiptPaths = rawReceiptPaths.filter(isBlobReceiptUrl);
 
     const rawItems: Array<{
       shopping_list_item_id: string;
@@ -635,6 +633,20 @@ export async function receiptlessCheckoutAction(
 }
 
 /**
+ * True only for https URLs whose real hostname is a Vercel Blob host.
+ * A substring check is not enough: "https://evil.example/.blob.vercel-storage.com/x" would pass it.
+ */
+function isBlobReceiptUrl(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname.endsWith(".blob.vercel-storage.com");
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Deletes a receipt from Vercel Blob storage.
  * Only allows deleting URLs that actually belong to your Blob store.
  */
@@ -645,7 +657,7 @@ export async function deleteReceiptFileAction(rawUrl: string) {
   }
 
   try {
-    if (!rawUrl || typeof rawUrl !== "string" || !rawUrl.includes(".blob.vercel-storage.com/")) {
+    if (!isBlobReceiptUrl(rawUrl)) {
       return { success: false, error: "Invalid receipt URL" };
     }
 
