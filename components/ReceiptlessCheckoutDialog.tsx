@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useCallback } from "react";
+import { useState, useTransition, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { receiptlessCheckoutAction } from "@/app/actions/scan-receipt";
 import {
@@ -46,7 +46,17 @@ export function ReceiptlessCheckoutDialog({
   const [totalAmount, setTotalAmount] = useState("");
   const [currency, setCurrency] = useState("EUR");
   const [note, setNote] = useState("");
-  const [isPending, startTransition] = useTransition();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [, startTransition] = useTransition();
+  const isSubmittingRef = useRef(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const resetForm = useCallback(() => {
     setStoreName("");
@@ -65,8 +75,9 @@ export function ReceiptlessCheckoutDialog({
     [onOpenChange, resetForm]
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingRef.current || isSubmitting) return;
     if (stagedCartItems.length === 0) {
       toast.error("Your cart is empty.");
       return;
@@ -78,26 +89,43 @@ export function ReceiptlessCheckoutDialog({
     formData.append("totalAmount", totalAmount ? parseFloat(totalAmount).toString() : "0");
     formData.append("currency", currency);
     formData.append("note", note.trim());
-    formData.append("itemIds", JSON.stringify(stagedCartItems.map((i) => i.id)));
+    formData.append(
+      "itemIds",
+      JSON.stringify(stagedCartItems.map((i) => ({ id: i.id, name: i.name })))
+    );
 
-    startTransition(async () => {
-      try {
-        const result = await receiptlessCheckoutAction(formData);
-        if (result.success) {
-          const claimedNum = parseFloat(totalAmount) || 0;
-          if (claimedNum > 0) {
-            toast.success(`Checkout recorded! ${formatCurrency(claimedNum, currency)} refund requested.`);
-          } else {
-            toast.success("Items checked out and marked as purchased!");
-          }
-          router.refresh();
-          resetForm();
-          onOpenChange(false);
-        }
-      } catch (error: any) {
-        toast.error(error.message || "Failed to complete checkout.");
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    try {
+      const result = await receiptlessCheckoutAction(formData);
+      if (!isMountedRef.current) return;
+
+      if (!result.ok) {
+        toast.error(result.error || "Failed to complete checkout.");
+        return;
       }
-    });
+
+      const claimedNum = parseFloat(totalAmount) || 0;
+      if (claimedNum > 0) {
+        toast.success(`Checkout recorded! ${formatCurrency(claimedNum, currency)} refund requested.`);
+      } else {
+        toast.success("Items checked out and marked as purchased!");
+      }
+      resetForm();
+      onOpenChange(false);
+      startTransition(() => {
+        router.refresh();
+      });
+    } catch (error: any) {
+      if (isMountedRef.current) {
+        toast.error(error?.message || "Failed to complete checkout.");
+      }
+    } finally {
+      isSubmittingRef.current = false;
+      if (isMountedRef.current) {
+        setIsSubmitting(false);
+      }
+    }
   };
 
   return (
@@ -148,7 +176,7 @@ export function ReceiptlessCheckoutDialog({
               value={storeName}
               onChange={(e) => setStoreName(e.target.value)}
               className="h-9 text-xs rounded-xl border-border/80 bg-secondary/30 focus-visible:bg-secondary/50 transition-colors"
-              disabled={isPending}
+              disabled={isSubmitting}
             />
           </div>
 
@@ -168,14 +196,14 @@ export function ReceiptlessCheckoutDialog({
                 value={totalAmount}
                 onChange={(e) => setTotalAmount(e.target.value)}
                 className="h-9 text-xs font-mono font-medium rounded-xl border-border/80 bg-secondary/30 focus-visible:bg-secondary/50 transition-colors flex-1"
-                disabled={isPending}
+                disabled={isSubmitting}
               />
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
                 className="h-9 text-xs font-semibold bg-secondary/40 border border-border/80 rounded-xl px-2.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shrink-0"
                 aria-label="Currency"
-                disabled={isPending}
+                disabled={isSubmitting}
               >
                 {SUPPORTED_CURRENCIES.map((c) => (
                   <option key={c.code} value={c.code}>
@@ -199,7 +227,7 @@ export function ReceiptlessCheckoutDialog({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               className="flex min-h-[64px] w-full rounded-lg border border-border/80 bg-secondary/20 p-2.5 text-xs shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-transparent disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-              disabled={isPending}
+              disabled={isSubmitting}
             />
             <p className="text-[11px] leading-snug text-muted-foreground">
               {t.kitchen.ledger.noteToAdminHelp}
@@ -213,7 +241,7 @@ export function ReceiptlessCheckoutDialog({
               variant="ghost"
               size="sm"
               onClick={() => onOpenChange(false)}
-              disabled={isPending}
+              disabled={isSubmitting}
               className="rounded-lg text-xs h-9 text-muted-foreground hover:text-foreground"
             >
               Cancel
@@ -221,10 +249,10 @@ export function ReceiptlessCheckoutDialog({
             <Button
               type="submit"
               size="sm"
-              disabled={isPending || stagedCartItems.length === 0}
+              disabled={isSubmitting || stagedCartItems.length === 0}
               className="rounded-lg text-xs font-medium h-9 px-4 gap-1.5 bg-foreground text-background hover:bg-foreground/90 transition-colors shadow-sm"
             >
-              {isPending ? (
+              {isSubmitting ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
                 <Check className="w-3.5 h-3.5" />

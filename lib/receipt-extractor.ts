@@ -6,17 +6,26 @@ import {
   type ReconciliationSummary,
 } from "./receipt-normalizer";
 
+export const GEMINI_CASCADE_CONFIG = [
+  { model: "gemini-3.5-flash-lite", timeoutMs: 15_000 },
+  { model: "gemini-3.1-flash-lite", timeoutMs: 12_000 },
+  { model: "gemini-3-flash-preview", timeoutMs: 12_000 },
+  { model: "gemini-3.8-flash", timeoutMs: 10_000 },
+  { model: "gemini-3.6-flash", timeoutMs: 10_000 },
+] as const;
+
 export const GEMINI_CASCADE_MODELS = [
   "gemini-3.5-flash-lite",
-  "gemini-2.5-flash-lite",
-  "gemini-3-flash",
-  "gemini-2.5-flash",
+  "gemini-3.1-flash-lite",
+  "gemini-3-flash-preview",
+  "gemini-3.8-flash",
+  "gemini-3.6-flash",
 ] as const;
 
 export type GeminiCascadeModel = (typeof GEMINI_CASCADE_MODELS)[number];
 
 export const GEMINI_MODEL_ID = GEMINI_CASCADE_MODELS[0];
-export const GEMINI_REQUEST_TIMEOUT_MS = 7_000;
+export const GEMINI_REQUEST_TIMEOUT_MS = GEMINI_CASCADE_CONFIG[0].timeoutMs;
 
 /** Strict JSON schema for native Gemini constrained decoding */
 export const receiptResponseSchema: ResponseSchema = {
@@ -221,30 +230,89 @@ export function parseReceiptJson(raw: string, finishReason?: string): ExtractedR
   }
 }
 
-function getConciseErrorMessage(err: any): string {
-  if (typeof err?.status === "number") {
-    return `${err.status}`;
-  }
+export type GeminiErrorCategory =
+  | "auth_401_403"
+  | "timeout"
+  | "rate_limit_429"
+  | "overload_503"
+  | "unsupported_404_400"
+  | "parse_error"
+  | "other";
+
+export function classifyGeminiError(err: any): {
+  category: GeminiErrorCategory;
+  shortCode: string;
+} {
+  const status: number | undefined =
+    typeof err?.status === "number" ? err.status : undefined;
   const msg = typeof err?.message === "string" ? err.message : String(err ?? "");
   const statusMatch = msg.match(/\[(\d{3})\b/);
-  if (statusMatch) {
-    return statusMatch[1];
-  }
-  if (err?.finishReason === "MAX_TOKENS" || err?.isTruncated) {
-    return "MAX_TOKENS";
-  }
+  const parsedStatus = status ?? (statusMatch ? Number(statusMatch[1]) : undefined);
+  const name = typeof err?.name === "string" ? err.name : "";
+
   if (
-    err?.name === "TimeoutError" ||
-    err?.name === "GoogleGenerativeAIAbortError" ||
-    err?.name === "AbortError" ||
+    parsedStatus === 401 ||
+    parsedStatus === 403 ||
+    msg.includes("API_KEY_INVALID") ||
+    /api key|unauthorized/i.test(msg)
+  ) {
+    return { category: "auth_401_403", shortCode: String(parsedStatus ?? 401) };
+  }
+
+  if (
+    name === "TimeoutError" ||
+    name === "GoogleGenerativeAIAbortError" ||
+    name === "AbortError" ||
     /aborted|timed? ?out/i.test(msg)
   ) {
-    return "timeout";
+    return { category: "timeout", shortCode: "timeout" };
   }
-  if (err instanceof SyntaxError || /JSON|Unexpected token|non-object receipt payload/i.test(msg)) {
-    return "JSON error";
+
+  if (
+    parsedStatus === 429 ||
+    msg.includes("RESOURCE_EXHAUSTED") ||
+    /quota|rate limit/i.test(msg)
+  ) {
+    return { category: "rate_limit_429", shortCode: "429" };
   }
-  return msg.length > 35 ? `${msg.slice(0, 32)}...` : msg || "failed";
+
+  if (
+    parsedStatus === 503 ||
+    parsedStatus === 502 ||
+    parsedStatus === 504 ||
+    msg.includes("UNAVAILABLE") ||
+    /overload|high demand/i.test(msg)
+  ) {
+    return { category: "overload_503", shortCode: String(parsedStatus ?? 503) };
+  }
+
+  if (
+    parsedStatus === 404 ||
+    parsedStatus === 400 ||
+    /invalid model|not found|no longer available|unsupported/i.test(msg)
+  ) {
+    return { category: "unsupported_404_400", shortCode: String(parsedStatus ?? 404) };
+  }
+
+  if (err?.finishReason === "MAX_TOKENS" || err?.isTruncated) {
+    return { category: "parse_error", shortCode: "MAX_TOKENS" };
+  }
+
+  if (
+    err instanceof SyntaxError ||
+    /JSON|Unexpected token|non-object receipt payload/i.test(msg)
+  ) {
+    return { category: "parse_error", shortCode: "JSON error" };
+  }
+
+  if (parsedStatus !== undefined) {
+    return { category: "other", shortCode: String(parsedStatus) };
+  }
+
+  return {
+    category: "other",
+    shortCode: msg.length > 35 ? `${msg.slice(0, 32)}...` : msg || "failed",
+  };
 }
 
 export async function extractWithGemini(
@@ -309,13 +377,15 @@ export async function extractWithGemini(
 /**
  * Main OCR pipeline:
  * Pure Google AI Studio multi-model fallback cascade across:
- * 1. gemini-3.5-flash-lite (Primary: 15 RPM / 500 RPD)
- * 2. gemini-2.5-flash-lite (Fallback 1: 10 RPM / 20 RPD)
- * 3. gemini-3-flash (Fallback 2: 5 RPM / 20 RPD)
- * 4. gemini-2.5-flash (Fallback 3: 5 RPM / 20 RPD)
+ * 1. gemini-3.5-flash-lite (Primary: 15 RPM / 500 RPD, 15s timeout)
+ * 2. gemini-3.1-flash-lite (Fallback 1: 15 RPM / 500 RPD, 12s timeout)
+ * 3. gemini-3-flash-preview (Fallback 2: 5 RPM / 20 RPD, 12s timeout)
+ * 4. gemini-3.8-flash (Fallback 3: 5 RPM / 20 RPD, 10s timeout)
+ * 5. gemini-3.6-flash (Fallback 4: 5 RPM / 20 RPD, 10s timeout)
  *
- * Each attempt runs with a fast 7s timeout.
- * Any failure immediately advances to the next model in the cascade without delays.
+ * Any transient failure (503, 429, 404/400, timeout, MAX_TOKENS, or JSON parse error)
+ * immediately advances to the next model in the cascade without delays.
+ * Only 401/403 authentication errors fail fast immediately.
  */
 export async function extractReceiptData(
   buffer: Buffer,
@@ -323,6 +393,7 @@ export async function extractReceiptData(
   options: {
     stagedItems?: StagedCartItem[];
     geminiApiKey?: string;
+    generateFn?: typeof extractWithGemini;
   } = {}
 ): Promise<ExtractedReceiptResult> {
   const geminiApiKey = options.geminiApiKey || process.env.GEMINI_API_KEY;
@@ -334,21 +405,23 @@ export async function extractReceiptData(
   const base64 = buffer.toString("base64");
   const stagedItems = options.stagedItems || [];
   const prompt = buildExtractionPrompt(stagedItems);
+  const runModel = options.generateFn || extractWithGemini;
 
   let rawReceipt: ExtractedReceiptRaw | null = null;
   let usedProvider = "";
   const errors: string[] = [];
+  const categories: GeminiErrorCategory[] = [];
 
-  for (const model of GEMINI_CASCADE_MODELS) {
+  for (const { model, timeoutMs } of GEMINI_CASCADE_CONFIG) {
     try {
       const startMs = Date.now();
-      rawReceipt = await extractWithGemini(
+      rawReceipt = await runModel(
         geminiApiKey,
         model,
         prompt,
         mimeType,
         base64,
-        AbortSignal.timeout(GEMINI_REQUEST_TIMEOUT_MS)
+        AbortSignal.timeout(timeoutMs)
       );
       console.log(
         `[extractReceiptData] Model ${model} succeeded in ${Date.now() - startMs}ms`
@@ -356,19 +429,52 @@ export async function extractReceiptData(
       usedProvider = `gemini:${model}`;
       break;
     } catch (err: any) {
-      const reason = getConciseErrorMessage(err);
-      errors.push(`${model}: ${reason}`);
+      const { category, shortCode } = classifyGeminiError(err);
+      errors.push(`${model}: ${shortCode}`);
+      categories.push(category);
+
+      if (category === "auth_401_403") {
+        console.error(`[extractReceiptData] Auth error on ${model}:`, err?.message || err);
+        throw err;
+      }
+
       console.warn(
-        `[extractReceiptData] Model ${model} failed (${reason}), immediately advancing to next model:`,
+        `[extractReceiptData] Model ${model} failed (${category}:${shortCode}), immediately advancing to next model:`,
         err?.status || err?.message
       );
     }
   }
 
   if (!rawReceipt) {
-    throw new Error(
-      `Alle Gemini-Modelle sind gerade überlastet (${errors.join(", ")}). Bitte in einem Moment erneut versuchen.`
-    );
+    const hasOverload = categories.includes("overload_503");
+    const hasRateLimit = categories.includes("rate_limit_429");
+    const hasTimeout = categories.includes("timeout");
+    const hasParseError = categories.includes("parse_error");
+
+    let message: string;
+    let errorCategory: string;
+
+    if (hasOverload) {
+      errorCategory = "overload";
+      message = `Alle Gemini-Modelle sind gerade überlastet (${errors.join(", ")}). Bitte in einem Moment erneut versuchen.`;
+    } else if (hasRateLimit) {
+      errorCategory = "rate_limit";
+      message = `KI-Anfragelimit erreicht (${errors.join(", ")}). Bitte kurz warten und erneut versuchen.`;
+    } else if (hasTimeout) {
+      errorCategory = "timeout";
+      message = `Zeitüberschreitung beim Belegscan (${errors.join(", ")}). Bitte erneut versuchen.`;
+    } else if (hasParseError) {
+      errorCategory = "parse_error";
+      message = `Belegdaten konnten nicht gelesen werden (${errors.join(", ")}). Bitte ein schärferes Foto verwenden.`;
+    } else {
+      errorCategory = "unavailable";
+      message = `Belegscan fehlgeschlagen (${errors.join(", ")}). Bitte erneut versuchen.`;
+    }
+
+    const finalError = new Error(message);
+    (finalError as any).errorCategory = errorCategory;
+    (finalError as any).modelErrors = errors;
+    throw finalError;
   }
 
   // Currency normalization

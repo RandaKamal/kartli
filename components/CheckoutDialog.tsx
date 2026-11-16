@@ -157,7 +157,10 @@ export function CheckoutDialog({
   const [noReceiptPrices, setNoReceiptPrices] = useState<Record<string, number>>({});
   const [isZoomed, setIsZoomed] = useState(false);
   const [isMobileReceiptExpanded, setIsMobileReceiptExpanded] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [, startTransition] = useTransition();
+  const isSubmittingRef = useRef(false);
+  const isMountedRef = useRef(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Receipts removed by the user are tracked here so late async responses
   // (compression, upload, OCR scan) never mutate state after cancellation.
@@ -195,7 +198,9 @@ export function CheckoutDialog({
   }, []);
 
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
+      isMountedRef.current = false;
       abortControllersRef.current.forEach((controller) => controller.abort());
       abortControllersRef.current.clear();
       receipts.forEach((r) => {
@@ -230,6 +235,7 @@ export function CheckoutDialog({
   const executeScan = useCallback(
     async (receiptId: string, uploadFile: File) => {
       const isCancelled = () =>
+        !isMountedRef.current ||
         cancelledReceiptIdsRef.current.has(receiptId) ||
         abortControllersRef.current.get(receiptId)?.signal.aborted === true;
 
@@ -350,7 +356,7 @@ export function CheckoutDialog({
       const controller = new AbortController();
       abortControllersRef.current.set(tempId, controller);
 
-      startTransition(async () => {
+      void (async () => {
         try {
           let uploadFile: File = file;
           try {
@@ -359,8 +365,9 @@ export function CheckoutDialog({
             uploadFile = file;
           }
 
-          // Cancelled during compression: never touch state or upload.
+          // Cancelled during compression or unmounted: never touch state or upload.
           if (
+            !isMountedRef.current ||
             cancelledReceiptIdsRef.current.has(tempId) ||
             controller.signal.aborted
           ) {
@@ -375,7 +382,7 @@ export function CheckoutDialog({
         } finally {
           abortControllersRef.current.delete(tempId);
         }
-      });
+      })();
     },
     [executeScan, locale]
   );
@@ -400,13 +407,13 @@ export function CheckoutDialog({
       const controller = new AbortController();
       abortControllersRef.current.set(receiptId, controller);
 
-      startTransition(async () => {
+      void (async () => {
         try {
           await executeScan(receiptId, fileToRetry);
         } finally {
           abortControllersRef.current.delete(receiptId);
         }
-      });
+      })();
     },
     [receipts, executeScan]
   );
@@ -531,11 +538,9 @@ export function CheckoutDialog({
       cancelReceiptWork(receipt.id);
 
       const receiptUrl = receipt.status === "ready" ? receipt.receiptUrl : null;
-      startTransition(async () => {
-        if (receiptUrl) {
-          await deleteReceiptFileAction(receiptUrl);
-        }
-      });
+      if (receiptUrl) {
+        deleteReceiptFileAction(receiptUrl).catch(() => {});
+      }
 
       if (receipt.previewUrl) URL.revokeObjectURL(receipt.previewUrl);
 
@@ -571,9 +576,7 @@ export function CheckoutDialog({
     receipts.forEach((r) => {
       const url = r.receiptUrl;
       if (!url) return;
-      startTransition(async () => {
-        await deleteReceiptFileAction(url);
-      });
+      deleteReceiptFileAction(url).catch(() => {});
     });
     resetAll();
     onOpenChange(false);
@@ -625,10 +628,17 @@ export function CheckoutDialog({
     finalizeCheckout();
   };
 
-  const finalizeCheckout = () => {
+  const finalizeCheckout = async () => {
+    if (isSubmittingRef.current || isSubmitting) return;
+
     const readyReceipts = receipts.filter((r) => r.status === "ready");
     if (readyReceipts.length > 0) {
-      const matchedItems: Array<{ shopping_list_item_id: string; price: number; pantry_item_id: string | null }> = [];
+      const matchedItems: Array<{
+        shopping_list_item_id: string;
+        name?: string;
+        price: number;
+        pantry_item_id: string | null;
+      }> = [];
       const seen = new Set<string>();
 
       for (const receipt of readyReceipts) {
@@ -638,6 +648,7 @@ export function CheckoutDialog({
             const cartItem = stagedCartItems.find((c) => c.id === matchedId);
             matchedItems.push({
               shopping_list_item_id: matchedId,
+              name: cartItem?.name,
               price: receipt.lineStates[i].price,
               pantry_item_id: cartItem?.pantry_item_id || null,
             });
@@ -646,15 +657,19 @@ export function CheckoutDialog({
       }
 
       let forgotTotal = 0;
+      const returnedItems: Array<{ id: string; name: string }> = [];
       for (const item of itemsNeedingDecision) {
         if (noReceiptDecisions[item.id] === "forgot" && !seen.has(item.id)) {
           const price = noReceiptPrices[item.id] || 0;
           forgotTotal += price;
           matchedItems.push({
             shopping_list_item_id: item.id,
+            name: item.name,
             price,
             pantry_item_id: item.pantry_item_id,
           });
+        } else if (noReceiptDecisions[item.id] === "return") {
+          returnedItems.push({ id: item.id, name: item.name });
         }
       }
 
@@ -674,29 +689,51 @@ export function CheckoutDialog({
       formData.append("totalReceiptAmount", totalReceiptAmount.toString());
       formData.append("totalClaimedAmount", ((parseFloat(totalAmount) || 0) + forgotTotal).toString());
       formData.append("matchedItems", JSON.stringify(matchedItems));
+      if (returnedItems.length > 0) {
+        formData.append("returnedItemIds", JSON.stringify(returnedItems));
+      }
 
-      startTransition(async () => {
-        try {
-          await submitReceiptCheckoutAction(formData);
-          const claimedNum = (parseFloat(totalAmount) || 0) + forgotTotal;
-          toast.success(
-            locale === "de"
-              ? `Auslage über ${claimedNum.toFixed(2).replace(".", ",")} € an Admin eingereicht.`
-              : `Refund request of €${claimedNum.toFixed(2)} submitted to kitchen admin.`
-          );
-          router.refresh();
-          resetAll();
-          onOpenChange(false);
-        } catch (error: any) {
-          toast.error(error.message || "Failed to submit refund request");
+      isSubmittingRef.current = true;
+      setIsSubmitting(true);
+      try {
+        const result = await submitReceiptCheckoutAction(formData);
+        if (!isMountedRef.current) return;
+
+        if (!result.ok) {
+          toast.error(result.error || "Failed to submit refund request");
+          return;
         }
-      });
-    } else {
-      const confirmedItemIds = stagedCartItems
-        .filter((item) => noReceiptDecisions[item.id] === "forgot")
-        .map((item) => item.id);
 
-      if (confirmedItemIds.length === 0) {
+        const claimedNum = (parseFloat(totalAmount) || 0) + forgotTotal;
+        toast.success(
+          locale === "de"
+            ? `Auslage über ${claimedNum.toFixed(2).replace(".", ",")} € an Admin eingereicht.`
+            : `Refund request of €${claimedNum.toFixed(2)} submitted to kitchen admin.`
+        );
+        resetAll();
+        onOpenChange(false);
+        startTransition(() => {
+          router.refresh();
+        });
+      } catch (error: any) {
+        if (isMountedRef.current) {
+          toast.error(error?.message || "Failed to submit refund request");
+        }
+      } finally {
+        isSubmittingRef.current = false;
+        if (isMountedRef.current) {
+          setIsSubmitting(false);
+        }
+      }
+    } else {
+      const confirmedItems = stagedCartItems.filter(
+        (item) => noReceiptDecisions[item.id] === "forgot"
+      );
+      const returnedItems = stagedCartItems.filter(
+        (item) => noReceiptDecisions[item.id] === "return"
+      );
+
+      if (confirmedItems.length === 0) {
         toast.error(
           locale === "de"
             ? "Nichts einzureichen — alle Artikel wurden zurück in den Warenkorb gelegt."
@@ -711,30 +748,53 @@ export function CheckoutDialog({
       formData.append("storeName", storeName.trim());
       formData.append("totalAmount", totalAmount ? parseFloat(totalAmount).toString() : "0");
       formData.append("note", note.trim());
-      formData.append("itemIds", JSON.stringify(confirmedItemIds));
+      formData.append(
+        "itemIds",
+        JSON.stringify(confirmedItems.map((i) => ({ id: i.id, name: i.name })))
+      );
+      if (returnedItems.length > 0) {
+        formData.append(
+          "returnedItemIds",
+          JSON.stringify(returnedItems.map((i) => ({ id: i.id, name: i.name })))
+        );
+      }
 
-      startTransition(async () => {
-        try {
-          const result = await receiptlessCheckoutAction(formData);
-          if (result.success) {
-            const claimedNum = parseFloat(totalAmount) || 0;
-            toast.success(
-              claimedNum > 0
-                ? locale === "de"
-                  ? `Auslage über ${claimedNum.toFixed(2).replace(".", ",")} € erfasst!`
-                  : `Checkout recorded! €${claimedNum.toFixed(2)} refund requested.`
-                : locale === "de"
-                ? "Artikel als gekauft markiert!"
-                : "Items checked out and marked as purchased!"
-            );
-            router.refresh();
-            resetAll();
-            onOpenChange(false);
-          }
-        } catch (error: any) {
-          toast.error(error.message || "Failed to complete checkout.");
+      isSubmittingRef.current = true;
+      setIsSubmitting(true);
+      try {
+        const result = await receiptlessCheckoutAction(formData);
+        if (!isMountedRef.current) return;
+
+        if (!result.ok) {
+          toast.error(result.error || "Failed to complete checkout.");
+          return;
         }
-      });
+
+        const claimedNum = parseFloat(totalAmount) || 0;
+        toast.success(
+          claimedNum > 0
+            ? locale === "de"
+              ? `Auslage über ${claimedNum.toFixed(2).replace(".", ",")} € erfasst!`
+              : `Checkout recorded! €${claimedNum.toFixed(2)} refund requested.`
+            : locale === "de"
+            ? "Artikel als gekauft markiert!"
+            : "Items checked out and marked as purchased!"
+        );
+        resetAll();
+        onOpenChange(false);
+        startTransition(() => {
+          router.refresh();
+        });
+      } catch (error: any) {
+        if (isMountedRef.current) {
+          toast.error(error?.message || "Failed to complete checkout.");
+        }
+      } finally {
+        isSubmittingRef.current = false;
+        if (isMountedRef.current) {
+          setIsSubmitting(false);
+        }
+      }
     }
   };
 
@@ -901,7 +961,7 @@ export function CheckoutDialog({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleRetryScan(i)}
-                                disabled={isPending}
+                                disabled={isSubmitting}
                                 className="text-xs h-7 px-2.5 rounded-lg text-foreground hover:text-foreground hover:bg-muted/60"
                               >
                                 {locale === "de" ? "Wiederholen" : "Retry"}
@@ -997,7 +1057,7 @@ export function CheckoutDialog({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isPending || isAnyReceiptScanning}
+                disabled={isSubmitting || isAnyReceiptScanning}
                 className="w-full h-10 flex items-center justify-center gap-2 rounded-xl border border-dashed border-border hover:border-foreground/30 bg-muted/30 hover:bg-secondary/40 transition-colors text-xs font-medium text-foreground hover:text-foreground cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus className="w-3.5 h-3.5 text-muted-foreground" />
@@ -1025,7 +1085,7 @@ export function CheckoutDialog({
                     value={storeName}
                     onChange={(e) => setStoreName(e.target.value)}
                     className="h-9 text-xs rounded-lg border-border bg-muted/50 focus-visible:bg-background focus-visible:border-border transition-colors text-foreground placeholder:text-muted-foreground"
-                    disabled={isPending}
+                    disabled={isSubmitting}
                   />
                 </div>
 
@@ -1045,7 +1105,7 @@ export function CheckoutDialog({
                       setTotalAmount(e.target.value);
                     }}
                     className="h-9 text-xs font-mono tabular-nums rounded-lg border-border bg-muted/50 focus-visible:bg-background focus-visible:border-border transition-colors text-foreground placeholder:text-muted-foreground"
-                    disabled={isPending}
+                    disabled={isSubmitting}
                   />
                   {isTotalInvalid && totalAmount !== "" && (
                     <p className="text-[11px] text-amber-400/90 leading-tight">
@@ -1067,7 +1127,7 @@ export function CheckoutDialog({
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   className="flex min-h-[56px] w-full rounded-lg border border-border bg-muted/50 p-2.5 text-xs text-foreground placeholder:text-muted-foreground shadow-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/40 focus-visible:border-border disabled:cursor-not-allowed disabled:opacity-50 resize-none transition-colors"
-                  disabled={isPending}
+                  disabled={isSubmitting}
                 />
                 <p className="text-[11px] text-muted-foreground">
                   {locale === "de"
@@ -1084,7 +1144,7 @@ export function CheckoutDialog({
                   variant="ghost"
                   size="sm"
                   onClick={handleClose}
-                  disabled={isPending}
+                  disabled={isSubmitting}
                   className="text-xs h-9 px-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60"
                 >
                   {locale === "de" ? "Abbrechen" : "Cancel"}
@@ -1095,7 +1155,7 @@ export function CheckoutDialog({
                     variant="secondary"
                     size="sm"
                     onClick={handleSaveDraft}
-                    disabled={isPending}
+                    disabled={isSubmitting}
                     className="text-xs h-9 px-3 rounded-lg bg-secondary hover:bg-secondary text-foreground border border-border"
                   >
                     {locale === "de" ? "Entwurf" : "Save draft"}
@@ -1103,10 +1163,10 @@ export function CheckoutDialog({
                   <Button
                     type="submit"
                     size="sm"
-                    disabled={isPending || isAnyReceiptScanning || stagedCartItems.length === 0 || isTotalInvalid}
+                    disabled={isSubmitting || isAnyReceiptScanning || stagedCartItems.length === 0 || isTotalInvalid}
                     className="text-xs font-medium h-9 px-4 rounded-lg gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    {isPending || isAnyReceiptScanning ? (
+                    {isSubmitting || isAnyReceiptScanning ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <Check className="w-3.5 h-3.5" />
@@ -1135,7 +1195,7 @@ export function CheckoutDialog({
           <div className="flex flex-col space-y-4">
             <DialogHeader className="px-5 py-4 border-b border-border -mx-5 sm:-mx-6 -mt-5 sm:-mt-6 mb-2 pr-12 text-left">
               <DialogTitle className="text-base font-semibold text-foreground tracking-tight">
-                {receipts.length > 0
+                {readyReceiptCount > 0
                   ? locale === "de"
                     ? "Nicht zugeordnete Artikel"
                     : "Unmatched Items"
@@ -1144,14 +1204,14 @@ export function CheckoutDialog({
                   : "Checkout Without Receipt"}
               </DialogTitle>
               <DialogDescription className="sr-only">
-                {receipts.length > 0
+                {readyReceiptCount > 0
                   ? "Choose what to do with items not matched to a receipt"
                   : "Checkout items without a receipt"}
               </DialogDescription>
             </DialogHeader>
 
             <p className="text-xs text-muted-foreground">
-              {receipts.length > 0
+              {readyReceiptCount > 0
                 ? locale === "de"
                   ? "Diese Artikel wurden auf keinem Beleg gefunden. Wähle für jeden Artikel, ob er gekauft wurde oder zurück in die Liste soll."
                   : "These items were not matched to any receipt. Choose whether each was purchased or returned to the shopping list."
@@ -1187,7 +1247,7 @@ export function CheckoutDialog({
                       )}
                     </div>
 
-                    {receipts.length > 0 && decision === "forgot" && (
+                    {readyReceiptCount > 0 && decision === "forgot" && (
                       <div className="flex items-center gap-2">
                         <Input
                           type="number"
@@ -1242,7 +1302,7 @@ export function CheckoutDialog({
                 variant="ghost"
                 size="sm"
                 onClick={() => setPhase("form")}
-                disabled={isPending}
+                disabled={isSubmitting}
                 className="text-xs h-9 px-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60"
               >
                 {locale === "de" ? "Zurück" : "Back"}
@@ -1251,10 +1311,10 @@ export function CheckoutDialog({
                 type="button"
                 size="sm"
                 onClick={finalizeCheckout}
-                disabled={isPending || itemsNeedingDecision.some((item) => !noReceiptDecisions[item.id])}
+                disabled={isSubmitting || itemsNeedingDecision.some((item) => !noReceiptDecisions[item.id])}
                 className="text-xs font-medium h-9 px-4 rounded-lg gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                 <span>{locale === "de" ? "Bestätigen & Einreichen" : "Confirm & Checkout"}</span>
               </Button>
             </DialogFooter>
@@ -1279,7 +1339,7 @@ export function CheckoutDialog({
                 <button
                   type="button"
                   onClick={handleContinueToDetails}
-                  disabled={isPending}
+                  disabled={isSubmitting}
                   aria-label="Close dialog"
                   className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
                 >
@@ -1497,7 +1557,7 @@ export function CheckoutDialog({
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRemoveReceipt(reviewingIndex)}
-                      disabled={isPending}
+                      disabled={isSubmitting}
                       className="text-xs h-8 px-2.5 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
                     >
                       <Trash2 className="w-3.5 h-3.5 mr-1" />
@@ -1507,7 +1567,7 @@ export function CheckoutDialog({
                       type="button"
                       size="sm"
                       onClick={handleContinueToDetails}
-                      disabled={isPending}
+                      disabled={isSubmitting}
                       className="text-xs font-medium h-8 px-3 rounded-lg gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
                     >
                       <span>{locale === "de" ? "Übernehmen" : "Apply"}</span>
