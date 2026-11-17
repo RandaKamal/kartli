@@ -65,6 +65,27 @@ const MERCHANT_BARS = [
   "bg-muted-foreground/80",
 ];
 
+// Receipts are stored as Vercel Blob URLs or as local /uploads/receipts paths.
+// Only those forms become links; anything else returns null and no link is rendered.
+function toReceiptHref(filename: string): string | null {
+  const value = filename.trim();
+  if (/^https:\/\//i.test(value)) {
+    try {
+      const url = new URL(value);
+      if (url.protocol === "https:" && url.hostname.endsWith(".blob.vercel-storage.com")) {
+        return url.href;
+      }
+    } catch {
+      // malformed URL
+    }
+    return null;
+  }
+  if (value.startsWith("/uploads/receipts/") && !value.includes("..")) return value;
+  // Plain filename: keep it inside the receipts folder; reject schemes, slashes and traversal.
+  if (/^[A-Za-z0-9._-]+$/.test(value)) return `/uploads/receipts/${value}`;
+  return null;
+}
+
 function escapeCsvCell(cell: string | number | null | undefined): string {
   if (cell === null || cell === undefined) return '""';
   const str = String(cell);
@@ -205,6 +226,7 @@ export function SpacePulseModal({
   const [isExporting, setIsExporting] = useState(false);
   const [activeTab, setActiveTab] = useState<"spending" | "pantry" | "activity">("spending");
   const [feedScope, setFeedScope] = useState<"all" | "mine">("all");
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   // Sync initialStats when prop updates
@@ -1021,16 +1043,14 @@ export function SpacePulseModal({
                     <div className="rounded-xl border border-border bg-muted/40 divide-y divide-border">
                       {feedCheckouts.map((checkout) => {
                         const itemsCount = checkout.items?.length || 0;
-                        const receiptFilename =
-                          checkout.receipt_filename ||
-                          (checkout.receipts && checkout.receipts.length > 0
-                            ? checkout.receipts[0].receipt_filename
-                            : null);
-                        const receiptUrl = receiptFilename
-                          ? receiptFilename.startsWith("/")
-                            ? receiptFilename
-                            : `/uploads/receipts/${receiptFilename}`
-                          : null;
+                        const receiptFilenames: string[] = (
+                          checkout.receipts && checkout.receipts.length > 0
+                            ? checkout.receipts.map((r) => r.receipt_filename)
+                            : [checkout.receipt_filename]
+                        ).filter((f): f is string => !!f);
+                        const receiptUrls = receiptFilenames
+                          .map(toReceiptHref)
+                          .filter((url): url is string => !!url);
                         const storeName =
                           checkout.store_name === "Sonstige"
                             ? t.pulse.otherStore
@@ -1088,17 +1108,21 @@ export function SpacePulseModal({
                                 </span>
                               </div>
 
-                              {receiptUrl && (
-                                <a
-                                  href={receiptUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  aria-label={t.pulse.receiptAttached}
-                                  title={t.pulse.receiptAttached}
-                                  className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0"
-                                >
-                                  <Receipt className="w-3.5 h-3.5" />
-                                </a>
+                              {receiptUrls.length > 0 && (
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {receiptUrls.map((url, i) => (
+                                    <button
+                                      type="button"
+                                      key={`${checkout.id}-receipt-${i}`}
+                                      onClick={() => setReceiptPreview(url)}
+                                      aria-label={t.pulse.receiptAttached}
+                                      title={t.pulse.receiptAttached}
+                                      className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0 cursor-pointer"
+                                    >
+                                      <Receipt className="w-3.5 h-3.5" />
+                                    </button>
+                                  ))}
+                                </div>
                               )}
                             </div>
 
@@ -1139,6 +1163,22 @@ export function SpacePulseModal({
           )}
         </div>
       </DialogContent>
+
+      {/* In-app receipt preview (same pattern as the settlements view) */}
+      <Dialog open={!!receiptPreview} onOpenChange={(open) => !open && setReceiptPreview(null)}>
+        <DialogContent className="max-w-2xl p-3">
+          <DialogHeader>
+            <DialogTitle className="text-sm">{t.pulse.receiptAttached}</DialogTitle>
+          </DialogHeader>
+          {receiptPreview && (
+            <img
+              src={receiptPreview}
+              alt={t.pulse.receiptAttached}
+              className="max-h-[75vh] w-auto max-w-full mx-auto object-contain rounded-md border border-border"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
