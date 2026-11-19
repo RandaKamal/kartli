@@ -9,6 +9,7 @@ import {
   removeKitchenMemberAction,
   promoteMemberAction,
 } from "@/app/actions/kitchen";
+import { createPasswordResetLinkAction } from "@/app/actions/password-reset";
 import { CopyButton } from "@/components/CopyButton";
 import {
   Users,
@@ -23,6 +24,8 @@ import {
   UserCheck,
   Check,
   MoreHorizontal,
+  KeyRound,
+  ShieldAlert,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +50,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export interface RoommatesViewProps {
   kitchenId: string;
@@ -82,6 +93,12 @@ export function RoommatesView({
   const [memberToPromote, setMemberToPromote] = useState<KitchenMemberWithUser | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [resetLinkModal, setResetLinkModal] = useState<{
+    memberName: string;
+    resetUrl: string;
+    requiresSecondKitchenCheck: boolean;
+  } | null>(null);
+  const [creatingResetForId, setCreatingResetForId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   const [openMenuMemberId, setOpenMenuMemberId] = useState<string | null>(null);
@@ -188,6 +205,27 @@ export function RoommatesView({
       toast.error(err.message || "Failed to update role.");
     } finally {
       setUpdatingMemberId(null);
+    }
+  };
+
+  const handleCreateResetLink = async (member: KitchenMemberWithUser) => {
+    if (!member.user_id || creatingResetForId) return;
+    setCreatingResetForId(member.id);
+    try {
+      const res = await createPasswordResetLinkAction(kitchenId, member.user_id);
+      if (!res.success || !res.resetUrl) {
+        toast.error(res.error || "Failed to create password reset link.");
+        return;
+      }
+      setResetLinkModal({
+        memberName: member.kitchen_display_name,
+        resetUrl: res.resetUrl,
+        requiresSecondKitchenCheck: Boolean(res.requiresSecondKitchenCheck),
+      });
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to create password reset link.");
+    } finally {
+      setCreatingResetForId(null);
     }
   };
 
@@ -407,6 +445,38 @@ export function RoommatesView({
                             <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
                             <span>{t.kitchen.roommates.makeAdmin}</span>
                           </DropdownMenuItem>
+                        )}
+                        {member.user_id && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onSelect={(e) => {
+                                if (isScrollingRef.current) {
+                                  e.preventDefault();
+                                  return;
+                                }
+                                setOpenMenuMemberId(null);
+                                handleCreateResetLink(member);
+                              }}
+                              onClick={(e) => {
+                                if (isScrollingRef.current) {
+                                  e.preventDefault();
+                                  return;
+                                }
+                                setOpenMenuMemberId(null);
+                                handleCreateResetLink(member);
+                              }}
+                              disabled={creatingResetForId === member.id}
+                              className="cursor-pointer text-xs flex items-center gap-2 py-2 touch-manipulation"
+                            >
+                              <KeyRound className="w-3.5 h-3.5 text-emerald-500" />
+                              <span>
+                                {creatingResetForId === member.id
+                                  ? t.kitchen.roommates.creatingResetLink
+                                  : t.kitchen.roommates.createResetLink}
+                              </span>
+                            </DropdownMenuItem>
+                          </>
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -665,6 +735,81 @@ export function RoommatesView({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Password Reset Link Dialog */}
+      <Dialog
+        open={!!resetLinkModal}
+        onOpenChange={(open) => {
+          if (!open) setResetLinkModal(null);
+        }}
+      >
+        <DialogContent
+          onDismiss={() => setResetLinkModal(null)}
+          className="sm:max-w-md w-full p-6 space-y-4 rounded-3xl"
+        >
+          <DialogHeader className="space-y-1.5 text-left">
+            <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span>
+                {t.kitchen.roommates.resetLinkDialogTitle.replace(
+                  "{name}",
+                  resetLinkModal?.memberName || ""
+                )}
+              </span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
+              {t.kitchen.roommates.resetLinkDialogDesc.replace(
+                "{name}",
+                resetLinkModal?.memberName || ""
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {resetLinkModal && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-secondary/50 border border-border/70">
+                <input
+                  type="text"
+                  readOnly
+                  value={resetLinkModal.resetUrl}
+                  aria-label="Password reset link"
+                  className="flex-1 bg-transparent border-none outline-none text-xs font-mono text-foreground truncate"
+                  onFocus={(e) => e.currentTarget.select()}
+                />
+                <CopyButton
+                  text={resetLinkModal.resetUrl}
+                  label={t.kitchen.roommates.copyLink}
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 h-8 rounded-lg text-xs"
+                />
+              </div>
+
+              <p className="text-[11px] text-muted-foreground">
+                {t.kitchen.roommates.resetLinkExpiresNote}
+              </p>
+
+              {resetLinkModal.requiresSecondKitchenCheck && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs flex items-start gap-2">
+                  <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{t.kitchen.roommates.resetLinkMultiKitchenNote}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setResetLinkModal(null)}
+              className="rounded-xl w-full sm:w-auto"
+            >
+              {t.kitchen.roommates.close}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

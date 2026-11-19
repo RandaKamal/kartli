@@ -62,14 +62,14 @@ export async function registerUser(input: RegisterUserInput): Promise<DbUser> {
 export async function verifyUserCredentials(
   username: string,
   password: string
-): Promise<{ id: string; username: string; preferred_currency: string } | null> {
+): Promise<{ id: string; username: string; preferred_currency: string; session_version: number } | null> {
   const cleanUsername = username?.trim();
   if (!cleanUsername || !password) {
     return null;
   }
 
   const sql = `
-    SELECT id, username, password_hash, preferred_currency
+    SELECT id, username, password_hash, preferred_currency, COALESCE(session_version, 1) AS session_version
     FROM users
     WHERE LOWER(username) = LOWER($1)
     LIMIT 1
@@ -79,6 +79,7 @@ export async function verifyUserCredentials(
     username: string;
     password_hash: string;
     preferred_currency?: string | null;
+    session_version: number;
   }>(sql, [cleanUsername]);
 
   if (rows.length === 0) {
@@ -95,6 +96,7 @@ export async function verifyUserCredentials(
     id: user.id,
     username: user.username,
     preferred_currency: user.preferred_currency || "EUR",
+    session_version: Number(user.session_version) || 1,
   };
 }
 
@@ -109,7 +111,7 @@ export async function getUserByUsername(username: string): Promise<DbUser | null
   if (!cleanUsername) return null;
 
   const sql = `
-    SELECT id, username, password_hash, preferred_currency, has_completed_tour, created_at, updated_at
+    SELECT id, username, password_hash, preferred_currency, has_completed_tour, COALESCE(session_version, 1) AS session_version, created_at, updated_at
     FROM users
     WHERE LOWER(username) = LOWER($1)
   `;
@@ -125,12 +127,42 @@ export async function getUserByUsername(username: string): Promise<DbUser | null
  */
 export async function getUserById(id: string): Promise<DbUser | null> {
   const sql = `
-    SELECT id, username, password_hash, preferred_currency, has_completed_tour, created_at, updated_at
+    SELECT id, username, password_hash, preferred_currency, has_completed_tour, COALESCE(session_version, 1) AS session_version, created_at, updated_at
     FROM users
     WHERE id = $1
   `;
   const { rows } = await pool.query<DbUser>(sql, [id]);
   return rows.length > 0 ? rows[0] : null;
+}
+
+/**
+ * Reads the current session_version for a user. Returns null if user does not exist or is deleted.
+ */
+export async function getUserSessionVersion(id: string): Promise<number | null> {
+  try {
+    const { rows } = await pool.query<{ session_version: number; username: string }>(
+      `SELECT COALESCE(session_version, 1) AS session_version, username FROM users WHERE id = $1`,
+      [id]
+    );
+    if (rows.length === 0 || rows[0].username.startsWith("deleted_user_")) {
+      return null;
+    }
+    return Number(rows[0].session_version) || 1;
+  } catch {
+    // Graceful fallback if migration hasn't been applied yet
+    return 1;
+  }
+}
+
+/**
+ * Increments a user's session_version, invalidating all existing JWT sessions.
+ */
+export async function incrementUserSessionVersion(id: string): Promise<number> {
+  const { rows } = await pool.query<{ session_version: number }>(
+    `UPDATE users SET session_version = COALESCE(session_version, 1) + 1, updated_at = NOW() WHERE id = $1 RETURNING session_version`,
+    [id]
+  );
+  return rows[0]?.session_version ?? 1;
 }
 
 /**

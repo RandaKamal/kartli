@@ -1,11 +1,23 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
-import { registerUserAction, loginUserAction, checkUsernameAvailabilityAction } from "@/app/actions/auth";
-import { Eye, EyeOff, Check, X, Loader2, BadgeCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  registerUserAction,
+  loginUserAction,
+  loginWithPasskeyAction,
+  checkUsernameAvailabilityAction,
+} from "@/app/actions/auth";
+import { Eye, EyeOff, Check, X, Loader2, BadgeCheck, Fingerprint } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
+import {
+  authenticateWithPasskeyClient,
+  isWebAuthnSupported,
+  registerPasskeyClient,
+  storePasswordCredential,
+} from "@/lib/credential-manager";
 
 const labelCls =
   "text-[11px] font-semibold tracking-wider text-muted-foreground/80 mb-1.5 block font-sans";
@@ -30,8 +42,18 @@ export function InviteAuthTabs({
   initialStatus: "idle" | "available" | "taken";
 }) {
   const { t } = useTranslation();
+  const router = useRouter();
   const [tab, setTab] = useState<"register" | "login">("register");
   const callbackUrl = `/invite/${encodeURIComponent(inviteToken)}`;
+  const [passkeySupported, setPasskeySupported] = useState(false);
+  const [passkeyPromptRedirect, setPasskeyPromptRedirect] = useState<string | null>(null);
+  const [isEnablingPasskey, setIsEnablingPasskey] = useState(false);
+  const [isPasskeyLoginPending, setIsPasskeyLoginPending] = useState(false);
+  const loginUsernameRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setPasskeySupported(isWebAuthnSupported());
+  }, []);
 
   // Live username availability
   type UsernameStatus = "idle" | "checking" | "available" | "taken";
@@ -119,8 +141,18 @@ export function InviteAuthTabs({
         if (result?.error) {
           setRegisterError(result.error);
           toast.error(result.error);
-        } else {
+        } else if (result?.success) {
+          const usernameVal = result.username || username;
+          await storePasswordCredential(usernameVal, password, usernameVal);
           toast.success(t.invite.accountCreated);
+
+          const nextUrl = result.redirectTo || callbackUrl;
+          if (isWebAuthnSupported()) {
+            setPasskeyPromptRedirect(nextUrl);
+          } else {
+            router.push(nextUrl);
+            router.refresh();
+          }
         }
       } catch (err: any) {
         if (err?.message?.includes("NEXT_REDIRECT")) return;
@@ -129,6 +161,45 @@ export function InviteAuthTabs({
         toast.error(msg);
       }
     });
+  };
+
+  const handleEnablePasskey = async () => {
+    if (!passkeyPromptRedirect || isEnablingPasskey) return;
+    setIsEnablingPasskey(true);
+    try {
+      await registerPasskeyClient();
+      toast.success(t.settings.passkeyAdded);
+      router.push(passkeyPromptRedirect);
+      router.refresh();
+    } catch (err: any) {
+      if (err?.name !== "NotAllowedError") {
+        toast.error(err?.message || "Could not enable passkey.");
+      }
+      setIsEnablingPasskey(false);
+    }
+  };
+
+  const handlePasskeyLogin = async () => {
+    if (isPasskeyLoginPending || isLoginPending) return;
+    setLoginError(null);
+    setIsPasskeyLoginPending(true);
+    try {
+      const targetUsername = loginUsernameRef.current?.value?.trim();
+      const { token } = await authenticateWithPasskeyClient(targetUsername);
+      const res = await loginWithPasskeyAction(token, callbackUrl, inviteToken);
+      if (res?.error) {
+        setLoginError(res.error);
+        toast.error(res.error);
+      }
+    } catch (err: any) {
+      if (err?.message?.includes("NEXT_REDIRECT")) return;
+      if (err?.name === "NotAllowedError") return;
+      const msg = err?.message || t.invite.loginFailed;
+      setLoginError(msg);
+      toast.error(msg);
+    } finally {
+      setIsPasskeyLoginPending(false);
+    }
   };
 
   const handleLoginSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -219,6 +290,54 @@ export function InviteAuthTabs({
       </div>
     </div>
   );
+
+  if (passkeyPromptRedirect) {
+    return (
+      <div className="space-y-4 text-center py-2 animate-in fade-in-50">
+        <div className="mx-auto w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+          <Fingerprint className="w-6 h-6" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-base font-bold text-foreground">
+            {t.authRecovery.passkeyPromptTitle}
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            {t.authRecovery.passkeyPromptDesc}
+          </p>
+        </div>
+        <div className="space-y-2 pt-1">
+          <button
+            type="button"
+            disabled={isEnablingPasskey}
+            onClick={handleEnablePasskey}
+            className={ctaCls}
+          >
+            {isEnablingPasskey ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Fingerprint className="w-4 h-4" />
+            )}
+            <span>
+              {isEnablingPasskey
+                ? t.settings.addingPasskeyBtn
+                : t.authRecovery.enablePasskeyBtn}
+            </span>
+          </button>
+          <button
+            type="button"
+            disabled={isEnablingPasskey}
+            onClick={() => {
+              router.push(passkeyPromptRedirect);
+              router.refresh();
+            }}
+            className="h-9 w-full text-xs text-muted-foreground hover:text-foreground font-medium transition-colors cursor-pointer"
+          >
+            {t.authRecovery.skipPasskeyBtn}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Tabs
@@ -373,6 +492,7 @@ export function InviteAuthTabs({
           <div>
             <label htmlFor="invite-login-username" className={labelCls}>{t.invite.usernameLabel}</label>
             <input
+              ref={loginUsernameRef}
               id="invite-login-username"
               type="text"
               name="username"
@@ -395,10 +515,40 @@ export function InviteAuthTabs({
             onKeyDown: handleLoginKeyDown,
           })}
 
-          <button type="submit" disabled={isLoginPending} className={ctaCls}>
+          <button type="submit" disabled={isLoginPending || isPasskeyLoginPending} className={ctaCls}>
             {isLoginPending && <Loader2 className="w-4 h-4 animate-spin" />}
             <span>{isLoginPending ? t.invite.signingIn : t.invite.submitBtnExisting}</span>
           </button>
+
+          {passkeySupported && (
+            <>
+              <div className="relative flex items-center py-1">
+                <div className="flex-grow border-t border-border/50" />
+                <span className="shrink mx-3 text-[11px] uppercase tracking-wider text-muted-foreground">
+                  {t.authRecovery.orDivider}
+                </span>
+                <div className="flex-grow border-t border-border/50" />
+              </div>
+
+              <button
+                type="button"
+                disabled={isLoginPending || isPasskeyLoginPending}
+                onClick={handlePasskeyLogin}
+                className="h-11 w-full rounded-2xl bg-secondary/70 hover:bg-secondary border border-border text-foreground font-semibold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isPasskeyLoginPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Fingerprint className="w-4 h-4 text-emerald-500" />
+                )}
+                <span>
+                  {isPasskeyLoginPending
+                    ? t.authRecovery.signingInWithPasskey
+                    : t.authRecovery.signInWithPasskey}
+                </span>
+              </button>
+            </>
+          )}
         </form>
       </TabsContent>
     </Tabs>
