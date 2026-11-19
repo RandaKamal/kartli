@@ -1,10 +1,15 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
-import { loginUserAction } from "@/app/actions/auth";
-import { Eye, EyeOff, Loader2, User, Lock, ArrowRight } from "lucide-react";
+import { loginUserAction, loginWithPasskeyAction } from "@/app/actions/auth";
+import { Eye, EyeOff, Loader2, User, Lock, ArrowRight, Fingerprint } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
+import {
+  authenticateWithPasskeyClient,
+  isWebAuthnSupported,
+} from "@/lib/credential-manager";
 
 export function LoginForm({
   callbackUrl,
@@ -15,10 +20,18 @@ export function LoginForm({
   inviteToken?: string;
   initialError?: string;
 }) {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(initialError || null);
   const [isPending, startTransition] = useTransition();
+  const [isPasskeyPending, setIsPasskeyPending] = useState(false);
+  const [passkeySupported, setPasskeySupported] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const usernameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setPasskeySupported(isWebAuthnSupported());
+  }, []);
 
   useEffect(() => {
     if (initialError) {
@@ -59,6 +72,29 @@ export function LoginForm({
     }
   };
 
+  const handlePasskeySignIn = async () => {
+    if (isPasskeyPending || isPending) return;
+    setError(null);
+    setIsPasskeyPending(true);
+    try {
+      const username = usernameInputRef.current?.value?.trim();
+      const { token } = await authenticateWithPasskeyClient(username);
+      const res = await loginWithPasskeyAction(token, callbackUrl, inviteToken);
+      if (res?.error) {
+        setError(res.error);
+        toast.error(res.error);
+      }
+    } catch (err: any) {
+      if (err?.message?.includes("NEXT_REDIRECT")) return;
+      if (err?.name === "NotAllowedError") return;
+      const msg = err?.message || "Passkey sign-in failed.";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setIsPasskeyPending(false);
+    }
+  };
+
   return (
     <form
       ref={formRef}
@@ -89,6 +125,7 @@ export function LoginForm({
         <div className="h-11 bg-secondary/50 border border-border focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 rounded-xl transition-all flex items-center px-3.5 gap-2.5">
           <User className="w-4 h-4 text-muted-foreground/70 shrink-0 pointer-events-none" />
           <input
+            ref={usernameInputRef}
             id="login-username"
             type="text"
             name="username"
@@ -141,7 +178,7 @@ export function LoginForm({
 
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || isPasskeyPending}
         className="h-11 w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-xl shadow-sm active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mt-1.5"
       >
         {isPending ? (
@@ -156,6 +193,37 @@ export function LoginForm({
           </>
         )}
       </button>
+
+      {passkeySupported && (
+        <>
+          <div className="relative flex items-center py-1">
+            <div className="flex-grow border-t border-border/50" />
+            <span className="shrink mx-3 text-[11px] uppercase tracking-wider text-muted-foreground">
+              {t.authRecovery.orDivider}
+            </span>
+            <div className="flex-grow border-t border-border/50" />
+          </div>
+
+          <button
+            type="button"
+            disabled={isPending || isPasskeyPending}
+            onClick={handlePasskeySignIn}
+            className="h-11 w-full bg-secondary/70 hover:bg-secondary text-foreground border border-border font-semibold rounded-xl active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed text-sm"
+          >
+            {isPasskeyPending ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>{t.authRecovery.signingInWithPasskey}</span>
+              </>
+            ) : (
+              <>
+                <Fingerprint className="w-4 h-4 text-emerald-500" />
+                <span>{t.authRecovery.signInWithPasskey}</span>
+              </>
+            )}
+          </button>
+        </>
+      )}
     </form>
   );
 }

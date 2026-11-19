@@ -1,10 +1,17 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { registerUserAction } from "@/app/actions/auth";
-import { Eye, EyeOff, Check, X, Loader2, User, Lock, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Check, X, Loader2, User, Lock, ArrowRight, Fingerprint } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
+import {
+  isWebAuthnSupported,
+  registerPasskeyClient,
+  storePasswordCredential,
+} from "@/lib/credential-manager";
 
 export function RegisterForm({
   callbackUrl,
@@ -15,12 +22,16 @@ export function RegisterForm({
   inviteToken?: string;
   initialError?: string;
 }) {
+  const { t } = useTranslation();
+  const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(initialError || null);
   const [isPending, startTransition] = useTransition();
+  const [passkeyPromptRedirect, setPasskeyPromptRedirect] = useState<string | null>(null);
+  const [isEnablingPasskey, setIsEnablingPasskey] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -52,8 +63,18 @@ export function RegisterForm({
         if (result?.error) {
           setError(result.error);
           toast.error(result.error);
-        } else {
+        } else if (result?.success) {
+          const usernameVal = result.username || String(formData.get("username") || "").trim();
+          await storePasswordCredential(usernameVal, password, usernameVal);
           toast.success("Account created successfully!");
+
+          const nextUrl = result.redirectTo || "/dashboard";
+          if (isWebAuthnSupported()) {
+            setPasskeyPromptRedirect(nextUrl);
+          } else {
+            router.push(nextUrl);
+            router.refresh();
+          }
         }
       } catch (err: any) {
         if (err?.message?.includes("NEXT_REDIRECT")) return;
@@ -63,6 +84,71 @@ export function RegisterForm({
       }
     });
   };
+
+  const handleEnablePasskey = async () => {
+    if (!passkeyPromptRedirect || isEnablingPasskey) return;
+    setIsEnablingPasskey(true);
+    try {
+      await registerPasskeyClient();
+      toast.success(t.settings.passkeyAdded);
+      router.push(passkeyPromptRedirect);
+      router.refresh();
+    } catch (err: any) {
+      if (err?.name !== "NotAllowedError") {
+        toast.error(err?.message || "Could not enable passkey.");
+      }
+      setIsEnablingPasskey(false);
+    }
+  };
+
+  if (passkeyPromptRedirect) {
+    return (
+      <div className="space-y-4 text-center py-2 animate-in fade-in-50">
+        <div className="mx-auto w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+          <Fingerprint className="w-6 h-6" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-base font-bold text-foreground">
+            {t.authRecovery.passkeyPromptTitle}
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            {t.authRecovery.passkeyPromptDesc}
+          </p>
+        </div>
+        <div className="space-y-2 pt-1">
+          <button
+            type="button"
+            disabled={isEnablingPasskey}
+            onClick={handleEnablePasskey}
+            className="h-11 w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+          >
+            {isEnablingPasskey ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>{t.settings.addingPasskeyBtn}</span>
+              </>
+            ) : (
+              <>
+                <Fingerprint className="w-4 h-4" />
+                <span>{t.authRecovery.enablePasskeyBtn}</span>
+              </>
+            )}
+          </button>
+          <button
+            type="button"
+            disabled={isEnablingPasskey}
+            onClick={() => {
+              router.push(passkeyPromptRedirect);
+              router.refresh();
+            }}
+            className="h-9 w-full text-xs text-muted-foreground hover:text-foreground font-medium transition-colors cursor-pointer"
+          >
+            {t.authRecovery.skipPasskeyBtn}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !isPending) {
