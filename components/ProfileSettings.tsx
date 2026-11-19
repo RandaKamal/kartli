@@ -26,13 +26,16 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { logoutAction } from "@/app/actions/auth";
-import { updatePreferredCurrencyAction } from "@/app/actions/user";
+import { signOutAllDevicesAction, updatePreferredCurrencyAction } from "@/app/actions/user";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { toast } from "sonner";
 import { PasswordChangeForm, AccountDeletionZone } from "@/components/settings/UserSettingsModal";
+import { PasskeyManager } from "@/components/PasskeyManager";
+import { PasswordResetAuditCard } from "@/components/PasswordResetAuditCard";
 import { NotificationToggle, usePushNotifications } from "@/components/NotificationToggle";
 import { updateNotificationPrefAction } from "@/app/actions/push";
 import type { NotificationPrefs, PushKind } from "@/lib/push";
+import type { PasswordResetAuditEntry, UserPasskey } from "@/types";
 
 interface ProfileSettingsProps {
   user: {
@@ -43,6 +46,8 @@ interface ProfileSettingsProps {
     theme?: string;
   };
   notificationPrefs: NotificationPrefs;
+  initialPasskeys?: UserPasskey[];
+  resetAudit?: PasswordResetAuditEntry[];
 }
 
 interface CulinaryTheme {
@@ -52,7 +57,12 @@ interface CulinaryTheme {
   colors: [string, string, string]; // [Primary, Success/In-Cart, Warning/Needed]
 }
 
-export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProps) {
+export function ProfileSettings({
+  user,
+  notificationPrefs,
+  initialPasskeys = [],
+  resetAudit = [],
+}: ProfileSettingsProps) {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -439,7 +449,11 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
 
         {/* Tab 2: Security & Danger Zone */}
         <TabsContent value="security" className="space-y-6 animate-in fade-in-50">
-          <PasswordChangeForm />
+          <PasskeyManager initialPasskeys={initialPasskeys} />
+
+          <PasswordChangeForm username={user.username} />
+
+          <PasswordResetAuditCard entries={resetAudit} />
 
           {/* Session Management */}
           <Card className="p-4 sm:p-6 rounded-2xl border border-border/80 bg-card shadow-sm space-y-6">
@@ -488,7 +502,7 @@ export function ProfileSettings({ user, notificationPrefs }: ProfileSettingsProp
                   variant="outline"
                   size="sm"
                   onClick={async () => {
-                    await logoutAction();
+                    await signOutAllDevicesAction();
                   }}
                   className="border-destructive/40 text-destructive hover:bg-destructive/10 rounded-xl font-medium"
                 >
