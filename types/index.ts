@@ -19,8 +19,30 @@ export interface DbUser {
   password_hash: string;
   preferred_currency?: string;
   has_completed_tour: boolean;
+  session_version?: number;
   created_at: Date;
   updated_at: Date;
+}
+
+export interface UserPasskey {
+  id: string;
+  user_id: string;
+  credential_id: string;
+  device_name: string | null;
+  transports: string[] | null;
+  created_at: Date | string;
+  last_used_at: Date | string | null;
+}
+
+export interface PasswordResetAuditEntry {
+  id: string;
+  kitchen_id: string;
+  kitchen_name: string;
+  created_by_username: string | null;
+  requires_second_kitchen_check: boolean;
+  expires_at: Date | string;
+  used_at: Date | string | null;
+  created_at: Date | string;
 }
 
 /**
@@ -271,5 +293,6 @@ declare module "next-auth" {
     id?: string;
     username?: string;
     preferred_currency?: string;
+    session_version?: number;
   }
 }

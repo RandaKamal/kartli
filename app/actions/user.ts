@@ -1,12 +1,14 @@
 "use server";
 
-import { auth, signOut } from "@/auth";
+import { auth, signIn, signOut } from "@/auth";
 import { pool } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 import { hashPasswordAsync, verifyPasswordAsync } from "@/lib/password";
 import { PENDING_INVITE_COOKIE_NAME } from "@/lib/invite";
+import { incrementUserSessionVersion } from "@/lib/auth-service";
+import { createPasskeyLoginNonce } from "@/lib/webauthn";
 
 export async function updatePreferredCurrencyAction(currency: string) {
   const session = await auth();
@@ -124,15 +126,40 @@ export async function changePasswordAction(
     return { success: false, error: errorMsg };
   }
 
-  // Hash new password and update record
+  // Hash new password, update record, and bump session_version to invalidate other sessions
   const newHash = await hashPasswordAsync(newPassword);
   await pool.query(
-    `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2`,
+    `UPDATE users
+     SET password_hash = $1,
+         session_version = COALESCE(session_version, 1) + 1,
+         updated_at = NOW()
+     WHERE id = $2`,
     [newHash, session.user.id]
   );
 
+  // Re-mint current device's JWT with the new session_version so the user stays signed in here
+  try {
+    const nonce = createPasskeyLoginNonce(session.user.id);
+    await signIn("passkey", { token: nonce, redirect: false });
+  } catch (err) {
+    console.error("Failed to refresh session after password change:", err);
+  }
+
   revalidatePath("/profile");
   return { success: true };
+}
+
+/**
+ * Increments session_version to invalidate all JWT sessions across all devices, then signs out locally.
+ */
+export async function signOutAllDevicesAction() {
+  const session = await auth();
+  if (session?.user?.id) {
+    await incrementUserSessionVersion(session.user.id);
+  }
+  const cookieStore = await cookies();
+  cookieStore.delete(PENDING_INVITE_COOKIE_NAME);
+  await signOut({ redirectTo: "/" });
 }
 
 /**
