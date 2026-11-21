@@ -29,6 +29,7 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
   serverExternalPackages: ["puppeteer"],
   experimental: {
+    agentUpgrade: "security",
     serverActions: {
       // Receipt photos are uploaded through a Server Action. Even after
       // client-side compression, allow generous headroom above the 1 MB default.

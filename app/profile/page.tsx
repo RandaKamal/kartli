@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { getUserById } from "@/lib/auth-service";
 import { getNotificationPrefs } from "@/lib/push";
+import { listUserPasskeys } from "@/lib/passkeys";
+import { getUserPasswordResetAudit } from "@/lib/password-reset";
 import { Suspense } from "react";
 
 export default async function ProfilePage() {
@@ -12,9 +14,11 @@ export default async function ProfilePage() {
     redirect("/login?callbackUrl=/profile");
   }
 
-  const [dbUser, notificationPrefs] = await Promise.all([
+  const [dbUser, notificationPrefs, passkeys, resetAudit] = await Promise.all([
     getUserById(session.user.id),
     getNotificationPrefs(session.user.id),
+    listUserPasskeys(session.user.id).catch(() => []),
+    getUserPasswordResetAudit(session.user.id).catch(() => []),
   ]);
   const preferredCurrency = dbUser?.preferred_currency || session.user.preferred_currency || "EUR";
 
@@ -28,6 +32,8 @@ export default async function ProfilePage() {
             preferred_currency: preferredCurrency,
           }}
           notificationPrefs={notificationPrefs}
+          initialPasskeys={passkeys}
+          resetAudit={resetAudit}
         />
       </Suspense>
     </div>

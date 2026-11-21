@@ -24,13 +24,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { changePasswordAction, deleteAccountAction } from "@/app/actions/user";
+import { storePasswordCredential } from "@/lib/credential-manager";
 import { useTranslation } from "@/lib/i18n";
 import { toast } from "sonner";
 
 /**
  * Self-contained Password Change Form component.
  */
-export function PasswordChangeForm() {
+export function PasswordChangeForm({ username }: { username?: string }) {
   const { t } = useTranslation();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -66,6 +67,9 @@ export function PasswordChangeForm() {
       if (!res.success) {
         toast.error(res.error || t.settings.currentPasswordIncorrect);
       } else {
+        if (username) {
+          await storePasswordCredential(username, newPassword, username);
+        }
         toast.success(t.settings.passwordChangedSuccess);
         setCurrentPassword("");
         setNewPassword("");
@@ -91,6 +95,18 @@ export function PasswordChangeForm() {
       </CardHeader>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {username && (
+          <input
+            type="text"
+            name="username"
+            autoComplete="username"
+            value={username}
+            readOnly
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden="true"
+          />
+        )}
         {/* Current Password */}
         <div className="space-y-2">
           <Label htmlFor="settings-current-password" className="text-xs font-semibold">
@@ -426,7 +442,7 @@ export function UserSettingsModal({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6 max-h-[80vh]">
-          <PasswordChangeForm />
+          <PasswordChangeForm username={user?.username} />
           <AccountDeletionZone />
         </div>
       </DialogContent>

@@ -11,6 +11,9 @@ import { checkRateLimit } from "@/lib/rate-limit";
 
 export interface AuthActionResult {
   error?: string;
+  success?: boolean;
+  username?: string;
+  redirectTo?: string;
 }
 
 /**
@@ -82,17 +85,60 @@ export async function registerUserAction(
     return { error: err.message || "Failed to register user." };
   }
 
-  // Automatically sign in the newly registered user
+  // Automatically sign in the newly registered user without server redirect
+  // so the client can store the PasswordCredential and offer 1-tap Passkey setup.
+  const targetRedirect = callbackUrl || "/dashboard";
   try {
     await signIn("credentials", {
       username,
       password,
-      redirectTo: callbackUrl || "/dashboard",
+      redirect: false,
     });
-    return {};
+    return {
+      success: true,
+      username,
+      redirectTo: targetRedirect,
+    };
   } catch (error) {
     if (error instanceof AuthError) {
       return { error: "Account created, but sign-in failed. Please log in manually." };
+    }
+    throw error; // Let Next.js handle NEXT_REDIRECT
+  }
+}
+
+/**
+ * Server Action to complete sign-in using a verified short-lived passkey nonce.
+ */
+export async function loginWithPasskeyAction(
+  token: string,
+  callbackUrl?: string,
+  inviteToken?: string
+): Promise<AuthActionResult> {
+  if (!token) {
+    return { error: "Invalid passkey sign-in token." };
+  }
+
+  const cookieStore = await cookies();
+  let targetRedirect = callbackUrl?.trim() || "";
+
+  if (inviteToken?.trim()) {
+    const cleanInvite = inviteToken.trim();
+    cookieStore.set(PENDING_INVITE_COOKIE_NAME, cleanInvite, PENDING_INVITE_COOKIE_OPTIONS);
+    if (!targetRedirect) {
+      targetRedirect = `/invite/${encodeURIComponent(cleanInvite)}`;
+    }
+  }
+
+  try {
+    await signIn("passkey", {
+      token,
+      redirectTo: targetRedirect || "/dashboard",
+    });
+    return { success: true };
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return { error: "Passkey sign-in failed. Please try again." };
     }
     throw error; // Let Next.js handle NEXT_REDIRECT
   }
