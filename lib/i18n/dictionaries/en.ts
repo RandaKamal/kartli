@@ -16,6 +16,7 @@ export const en = {
     view: "View",
     retry: "Retry",
     openSourceGitHub: "Open Source on GitHub",
+    allRightsReserved: "All rights reserved.",
   },
   nav: {
     theme: "Theme",
@@ -63,6 +64,7 @@ export const en = {
       markSettled: "Mark as Settled",
     },
     markSettled: "Mark as Settled",
+    footerTagline: "Lean, email-free kitchen management.",
   },
   dashboard: {
     muteKitchen: "Mute notifications for this kitchen",

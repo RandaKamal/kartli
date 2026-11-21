@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LoginForm } from "@/components/LoginForm";
+import { LegalLinks } from "@/components/SiteFooter";
 
 export default async function LoginPage({
   searchParams,
@@ -73,15 +74,7 @@ export default async function LoginPage({
           </div>
 
           {/* Legal Links */}
-          <div className="flex items-center justify-center gap-3 text-[11px] text-muted-foreground/80 pt-1">
-            <Link href="/legal/imprint" className="hover:text-foreground transition-colors underline-offset-4 hover:underline">
-              Impressum
-            </Link>
-            <span className="text-border/60">&middot;</span>
-            <Link href="/legal/privacy" className="hover:text-foreground transition-colors underline-offset-4 hover:underline">
-              Datenschutz
-            </Link>
-          </div>
+          <LegalLinks />
         </div>
       </div>
     </main>

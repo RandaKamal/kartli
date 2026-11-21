@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { Hero } from "@/components/Hero";
 import { FeatureDeck } from "@/components/FeatureDeck";
+import { LandingFooter } from "@/components/SiteFooter";
 
 export default async function HomePage() {
   const session = await auth();
@@ -23,33 +24,7 @@ export default async function HomePage() {
       </div>
 
       {/* Minimalist 1-Line Footer */}
-      <footer className="w-full max-w-7xl mx-auto pt-6 md:pt-2 pb-2 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground border-t border-border/60">
-        <p>© {new Date().getFullYear()} kartli. Lean, email-free kitchen management.</p>
-        <div className="flex items-center gap-4">
-          <a
-            href="/legal/imprint"
-            className="hover:text-foreground transition-colors underline-offset-4 hover:underline"
-          >
-            Impressum
-          </a>
-          <span className="text-border/60">·</span>
-          <a
-            href="/legal/privacy"
-            className="hover:text-foreground transition-colors underline-offset-4 hover:underline"
-          >
-            Datenschutz
-          </a>
-          <span className="text-border/60">·</span>
-          <a
-            href="https://github.com/randakamal/kartli"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors"
-          >
-            Open Source on GitHub
-          </a>
-        </div>
-      </footer>
+      <LandingFooter />
     </div>
   );
 }

@@ -18,6 +18,7 @@ export const de: typeof en = {
     view: "Ansehen",
     retry: "Erneut versuchen",
     openSourceGitHub: "Open Source auf GitHub",
+    allRightsReserved: "Alle Rechte vorbehalten.",
   },
   nav: {
     theme: "Design",
@@ -65,6 +66,7 @@ export const de: typeof en = {
       markSettled: "Als ausgeglichen markieren",
     },
     markSettled: "Als ausgeglichen markieren",
+    footerTagline: "Schlanke, E-Mail-freie WG-Küchenverwaltung.",
   },
   dashboard: {
     muteKitchen: "Benachrichtigungen für diese Küche stummschalten",
